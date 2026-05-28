@@ -1,22 +1,20 @@
-// Step 1 — Welcome screen with simplified orb placeholder
-
-function SimpleOrb() {
-  return (
-    <div style={{
-      width: 72, height: 72,
-      borderRadius: '50%',
-      background: 'radial-gradient(circle at 38% 35%, var(--accent), transparent 70%)',
-      border: '0.5px solid var(--card-border)',
-      boxShadow: '0 0 28px var(--orb-glow)',
-      animation: 'orb-breathe 3.2s ease-in-out infinite',
-    }} />
-  );
-}
+// Step 1 — Welcome screen with VALERIE logo
 
 export default function Step1Welcome({ next }) {
   return (
     <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 32, textAlign: 'center' }}>
-      <SimpleOrb />
+      <img
+        src="/assets/valerie-logo.png"
+        alt="VALERIE"
+        style={{
+          width: 120,
+          height: 120,
+          objectFit: 'contain',
+          marginBottom: 8,
+          filter: 'drop-shadow(0 0 24px var(--orb-glow))',
+          animation: 'orb-breathe 3.2s ease-in-out infinite',
+        }}
+      />
 
       <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
         <h1 style={{

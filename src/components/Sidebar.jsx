@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 
 // ─── Icons (inline SVG — no external dep needed for now) ──────────────────────
 const Icon = ({ d, size = 20 }) => (
@@ -115,16 +115,96 @@ function TabGroup({ tabs, activeTab, onTabClick }) {
   );
 }
 
-// ─── Status dot ──────────────────────────────────────────────────────────────
-function StatusDot({ online }) {
+// ─── Connection status indicator ────────────────────────────────────────────
+function StatusIndicator({ claudeOnline, ollamaOnline, internetOnline, lastPinged }) {
+  const [expanded, setExpanded] = useState(false);
+
+  // Overall dot colour: green = all good | amber = partial | red = offline
+  const overall = claudeOnline ? '#4caf7d' : ollamaOnline ? '#f4a642' : '#e55a5a';
+  const overallGlow = claudeOnline
+    ? 'rgba(76,175,125,0.55)'
+    : ollamaOnline
+    ? 'rgba(244,166,66,0.5)'
+    : 'rgba(229,90,90,0.45)';
+
+  const Row = ({ label, online, detail }) => (
+    <div style={{ display: 'flex', alignItems: 'center', gap: 7 }}>
+      <div style={{
+        width: 6, height: 6, borderRadius: '50%', flexShrink: 0,
+        background: online ? '#4caf7d' : '#666',
+        boxShadow: online ? '0 0 4px rgba(76,175,125,0.6)' : 'none',
+      }} />
+      <span style={{ fontSize: 10, color: 'var(--text-secondary)', minWidth: 46 }}>{label}</span>
+      <span style={{
+        fontSize: 9.5, color: online ? 'var(--text-secondary)' : 'var(--text-muted)',
+        opacity: 0.75,
+      }}>
+        {detail ?? (online ? 'online' : 'offline')}
+      </span>
+    </div>
+  );
+
+  const pingAgo = lastPinged
+    ? (() => {
+        const s = Math.round((Date.now() - lastPinged.getTime()) / 1000);
+        if (s < 10) return 'just now';
+        if (s < 60) return `${s}s ago`;
+        return `${Math.round(s/60)}m ago`;
+      })()
+    : '—';
+
   return (
-    <div style={{
-      width: 8, height: 8,
-      borderRadius: '50%',
-      background: online ? '#4caf7d' : '#888',
-      boxShadow: online ? '0 0 6px rgba(76, 175, 125, 0.6)' : 'none',
-      transition: 'all 0.4s ease',
-    }} title={online ? 'Online' : 'Offline'} />
+    <div style={{ position: 'relative' }}>
+      {/* Trigger dot */}
+      <button
+        onMouseEnter={() => setExpanded(true)}
+        onMouseLeave={() => setExpanded(false)}
+        style={{
+          background: 'none', border: 'none', cursor: 'pointer',
+          padding: 4, display: 'flex', alignItems: 'center', justifyContent: 'center',
+        }}
+      >
+        <div style={{
+          width: 8, height: 8, borderRadius: '50%',
+          background: overall,
+          boxShadow: `0 0 6px ${overallGlow}`,
+          transition: 'all 0.4s ease',
+        }} />
+      </button>
+
+      {/* Expanded panel */}
+      {expanded && (
+        <div style={{
+          position: 'absolute',
+          bottom: 18,
+          left: 16,
+          background: 'var(--bg-panel)',
+          border: '0.5px solid var(--card-border)',
+          borderRadius: 10,
+          padding: '10px 14px',
+          display: 'flex',
+          flexDirection: 'column',
+          gap: 7,
+          zIndex: 200,
+          whiteSpace: 'nowrap',
+          backdropFilter: 'blur(20px)',
+          boxShadow: '0 8px 32px rgba(0,0,0,0.5)',
+          minWidth: 168,
+        }}>
+          <span style={{ fontSize: 9.5, color: 'var(--text-muted)', letterSpacing: '0.06em', marginBottom: 2 }}>
+            CONNECTION STATUS
+          </span>
+          <Row label="Internet"  online={internetOnline} />
+          <Row label="Claude"    online={claudeOnline}   detail={claudeOnline ? 'API ready' : 'unavailable'} />
+          <Row label="Ollama"    online={ollamaOnline}   detail={ollamaOnline ? 'llama3 local' : 'not running'} />
+          <Row label="Firebase"  online={false}          detail="session 3" />
+          <div style={{ height: '0.5px', background: 'var(--sidebar-divider)', margin: '2px 0' }} />
+          <span style={{ fontSize: 9, color: 'var(--text-muted)' }}>
+            Last checked: {pingAgo}
+          </span>
+        </div>
+      )}
+    </div>
   );
 }
 
@@ -141,16 +221,7 @@ function Divider() {
 }
 
 // ─── Main Sidebar ─────────────────────────────────────────────────────────────
-export default function Sidebar({ activeTab, onTabClick }) {
-  const [online, setOnline] = useState(navigator.onLine);
-
-  useEffect(() => {
-    const on  = () => setOnline(true);
-    const off = () => setOnline(false);
-    window.addEventListener('online',  on);
-    window.addEventListener('offline', off);
-    return () => { window.removeEventListener('online', on); window.removeEventListener('offline', off); };
-  }, []);
+export default function Sidebar({ activeTab, onTabClick, claudeOnline, ollamaOnline, internetOnline, lastPinged }) {
 
   return (
     <aside style={{
@@ -168,18 +239,17 @@ export default function Sidebar({ activeTab, onTabClick }) {
       flexShrink: 0,
     }}>
 
-      {/* VALERIE logo mark — V initial */}
+      {/* VALERIE logo mark */}
       <div style={{
         width: 32, height: 32,
         display: 'flex', alignItems: 'center', justifyContent: 'center',
         marginBottom: 16,
-        color: 'var(--accent)',
-        fontSize: 16,
-        fontWeight: 700,
-        letterSpacing: '0.05em',
-        opacity: 0.9,
       }}>
-        V
+        <img
+          src="/assets/valerie-logo.png"
+          alt="VALERIE"
+          style={{ width: 28, height: 28, objectFit: 'contain', opacity: 0.9 }}
+        />
       </div>
 
       {/* Scrollable tab area */}
@@ -199,9 +269,14 @@ export default function Sidebar({ activeTab, onTabClick }) {
         {BOTTOM.map(tab => (
           <TabButton key={tab.id} tab={tab} active={activeTab === tab.id} onClick={onTabClick} />
         ))}
-        {/* Online / offline status dot */}
+        {/* Connection status indicator */}
         <div style={{ marginTop: 8, marginBottom: 2 }}>
-          <StatusDot online={online} />
+          <StatusIndicator
+            claudeOnline={claudeOnline ?? false}
+            ollamaOnline={ollamaOnline ?? false}
+            internetOnline={internetOnline ?? navigator.onLine}
+            lastPinged={lastPinged}
+          />
         </div>
       </div>
     </aside>

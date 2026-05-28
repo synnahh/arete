@@ -273,6 +273,17 @@ html, body, #root {
 .fade-in      { animation: fadeIn     0.4s cubic-bezier(0.4, 0, 0.2, 1) forwards; }
 .slide-in-step { animation: slideInStep 0.35s cubic-bezier(0.4, 0, 0.2, 1) forwards; }
 
+@keyframes slide-up {
+  from { opacity: 0; transform: translateY(12px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+.slide-up { animation: slide-up 0.18s cubic-bezier(0.4, 0, 0.2, 1) forwards; }
+
+@keyframes blink {
+  0%, 100% { opacity: 0.4; }
+  50%       { opacity: 0.1; }
+}
+
 /* ─── Voice Orb ─────────────────────────────────────── */
 @keyframes orb-breathe {
   0%, 100% { transform: scale(1);    filter: drop-shadow(0 0 8px var(--orb-glow)); }

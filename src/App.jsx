@@ -2,8 +2,10 @@ import { useState, useEffect } from 'react';
 import { storage, STORAGE_KEYS } from './utils/storage.js';
 import { applyTheme }            from './styles/themes.js';
 import { getTimeOfDay }          from './utils/time.js';
+import { useAI }                 from './ai/useAI.js';
 import Onboarding                from './onboarding/Onboarding.jsx';
 import Sidebar                   from './components/Sidebar.jsx';
+import QuickCapture              from './components/QuickCapture.jsx';
 
 // ─── Tab imports ──────────────────────────────────────────────────────────────
 import Dashboard  from './tabs/Dashboard.jsx';
@@ -42,6 +44,9 @@ export default function App() {
   const [onboarded, setOnboarded] = useState(null); // null = loading
   const [activeTab, setActiveTab] = useState('dashboard');
   const [settings, setSettings]   = useState(null);
+
+  // ── AI brain ──────────────────────────────────────────────────────────────
+  const ai = useAI();
 
   // ── On mount: load settings, apply theme, check onboarding flag ────────────
   useEffect(() => {
@@ -92,7 +97,14 @@ export default function App() {
       className={`bg-${tod}`}
     >
       {/* Sidebar */}
-      <Sidebar activeTab={activeTab} onTabClick={setActiveTab} />
+      <Sidebar
+        activeTab={activeTab}
+        onTabClick={setActiveTab}
+        claudeOnline={ai.claudeOnline}
+        ollamaOnline={ai.ollamaOnline}
+        internetOnline={ai.internetOnline}
+        lastPinged={ai.lastPinged}
+      />
 
       {/* Main content area */}
       <main style={{
@@ -101,7 +113,14 @@ export default function App() {
         display: 'flex', flexDirection: 'column',
         position: 'relative',
       }}>
-        <ActiveTab settings={settings} onTabChange={setActiveTab} />
+        <ActiveTab
+          settings={settings}
+          onTabChange={setActiveTab}
+          ai={ai}
+        />
+
+        {/* Quick Capture — floats above all content */}
+        <QuickCapture ai={ai} />
       </main>
     </div>
   );
