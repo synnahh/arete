@@ -148,3 +148,28 @@
 90. Voice selector with live preview
 91. Theme and accent colour picker
 92. Platform tab setup
+
+---
+
+## BATCH 2 FEATURES
+
+### New Modules
+93. JARVIS Evening Debrief — end of day summary, completed tasks, tomorrow preview, mood prompt
+94. Password Vault — AES-256 encrypted, local only, never synced, master password, auto-lock, breach check
+95. Webhook Support — Zapier/Make integration, custom trigger events, fits in Settings → Integrations
+96. JARVIS Personal Context Engine — learns your patterns over time, "What JARVIS knows" screen in Settings
+97. Spotify Integration — OAuth connect, now-playing dashboard widget, mood-based playback, voice control
+98. Meal Planner — weekly meal planning, macro pre-fill, recipe library, Claude-generated suggestions
+99. Shopping List — auto-generated from meal plan, manual add, tick off as purchased, voice readable
+100. Habit Tracker — custom habits, daily check-in, feeds Progress streaks and XP, completion rings
+101. Water Tracker — daily goal, quick log buttons, JARVIS reminders, voice log
+102. AI Workout Planner — Claude-generated personalised splits, progressive overload tracking, strength charts
+
+### Design System Additions
+103. Animated time-of-day background — dawn / day / dusk / night gradual transitions
+104. JARVIS thinking particle effect — orbiting/radiating particles while Claude processes
+105. Smart layout — dashboard adapts morning / afternoon / evening / night
+106. Custom orb shapes — Sphere / Ring / Diamond / Cube / Custom SVG
+107. Holographic card effect — 3D tilt + light reflection on hover
+108. Seasonal themes — auto-shifts palette by season, hemisphere aware
+109. Minimal mode — strips to orb + one widget, voice activated

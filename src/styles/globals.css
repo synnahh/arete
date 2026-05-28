@@ -1,0 +1,291 @@
+/* ─── Google Fonts — must be first ──────────────────── */
+@import url('https://fonts.googleapis.com/css2?family=Exo+2:wght@300;400;500;600;700&family=DM+Sans:wght@300;400;500;600;700&family=Orbitron:wght@400;500;600;700&family=Sora:wght@300;400;500;600;700&family=Inter:wght@300;400;500;600;700&display=swap');
+
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+/* ─── Theme Variables ────────────────────────────────
+   Applied via data-theme attribute on <html>.
+   Every colour in the app derives from these variables.
+─────────────────────────────────────────────────────── */
+
+/* OBSIDIAN — default: deep black, silver/white accent */
+:root,
+[data-theme="obsidian"] {
+  --bg-base:          #080c14;
+  --bg-sidebar:       #0d0f14;
+  --bg-panel:         #0f1219;
+  --accent:           rgba(210, 210, 210, 0.85);
+  --accent-solid:     #d2d2d2;
+  --card-fill:        rgba(255, 255, 255, 0.03);
+  --card-border:      rgba(255, 255, 255, 0.06);
+  --card-hover-border:rgba(255, 255, 255, 0.12);
+  --sidebar-divider:  rgba(255, 255, 255, 0.055);
+  --active-bg:        rgba(255, 255, 255, 0.08);
+  --hover-bg:         rgba(255, 255, 255, 0.04);
+  --text-primary:     rgba(255, 255, 255, 0.92);
+  --text-secondary:   rgba(255, 255, 255, 0.50);
+  --text-muted:       rgba(255, 255, 255, 0.25);
+  --orb-glow:         rgba(210, 210, 210, 0.35);
+  --orb-glow-active:  rgba(210, 210, 210, 0.65);
+  --input-bg:         rgba(255, 255, 255, 0.04);
+  --input-border:     rgba(255, 255, 255, 0.08);
+  --scrollbar-thumb:  rgba(255, 255, 255, 0.08);
+  --priority-high:    #e05555;
+  --priority-med:     #d4913a;
+  --priority-low:     #4caf7d;
+}
+
+/* MIDNIGHT — deep navy, electric blue */
+[data-theme="midnight"] {
+  --bg-base:          #070b14;
+  --bg-sidebar:       #0a0f1e;
+  --bg-panel:         #0d1424;
+  --accent:           rgba(100, 160, 255, 0.9);
+  --accent-solid:     #64a0ff;
+  --card-fill:        rgba(60, 120, 255, 0.04);
+  --card-border:      rgba(100, 160, 255, 0.09);
+  --card-hover-border:rgba(100, 160, 255, 0.2);
+  --sidebar-divider:  rgba(100, 160, 255, 0.07);
+  --active-bg:        rgba(100, 160, 255, 0.1);
+  --hover-bg:         rgba(100, 160, 255, 0.05);
+  --text-primary:     rgba(220, 235, 255, 0.92);
+  --text-secondary:   rgba(180, 210, 255, 0.50);
+  --text-muted:       rgba(140, 180, 255, 0.28);
+  --orb-glow:         rgba(100, 160, 255, 0.35);
+  --orb-glow-active:  rgba(100, 160, 255, 0.7);
+  --input-bg:         rgba(60, 120, 255, 0.05);
+  --input-border:     rgba(100, 160, 255, 0.1);
+  --scrollbar-thumb:  rgba(100, 160, 255, 0.1);
+  --priority-high:    #e05555;
+  --priority-med:     #d4913a;
+  --priority-low:     #4caf7d;
+}
+
+/* EMBER — dark charcoal, warm amber */
+[data-theme="ember"] {
+  --bg-base:          #0e0a06;
+  --bg-sidebar:       #140e08;
+  --bg-panel:         #18120a;
+  --accent:           rgba(230, 150, 40, 0.9);
+  --accent-solid:     #e69628;
+  --card-fill:        rgba(200, 120, 20, 0.04);
+  --card-border:      rgba(230, 150, 40, 0.09);
+  --card-hover-border:rgba(230, 150, 40, 0.2);
+  --sidebar-divider:  rgba(230, 150, 40, 0.07);
+  --active-bg:        rgba(230, 150, 40, 0.1);
+  --hover-bg:         rgba(230, 150, 40, 0.05);
+  --text-primary:     rgba(255, 245, 225, 0.92);
+  --text-secondary:   rgba(220, 190, 140, 0.52);
+  --text-muted:       rgba(190, 160, 100, 0.28);
+  --orb-glow:         rgba(230, 150, 40, 0.35);
+  --orb-glow-active:  rgba(230, 150, 40, 0.7);
+  --input-bg:         rgba(200, 120, 20, 0.05);
+  --input-border:     rgba(230, 150, 40, 0.1);
+  --scrollbar-thumb:  rgba(230, 150, 40, 0.1);
+  --priority-high:    #e05555;
+  --priority-med:     #d4913a;
+  --priority-low:     #4caf7d;
+}
+
+/* PHANTOM — near-black, deep purple */
+[data-theme="phantom"] {
+  --bg-base:          #08060e;
+  --bg-sidebar:       #0e0a18;
+  --bg-panel:         #120d1e;
+  --accent:           rgba(160, 100, 230, 0.9);
+  --accent-solid:     #a064e6;
+  --card-fill:        rgba(120, 60, 200, 0.04);
+  --card-border:      rgba(160, 100, 230, 0.09);
+  --card-hover-border:rgba(160, 100, 230, 0.2);
+  --sidebar-divider:  rgba(160, 100, 230, 0.07);
+  --active-bg:        rgba(160, 100, 230, 0.1);
+  --hover-bg:         rgba(160, 100, 230, 0.05);
+  --text-primary:     rgba(235, 220, 255, 0.92);
+  --text-secondary:   rgba(200, 170, 240, 0.52);
+  --text-muted:       rgba(160, 120, 200, 0.28);
+  --orb-glow:         rgba(160, 100, 230, 0.35);
+  --orb-glow-active:  rgba(160, 100, 230, 0.7);
+  --input-bg:         rgba(120, 60, 200, 0.05);
+  --input-border:     rgba(160, 100, 230, 0.1);
+  --scrollbar-thumb:  rgba(160, 100, 230, 0.1);
+  --priority-high:    #e05555;
+  --priority-med:     #d4913a;
+  --priority-low:     #4caf7d;
+}
+
+/* ARCTIC — clean white, cool blue (light theme) */
+[data-theme="arctic"] {
+  --bg-base:          #f4f6f9;
+  --bg-sidebar:       #ebeef2;
+  --bg-panel:         #ffffff;
+  --accent:           rgba(60, 120, 200, 0.9);
+  --accent-solid:     #3c78c8;
+  --card-fill:        rgba(255, 255, 255, 0.75);
+  --card-border:      rgba(60, 120, 200, 0.12);
+  --card-hover-border:rgba(60, 120, 200, 0.25);
+  --sidebar-divider:  rgba(60, 120, 200, 0.1);
+  --active-bg:        rgba(60, 120, 200, 0.1);
+  --hover-bg:         rgba(60, 120, 200, 0.05);
+  --text-primary:     rgba(20, 30, 60, 0.92);
+  --text-secondary:   rgba(40, 60, 100, 0.55);
+  --text-muted:       rgba(80, 100, 140, 0.4);
+  --orb-glow:         rgba(60, 120, 200, 0.3);
+  --orb-glow-active:  rgba(60, 120, 200, 0.6);
+  --input-bg:         rgba(255, 255, 255, 0.8);
+  --input-border:     rgba(60, 120, 200, 0.15);
+  --scrollbar-thumb:  rgba(60, 120, 200, 0.15);
+  --priority-high:    #e03535;
+  --priority-med:     #c47a20;
+  --priority-low:     #2e9e5e;
+}
+
+/* CRIMSON — deep dark red */
+[data-theme="crimson"] {
+  --bg-base:          #0e0606;
+  --bg-sidebar:       #160a0a;
+  --bg-panel:         #1a0e0e;
+  --accent:           rgba(220, 70, 70, 0.9);
+  --accent-solid:     #dc4646;
+  --card-fill:        rgba(180, 30, 30, 0.04);
+  --card-border:      rgba(220, 70, 70, 0.09);
+  --card-hover-border:rgba(220, 70, 70, 0.2);
+  --sidebar-divider:  rgba(220, 70, 70, 0.07);
+  --active-bg:        rgba(220, 70, 70, 0.1);
+  --hover-bg:         rgba(220, 70, 70, 0.05);
+  --text-primary:     rgba(255, 235, 235, 0.92);
+  --text-secondary:   rgba(230, 180, 180, 0.52);
+  --text-muted:       rgba(200, 140, 140, 0.28);
+  --orb-glow:         rgba(220, 70, 70, 0.35);
+  --orb-glow-active:  rgba(220, 70, 70, 0.7);
+  --input-bg:         rgba(180, 30, 30, 0.05);
+  --input-border:     rgba(220, 70, 70, 0.1);
+  --scrollbar-thumb:  rgba(220, 70, 70, 0.1);
+  --priority-high:    #e05555;
+  --priority-med:     #d4913a;
+  --priority-low:     #4caf7d;
+}
+
+/* ─── Base Reset & Defaults ──────────────────────────── */
+*, *::before, *::after {
+  box-sizing: border-box;
+  margin: 0;
+  padding: 0;
+}
+
+html, body, #root {
+  width: 100%;
+  height: 100%;
+  overflow: hidden;
+  background: var(--bg-base);
+  color: var(--text-primary);
+  font-family: 'DM Sans', 'Inter', sans-serif;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+/* ─── Scrollbar Styling ─────────────────────────────── */
+::-webkit-scrollbar { width: 4px; }
+::-webkit-scrollbar-track { background: transparent; }
+::-webkit-scrollbar-thumb {
+  background: var(--scrollbar-thumb);
+  border-radius: 2px;
+}
+::-webkit-scrollbar-thumb:hover {
+  background: var(--accent);
+  opacity: 0.3;
+}
+
+/* ─── Utility Classes ───────────────────────────────── */
+.glass-card {
+  background: var(--card-fill);
+  border: 0.5px solid var(--card-border);
+  border-radius: 10px;
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+  transition: border-color 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+}
+.glass-card:hover {
+  border-color: var(--card-hover-border);
+}
+
+.tab-active {
+  color: var(--accent);
+  background: var(--active-bg);
+}
+.tab-hover:hover {
+  color: var(--accent);
+  background: var(--hover-bg);
+}
+
+.text-accent    { color: var(--accent); }
+.text-primary   { color: var(--text-primary); }
+.text-secondary { color: var(--text-secondary); }
+.text-muted     { color: var(--text-muted); }
+.bg-base        { background: var(--bg-base); }
+.bg-sidebar     { background: var(--bg-sidebar); }
+.bg-panel       { background: var(--bg-panel); }
+
+/* ─── Time-of-Day Background ────────────────────────── */
+.bg-dawn {
+  background: linear-gradient(135deg, #1a0e06 0%, #2d1408 40%, #0e0a14 100%);
+}
+.bg-day {
+  background: var(--bg-base);
+}
+.bg-dusk {
+  background: linear-gradient(135deg, #0e0614 0%, #1a0820 40%, #0a0608 100%);
+}
+.bg-night {
+  background: radial-gradient(ellipse at top, #0a0c18 0%, #050608 100%);
+}
+
+/* ─── Transition Defaults ───────────────────────────── */
+.transition-premium {
+  transition: all 0.22s cubic-bezier(0.4, 0, 0.2, 1);
+}
+.transition-slow {
+  transition: all 0.45s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+/* ─── Slide-in Panel ────────────────────────────────── */
+@keyframes slideInFromRight {
+  from { transform: translateX(100%); opacity: 0; }
+  to   { transform: translateX(0);    opacity: 1; }
+}
+@keyframes slideOutToRight {
+  from { transform: translateX(0);    opacity: 1; }
+  to   { transform: translateX(100%); opacity: 0; }
+}
+.slide-in  { animation: slideInFromRight 0.28s cubic-bezier(0.4, 0, 0.2, 1) forwards; }
+.slide-out { animation: slideOutToRight  0.22s cubic-bezier(0.4, 0, 0.2, 1) forwards; }
+
+/* ─── Onboarding ────────────────────────────────────── */
+@keyframes fadeIn {
+  from { opacity: 0; transform: translateY(12px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+@keyframes slideInStep {
+  from { opacity: 0; transform: translateX(40px); }
+  to   { opacity: 1; transform: translateX(0); }
+}
+.fade-in      { animation: fadeIn     0.4s cubic-bezier(0.4, 0, 0.2, 1) forwards; }
+.slide-in-step { animation: slideInStep 0.35s cubic-bezier(0.4, 0, 0.2, 1) forwards; }
+
+/* ─── Voice Orb ─────────────────────────────────────── */
+@keyframes orb-breathe {
+  0%, 100% { transform: scale(1);    filter: drop-shadow(0 0 8px var(--orb-glow)); }
+  50%       { transform: scale(1.07); filter: drop-shadow(0 0 18px var(--orb-glow)); }
+}
+@keyframes orb-ripple {
+  0%   { transform: scale(1);   opacity: 0.55; }
+  100% { transform: scale(2.6); opacity: 0; }
+}
+@keyframes orb-thinking {
+  0%   { transform: rotate(0deg); }
+  100% { transform: rotate(360deg); }
+}
+.orb-idle      { animation: orb-breathe  3.2s ease-in-out infinite; }
+.orb-listening { animation: orb-breathe  0.8s ease-in-out infinite; }
+.orb-thinking  { animation: orb-thinking 1.4s linear infinite; }

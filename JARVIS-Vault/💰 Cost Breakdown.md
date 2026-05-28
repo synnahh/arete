@@ -89,3 +89,32 @@
 **Full premium ongoing cost: ~$23 AUD/month + $12.50 Apple = ~$35/month**
 
 For a fully custom personal AI operating system across 3 platforms — genuinely cheaper than most app subscriptions.
+
+---
+
+## Updated Ongoing Costs — With Dual SMS + Supplements
+
+### Twilio SMS (Two Numbers)
+
+| Item | Cost AUD/month |
+|---|---|
+| VALERIE number (personal SMS) | ~$1.50 |
+| VALERIE Support number (error alerts) | ~$1.50 |
+| SMS messages (light use ~50/month) | ~$0.50-1.00 |
+| **Twilio total** | **~$3-4/month** |
+
+### Revised Full Cost Scenarios
+
+| Scenario | Cost AUD/month |
+|---|---|
+| Fully free (Ollama only, no Claude API, no SMS) | $0 |
+| Light Claude + Azure voice + no SMS | ~$5-8 |
+| Moderate Claude + Azure voice + dual SMS | ~$11-19 |
+| Moderate Claude + ElevenLabs + dual SMS | ~$19-27 |
+| Apple Developer Account (yearly) | ~$12.50/month |
+
+### Most Realistic Ongoing Cost for Rob
+Moderate Claude usage + Azure Neural voice (free tier) + dual Twilio SMS:
+**~$11-15 AUD/month total**
+
+That's less than most single app subscriptions for a fully custom AI operating system across 3 platforms.

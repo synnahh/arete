@@ -112,3 +112,26 @@ Full test of every feature. Make changes. Approve.
 - **Build order is fixed.** Windows → Mac → iOS. No exceptions.
 - **You approve everything.** No feature ships without your sign-off.
 - **This is a partnership.** Every decision gets run past you first.
+
+---
+
+## UPDATED NOTES (After Design Phase)
+
+### Tech Stack Update
+- **Tauri** replaces Electron for Windows/Mac packaging — more isolated, Windows update resistant, smaller binary
+- Auto-update system built in from Session 7 — you control when updates push, nothing automatic
+
+### Windows Update Resistance
+- Tauri bundles a self-contained binary — no shared system dependencies
+- All npm dependencies locked at specific versions in package-lock.json
+- Nothing updates unless you explicitly approve it
+- App runs fully offline — not affected by external service changes
+
+### New Sessions Added
+- Session 6 now includes: Sentry, Spotify, Notifications centre, Keyboard command palette, App-wide search
+- Session 7 now includes: Auto-update system, Tauri packaging
+- See 🔨 Build Session Guide.md for full session-by-session breakdown
+
+### Logo & Icon
+- Design logo before Session 7 (needed for packaging)
+- See Master Checklist for full logo export requirements

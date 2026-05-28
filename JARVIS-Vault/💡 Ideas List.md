@@ -75,3 +75,24 @@
 - [ ] Local encryption for sensitive data (finance, health, mood)
 - [ ] Multiple profiles — useful if others use the same computer
 - [ ] Webhook support — connect to other apps via Zapier or Make
+
+---
+
+## Batch 2 — Approved & Added to Prompt
+
+- [x] JARVIS Evening Debrief
+- [x] Password Vault (AES-256, local only)
+- [x] Webhook support (Zapier / Make)
+- [x] JARVIS learns about you over time (Personal Context Engine)
+- [x] Spotify integration with mood-based playback
+- [x] Meal planner + shopping list
+- [x] Habit tracker
+- [x] Water tracker
+- [x] AI workout planner with progressive overload
+- [x] Animated time-of-day background
+- [x] JARVIS thinking particle effect
+- [x] Smart layout by time of day
+- [x] Custom orb shapes
+- [x] Holographic card hover effect
+- [x] Seasonal themes
+- [x] Minimal mode
