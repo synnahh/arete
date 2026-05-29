@@ -50,7 +50,13 @@ export const STORAGE_KEYS = {
   SUPPLEMENTS:   'supplements',
   SUPP_LOGS:     'supplement_logs',
   SLEEP:         'sleep',
-  TRANSACTIONS:  'transactions',
-  SAVINGS:       'savings',
-  SUBSCRIPTIONS: 'subscriptions',
+  TRANSACTIONS:   'transactions',
+  SAVINGS:        'savings',
+  SUBSCRIPTIONS:  'subscriptions',
+  // Session 5 additions
+  FOCUS_SESSIONS: 'focus_sessions',
+  GOALS:          'goals',
+  STYLE_BOARD:    'style_board',
+  MOOD_LOGS:      'mood_logs',
+  XP:             'xp',
 };
