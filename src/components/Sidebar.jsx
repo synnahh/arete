@@ -116,7 +116,7 @@ function TabGroup({ tabs, activeTab, onTabClick }) {
 }
 
 // ─── Connection status indicator ────────────────────────────────────────────
-function StatusIndicator({ claudeOnline, ollamaOnline, internetOnline, lastPinged }) {
+function StatusIndicator({ claudeOnline, ollamaOnline, internetOnline, lastPinged, firebaseSynced }) {
   const [expanded, setExpanded] = useState(false);
 
   // Overall dot colour: green = all good | amber = partial | red = offline
@@ -197,7 +197,7 @@ function StatusIndicator({ claudeOnline, ollamaOnline, internetOnline, lastPinge
           <Row label="Internet"  online={internetOnline} />
           <Row label="Claude"    online={claudeOnline}   detail={claudeOnline ? 'API ready' : 'unavailable'} />
           <Row label="Ollama"    online={ollamaOnline}   detail={ollamaOnline ? 'llama3 local' : 'not running'} />
-          <Row label="Firebase"  online={false}          detail="session 3" />
+          <Row label="Firebase"  online={firebaseSynced ?? false} detail={firebaseSynced ? 'synced' : internetOnline ? 'connecting…' : 'offline'} />
           <div style={{ height: '0.5px', background: 'var(--sidebar-divider)', margin: '2px 0' }} />
           <span style={{ fontSize: 9, color: 'var(--text-muted)' }}>
             Last checked: {pingAgo}
@@ -221,7 +221,7 @@ function Divider() {
 }
 
 // ─── Main Sidebar ─────────────────────────────────────────────────────────────
-export default function Sidebar({ activeTab, onTabClick, claudeOnline, ollamaOnline, internetOnline, lastPinged }) {
+export default function Sidebar({ activeTab, onTabClick, claudeOnline, ollamaOnline, internetOnline, lastPinged, firebaseSynced }) {
 
   return (
     <aside style={{
@@ -276,6 +276,7 @@ export default function Sidebar({ activeTab, onTabClick, claudeOnline, ollamaOnl
             ollamaOnline={ollamaOnline ?? false}
             internetOnline={internetOnline ?? navigator.onLine}
             lastPinged={lastPinged}
+            firebaseSynced={firebaseSynced ?? false}
           />
         </div>
       </div>

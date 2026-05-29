@@ -3,6 +3,7 @@ import { storage, STORAGE_KEYS } from './utils/storage.js';
 import { applyTheme }            from './styles/themes.js';
 import { getTimeOfDay }          from './utils/time.js';
 import { useAI }                 from './ai/useAI.js';
+import { useFirebaseStatus }    from './firebase/useFirebaseStatus.js';
 import Onboarding                from './onboarding/Onboarding.jsx';
 import Sidebar                   from './components/Sidebar.jsx';
 import QuickCapture              from './components/QuickCapture.jsx';
@@ -47,6 +48,9 @@ export default function App() {
 
   // ── AI brain ──────────────────────────────────────────────────────────────
   const ai = useAI();
+
+  // ── Firebase status ───────────────────────────────────────────────────────
+  const firebaseSynced = useFirebaseStatus();
 
   // ── On mount: load settings, apply theme, check onboarding flag ────────────
   useEffect(() => {
@@ -104,6 +108,7 @@ export default function App() {
         ollamaOnline={ai.ollamaOnline}
         internetOnline={ai.internetOnline}
         lastPinged={ai.lastPinged}
+        firebaseSynced={firebaseSynced}
       />
 
       {/* Main content area */}
