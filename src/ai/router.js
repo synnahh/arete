@@ -1,90 +1,90 @@
-// ─── AI Router — smart routing between Claude and Ollama ──────────────────────
-// Strategy:
-//   • Simple / quick / offline  → Ollama (free, local, instant)
-//   • Complex / nuanced / long  → Claude API (best quality)
-//   • Fallback: if chosen engine fails, try the other
+// ─── AI Router — Claude primary, Ollama local fallback ────────────────────────
+// Architecture per overhaul directive:
+//   Claude  = primary reasoning + personality + conversation engine
+//   Ollama  = local systems layer, fast offline utility, fallback
+//
+// Claude is always preferred for conversation.
+// Ollama is used when Claude is unavailable.
 
 import { askClaude } from './claude.js';
-import { askOllama } from './ollama.js';
-
-// Keywords that flag a message as "complex" → Claude
-const COMPLEX_INDICATORS = [
-  'explain', 'analyse', 'analyze', 'write', 'draft', 'summarise', 'summarize',
-  'plan', 'strategy', 'advice', 'why', 'compare', 'help me', 'what should',
-  'research', 'create', 'generate', 'compose', 'review', 'evaluate',
-];
-
-// Short messages (under this char count) are always simple
-const SHORT_THRESHOLD = 60;
+import { askOllama  } from './ollama.js';
 
 /**
- * Classify whether a message should go to Claude or Ollama
- * @param {string} message
- * @returns {'claude'|'ollama'}
- */
-export function classifyMessage(message) {
-  const lower = message.toLowerCase().trim();
-
-  // Very short → Ollama
-  if (lower.length < SHORT_THRESHOLD) return 'ollama';
-
-  // Complex indicator → Claude
-  if (COMPLEX_INDICATORS.some(kw => lower.includes(kw))) return 'claude';
-
-  // Default longer messages → Claude
-  return lower.length > 200 ? 'claude' : 'ollama';
-}
-
-/**
- * Route and send a message to the appropriate AI engine
+ * Route a message to the appropriate AI engine.
+ * Claude is default. Ollama is fallback.
+ *
  * @param {object} params
- * @param {string}  params.message        — user's text
- * @param {Array}   params.history        — conversation history
- * @param {string}  params.apiKey         — Claude API key (may be empty)
- * @param {boolean} params.claudeOnline   — is Claude reachable?
- * @param {boolean} params.ollamaOnline   — is Ollama running?
- * @param {string}  [params.forceEngine]  — 'claude'|'ollama' to override routing
- * @returns {Promise<{ text: string, engine: 'claude'|'ollama' }>}
+ * @param {string}  params.message
+ * @param {Array}   params.history
+ * @param {string}  params.apiKey
+ * @param {boolean} params.claudeOnline
+ * @param {boolean} params.ollamaOnline
+ * @param {string}  params.context       — live app context string
+ * @param {Array}   params.memory        — long-term memory facts array
+ * @param {string}  [params.forceEngine] — 'claude'|'ollama' to override
+ * @returns {Promise<{ text: string, engine: 'claude'|'ollama'|'none'|'error' }>}
  */
-export async function routeMessage({ message, history, apiKey, claudeOnline, ollamaOnline, forceEngine }) {
-  const preferred = forceEngine ?? classifyMessage(message);
+export async function routeMessage({
+  message,
+  history,
+  apiKey,
+  claudeOnline,
+  ollamaOnline,
+  context = '',
+  memory  = [],
+  forceEngine,
+}) {
+  // Determine which engine to use
+  let engine = forceEngine ?? 'claude'; // Claude is always first preference
 
-  // Determine actual engine based on availability
-  let engine = preferred;
+  // Downgrade to Ollama if Claude isn't available
   if (engine === 'claude' && (!claudeOnline || !apiKey)) {
-    engine = 'ollama'; // fall back
-  }
-  if (engine === 'ollama' && !ollamaOnline) {
-    engine = 'claude'; // fall back
+    engine = 'ollama';
   }
 
-  // Both unavailable — return polite error
-  if ((engine === 'claude' && (!claudeOnline || !apiKey)) ||
-      (engine === 'ollama' && !ollamaOnline)) {
+  // Both offline — return graceful message
+  if (engine === 'ollama' && !ollamaOnline) {
     return {
-      text: "I'm offline right now — no connection to Claude or a local model. Check your internet or start Ollama to continue.",
+      text: JSON.stringify({
+        speech: "I'm offline right now. No connection to Claude or a local model. Check your internet or start Ollama to continue.",
+        actions: [],
+        remember: null,
+      }),
       engine: 'none',
     };
   }
 
+  if (engine === 'claude' && (!claudeOnline || !apiKey)) {
+    return {
+      text: JSON.stringify({
+        speech: "I'm offline right now. No connection to Claude or a local model. Check your internet or start Ollama to continue.",
+        actions: [],
+        remember: null,
+      }),
+      engine: 'none',
+    };
+  }
+
+  // ── Try primary engine ────────────────────────────────────────────────────
   try {
     if (engine === 'claude') {
-      const text = await askClaude(message, history, apiKey);
+      const text = await askClaude(message, history, apiKey, { context, memory });
       return { text, engine: 'claude' };
     } else {
-      const text = await askOllama(message, history);
+      const text = await askOllama(message, history, { context });
       return { text, engine: 'ollama' };
     }
   } catch (err) {
-    // Primary failed — try the other
     console.warn(`[Router] ${engine} failed, trying fallback:`, err.message);
 
+    // ── Fallback to the other engine ────────────────────────────────────────
     try {
       if (engine === 'claude' && ollamaOnline) {
-        const text = await askOllama(message, history);
+        const text = await askOllama(message, history, { context });
         return { text, engine: 'ollama' };
-      } else if (engine === 'ollama' && claudeOnline && apiKey) {
-        const text = await askClaude(message, history, apiKey);
+      }
+      if (engine === 'ollama' && claudeOnline && apiKey) {
+        const text = await askClaude(message, history, apiKey, { context, memory });
         return { text, engine: 'claude' };
       }
     } catch (fallbackErr) {
@@ -92,7 +92,11 @@ export async function routeMessage({ message, history, apiKey, claudeOnline, oll
     }
 
     return {
-      text: "I ran into a problem reaching my AI engines. Please try again in a moment.",
+      text: JSON.stringify({
+        speech: "I ran into a problem. Give me a moment and try again.",
+        actions: [],
+        remember: null,
+      }),
       engine: 'error',
     };
   }

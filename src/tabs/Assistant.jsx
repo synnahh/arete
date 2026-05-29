@@ -1,14 +1,16 @@
-// ─── Assistant Tab ────────────────────────────────────────────────────────────
-// VaIerieOrb + chat interface + input bar + quick action buttons
+// ─── Assistant Tab — VALERIE voice interface ───────────────────────────────────
+// Continuous voice session mode: one click starts, stays open until silence/stop intent.
+// Orb state drives all visual feedback. Messages display cleaned AI output.
 
 import { useState, useRef, useEffect, useCallback } from 'react';
 import VaIerieOrb from '../components/VaIerieOrb.jsx';
 import { storage, STORAGE_KEYS } from '../utils/storage.js';
 
 // ─── Icons ─────────────────────────────────────────────────────────────────────
-const MicIcon = () => (
+const MicIcon = ({ active }) => (
   <svg width={16} height={16} viewBox="0 0 24 24" fill="none"
-    stroke="currentColor" strokeWidth={1.7} strokeLinecap="round" strokeLinejoin="round">
+    stroke="currentColor" strokeWidth={active ? 2 : 1.7}
+    strokeLinecap="round" strokeLinejoin="round">
     <path d="M12 1a3 3 0 00-3 3v8a3 3 0 006 0V4a3 3 0 00-3-3z" />
     <path d="M19 10v2a7 7 0 01-14 0v-2 M12 19v4 M8 23h8" />
   </svg>
@@ -16,15 +18,23 @@ const MicIcon = () => (
 
 const SendIcon = () => (
   <svg width={15} height={15} viewBox="0 0 24 24" fill="none"
-    stroke="currentColor" strokeWidth={1.8} strokeLinecap="round" strokeLinejoin="round">
+    stroke="currentColor" strokeWidth={1.8}
+    strokeLinecap="round" strokeLinejoin="round">
     <line x1="22" y1="2" x2="11" y2="13" />
     <polygon points="22 2 15 22 11 13 2 9 22 2" />
   </svg>
 );
 
+const StopIcon = () => (
+  <svg width={14} height={14} viewBox="0 0 24 24" fill="currentColor">
+    <rect x="4" y="4" width="16" height="16" rx="2" />
+  </svg>
+);
+
 const TrashIcon = () => (
   <svg width={14} height={14} viewBox="0 0 24 24" fill="none"
-    stroke="currentColor" strokeWidth={1.6} strokeLinecap="round" strokeLinejoin="round">
+    stroke="currentColor" strokeWidth={1.6}
+    strokeLinecap="round" strokeLinejoin="round">
     <polyline points="3 6 5 6 21 6" />
     <path d="M19 6l-1 14a2 2 0 01-2 2H8a2 2 0 01-2-2L5 6" />
     <path d="M10 11v6 M14 11v6" />
@@ -32,33 +42,93 @@ const TrashIcon = () => (
   </svg>
 );
 
+const CopyIcon = () => (
+  <svg width={12} height={12} viewBox="0 0 24 24" fill="none"
+    stroke="currentColor" strokeWidth={1.8}
+    strokeLinecap="round" strokeLinejoin="round">
+    <rect x="9" y="9" width="13" height="13" rx="2" ry="2" />
+    <path d="M5 15H4a2 2 0 01-2-2V4a2 2 0 012-2h9a2 2 0 012 2v1" />
+  </svg>
+);
+
+// ─── Quick actions ─────────────────────────────────────────────────────────────
+const QUICK_ACTIONS = [
+  { label: 'Daily brief',   prompt: 'Give me my daily brief.' },
+  { label: 'How am I doing', prompt: 'How am I doing overall — tasks, habits, everything.' },
+  { label: 'Focus mode',    prompt: 'Start a focus session.' },
+  { label: 'Stoic quote',   prompt: 'Give me a Stoic quote worth thinking about today.' },
+];
+
 // ─── Message bubble ────────────────────────────────────────────────────────────
 function MessageBubble({ msg }) {
   const isUser = msg.role === 'user';
+  const [copied, setCopied] = useState(false);
+
+  const handleCopy = () => {
+    navigator.clipboard.writeText(msg.content).then(() => {
+      setCopied(true);
+      setTimeout(() => setCopied(false), 1500);
+    });
+  };
+
   return (
     <div style={{
       display: 'flex',
       justifyContent: isUser ? 'flex-end' : 'flex-start',
       marginBottom: 10,
     }}>
-      <div style={{
-        maxWidth: '72%',
-        padding: '10px 14px',
-        borderRadius: isUser ? '14px 14px 4px 14px' : '14px 14px 14px 4px',
-        background: isUser ? 'var(--active-bg)' : 'var(--card-fill)',
-        border: '0.5px solid var(--card-border)',
-        fontSize: 13.5,
-        color: 'var(--text-primary)',
-        lineHeight: 1.65,
-        whiteSpace: 'pre-wrap',
-        wordBreak: 'break-word',
-      }}>
+      <div
+        style={{
+          maxWidth: '74%',
+          padding: '10px 14px',
+          borderRadius: isUser ? '14px 14px 4px 14px' : '14px 14px 14px 4px',
+          background: isUser
+            ? 'rgba(255,255,255,0.05)'
+            : 'rgba(255,255,255,0.03)',
+          border: isUser
+            ? '0.5px solid rgba(255,255,255,0.07)'
+            : '0.5px solid rgba(255,255,255,0.06)',
+          fontSize: 13.5,
+          color: 'var(--text-primary)',
+          lineHeight: 1.65,
+          whiteSpace: 'pre-wrap',
+          wordBreak: 'break-word',
+          position: 'relative',
+          group: true,
+        }}
+        onMouseEnter={e => {
+          const btn = e.currentTarget.querySelector('.copy-btn');
+          if (btn) btn.style.opacity = '1';
+        }}
+        onMouseLeave={e => {
+          const btn = e.currentTarget.querySelector('.copy-btn');
+          if (btn) btn.style.opacity = '0';
+        }}
+      >
         {msg.content}
+
+        {/* Copy button — appears on hover */}
+        {!isUser && (
+          <button
+            className="copy-btn"
+            onClick={handleCopy}
+            style={{
+              position: 'absolute', bottom: 6, right: 8,
+              background: 'none', border: 'none', cursor: 'pointer',
+              color: copied ? 'var(--accent)' : 'var(--text-muted)',
+              opacity: 0, transition: 'opacity 0.15s, color 0.15s',
+              display: 'flex', alignItems: 'center', gap: 3,
+              fontSize: 10, padding: '2px 4px',
+            }}
+            title="Copy"
+          >
+            <CopyIcon /> {copied ? 'Copied' : ''}
+          </button>
+        )}
+
+        {/* Engine label */}
         {msg.engine && msg.engine !== 'none' && msg.engine !== 'error' && (
-          <div style={{
-            marginTop: 5, fontSize: 9.5,
-            color: 'var(--text-muted)', textAlign: 'right',
-          }}>
+          <div style={{ marginTop: 5, fontSize: 9.5, color: 'var(--text-muted)', textAlign: 'right' }}>
             via {msg.engine}
           </div>
         )}
@@ -67,21 +137,45 @@ function MessageBubble({ msg }) {
   );
 }
 
-// ─── Quick action chips ────────────────────────────────────────────────────────
-const QUICK_ACTIONS = [
-  { label: 'Daily brief',    prompt: 'Give me a sharp daily brief. What should I focus on today?' },
-  { label: 'Motivate me',   prompt: 'Give me a single powerful motivational insight for today. No fluff.' },
-  { label: 'Stoic quote',   prompt: 'Give me a relevant Stoic quote and a one-sentence application to daily life.' },
-  { label: 'Clear my head', prompt: 'I need to clear my head. Give me a 3-step mental reset I can do right now.' },
-];
+// ─── Voice session indicator ───────────────────────────────────────────────────
+function VoiceSessionBadge({ active, onEnd }) {
+  if (!active) return null;
+  return (
+    <div style={{
+      display: 'flex', alignItems: 'center', gap: 8,
+      padding: '6px 14px', borderRadius: 20,
+      background: 'rgba(229,90,90,0.1)',
+      border: '0.5px solid rgba(229,90,90,0.3)',
+      fontSize: 11, color: '#e55a5a',
+    }}>
+      <div style={{
+        width: 6, height: 6, borderRadius: '50%',
+        background: '#e55a5a',
+        animation: 'orb-breathe 1s ease-in-out infinite',
+      }} />
+      Voice session active
+      <button
+        onClick={onEnd}
+        style={{
+          background: 'none', border: 'none', cursor: 'pointer',
+          color: '#e55a5a', fontSize: 11, padding: 0, marginLeft: 4,
+          display: 'flex', alignItems: 'center',
+        }}
+        title="End voice session"
+      >
+        <StopIcon />
+      </button>
+    </div>
+  );
+}
 
 // ─── Main Assistant Tab ────────────────────────────────────────────────────────
 export default function Assistant({ settings, ai }) {
-  const [inputText, setInputText] = useState('');
+  const [inputText,    setInputText]    = useState('');
+  const [typingHint,   setTypingHint]   = useState(false);
   const messagesEndRef = useRef(null);
-  const inputRef = useRef(null);
+  const inputRef       = useRef(null);
 
-  // Get current theme for orb
   const currentTheme = storage.get(STORAGE_KEYS.SETTINGS, {})?.theme ?? 'obsidian';
 
   // Scroll to bottom on new messages
@@ -89,15 +183,28 @@ export default function Assistant({ settings, ai }) {
     messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
   }, [ai?.messages]);
 
+  // Show typing hint when session starts and no messages yet
+  useEffect(() => {
+    if (ai?.voiceSessionActive && ai.messages.length === 0) {
+      setTypingHint(true);
+      const t = setTimeout(() => setTypingHint(false), 4000);
+      return () => clearTimeout(t);
+    }
+  }, [ai?.voiceSessionActive, ai?.messages?.length]);
+
   const handleSend = useCallback(() => {
     if (!inputText.trim() || ai?.loading) return;
     ai?.sendMessage(inputText.trim());
     setInputText('');
   }, [inputText, ai]);
 
-  const handleVoice = useCallback(() => {
-    if (!ai?.startListening) return;
-    ai.startListening();
+  const handleVoiceToggle = useCallback(() => {
+    if (!ai) return;
+    if (ai.voiceSessionActive) {
+      ai.endVoiceSession();
+    } else {
+      ai.startVoiceSession();
+    }
   }, [ai]);
 
   const handleQuickAction = useCallback((prompt) => {
@@ -105,6 +212,17 @@ export default function Assistant({ settings, ai }) {
   }, [ai]);
 
   if (!ai) return null;
+
+  const isListening = ai.orbState === 'listening';
+  const isSpeaking  = ai.orbState === 'speaking';
+  const isThinking  = ai.orbState === 'thinking';
+  const sessionActive = ai.voiceSessionActive;
+
+  // Determine orb state label
+  const stateLabel = isListening ? 'Listening…'
+    : isThinking ? 'Thinking…'
+    : isSpeaking  ? 'Speaking…'
+    : 'Ready';
 
   return (
     <div style={{
@@ -114,56 +232,57 @@ export default function Assistant({ settings, ai }) {
       overflow: 'hidden',
     }}>
 
-      {/* ── Top: Orb + status ───────────────────────────────────────────── */}
+      {/* ── Top: Orb + status ────────────────────────────────────────────── */}
       <div style={{
         display: 'flex',
         flexDirection: 'column',
         alignItems: 'center',
-        padding: '24px 24px 12px',
-        gap: 8,
+        padding: '24px 24px 14px',
+        gap: 10,
         flexShrink: 0,
         borderBottom: '0.5px solid var(--sidebar-divider)',
       }}>
         <VaIerieOrb
           state={ai.orbState}
           theme={currentTheme}
-          size={320}
+          size={300}
           showHUD={true}
           showWave={true}
         />
 
-        {/* Engine status pills */}
-        <div style={{ display: 'flex', gap: 8, marginTop: 4 }}>
-          <span style={{
-            fontSize: 10, padding: '3px 9px', borderRadius: 20,
-            background: ai.claudeOnline ? 'rgba(76,175,125,0.12)' : 'rgba(255,255,255,0.04)',
-            border: `0.5px solid ${ai.claudeOnline ? 'rgba(76,175,125,0.35)' : 'var(--card-border)'}`,
-            color: ai.claudeOnline ? '#4caf7d' : 'var(--text-muted)',
-          }}>
-            Claude {ai.claudeOnline ? '●' : '○'}
-          </span>
-          <span style={{
-            fontSize: 10, padding: '3px 9px', borderRadius: 20,
-            background: ai.ollamaOnline ? 'rgba(76,175,125,0.12)' : 'rgba(255,255,255,0.04)',
-            border: `0.5px solid ${ai.ollamaOnline ? 'rgba(76,175,125,0.35)' : 'var(--card-border)'}`,
-            color: ai.ollamaOnline ? '#4caf7d' : 'var(--text-muted)',
-          }}>
-            Ollama {ai.ollamaOnline ? '●' : '○'}
-          </span>
-          {!ai.claudeOnline && !ai.ollamaOnline && (
-            <span style={{
-              fontSize: 10, padding: '3px 9px', borderRadius: 20,
-              background: 'rgba(229,90,90,0.1)',
-              border: '0.5px solid rgba(229,90,90,0.3)',
-              color: '#e55a5a',
-            }}>
-              offline
-            </span>
+        {/* Status row */}
+        <div style={{ display: 'flex', gap: 8, alignItems: 'center' }}>
+          {/* Voice session badge */}
+          <VoiceSessionBadge
+            active={sessionActive}
+            onEnd={() => ai.endVoiceSession()}
+          />
+
+          {/* Engine pills (when no session active) */}
+          {!sessionActive && (
+            <>
+              <span style={{
+                fontSize: 10, padding: '3px 9px', borderRadius: 20,
+                background: ai.claudeOnline ? 'rgba(76,175,125,0.12)' : 'rgba(255,255,255,0.04)',
+                border: `0.5px solid ${ai.claudeOnline ? 'rgba(76,175,125,0.35)' : 'var(--card-border)'}`,
+                color: ai.claudeOnline ? '#4caf7d' : 'var(--text-muted)',
+              }}>
+                Claude {ai.claudeOnline ? '●' : '○'}
+              </span>
+              <span style={{
+                fontSize: 10, padding: '3px 9px', borderRadius: 20,
+                background: ai.ollamaOnline ? 'rgba(76,175,125,0.12)' : 'rgba(255,255,255,0.04)',
+                border: `0.5px solid ${ai.ollamaOnline ? 'rgba(76,175,125,0.35)' : 'var(--card-border)'}`,
+                color: ai.ollamaOnline ? '#4caf7d' : 'var(--text-muted)',
+              }}>
+                Ollama {ai.ollamaOnline ? '●' : '○'}
+              </span>
+            </>
           )}
         </div>
       </div>
 
-      {/* ── Messages ────────────────────────────────────────────────────── */}
+      {/* ── Messages ─────────────────────────────────────────────────────── */}
       <div style={{
         flex: 1,
         overflowY: 'auto',
@@ -172,14 +291,20 @@ export default function Assistant({ settings, ai }) {
         {ai.messages.length === 0 ? (
           <div style={{
             display: 'flex', flexDirection: 'column', alignItems: 'center',
-            justifyContent: 'center', height: '100%', gap: 16, opacity: 0.5,
+            justifyContent: 'center', height: '100%', gap: 16,
           }}>
-            <p style={{ fontSize: 13.5, color: 'var(--text-muted)', textAlign: 'center', maxWidth: 280 }}>
-              Ask me anything. I'm ready when you are.
-            </p>
+            {typingHint ? (
+              <p style={{ fontSize: 14, color: 'var(--text-secondary)', textAlign: 'center', maxWidth: 280 }}>
+                I'm listening. Go ahead.
+              </p>
+            ) : (
+              <p style={{ fontSize: 13.5, color: 'var(--text-muted)', textAlign: 'center', maxWidth: 280, opacity: 0.6 }}>
+                Tap the mic to start a voice conversation, or type below.
+              </p>
+            )}
 
             {/* Quick actions */}
-            <div style={{ display: 'flex', flexWrap: 'wrap', gap: 8, justifyContent: 'center', opacity: 1 }}>
+            <div style={{ display: 'flex', flexWrap: 'wrap', gap: 8, justifyContent: 'center' }}>
               {QUICK_ACTIONS.map(qa => (
                 <button
                   key={qa.label}
@@ -203,18 +328,19 @@ export default function Assistant({ settings, ai }) {
             {ai.messages.map((msg, i) => (
               <MessageBubble key={i} msg={msg} />
             ))}
+
+            {/* Thinking indicator */}
             {ai.loading && (
               <div style={{ display: 'flex', alignItems: 'center', gap: 8, padding: '4px 0 10px' }}>
                 <div style={{ display: 'flex', gap: 4 }}>
-                  {[0,1,2].map(i => (
+                  {[0, 1, 2].map(i => (
                     <div key={i} style={{
-                      width: 6, height: 6, borderRadius: '50%',
+                      width: 5, height: 5, borderRadius: '50%',
                       background: 'var(--accent)',
-                      animation: `orb-breathe 1s ease-in-out ${i * 0.2}s infinite`,
+                      animation: `orb-breathe 1s ease-in-out ${i * 0.22}s infinite`,
                     }} />
                   ))}
                 </div>
-                <span style={{ fontSize: 11.5, color: 'var(--text-muted)' }}>VALERIE is thinking…</span>
               </div>
             )}
             <div ref={messagesEndRef} />
@@ -222,18 +348,18 @@ export default function Assistant({ settings, ai }) {
         )}
       </div>
 
-      {/* ── Input bar ───────────────────────────────────────────────────── */}
+      {/* ── Input bar ────────────────────────────────────────────────────── */}
       <div style={{
-        padding: '12px 24px 20px',
+        padding: '10px 24px 20px',
         borderTop: '0.5px solid var(--sidebar-divider)',
         display: 'flex',
         flexDirection: 'column',
         gap: 10,
         flexShrink: 0,
       }}>
-        {/* Quick actions row (when messages exist) */}
+        {/* Quick action chips (when messages exist) */}
         {ai.messages.length > 0 && (
-          <div style={{ display: 'flex', gap: 6, flexWrap: 'wrap' }}>
+          <div style={{ display: 'flex', gap: 6, flexWrap: 'wrap', alignItems: 'center' }}>
             {QUICK_ACTIONS.slice(0, 3).map(qa => (
               <button
                 key={qa.label}
@@ -278,11 +404,17 @@ export default function Assistant({ settings, ai }) {
               if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); handleSend(); }
             }}
             disabled={ai.loading}
-            placeholder={ai.orbState === 'listening' ? 'Listening…' : 'Talk to VALERIE…'}
+            placeholder={
+              isListening  ? 'Listening…'  :
+              isThinking   ? 'Thinking…'   :
+              isSpeaking   ? 'Speaking…'   :
+              sessionActive ? 'Voice session active — or type here'
+              : 'Talk to VALERIE…'
+            }
             style={{
               flex: 1,
               background: 'var(--input-bg)',
-              border: '0.5px solid var(--input-border)',
+              border: `0.5px solid ${sessionActive && isListening ? 'var(--accent)' : 'var(--input-border)'}`,
               borderRadius: 10,
               padding: '11px 16px',
               fontSize: 13.5,
@@ -291,23 +423,29 @@ export default function Assistant({ settings, ai }) {
               transition: 'border-color 0.15s ease',
             }}
             onFocus={e => e.target.style.borderColor = 'var(--accent)'}
-            onBlur={e => e.target.style.borderColor = 'var(--input-border)'}
+            onBlur={e => e.target.style.borderColor = sessionActive && isListening ? 'var(--accent)' : 'var(--input-border)'}
           />
 
-          {/* Mic */}
+          {/* Mic / voice session toggle */}
           <button
-            onClick={handleVoice}
-            disabled={ai.loading || ai.orbState === 'listening'}
-            title="Voice input"
+            onClick={handleVoiceToggle}
+            disabled={ai.loading && !sessionActive}
+            title={sessionActive ? 'End voice session' : 'Start voice session'}
             style={{
               width: 40, height: 40, borderRadius: 10, border: 'none',
-              background: ai.orbState === 'listening' ? 'var(--accent)' : 'var(--hover-bg)',
-              color: ai.orbState === 'listening' ? 'var(--bg-base)' : 'var(--text-secondary)',
-              cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center',
+              background: sessionActive
+                ? (isListening ? 'var(--accent)' : 'rgba(229,90,90,0.2)')
+                : 'var(--hover-bg)',
+              color: sessionActive
+                ? (isListening ? 'var(--bg-base)' : '#e55a5a')
+                : 'var(--text-secondary)',
+              cursor: 'pointer',
+              display: 'flex', alignItems: 'center', justifyContent: 'center',
               transition: 'all 0.15s ease', flexShrink: 0,
+              boxShadow: sessionActive && isListening ? '0 0 12px var(--accent)55' : 'none',
             }}
           >
-            <MicIcon />
+            {sessionActive ? <MicIcon active={isListening} /> : <MicIcon />}
           </button>
 
           {/* Send */}
@@ -327,6 +465,17 @@ export default function Assistant({ settings, ai }) {
             <SendIcon />
           </button>
         </div>
+
+        {/* Session hint text */}
+        <p style={{
+          fontSize: 10, color: 'var(--text-muted)', textAlign: 'center', margin: 0,
+          opacity: sessionActive ? 0.8 : 0.4,
+          transition: 'opacity 0.3s',
+        }}>
+          {sessionActive
+            ? 'Say "stop" or "that\'s all" to end the conversation'
+            : 'Tap mic for a continuous voice conversation'}
+        </p>
       </div>
     </div>
   );

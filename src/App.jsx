@@ -52,6 +52,16 @@ export default function App() {
   // ── Firebase status ───────────────────────────────────────────────────────
   const firebaseSynced = useFirebaseStatus();
 
+  // ── Wire VALERIE's navigate action to the real tab-change function ─────────
+  useEffect(() => {
+    ai.registerCallback('navigate', setActiveTab);
+  }, [ai.registerCallback]); // eslint-disable-line react-hooks/exhaustive-deps
+
+  // ── Keep VALERIE's context aware of the active tab ─────────────────────────
+  useEffect(() => {
+    ai.setActiveTab(activeTab);
+  }, [activeTab, ai.setActiveTab]); // eslint-disable-line react-hooks/exhaustive-deps
+
   // ── On mount: load settings, apply theme, check onboarding flag ────────────
   useEffect(() => {
     const savedSettings = storage.get(STORAGE_KEYS.SETTINGS);
