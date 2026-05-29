@@ -51,6 +51,16 @@ const CopyIcon = () => (
   </svg>
 );
 
+const ExportIcon = () => (
+  <svg width={13} height={13} viewBox="0 0 24 24" fill="none"
+    stroke="currentColor" strokeWidth={1.7}
+    strokeLinecap="round" strokeLinejoin="round">
+    <path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4" />
+    <polyline points="7 10 12 15 17 10" />
+    <line x1="12" y1="15" x2="12" y2="3" />
+  </svg>
+);
+
 // ─── Quick actions ─────────────────────────────────────────────────────────────
 const QUICK_ACTIONS = [
   { label: 'Daily brief',   prompt: 'Give me my daily brief.' },
@@ -210,6 +220,23 @@ export default function Assistant({ settings, ai }) {
   const handleQuickAction = useCallback((prompt) => {
     ai?.sendMessage(prompt);
   }, [ai]);
+
+  const handleExport = useCallback(() => {
+    if (!ai?.messages?.length) return;
+    const settings = storage.get(STORAGE_KEYS.SETTINGS, {});
+    const userName = settings.userName || 'Rob';
+    const text = ai.messages
+      .map(m => `[${m.role === 'user' ? userName : 'VALERIE'}]\n${m.content}`)
+      .join('\n\n─────────────────────\n\n');
+    const header = `VALERIE Conversation Export\n${new Date().toLocaleString('en-AU')}\n${'═'.repeat(40)}\n\n`;
+    const blob = new Blob([header + text], { type: 'text/plain;charset=utf-8' });
+    const url  = URL.createObjectURL(blob);
+    const a    = document.createElement('a');
+    a.href     = url;
+    a.download = `VALERIE_${new Date().toISOString().split('T')[0]}.txt`;
+    a.click();
+    URL.revokeObjectURL(url);
+  }, [ai?.messages]);
 
   if (!ai) return null;
 
@@ -378,19 +405,34 @@ export default function Assistant({ settings, ai }) {
                 {qa.label}
               </button>
             ))}
-            <button
-              onClick={() => ai.clearHistory?.()}
-              style={{
-                padding: '4px 8px', borderRadius: 16, cursor: 'pointer',
-                background: 'none', border: '0.5px solid var(--card-border)',
-                color: 'var(--text-muted)', fontSize: 11,
-                display: 'flex', alignItems: 'center', gap: 4,
-                marginLeft: 'auto',
-              }}
-              title="Clear conversation"
-            >
-              <TrashIcon /> Clear
-            </button>
+            <div style={{ marginLeft: 'auto', display: 'flex', gap: 6 }}>
+              {ai.messages.length > 0 && (
+                <button
+                  onClick={handleExport}
+                  style={{
+                    padding: '4px 8px', borderRadius: 16, cursor: 'pointer',
+                    background: 'none', border: '0.5px solid var(--card-border)',
+                    color: 'var(--text-muted)', fontSize: 11,
+                    display: 'flex', alignItems: 'center', gap: 4,
+                  }}
+                  title="Export conversation"
+                >
+                  <ExportIcon /> Export
+                </button>
+              )}
+              <button
+                onClick={() => ai.clearHistory?.()}
+                style={{
+                  padding: '4px 8px', borderRadius: 16, cursor: 'pointer',
+                  background: 'none', border: '0.5px solid var(--card-border)',
+                  color: 'var(--text-muted)', fontSize: 11,
+                  display: 'flex', alignItems: 'center', gap: 4,
+                }}
+                title="Clear conversation"
+              >
+                <TrashIcon /> Clear
+              </button>
+            </div>
           </div>
         )}
 

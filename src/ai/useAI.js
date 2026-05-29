@@ -9,7 +9,7 @@ import { pingOllama }                from './ollama.js';
 import { routeMessage }              from './router.js';
 import { buildContext }              from './context.js';
 import { parseResponse, executeActions, registerActionHandler } from './actions.js';
-import { cleanForSpeech, speakText, isStopIntent }              from './speech.js';
+import { cleanForSpeech, speakText, cancelCurrentSpeech, isStopIntent } from './speech.js';
 import { storage, STORAGE_KEYS }     from '../utils/storage.js';
 
 // Silence before ending a voice session (ms)
@@ -227,10 +227,9 @@ export function useAI() {
       // Check for conversation-ending intent
       if (isStopIntent(transcript)) {
         endVoiceSession();
-        // Acknowledge the end
-        speakText('Got it.', storage.get(STORAGE_KEYS.SETTINGS, {}).voice ?? {}, {
-          onEnd: () => setOrbState('idle'),
-        });
+        // Brief acknowledgement using VALERIE's voice
+        const voiceSettings = storage.get(STORAGE_KEYS.SETTINGS, {}).voice ?? {};
+        speakText('Got it.', voiceSettings, { onEnd: () => setOrbState('idle') });
         return;
       }
 
@@ -289,7 +288,7 @@ export function useAI() {
     }
 
     try { recognitionRef.current?.stop(); } catch {}
-    window.speechSynthesis.cancel();
+    cancelCurrentSpeech(); // cancels ElevenLabs audio AND browser TTS
     setOrbState('idle');
   }, []);
 

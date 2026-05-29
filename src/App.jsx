@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { storage, STORAGE_KEYS } from './utils/storage.js';
 import { applyTheme }            from './styles/themes.js';
 import { getTimeOfDay }          from './utils/time.js';
@@ -7,6 +7,7 @@ import { useFirebaseStatus }    from './firebase/useFirebaseStatus.js';
 import Onboarding                from './onboarding/Onboarding.jsx';
 import Sidebar                   from './components/Sidebar.jsx';
 import QuickCapture              from './components/QuickCapture.jsx';
+import CommandPalette            from './components/CommandPalette.jsx';
 
 // ─── Tab imports ──────────────────────────────────────────────────────────────
 import Dashboard  from './tabs/Dashboard.jsx';
@@ -42,9 +43,10 @@ const TAB_MAP = {
 };
 
 export default function App() {
-  const [onboarded, setOnboarded] = useState(null); // null = loading
-  const [activeTab, setActiveTab] = useState('dashboard');
-  const [settings, setSettings]   = useState(null);
+  const [onboarded,     setOnboarded]     = useState(null); // null = loading
+  const [activeTab,     setActiveTab]     = useState('dashboard');
+  const [settings,      setSettings]      = useState(null);
+  const [paletteOpen,   setPaletteOpen]   = useState(false);
 
   // ── AI brain ──────────────────────────────────────────────────────────────
   const ai = useAI();
@@ -61,6 +63,23 @@ export default function App() {
   useEffect(() => {
     ai.setActiveTab(activeTab);
   }, [activeTab, ai.setActiveTab]); // eslint-disable-line react-hooks/exhaustive-deps
+
+  // ── Ctrl+K global keyboard shortcut ───────────────────────────────────────
+  useEffect(() => {
+    const handler = (e) => {
+      // Ctrl+K (Windows/Linux) or Cmd+K (Mac)
+      if ((e.ctrlKey || e.metaKey) && e.key === 'k') {
+        e.preventDefault();
+        setPaletteOpen(prev => !prev);
+      }
+      // Also close on Escape when palette isn't open (safety)
+      if (e.key === 'Escape' && paletteOpen) {
+        setPaletteOpen(false);
+      }
+    };
+    window.addEventListener('keydown', handler);
+    return () => window.removeEventListener('keydown', handler);
+  }, [paletteOpen]);
 
   // ── On mount: load settings, apply theme, check onboarding flag ────────────
   useEffect(() => {
@@ -137,6 +156,14 @@ export default function App() {
         {/* Quick Capture — floats above all content */}
         <QuickCapture ai={ai} />
       </main>
+
+      {/* Ctrl+K Command Palette — renders above everything */}
+      <CommandPalette
+        open={paletteOpen}
+        onClose={() => setPaletteOpen(false)}
+        onTabChange={setActiveTab}
+        ai={ai}
+      />
     </div>
   );
 }

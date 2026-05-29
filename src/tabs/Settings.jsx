@@ -372,8 +372,14 @@ function VoiceSection({ settings, onSave }) {
   const [voiceURI,   setVoiceURI]   = useState(settings.voice?.voiceURI   || '');
   const [rate,       setRate]       = useState(settings.voice?.rate       ?? 0.95);
   const [pitch,      setPitch]      = useState(settings.voice?.pitch      ?? 1.0);
-  const [azureKey,   setAzureKey]   = useState(settings.azureKey          || '');
-  const [el11Key,    setEl11Key]    = useState(settings.elevenlabsKey     || '');
+  const [azureKey,   setAzureKey]   = useState(settings.azureKey      || '');
+  // ElevenLabs: settings override takes priority, then fall back to .env default
+  const [el11Key,    setEl11Key]    = useState(
+    settings.elevenlabsKey || import.meta.env.VITE_ELEVENLABS_API_KEY || ''
+  );
+  const [el11VoiceId, setEl11VoiceId] = useState(
+    settings.elevenlabsVoiceId || import.meta.env.VITE_ELEVENLABS_VOICE_ID || 'yj30vwTGJxSHezdAGsv9'
+  );
   const [saved,      setSaved]      = useState(false);
 
   useEffect(() => {
@@ -398,9 +404,10 @@ function VoiceSection({ settings, onSave }) {
 
   const handleSave = () => {
     onSave({
-      voice: { voiceURI, rate, pitch, volume: 1.0, lang: 'en-AU' },
+      voice: { voiceURI, rate, pitch, volume: 1.0, lang: 'en-AU', elevenlabsKey: el11Key, elevenlabsVoiceId: el11VoiceId },
       azureKey,
-      elevenlabsKey: el11Key,
+      elevenlabsKey:     el11Key,
+      elevenlabsVoiceId: el11VoiceId,
     });
     setSaved(true);
     setTimeout(() => setSaved(false), 2000);
@@ -461,8 +468,12 @@ function VoiceSection({ settings, onSave }) {
         <Input value={azureKey} onChange={setAzureKey} placeholder="Your Azure Cognitive Services key" masked />
       </Row>
 
-      <Row label="ElevenLabs API key" hint="Most natural voice — optional premium upgrade">
-        <Input value={el11Key} onChange={setEl11Key} placeholder="Your ElevenLabs API key" masked />
+      <Row label="ElevenLabs API key" hint="VALERIE's primary voice — already configured with her voice identity">
+        <Input value={el11Key} onChange={setEl11Key} placeholder="sk_…" masked />
+      </Row>
+
+      <Row label="ElevenLabs Voice ID" hint="VALERIE's locked-in voice. Change only to switch voice identity.">
+        <Input value={el11VoiceId} onChange={setEl11VoiceId} placeholder="yj30vwTGJxSHezdAGsv9" />
       </Row>
 
       <button
@@ -924,18 +935,62 @@ function ApiUsageSection({ settings }) {
 function PlatformsSection() {
   const tabs = ['Dashboard','Assistant','Tasks','Calendar','Notes','Health','Finance',
                 'Progress','Style','Essentials','Lists','Focus','Vault','Settings'];
-  const [win, setWin] = useState(() => Object.fromEntries(tabs.map(t => [t, true])));
+  const [win,         setWin]         = useState(() => Object.fromEntries(tabs.map(t => [t, true])));
+  const [autostart,   setAutostart]   = useState(false);
+  const [autostartOk, setAutostartOk] = useState(false); // true once plugin responds
+
+  // Check current autostart state on mount
+  useEffect(() => {
+    import('@tauri-apps/plugin-autostart')
+      .then(({ isEnabled }) => isEnabled())
+      .then(enabled => { setAutostart(enabled); setAutostartOk(true); })
+      .catch(() => setAutostartOk(false)); // not in Tauri context (dev browser)
+  }, []);
+
+  const handleAutostartToggle = async (val) => {
+    setAutostart(val);
+    try {
+      const { enable, disable } = await import('@tauri-apps/plugin-autostart');
+      if (val) await enable();
+      else     await disable();
+    } catch (err) {
+      console.warn('[Settings] Autostart plugin unavailable:', err.message);
+    }
+  };
 
   return (
     <div>
       <SectionTitle>Platform Preferences</SectionTitle>
-      <div style={{ fontSize: 13, color: 'var(--text-muted)', marginBottom: 18, lineHeight: 1.55 }}>
-        Control which tabs are visible on each platform. Windows is fully managed here.
-        Mac and iOS visibility will be configured in later sessions.
+
+      {/* System behaviour */}
+      <div style={{ marginBottom: 24 }}>
+        <div style={{ fontSize: 12, fontWeight: 600, color: 'var(--text-secondary)', marginBottom: 12, letterSpacing: '0.04em' }}>
+          WINDOWS SYSTEM
+        </div>
+        <div style={{
+          display: 'flex', alignItems: 'center', justifyContent: 'space-between',
+          padding: '14px 16px', borderRadius: 10,
+          background: 'var(--hover-bg)', border: '0.5px solid var(--card-border)',
+        }}>
+          <div>
+            <div style={{ fontSize: 13, fontWeight: 600, color: 'var(--text-primary)' }}>
+              Launch on startup
+            </div>
+            <div style={{ fontSize: 11, color: 'var(--text-muted)', marginTop: 2 }}>
+              VALERIE starts automatically when Windows boots
+            </div>
+          </div>
+          {autostartOk
+            ? <Toggle value={autostart} onChange={handleAutostartToggle} />
+            : <span style={{ fontSize: 11, color: 'var(--text-muted)' }}>Desktop app only</span>
+          }
+        </div>
       </div>
+
+      {/* Tab visibility */}
       <div style={{ marginBottom: 14 }}>
         <div style={{ fontSize: 12, fontWeight: 600, color: 'var(--text-secondary)', marginBottom: 12, letterSpacing: '0.04em' }}>
-          WINDOWS APP
+          WINDOWS TAB VISIBILITY
         </div>
         <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
           {tabs.map(tab => (
