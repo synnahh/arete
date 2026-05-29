@@ -41,4 +41,16 @@ export const STORAGE_KEYS = {
   VAULT:        'vault_meta',       // vault metadata only — never store plaintext passwords
   PROGRESS:     'progress',
   MOOD:         'mood',
+  // Session 4 additions
+  HABITS:        'habits',
+  WATER:         'water',
+  WORKOUT:       'workout',
+  WORKOUT_LOGS:  'workout_logs',
+  BODY:          'body',
+  SUPPLEMENTS:   'supplements',
+  SUPP_LOGS:     'supplement_logs',
+  SLEEP:         'sleep',
+  TRANSACTIONS:  'transactions',
+  SAVINGS:       'savings',
+  SUBSCRIPTIONS: 'subscriptions',
 };
