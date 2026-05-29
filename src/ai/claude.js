@@ -91,7 +91,8 @@ function buildSystemPrompt(context = '', memory = []) {
  * Returns raw response text (JSON string — parsed by actions.js parseResponse).
  */
 export async function askClaude(message, history = [], apiKey, { context = '', memory = [] } = {}) {
-  if (!apiKey) throw new Error('No Claude API key');
+  const key = (apiKey || '').trim();
+  if (!key) throw new Error('No Claude API key');
 
   const messages = [
     ...history.slice(-12),
@@ -102,7 +103,7 @@ export async function askClaude(message, history = [], apiKey, { context = '', m
     method: 'POST',
     headers: {
       'Content-Type': 'application/json',
-      'x-api-key': apiKey,
+      'x-api-key': key,
       'anthropic-version': '2023-06-01',
     },
     body: JSON.stringify({
@@ -123,25 +124,42 @@ export async function askClaude(message, history = [], apiKey, { context = '', m
 }
 
 // ─── pingClaude ───────────────────────────────────────────────────────────────
+// Uses the models list endpoint — no token cost, pure connectivity check.
 export async function pingClaude(apiKey) {
-  if (!apiKey) return false;
+  const key = (apiKey || '').trim();
+  if (!key) return false;
   try {
-    const res = await fetch(CLAUDE_ENDPOINT, {
-      method: 'POST',
+    const res = await fetch('https://api.anthropic.com/v1/models', {
+      method: 'GET',
       headers: {
-        'Content-Type': 'application/json',
-        'x-api-key': apiKey,
-        'anthropic-version': '2023-06-01',
+        'x-api-key':           key,
+        'anthropic-version':   '2023-06-01',
       },
-      body: JSON.stringify({
-        model:      CLAUDE_MODEL,
-        max_tokens: 1,
-        messages:   [{ role: 'user', content: 'ping' }],
-      }),
-      signal: AbortSignal.timeout(5000),
+      signal: AbortSignal.timeout(10000),
     });
-    return res.ok || res.status === 400;
+    // 200 = valid key & connected. 401 = wrong key. Other = network/server issue.
+    return res.ok;
   } catch {
     return false;
+  }
+}
+
+// ─── testClaudeKey — returns detailed status for UI feedback ──────────────────
+export async function testClaudeKey(apiKey) {
+  const key = (apiKey || '').trim();
+  if (!key) return { ok: false, reason: 'No API key entered' };
+  try {
+    const res = await fetch('https://api.anthropic.com/v1/models', {
+      method: 'GET',
+      headers: { 'x-api-key': key, 'anthropic-version': '2023-06-01' },
+      signal: AbortSignal.timeout(10000),
+    });
+    if (res.ok)            return { ok: true,  reason: 'Connected — API key valid' };
+    if (res.status === 401) return { ok: false, reason: 'Invalid API key (401)' };
+    if (res.status === 403) return { ok: false, reason: 'Key lacks permission (403)' };
+    return { ok: false, reason: `API error ${res.status}` };
+  } catch (err) {
+    if (err.name === 'TimeoutError') return { ok: false, reason: 'Request timed out — check internet' };
+    return { ok: false, reason: `Network error: ${err.message}` };
   }
 }

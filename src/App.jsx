@@ -89,6 +89,16 @@ export default function App() {
     if (savedSettings) {
       setSettings(savedSettings);
       applyTheme(savedSettings.theme || 'obsidian');
+
+      // Restore custom font if set
+      if (savedSettings.fontFamily) {
+        document.documentElement.style.setProperty('--font-family', savedSettings.fontFamily);
+      }
+      // Restore custom accent colour override if set
+      if (savedSettings.accentColorHex) {
+        document.documentElement.style.setProperty('--accent',       savedSettings.accentColorHex);
+        document.documentElement.style.setProperty('--accent-solid', savedSettings.accentColorHex);
+      }
     } else {
       applyTheme('obsidian');
     }

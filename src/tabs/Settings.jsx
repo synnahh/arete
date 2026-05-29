@@ -5,20 +5,23 @@
 import { useState, useEffect, useCallback, useRef } from 'react';
 import { storage, STORAGE_KEYS } from '../utils/storage.js';
 import { THEMES, applyTheme }    from '../styles/themes.js';
+import { testClaudeKey }                       from '../ai/claude.js';
+import { TIER_CONFIG, TIER_THRESHOLDS, XP_SOURCES } from '../utils/xp.js';
 
 // ─── Sections ────────────────────────────────────────────────────────────────
 const SECTIONS = [
-  { id: 'identity',      label: 'Identity',      icon: '👤' },
-  { id: 'appearance',    label: 'Appearance',    icon: '🎨' },
-  { id: 'voice',         label: 'Voice',         icon: '🎙️' },
-  { id: 'ai',            label: 'AI',            icon: '🧠' },
+  { id: 'identity',      label: 'Identity',         icon: '👤' },
+  { id: 'appearance',    label: 'Appearance',       icon: '🎨' },
+  { id: 'voice',         label: 'Voice',            icon: '🎙️' },
+  { id: 'ai',            label: 'AI',               icon: '🧠' },
   { id: 'units',         label: 'Units & Currency', icon: '💱' },
-  { id: 'notifications', label: 'Notifications', icon: '🔔' },
-  { id: 'integrations',  label: 'Integrations',  icon: '🔌' },
-  { id: 'api_usage',     label: 'API Usage',     icon: '📊' },
-  { id: 'platforms',     label: 'Platforms',     icon: '🖥️' },
-  { id: 'data',          label: 'Data',          icon: '💾' },
-  { id: 'security',      label: 'Security',      icon: '🔒' },
+  { id: 'progress',      label: 'Progress & Rank',  icon: '⭐' },
+  { id: 'notifications', label: 'Notifications',    icon: '🔔' },
+  { id: 'integrations',  label: 'Integrations',     icon: '🔌' },
+  { id: 'api_usage',     label: 'API Usage',        icon: '📊' },
+  { id: 'platforms',     label: 'Platforms',        icon: '🖥️' },
+  { id: 'data',          label: 'Data',             icon: '💾' },
+  { id: 'security',      label: 'Security',         icon: '🔒' },
 ];
 
 // ─── Currency & Unit constants ────────────────────────────────────────────────
@@ -249,19 +252,48 @@ function IdentitySection({ settings, onSave }) {
   );
 }
 
+// ─── Font options from design spec ───────────────────────────────────────────
+const FONTS = [
+  { value: "'Exo 2', sans-serif",     label: 'Exo 2',    description: 'Sharp · geometric · tech forward' },
+  { value: "'DM Sans', sans-serif",   label: 'DM Sans',  description: 'Clean · minimal · professional'  },
+  { value: "'Orbitron', sans-serif",  label: 'Orbitron', description: 'Futuristic · bold · strong'      },
+  { value: "'Sora', sans-serif",      label: 'Sora',     description: 'Elegant · soft · premium'        },
+  { value: "'Inter', sans-serif",     label: 'Inter',    description: 'Gold standard clean UI'          },
+  { value: "'Geist Sans', sans-serif",label: 'Geist',    description: 'Ultra minimal · Vercel'          },
+];
+
 // ─── Section: Appearance ──────────────────────────────────────────────────────
 function AppearanceSection({ settings, onSave }) {
-  const [theme,     setTheme]     = useState(settings.theme     || 'obsidian');
-  const [orbShape,  setOrbShape]  = useState(settings.orbShape  || 'sphere');
-  const [animLevel, setAnimLevel] = useState(settings.animationIntensity || 'full');
-  const [bgStyle,   setBgStyle]   = useState(settings.backgroundStyle   || 'time-of-day');
+  const [theme,       setTheme]       = useState(settings.theme             || 'obsidian');
+  const [orbShape,    setOrbShape]    = useState(settings.orbShape           || 'sphere');
+  const [animLevel,   setAnimLevel]   = useState(settings.animationIntensity || 'full');
+  const [bgStyle,     setBgStyle]     = useState(settings.backgroundStyle    || 'time-of-day');
+  const [fontFamily,  setFontFamily]  = useState(settings.fontFamily         || "'DM Sans', sans-serif");
+  const [accentColor, setAccentColor] = useState(settings.accentColorHex     || '');
   const [saved, setSaved] = useState(false);
 
   const handleTheme = (key) => {
     setTheme(key);
     applyTheme(key);
-    // Auto-save theme immediately
-    onSave({ theme: key });
+    // Clear custom accent when switching theme
+    setAccentColor('');
+    document.documentElement.style.removeProperty('--accent');
+    document.documentElement.style.removeProperty('--accent-solid');
+    onSave({ theme: key, accentColorHex: '' });
+  };
+
+  const handleFont = (fontValue) => {
+    setFontFamily(fontValue);
+    document.documentElement.style.setProperty('--font-family', fontValue);
+    onSave({ fontFamily: fontValue });
+  };
+
+  const handleAccentColor = (hex) => {
+    setAccentColor(hex);
+    // Apply to CSS vars immediately
+    document.documentElement.style.setProperty('--accent', hex);
+    document.documentElement.style.setProperty('--accent-solid', hex);
+    onSave({ accentColorHex: hex });
   };
 
   const handleSave = () => {
@@ -290,22 +322,76 @@ function AppearanceSection({ settings, onSave }) {
                 transition: 'all 0.15s',
               }}
             >
-              {/* Colour swatch row */}
               <div style={{ display: 'flex', gap: 4 }}>
                 <div style={{ width: 12, height: 12, borderRadius: 3, background: t.preview.sidebar }} />
                 <div style={{ width: 12, height: 12, borderRadius: 3, background: t.preview.bg }} />
                 <div style={{ width: 12, height: 12, borderRadius: 3, background: t.preview.accent }} />
               </div>
-              <span style={{
-                fontSize: 11, fontWeight: 600,
-                color: t.light ? '#1a1a2e' : '#fff',
-                textAlign: 'left',
-              }}>{t.name}</span>
-              <span style={{
-                fontSize: 9.5,
-                color: t.light ? 'rgba(0,0,0,0.5)' : 'rgba(255,255,255,0.45)',
-                textAlign: 'left', lineHeight: 1.3,
-              }}>{t.description}</span>
+              <span style={{ fontSize: 11, fontWeight: 600, color: t.light ? '#1a1a2e' : '#fff', textAlign: 'left' }}>
+                {t.name}
+              </span>
+              <span style={{ fontSize: 9.5, color: t.light ? 'rgba(0,0,0,0.5)' : 'rgba(255,255,255,0.45)', textAlign: 'left', lineHeight: 1.3 }}>
+                {t.description}
+              </span>
+            </button>
+          ))}
+        </div>
+      </Row>
+
+      {/* Custom accent colour */}
+      <Row label="Custom accent colour" hint="Overrides the theme's default accent — applies to orb, highlights, active states">
+        <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
+          <input
+            type="color"
+            value={accentColor || '#d2d2d2'}
+            onChange={e => handleAccentColor(e.target.value)}
+            style={{
+              width: 44, height: 36, padding: 2, cursor: 'pointer',
+              background: 'var(--bg-panel)', border: '0.5px solid var(--card-border)',
+              borderRadius: 8,
+            }}
+          />
+          <span style={{ fontSize: 12, color: 'var(--text-secondary)', flex: 1 }}>
+            {accentColor ? `Custom: ${accentColor}` : 'Using theme default'}
+          </span>
+          {accentColor && (
+            <button
+              onClick={() => { setAccentColor(''); document.documentElement.style.removeProperty('--accent'); document.documentElement.style.removeProperty('--accent-solid'); onSave({ accentColorHex: '' }); }}
+              style={{ padding: '5px 10px', borderRadius: 6, border: '0.5px solid var(--card-border)', background: 'none', color: 'var(--text-muted)', fontSize: 11, cursor: 'pointer' }}
+            >
+              Reset
+            </button>
+          )}
+        </div>
+      </Row>
+
+      {/* Font selector */}
+      <Row label="Font" hint="Applied instantly across the entire app">
+        <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
+          {FONTS.map(f => (
+            <button
+              key={f.value}
+              onClick={() => handleFont(f.value)}
+              style={{
+                display: 'flex', alignItems: 'center', justifyContent: 'space-between',
+                padding: '10px 14px', borderRadius: 8, cursor: 'pointer', textAlign: 'left',
+                border: `0.5px solid ${fontFamily === f.value ? 'var(--accent)' : 'var(--card-border)'}`,
+                background: fontFamily === f.value ? 'var(--accent)11' : 'var(--hover-bg)',
+                transition: 'all 0.15s',
+              }}
+            >
+              <div>
+                <span style={{
+                  fontFamily: f.value, fontSize: 14, fontWeight: 600,
+                  color: fontFamily === f.value ? 'var(--accent)' : 'var(--text-primary)',
+                }}>
+                  {f.label}
+                </span>
+                <span style={{ fontSize: 11, color: 'var(--text-muted)', marginLeft: 8 }}>
+                  {f.description}
+                </span>
+              </div>
+              {fontFamily === f.value && <span style={{ color: 'var(--accent)', fontSize: 13 }}>✓</span>}
             </button>
           ))}
         </div>
@@ -380,6 +466,7 @@ function VoiceSection({ settings, onSave }) {
   const [el11Loading, setEl11Loading] = useState(false);
   const [el11Error,   setEl11Error]   = useState('');
   const [el11Playing, setEl11Playing] = useState(false);
+  const [el11PreviewErr, setEl11PreviewErr] = useState('');
 
   // ── Browser TTS fallback state ────────────────────────────────────────────
   const [sysVoices,   setSysVoices]   = useState([]);
@@ -429,10 +516,12 @@ function VoiceSection({ settings, onSave }) {
   const handleEl11Preview = async () => {
     if (!el11Key || el11Playing) return;
     setEl11Playing(true);
+    setEl11PreviewErr('');
     try {
+      const trimmedKey = el11Key.trim();
       const res = await fetch(`https://api.elevenlabs.io/v1/text-to-speech/${el11VoiceId}`, {
         method:  'POST',
-        headers: { 'xi-api-key': el11Key, 'Content-Type': 'application/json', 'Accept': 'audio/mpeg' },
+        headers: { 'xi-api-key': trimmedKey, 'Content-Type': 'application/json', 'Accept': 'audio/mpeg' },
         body: JSON.stringify({
           text:           "Ready when you are, Rob.",
           model_id:       'eleven_turbo_v2_5',
@@ -440,15 +529,31 @@ function VoiceSection({ settings, onSave }) {
         }),
         signal: AbortSignal.timeout(15000),
       });
-      if (!res.ok) throw new Error(`Preview failed: ${res.status}`);
+      if (!res.ok) {
+        const errText = await res.text().catch(() => '');
+        const msg = res.status === 401 ? '401 — API key is invalid or unauthorised'
+          : res.status === 403 ? '403 — This key does not have TTS access'
+          : res.status === 422 ? '422 — Voice ID not found on this account'
+          : `Error ${res.status}${errText ? ': ' + errText.slice(0, 80) : ''}`;
+        throw new Error(msg);
+      }
       const blob  = await res.blob();
       const url   = URL.createObjectURL(blob);
       const audio = new Audio(url);
       audio.onended = () => { URL.revokeObjectURL(url); setEl11Playing(false); };
-      audio.onerror = () => setEl11Playing(false);
-      await audio.play();
+      audio.onerror = (e) => {
+        setEl11PreviewErr('Audio playback failed — check that audio is not muted');
+        setEl11Playing(false);
+      };
+      const playResult = audio.play();
+      if (playResult && typeof playResult.catch === 'function') {
+        playResult.catch(err => {
+          setEl11PreviewErr(`Playback blocked: ${err.message}`);
+          setEl11Playing(false);
+        });
+      }
     } catch (err) {
-      console.warn('[ElevenLabs preview]', err.message);
+      setEl11PreviewErr(err.message || 'Preview failed');
       setEl11Playing(false);
     }
   };
@@ -588,7 +693,7 @@ function VoiceSection({ settings, onSave }) {
           </select>
         </div>
 
-        {/* Preview button */}
+        {/* Preview button + error */}
         <button
           onClick={handleEl11Preview}
           disabled={!el11Key || el11Playing}
@@ -604,6 +709,11 @@ function VoiceSection({ settings, onSave }) {
         >
           {el11Playing ? '▶ Playing…' : "▶ Preview VALERIE's voice"}
         </button>
+        {el11PreviewErr && (
+          <p style={{ margin: '8px 0 0', fontSize: 11, color: '#e55a5a', lineHeight: 1.4 }}>
+            {el11PreviewErr}
+          </p>
+        )}
       </div>
 
       {/* ─── Azure fallback ───────────────────────────────────────────────── */}
@@ -686,6 +796,8 @@ function AISection({ settings, onSave }) {
   const [smartRouting,  setSmartRouting]  = useState(settings.smartRouting  ?? true);
   const [ollamaModels,  setOllamaModels]  = useState([]);
   const [saved,         setSaved]         = useState(false);
+  const [testResult,    setTestResult]    = useState(null); // { ok, reason }
+  const [testing,       setTesting]       = useState(false);
 
   useEffect(() => {
     fetch('http://localhost:11434/api/tags', { signal: AbortSignal.timeout(2000) })
@@ -695,17 +807,63 @@ function AISection({ settings, onSave }) {
   }, []);
 
   const handleSave = () => {
-    onSave({ apiKey, ollamaModel, preferOffline, dailyTokenBudget: tokenBudget, smartRouting });
+    onSave({ apiKey: apiKey.trim(), ollamaModel, preferOffline, dailyTokenBudget: tokenBudget, smartRouting });
     setSaved(true);
     setTimeout(() => setSaved(false), 2000);
+    setTestResult(null); // clear old test result after save
+  };
+
+  const handleTest = async () => {
+    if (!apiKey.trim() || testing) return;
+    setTesting(true);
+    setTestResult(null);
+    const result = await testClaudeKey(apiKey.trim());
+    setTestResult(result);
+    setTesting(false);
+    // If test passed, also save the key immediately
+    if (result.ok) {
+      onSave({ apiKey: apiKey.trim() });
+    }
   };
 
   return (
     <div>
       <SectionTitle>AI Configuration <SavedBadge show={saved} /></SectionTitle>
 
-      <Row label="Claude API key" hint="Your Anthropic API key — stored locally, never transmitted anywhere except to api.anthropic.com">
-        <Input value={apiKey} onChange={setApiKey} placeholder="sk-ant-…" masked />
+      {/* Claude API key + test */}
+      <Row
+        label="Claude API key"
+        hint="Your Anthropic API key — stored locally, never transmitted except to api.anthropic.com"
+      >
+        <div style={{ display: 'flex', gap: 8, marginBottom: 8 }}>
+          <div style={{ flex: 1 }}>
+            <Input value={apiKey} onChange={v => { setApiKey(v); setTestResult(null); }} placeholder="sk-ant-…" masked />
+          </div>
+          <button
+            onClick={handleTest}
+            disabled={!apiKey.trim() || testing}
+            style={{
+              padding: '0 16px', borderRadius: 8, flexShrink: 0,
+              border: `0.5px solid ${testResult?.ok ? '#4caf7d' : testResult ? '#e55a5a' : 'var(--card-border)'}`,
+              background: testResult?.ok ? '#4caf7d15' : testResult ? '#e55a5a15' : 'var(--hover-bg)',
+              color: testResult?.ok ? '#4caf7d' : testResult ? '#e55a5a' : 'var(--text-secondary)',
+              fontSize: 12, cursor: !apiKey.trim() || testing ? 'not-allowed' : 'pointer',
+              opacity: !apiKey.trim() ? 0.5 : 1, whiteSpace: 'nowrap',
+            }}
+          >
+            {testing ? '…testing' : testResult?.ok ? '✓ Connected' : 'Test connection'}
+          </button>
+        </div>
+        {testResult && !testResult.ok && (
+          <p style={{ margin: 0, fontSize: 11, color: '#e55a5a', lineHeight: 1.4 }}>
+            {testResult.reason}
+          </p>
+        )}
+        {testResult?.ok && (
+          <p style={{ margin: 0, fontSize: 11, color: '#4caf7d' }}>
+            {testResult.reason} — key saved automatically.
+          </p>
+        )}
       </Row>
 
       <Row label="Ollama model" hint="Local AI model — Ollama must be running at localhost:11434">
@@ -1017,103 +1175,267 @@ function IntegrationsSection({ settings, onSave }) {
 }
 
 // ─── Section: API Usage ────────────────────────────────────────────────────────
+// NOTE: Anthropic does not expose a public credit balance endpoint via API key.
+// Usage data is only available at console.anthropic.com.
+// This section shows locally tracked token estimates and links to the console.
 function ApiUsageSection({ settings }) {
-  const [usage, setUsage] = useState(null);
-  const [loading, setLoading] = useState(false);
-  const [error, setError] = useState('');
+  // Read locally tracked usage from storage (we track tokens when we make calls)
+  const localLog   = storage.get('valerie_xp', { total: 0, log: [] });
+  const currency   = settings.currency || 'AUD';
+  const currSymbol = currency === 'GBP' ? '£' : currency === 'EUR' ? '€' : '$';
+  const rate       = currency === 'AUD' ? 1.55 : currency === 'GBP' ? 0.64 : currency === 'EUR' ? 0.73 : 1.0;
 
-  const fetchUsage = async () => {
-    if (!settings.apiKey) { setError('No API key set — add it in the AI section first.'); return; }
-    setLoading(true); setError('');
-    try {
-      const res = await fetch('https://api.anthropic.com/v1/usage', {
-        headers: { 'x-api-key': settings.apiKey, 'anthropic-version': '2023-06-01' },
-        signal: AbortSignal.timeout(8000),
-      });
-      if (!res.ok) throw new Error(`API ${res.status}`);
-      const data = await res.json();
-      setUsage(data);
-    } catch (err) {
-      setError(err.message || 'Could not reach Anthropic usage API');
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  useEffect(() => { fetchUsage(); }, []); // eslint-disable-line react-hooks/exhaustive-deps
-
-  // Estimate costs (approximate — Sonnet 4 pricing)
-  const inputCost  = ((usage?.total_input_tokens  || 0) / 1_000_000) * 3.0;
-  const outputCost = ((usage?.total_output_tokens || 0) / 1_000_000) * 15.0;
-  const totalCost  = (inputCost + outputCost) * (settings.currency === 'AUD' ? 1.55 : 1.0);
-  const currSymbol = settings.currency === 'GBP' ? '£' : settings.currency === 'EUR' ? '€' : '$';
+  const hasKey = !!settings.apiKey?.trim();
 
   return (
     <div>
       <SectionTitle>API Usage</SectionTitle>
 
-      {!settings.apiKey ? (
-        <div style={{ color: 'var(--text-muted)', fontSize: 13 }}>
-          Add your Claude API key in the AI section to see usage stats.
-        </div>
-      ) : loading ? (
-        <div style={{ color: 'var(--text-muted)', fontSize: 13 }}>Loading usage data…</div>
-      ) : error ? (
-        <div>
-          <div style={{ color: '#e55a5a', fontSize: 13, marginBottom: 12 }}>{error}</div>
-          <button onClick={fetchUsage} style={{
-            padding: '7px 16px', borderRadius: 8, border: '0.5px solid var(--card-border)',
-            background: 'var(--hover-bg)', color: 'var(--text-secondary)', fontSize: 12, cursor: 'pointer',
-          }}>Retry</button>
+      {!hasKey ? (
+        <div style={{ color: 'var(--text-muted)', fontSize: 13, lineHeight: 1.6 }}>
+          Add your Claude API key in <strong style={{ color: 'var(--text-primary)' }}>Settings → AI</strong> first.
         </div>
       ) : (
-        <div style={{ display: 'flex', flexDirection: 'column', gap: 14 }}>
-          {/* Stat cards */}
-          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 12 }}>
-            {[
-              { label: 'Input tokens',  value: (usage?.total_input_tokens  || 0).toLocaleString() },
-              { label: 'Output tokens', value: (usage?.total_output_tokens || 0).toLocaleString() },
-              { label: 'Estimated cost', value: `${currSymbol}${totalCost.toFixed(4)}` },
-              { label: 'Model',          value: 'Sonnet 4' },
-            ].map(stat => (
-              <div key={stat.label} style={{
-                padding: '14px 16px', borderRadius: 10,
-                background: 'var(--hover-bg)', border: '0.5px solid var(--card-border)',
-              }}>
-                <div style={{ fontSize: 20, fontWeight: 700, color: 'var(--accent)', marginBottom: 4 }}>
-                  {stat.value}
-                </div>
-                <div style={{ fontSize: 11, color: 'var(--text-muted)' }}>{stat.label}</div>
-              </div>
-            ))}
+        <div style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
+
+          {/* Console link — primary action */}
+          <div style={{
+            padding: '18px 20px', borderRadius: 12,
+            background: 'var(--accent)08', border: '1px solid var(--accent)33',
+          }}>
+            <div style={{ fontSize: 14, fontWeight: 600, color: 'var(--text-primary)', marginBottom: 6 }}>
+              Monitor your usage
+            </div>
+            <div style={{ fontSize: 12, color: 'var(--text-secondary)', marginBottom: 14, lineHeight: 1.55 }}>
+              Anthropic's API doesn't expose a public balance endpoint — exact credit usage,
+              remaining balance, and per-model breakdown are only available at the Console.
+            </div>
+            <a
+              href="https://console.anthropic.com"
+              target="_blank"
+              rel="noreferrer"
+              style={{
+                display: 'inline-flex', alignItems: 'center', gap: 6,
+                padding: '8px 16px', borderRadius: 8,
+                background: 'var(--accent)', color: 'var(--bg-base)',
+                fontSize: 12, fontWeight: 700, textDecoration: 'none',
+              }}
+            >
+              Open Anthropic Console ↗
+            </a>
           </div>
 
-          <button onClick={fetchUsage} style={{
-            padding: '7px 16px', borderRadius: 8, border: '0.5px solid var(--card-border)',
-            background: 'var(--hover-bg)', color: 'var(--text-secondary)', fontSize: 12,
-            cursor: 'pointer', alignSelf: 'flex-start',
+          {/* Pricing reference */}
+          <div style={{
+            padding: '14px 16px', borderRadius: 10,
+            background: 'var(--hover-bg)', border: '0.5px solid var(--card-border)',
           }}>
-            Refresh
-          </button>
+            <div style={{ fontSize: 11, fontWeight: 700, color: 'var(--text-secondary)', letterSpacing: '0.05em', marginBottom: 10 }}>
+              CLAUDE SONNET 4 PRICING REFERENCE
+            </div>
+            {[
+              { label: 'Input tokens',  price: `${currSymbol}${(3.0 * rate).toFixed(2)}/M` },
+              { label: 'Output tokens', price: `${currSymbol}${(15.0 * rate).toFixed(2)}/M` },
+              { label: 'Typical session (~4K tokens)', price: `≈ ${currSymbol}${(0.004 * 15.0 * rate).toFixed(4)}` },
+            ].map(row => (
+              <div key={row.label} style={{
+                display: 'flex', justifyContent: 'space-between',
+                padding: '6px 0', borderBottom: '0.5px solid var(--card-border)',
+                fontSize: 12, color: 'var(--text-secondary)',
+              }}>
+                <span>{row.label}</span>
+                <span style={{ color: 'var(--text-primary)', fontWeight: 600 }}>{row.price}</span>
+              </div>
+            ))}
+            <div style={{ fontSize: 10, color: 'var(--text-muted)', marginTop: 8 }}>
+              Prices approximate. Check console.anthropic.com for exact billing.
+            </div>
+          </div>
 
-          <a
-            href="https://console.anthropic.com"
-            target="_blank"
-            rel="noreferrer"
-            style={{
-              fontSize: 12, color: 'var(--accent)', textDecoration: 'none',
-              display: 'flex', alignItems: 'center', gap: 4,
-            }}
-          >
-            Top up credits at console.anthropic.com ↗
-          </a>
-
-          <div style={{ fontSize: 11, color: 'var(--text-muted)', lineHeight: 1.5 }}>
-            Pricing estimate based on claude-sonnet-4 public rates ($3/M input · $15/M output).
-            Check console.anthropic.com for exact billing.
+          {/* XP / activity as a proxy for usage */}
+          <div style={{
+            padding: '14px 16px', borderRadius: 10,
+            background: 'var(--hover-bg)', border: '0.5px solid var(--card-border)',
+          }}>
+            <div style={{ fontSize: 11, fontWeight: 700, color: 'var(--text-secondary)', letterSpacing: '0.05em', marginBottom: 8 }}>
+              LOCAL ACTIVITY TRACKER
+            </div>
+            <div style={{ fontSize: 13, color: 'var(--text-primary)' }}>
+              {localLog.total.toLocaleString()} XP accumulated
+            </div>
+            <div style={{ fontSize: 11, color: 'var(--text-muted)', marginTop: 3 }}>
+              {(localLog.log || []).length} logged events · VALERIE gets smarter with each interaction
+            </div>
           </div>
         </div>
       )}
+    </div>
+  );
+}
+
+// ─── Section: Progress & Rank ─────────────────────────────────────────────────
+// Per the Progress Tab Design spec: tier names renameable, XP thresholds
+// adjustable, XP per action adjustable, option to hide rank system entirely.
+function ProgressSection({ settings, onSave }) {
+  const rankSettings  = settings.rankSettings || {};
+  const xpSettings    = settings.xpSettings   || {};
+
+  // Tier names — defaults from TIER_CONFIG, overridable
+  const [tierNames,    setTierNames]    = useState(() =>
+    TIER_CONFIG.map(t => rankSettings.tierNames?.[t.tier] || t.name)
+  );
+  // XP thresholds — defaults from TIER_CONFIG
+  const [thresholds,   setThresholds]   = useState(() =>
+    TIER_CONFIG.map((t, i) => rankSettings.thresholds?.[t.tier] ?? TIER_THRESHOLDS[i] ?? 0)
+  );
+  // XP per action
+  const [xpValues,     setXpValues]     = useState(() => ({
+    TASK_COMPLETED:  xpSettings.TASK_COMPLETED  ?? 10,
+    HABIT_DAILY:     xpSettings.HABIT_DAILY     ?? 25,
+    WORKOUT_LOGGED:  xpSettings.WORKOUT_LOGGED  ?? 20,
+    GOAL_MILESTONE:  xpSettings.GOAL_MILESTONE  ?? 50,
+    FOCUS_SESSION:   xpSettings.FOCUS_SESSION   ?? 15,
+    MACROS_HIT:      xpSettings.MACROS_HIT      ?? 20,
+    UNDER_BUDGET:    xpSettings.UNDER_BUDGET     ?? 30,
+    MOOD_LOGGED:     xpSettings.MOOD_LOGGED      ?? 5,
+    WATER_GOAL:      xpSettings.WATER_GOAL       ?? 10,
+  }));
+  const [hideRank,     setHideRank]     = useState(settings.hideRankSystem ?? false);
+  const [saved,        setSaved]        = useState(false);
+
+  const setTierName   = (i, v) => setTierNames(p => p.map((n, j) => j === i ? v : n));
+  const setThreshold  = (i, v) => setThresholds(p => p.map((n, j) => j === i ? Number(v) : n));
+  const setXp         = (k, v) => setXpValues(p => ({ ...p, [k]: Number(v) }));
+
+  const handleSave = () => {
+    const namesMap      = Object.fromEntries(TIER_CONFIG.map((t, i) => [t.tier, tierNames[i]]));
+    const threshMap     = Object.fromEntries(TIER_CONFIG.map((t, i) => [t.tier, thresholds[i]]));
+    onSave({
+      rankSettings:   { tierNames: namesMap, thresholds: threshMap },
+      xpSettings:     xpValues,
+      hideRankSystem: hideRank,
+    });
+    setSaved(true);
+    setTimeout(() => setSaved(false), 2000);
+  };
+
+  const XP_LABELS = {
+    TASK_COMPLETED: 'Task completed',     HABIT_DAILY:    'Habit maintained daily',
+    WORKOUT_LOGGED: 'Workout logged',     GOAL_MILESTONE: 'Goal milestone reached',
+    FOCUS_SESSION:  'Focus session done', MACROS_HIT:     'Macros hit for the day',
+    UNDER_BUDGET:   'Under budget (week)',MOOD_LOGGED:    'Mood logged',
+    WATER_GOAL:     'Water goal hit',
+  };
+
+  return (
+    <div>
+      <SectionTitle>Progress & Rank <SavedBadge show={saved} /></SectionTitle>
+
+      {/* Hide toggle */}
+      <Row label="Hide rank system" hint="Removes rank badges and XP tracking from the app entirely">
+        <Toggle value={hideRank} onChange={setHideRank} />
+      </Row>
+
+      {!hideRank && (
+        <>
+          {/* Tier name editor */}
+          <div style={{ marginBottom: 22 }}>
+            <div style={{ fontSize: 12, fontWeight: 700, color: 'var(--text-secondary)', letterSpacing: '0.05em', marginBottom: 12 }}>
+              TIER NAMES
+            </div>
+            <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
+              {TIER_CONFIG.map((tier, i) => (
+                <div key={tier.tier} style={{
+                  display: 'flex', alignItems: 'center', gap: 12,
+                  padding: '8px 12px', borderRadius: 8,
+                  background: 'var(--hover-bg)', border: '0.5px solid var(--card-border)',
+                }}>
+                  {/* Tier colour dot */}
+                  <div style={{
+                    width: 10, height: 10, borderRadius: '50%', flexShrink: 0,
+                    background: tier.color,
+                    boxShadow: `0 0 6px ${tier.color}88`,
+                  }} />
+                  <span style={{ fontSize: 11, color: 'var(--text-muted)', minWidth: 36 }}>
+                    Tier {tier.tier}
+                  </span>
+                  <input
+                    value={tierNames[i]}
+                    onChange={e => setTierName(i, e.target.value)}
+                    style={{
+                      flex: 1, padding: '5px 10px',
+                      background: 'var(--bg-panel)', border: '0.5px solid var(--card-border)',
+                      borderRadius: 6, color: 'var(--text-primary)', fontSize: 13,
+                      outline: 'none',
+                    }}
+                    onFocus={e => e.target.style.borderColor = 'var(--accent)'}
+                    onBlur={e => e.target.style.borderColor = 'var(--card-border)'}
+                  />
+                  <span style={{ fontSize: 11, color: 'var(--text-muted)', minWidth: 56, textAlign: 'right' }}>
+                    {i === 0 ? '0 XP' : (
+                      <input
+                        type="number"
+                        value={thresholds[i]}
+                        onChange={e => setThreshold(i, e.target.value)}
+                        style={{
+                          width: 70, padding: '4px 6px',
+                          background: 'var(--bg-panel)', border: '0.5px solid var(--card-border)',
+                          borderRadius: 6, color: 'var(--text-muted)', fontSize: 11, outline: 'none',
+                          textAlign: 'right',
+                        }}
+                      />
+                    )}
+                    {i > 0 && <span style={{ marginLeft: 3 }}>XP</span>}
+                  </span>
+                </div>
+              ))}
+            </div>
+          </div>
+
+          {/* XP per action */}
+          <div style={{ marginBottom: 22 }}>
+            <div style={{ fontSize: 12, fontWeight: 700, color: 'var(--text-secondary)', letterSpacing: '0.05em', marginBottom: 12 }}>
+              XP PER ACTION
+            </div>
+            <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
+              {Object.entries(XP_LABELS).map(([key, label]) => (
+                <div key={key} style={{
+                  display: 'flex', alignItems: 'center', justifyContent: 'space-between',
+                  padding: '8px 12px', borderRadius: 8,
+                  background: 'var(--hover-bg)', border: '0.5px solid var(--card-border)',
+                }}>
+                  <span style={{ fontSize: 13, color: 'var(--text-primary)' }}>{label}</span>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
+                    <input
+                      type="number"
+                      value={xpValues[key]}
+                      onChange={e => setXp(key, e.target.value)}
+                      min={0} max={500} step={5}
+                      style={{
+                        width: 60, padding: '4px 8px', textAlign: 'right',
+                        background: 'var(--bg-panel)', border: '0.5px solid var(--card-border)',
+                        borderRadius: 6, color: 'var(--text-primary)', fontSize: 13, outline: 'none',
+                      }}
+                    />
+                    <span style={{ fontSize: 11, color: 'var(--text-muted)' }}>XP</span>
+                  </div>
+                </div>
+              ))}
+            </div>
+          </div>
+        </>
+      )}
+
+      <button
+        onClick={handleSave}
+        style={{
+          padding: '9px 24px', borderRadius: 8, border: 'none',
+          background: 'var(--accent)', color: 'var(--bg-base)',
+          fontSize: 13, fontWeight: 700, cursor: 'pointer',
+        }}
+      >
+        Save Progress Settings
+      </button>
     </div>
   );
 }
@@ -1383,6 +1705,7 @@ export default function SettingsTab({ settings: settingsProp }) {
       case 'voice':         return <VoiceSection         settings={settings} onSave={handleSave} />;
       case 'ai':            return <AISection            settings={settings} onSave={handleSave} />;
       case 'units':         return <UnitsSection         settings={settings} onSave={handleSave} />;
+      case 'progress':      return <ProgressSection      settings={settings} onSave={handleSave} />;
       case 'notifications': return <NotificationsSection settings={settings} onSave={handleSave} />;
       case 'integrations':  return <IntegrationsSection  settings={settings} onSave={handleSave} />;
       case 'api_usage':     return <ApiUsageSection      settings={settings} />;

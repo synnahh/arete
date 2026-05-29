@@ -1,5 +1,7 @@
 /* ─── Google Fonts — must be first ──────────────────── */
 @import url('https://fonts.googleapis.com/css2?family=Exo+2:wght@300;400;500;600;700&family=DM+Sans:wght@300;400;500;600;700&family=Orbitron:wght@400;500;600;700&family=Sora:wght@300;400;500;600;700&family=Inter:wght@300;400;500;600;700&display=swap');
+/* Geist via CDN (Vercel's clean minimal font) */
+@import url('https://fonts.cdnfonts.com/css/geist-sans');
 
 @tailwind base;
 @tailwind components;
@@ -16,6 +18,7 @@
   --bg-base:          #080c14;
   --bg-sidebar:       #0d0f14;
   --bg-panel:         #0f1219;
+  --bg-secondary:     #111520;  /* used by tabs/cards built in sessions 5-6 */
   --accent:           rgba(210, 210, 210, 0.85);
   --accent-solid:     #d2d2d2;
   --card-fill:        rgba(255, 255, 255, 0.03);
@@ -42,6 +45,7 @@
   --bg-base:          #070b14;
   --bg-sidebar:       #0a0f1e;
   --bg-panel:         #0d1424;
+  --bg-secondary:     #101828;
   --accent:           rgba(100, 160, 255, 0.9);
   --accent-solid:     #64a0ff;
   --card-fill:        rgba(60, 120, 255, 0.04);
@@ -68,6 +72,7 @@
   --bg-base:          #0e0a06;
   --bg-sidebar:       #140e08;
   --bg-panel:         #18120a;
+  --bg-secondary:     #1c150c;
   --accent:           rgba(230, 150, 40, 0.9);
   --accent-solid:     #e69628;
   --card-fill:        rgba(200, 120, 20, 0.04);
@@ -94,6 +99,7 @@
   --bg-base:          #08060e;
   --bg-sidebar:       #0e0a18;
   --bg-panel:         #120d1e;
+  --bg-secondary:     #160f24;
   --accent:           rgba(160, 100, 230, 0.9);
   --accent-solid:     #a064e6;
   --card-fill:        rgba(120, 60, 200, 0.04);
@@ -120,6 +126,7 @@
   --bg-base:          #f4f6f9;
   --bg-sidebar:       #ebeef2;
   --bg-panel:         #ffffff;
+  --bg-secondary:     #f0f2f5;
   --accent:           rgba(60, 120, 200, 0.9);
   --accent-solid:     #3c78c8;
   --card-fill:        rgba(255, 255, 255, 0.75);
@@ -146,6 +153,7 @@
   --bg-base:          #0e0606;
   --bg-sidebar:       #160a0a;
   --bg-panel:         #1a0e0e;
+  --bg-secondary:     #1e1010;
   --accent:           rgba(220, 70, 70, 0.9);
   --accent-solid:     #dc4646;
   --card-fill:        rgba(180, 30, 30, 0.04);
@@ -180,7 +188,7 @@ html, body, #root {
   overflow: hidden;
   background: var(--bg-base);
   color: var(--text-primary);
-  font-family: 'DM Sans', 'Inter', sans-serif;
+  font-family: var(--font-family, 'DM Sans', 'Inter', sans-serif);
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
 }
