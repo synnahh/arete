@@ -368,34 +368,96 @@ function AppearanceSection({ settings, onSave }) {
 
 // ─── Section: Voice ────────────────────────────────────────────────────────────
 function VoiceSection({ settings, onSave }) {
-  const [voices,     setVoices]     = useState([]);
-  const [voiceURI,   setVoiceURI]   = useState(settings.voice?.voiceURI   || '');
-  const [rate,       setRate]       = useState(settings.voice?.rate       ?? 0.95);
-  const [pitch,      setPitch]      = useState(settings.voice?.pitch      ?? 1.0);
-  const [azureKey,   setAzureKey]   = useState(settings.azureKey      || '');
-  // ElevenLabs: settings override takes priority, then fall back to .env default
-  const [el11Key,    setEl11Key]    = useState(
+
+  // ── ElevenLabs state ──────────────────────────────────────────────────────
+  const [el11Key,     setEl11Key]     = useState(
     settings.elevenlabsKey || import.meta.env.VITE_ELEVENLABS_API_KEY || ''
   );
   const [el11VoiceId, setEl11VoiceId] = useState(
     settings.elevenlabsVoiceId || import.meta.env.VITE_ELEVENLABS_VOICE_ID || 'yj30vwTGJxSHezdAGsv9'
   );
-  const [saved,      setSaved]      = useState(false);
+  const [el11Voices,  setEl11Voices]  = useState([]);
+  const [el11Loading, setEl11Loading] = useState(false);
+  const [el11Error,   setEl11Error]   = useState('');
+  const [el11Playing, setEl11Playing] = useState(false);
 
+  // ── Browser TTS fallback state ────────────────────────────────────────────
+  const [sysVoices,   setSysVoices]   = useState([]);
+  const [voiceURI,    setVoiceURI]    = useState(settings.voice?.voiceURI || '');
+  const [rate,        setRate]        = useState(settings.voice?.rate     ?? 0.95);
+  const [pitch,       setPitch]       = useState(settings.voice?.pitch    ?? 1.0);
+
+  // ── Azure state ───────────────────────────────────────────────────────────
+  const [azureKey,    setAzureKey]    = useState(settings.azureKey || '');
+  const [saved,       setSaved]       = useState(false);
+
+  // Fetch available voices from ElevenLabs API
+  const fetchEl11Voices = async (key) => {
+    if (!key?.trim()) return;
+    setEl11Loading(true);
+    setEl11Error('');
+    try {
+      const res = await fetch('https://api.elevenlabs.io/v1/voices', {
+        headers: { 'xi-api-key': key },
+        signal: AbortSignal.timeout(10000),
+      });
+      if (!res.ok) throw new Error(`ElevenLabs API ${res.status} — check your key`);
+      const data = await res.json();
+      const sorted = (data.voices || []).sort((a, b) => a.name.localeCompare(b.name));
+      setEl11Voices(sorted);
+    } catch (err) {
+      setEl11Error(err.message || 'Could not reach ElevenLabs');
+    } finally {
+      setEl11Loading(false);
+    }
+  };
+
+  // Load system TTS voices
   useEffect(() => {
-    const load = () => {
-      const v = window.speechSynthesis?.getVoices() || [];
-      setVoices(v);
-    };
+    const load = () => setSysVoices(window.speechSynthesis?.getVoices() || []);
     load();
     window.speechSynthesis?.addEventListener('voiceschanged', load);
     return () => window.speechSynthesis?.removeEventListener('voiceschanged', load);
   }, []);
 
-  const handlePreview = () => {
+  // Auto-fetch ElevenLabs voices on mount if key is already set
+  useEffect(() => {
+    if (el11Key) fetchEl11Voices(el11Key);
+  }, []); // eslint-disable-line react-hooks/exhaustive-deps
+
+  // Preview using ElevenLabs — plays real audio from her voice
+  const handleEl11Preview = async () => {
+    if (!el11Key || el11Playing) return;
+    setEl11Playing(true);
+    try {
+      const res = await fetch(`https://api.elevenlabs.io/v1/text-to-speech/${el11VoiceId}`, {
+        method:  'POST',
+        headers: { 'xi-api-key': el11Key, 'Content-Type': 'application/json', 'Accept': 'audio/mpeg' },
+        body: JSON.stringify({
+          text:           "Ready when you are, Rob.",
+          model_id:       'eleven_turbo_v2_5',
+          voice_settings: { stability: 0.45, similarity_boost: 0.80, style: 0.20, use_speaker_boost: true },
+        }),
+        signal: AbortSignal.timeout(15000),
+      });
+      if (!res.ok) throw new Error(`Preview failed: ${res.status}`);
+      const blob  = await res.blob();
+      const url   = URL.createObjectURL(blob);
+      const audio = new Audio(url);
+      audio.onended = () => { URL.revokeObjectURL(url); setEl11Playing(false); };
+      audio.onerror = () => setEl11Playing(false);
+      await audio.play();
+    } catch (err) {
+      console.warn('[ElevenLabs preview]', err.message);
+      setEl11Playing(false);
+    }
+  };
+
+  // Preview using browser TTS (fallback only)
+  const handleSysPreview = () => {
     window.speechSynthesis.cancel();
-    const utt = new SpeechSynthesisUtterance("Ready when you are, Rob.");
-    const found = voices.find(v => v.voiceURI === voiceURI);
+    const utt   = new SpeechSynthesisUtterance("Ready when you are, Rob.");
+    const found = sysVoices.find(v => v.voiceURI === voiceURI);
     if (found) utt.voice = found;
     utt.rate  = rate;
     utt.pitch = pitch;
@@ -404,7 +466,11 @@ function VoiceSection({ settings, onSave }) {
 
   const handleSave = () => {
     onSave({
-      voice: { voiceURI, rate, pitch, volume: 1.0, lang: 'en-AU', elevenlabsKey: el11Key, elevenlabsVoiceId: el11VoiceId },
+      voice: {
+        voiceURI, rate, pitch, volume: 1.0, lang: 'en-AU',
+        elevenlabsKey:     el11Key,
+        elevenlabsVoiceId: el11VoiceId,
+      },
       azureKey,
       elevenlabsKey:     el11Key,
       elevenlabsVoiceId: el11VoiceId,
@@ -413,68 +479,189 @@ function VoiceSection({ settings, onSave }) {
     setTimeout(() => setSaved(false), 2000);
   };
 
-  const enVoices = voices.filter(v => v.lang?.startsWith('en'));
+  const isEl11Active      = !!el11Key;
+  const defaultVoiceId    = import.meta.env.VITE_ELEVENLABS_VOICE_ID || 'yj30vwTGJxSHezdAGsv9';
+  const selectedVoiceName = el11Voices.find(v => v.voice_id === el11VoiceId)?.name || '';
+  const enSysVoices       = sysVoices.filter(v => v.lang?.startsWith('en'));
 
   return (
     <div>
       <SectionTitle>Voice <SavedBadge show={saved} /></SectionTitle>
 
-      {/* Priority explanation */}
+      {/* Active engine banner */}
       <div style={{
-        background: 'var(--hover-bg)', borderRadius: 8, padding: '10px 14px',
-        marginBottom: 20, fontSize: 12, color: 'var(--text-secondary)', lineHeight: 1.55,
+        display: 'flex', alignItems: 'center', gap: 10,
+        padding: '12px 16px', borderRadius: 10, marginBottom: 22,
+        background: isEl11Active ? '#4caf7d14' : 'var(--hover-bg)',
+        border: `1px solid ${isEl11Active ? '#4caf7d44' : 'var(--card-border)'}`,
       }}>
-        Voice priority: <strong style={{ color: 'var(--text-primary)' }}>ElevenLabs</strong> (if key set)
-        → <strong style={{ color: 'var(--text-primary)' }}>Azure Neural</strong> (if key set)
-        → <strong style={{ color: 'var(--text-primary)' }}>System voice</strong>
+        <div style={{
+          width: 8, height: 8, borderRadius: '50%', flexShrink: 0,
+          background: isEl11Active ? '#4caf7d' : '#666',
+          boxShadow: isEl11Active ? '0 0 6px #4caf7d99' : 'none',
+        }} />
+        <div style={{ flex: 1 }}>
+          <div style={{ fontSize: 13, fontWeight: 600, color: 'var(--text-primary)' }}>
+            {isEl11Active ? 'ElevenLabs — Active' : 'System TTS — Active'}
+          </div>
+          <div style={{ fontSize: 11, color: 'var(--text-muted)', marginTop: 1 }}>
+            {isEl11Active
+              ? `Priority order: ElevenLabs → Azure Neural → System${selectedVoiceName ? ` · ${selectedVoiceName}` : ''}`
+              : "Add an ElevenLabs API key below to enable VALERIE's real voice"}
+          </div>
+        </div>
       </div>
 
-      <Row label="System voice" hint="Choose from voices available on your device">
+      {/* ─── ElevenLabs block ─────────────────────────────────────────────── */}
+      <div style={{
+        border: `1px solid ${isEl11Active ? 'var(--accent)55' : 'var(--card-border)'}`,
+        borderRadius: 12, padding: '16px 18px', marginBottom: 20,
+        background: isEl11Active ? 'var(--accent)07' : 'var(--hover-bg)',
+      }}>
+        <div style={{
+          fontSize: 11, fontWeight: 700, letterSpacing: '0.06em', marginBottom: 14,
+          display: 'flex', alignItems: 'center', gap: 8,
+          color: isEl11Active ? 'var(--accent)' : 'var(--text-muted)',
+        }}>
+          ELEVENLABS
+          {isEl11Active && (
+            <span style={{
+              fontSize: 9, background: '#4caf7d22', color: '#4caf7d',
+              padding: '2px 8px', borderRadius: 10, fontWeight: 700, letterSpacing: '0.04em',
+            }}>ACTIVE</span>
+          )}
+        </div>
+
+        {/* API key + load button */}
+        <div style={{ marginBottom: 12 }}>
+          <div style={{ fontSize: 11, color: 'var(--text-secondary)', marginBottom: 5 }}>API Key</div>
+          <div style={{ display: 'flex', gap: 8 }}>
+            <div style={{ flex: 1 }}>
+              <Input value={el11Key} onChange={setEl11Key} placeholder="sk_…" masked />
+            </div>
+            <button
+              onClick={() => fetchEl11Voices(el11Key)}
+              disabled={!el11Key || el11Loading}
+              style={{
+                padding: '0 14px', borderRadius: 8, flexShrink: 0,
+                border: '0.5px solid var(--card-border)', background: 'var(--hover-bg)',
+                color: 'var(--text-secondary)', fontSize: 12,
+                cursor: !el11Key || el11Loading ? 'not-allowed' : 'pointer',
+                opacity: !el11Key || el11Loading ? 0.5 : 1,
+              }}
+            >
+              {el11Loading ? '…' : 'Load voices'}
+            </button>
+          </div>
+          {el11Error && (
+            <p style={{ margin: '6px 0 0', fontSize: 11, color: '#e55a5a' }}>{el11Error}</p>
+          )}
+        </div>
+
+        {/* Voice dropdown */}
+        <div style={{ marginBottom: 12 }}>
+          <div style={{ fontSize: 11, color: 'var(--text-secondary)', marginBottom: 5 }}>
+            Voice {el11Voices.length > 0 ? `(${el11Voices.length} available)` : '— click Load voices to fetch'}
+          </div>
+          <select
+            value={el11VoiceId}
+            onChange={e => setEl11VoiceId(e.target.value)}
+            style={{
+              width: '100%', padding: '9px 12px',
+              background: 'var(--bg-panel)', border: '0.5px solid var(--card-border)',
+              borderRadius: 8, color: 'var(--text-primary)', fontSize: 13,
+            }}
+          >
+            {el11Voices.length === 0 ? (
+              <option value={el11VoiceId}>
+                {el11VoiceId ? `${el11VoiceId} (load voices to see name)` : 'Enter key and click Load voices'}
+              </option>
+            ) : (
+              el11Voices.map(v => (
+                <option key={v.voice_id} value={v.voice_id}>
+                  {v.name}
+                  {v.voice_id === defaultVoiceId ? ' ★ VALERIE default' : ''}
+                  {v.labels?.accent ? ` — ${v.labels.accent}` : ''}
+                </option>
+              ))
+            )}
+          </select>
+        </div>
+
+        {/* Preview button */}
+        <button
+          onClick={handleEl11Preview}
+          disabled={!el11Key || el11Playing}
+          style={{
+            padding: '7px 16px', borderRadius: 8,
+            border: `0.5px solid ${isEl11Active ? 'var(--accent)' : 'var(--card-border)'}`,
+            background: isEl11Active ? 'var(--accent)15' : 'var(--hover-bg)',
+            color: isEl11Active ? 'var(--accent)' : 'var(--text-muted)',
+            fontSize: 12,
+            cursor: !el11Key || el11Playing ? 'not-allowed' : 'pointer',
+            opacity: !el11Key || el11Playing ? 0.5 : 1,
+          }}
+        >
+          {el11Playing ? '▶ Playing…' : "▶ Preview VALERIE's voice"}
+        </button>
+      </div>
+
+      {/* ─── Azure fallback ───────────────────────────────────────────────── */}
+      <div style={{ marginBottom: 20 }}>
+        <div style={{
+          fontSize: 11, fontWeight: 700, color: 'var(--text-muted)',
+          letterSpacing: '0.06em', marginBottom: 8,
+        }}>
+          AZURE NEURAL VOICES <span style={{ fontWeight: 400 }}>(fallback tier 2)</span>
+        </div>
+        <Input value={azureKey} onChange={setAzureKey} placeholder="Your Azure Cognitive Services key" masked />
+      </div>
+
+      {/* ─── System TTS fallback ──────────────────────────────────────────── */}
+      <div style={{ marginBottom: 24 }}>
+        <div style={{
+          fontSize: 11, fontWeight: 700, color: 'var(--text-muted)',
+          letterSpacing: '0.06em', marginBottom: 8,
+        }}>
+          SYSTEM VOICE <span style={{ fontWeight: 400 }}>(fallback tier 3)</span>
+        </div>
         <select
           value={voiceURI}
           onChange={e => setVoiceURI(e.target.value)}
           style={{
-            width: '100%', padding: '9px 12px',
+            width: '100%', padding: '9px 12px', marginBottom: 10,
             background: 'var(--bg-panel)', border: '0.5px solid var(--card-border)',
             borderRadius: 8, color: 'var(--text-primary)', fontSize: 13,
           }}
         >
           <option value="">— System default —</option>
-          {enVoices.map(v => (
+          {enSysVoices.map(v => (
             <option key={v.voiceURI} value={v.voiceURI}>{v.name} ({v.lang})</option>
           ))}
         </select>
+
+        <div style={{ display: 'flex', gap: 16, marginBottom: 10 }}>
+          <div style={{ flex: 1 }}>
+            <div style={{ fontSize: 11, color: 'var(--text-secondary)', marginBottom: 4 }}>Rate</div>
+            <Slider value={rate} onChange={setRate} min={0.5} max={2.0} step={0.05} />
+          </div>
+          <div style={{ flex: 1 }}>
+            <div style={{ fontSize: 11, color: 'var(--text-secondary)', marginBottom: 4 }}>Pitch</div>
+            <Slider value={pitch} onChange={setPitch} min={0.5} max={2.0} step={0.05} />
+          </div>
+        </div>
+
         <button
-          onClick={handlePreview}
+          onClick={handleSysPreview}
           style={{
-            marginTop: 8, padding: '6px 16px', borderRadius: 8,
+            padding: '6px 14px', borderRadius: 8,
             border: '0.5px solid var(--card-border)', background: 'var(--hover-bg)',
             color: 'var(--text-secondary)', fontSize: 12, cursor: 'pointer',
           }}
         >
-          ▶ Preview voice
+          ▶ Preview system voice
         </button>
-      </Row>
-
-      <Row label="Speech rate">
-        <Slider value={rate} onChange={setRate} min={0.5} max={2.0} step={0.05} />
-      </Row>
-
-      <Row label="Pitch">
-        <Slider value={pitch} onChange={setPitch} min={0.5} max={2.0} step={0.05} />
-      </Row>
-
-      <Row label="Azure Neural Voices API key" hint="Free tier available — premium quality voices">
-        <Input value={azureKey} onChange={setAzureKey} placeholder="Your Azure Cognitive Services key" masked />
-      </Row>
-
-      <Row label="ElevenLabs API key" hint="VALERIE's primary voice — already configured with her voice identity">
-        <Input value={el11Key} onChange={setEl11Key} placeholder="sk_…" masked />
-      </Row>
-
-      <Row label="ElevenLabs Voice ID" hint="VALERIE's locked-in voice. Change only to switch voice identity.">
-        <Input value={el11VoiceId} onChange={setEl11VoiceId} placeholder="yj30vwTGJxSHezdAGsv9" />
-      </Row>
+      </div>
 
       <button
         onClick={handleSave}
