@@ -106,6 +106,16 @@ export default function App() {
     setOnboarded(isOnboarded);
   }, []);
 
+  // ── Live settings sync — update state when Settings tab saves changes ──────
+  useEffect(() => {
+    const handler = (e) => {
+      const updated = e.detail ?? storage.get(STORAGE_KEYS.SETTINGS, {});
+      setSettings(updated);
+    };
+    window.addEventListener('valerie:settings-changed', handler);
+    return () => window.removeEventListener('valerie:settings-changed', handler);
+  }, []);
+
   // ── Apply time-of-day background class ────────────────────────────────────
   const tod = getTimeOfDay();
 
@@ -148,6 +158,7 @@ export default function App() {
         internetOnline={ai.internetOnline}
         lastPinged={ai.lastPinged}
         firebaseSynced={firebaseSynced}
+        hiddenTabs={settings?.hiddenTabs ?? []}
       />
 
       {/* Main content area */}

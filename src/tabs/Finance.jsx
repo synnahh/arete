@@ -40,6 +40,22 @@ const SECTIONS = [
 // ─── Utilities ────────────────────────────────────────────────────────────────
 const todayISO = () => new Date().toISOString().split('T')[0];
 
+function getCurrencySymbol(code) {
+  switch (code) {
+    case 'GBP': return '£';
+    case 'EUR': return '€';
+    case 'USD': return '$';
+    case 'AUD': return 'A$';
+    default:    return '$';
+  }
+}
+
+function makeFmt(currencyCode) {
+  const sym = getCurrencySymbol(currencyCode);
+  return (n) => `${sym}${Math.abs(n || 0).toLocaleString('en-GB', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
+}
+
+// Legacy single-currency fmt — replaced by useFmt hook inside components
 function fmt(n) {
   return `£${Math.abs(n || 0).toLocaleString('en-GB', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
 }
@@ -100,7 +116,7 @@ function Label({ children }) {
 }
 
 // ─── Overview ─────────────────────────────────────────────────────────────────
-function Overview({ transactions, goals, subscriptions }) {
+function Overview({ transactions, goals, subscriptions, fmt }) {
   const now        = new Date();
   const monthStart = new Date(now.getFullYear(), now.getMonth(), 1).toISOString().split('T')[0];
   const thisMonth  = transactions.filter(t => t.date >= monthStart);
@@ -115,28 +131,115 @@ function Overview({ transactions, goals, subscriptions }) {
 
   const recent = [...transactions]
     .sort((a, b) => (b.date || '').localeCompare(a.date || ''))
-    .slice(0, 10);
+    .slice(0, 8);
 
-  const StatCard = ({ label, value, colour, sub }) => (
-    <Panel style={{ flex: 1, minWidth: 130 }}>
-      <div style={{ fontSize: 10, color: 'var(--text-muted)', letterSpacing: '0.06em' }}>{label}</div>
-      <div style={{ fontSize: 22, fontWeight: 300, color: colour || 'var(--text-primary)', marginTop: 6 }}>{value}</div>
-      {sub && <div style={{ fontSize: 11, color: 'var(--text-muted)', marginTop: 4 }}>{sub}</div>}
-    </Panel>
-  );
+  // Upcoming renewals
+  const renewalsSoon = subscriptions
+    .filter(s => s.status === 'active')
+    .map(s => ({ ...s, daysLeft: daysUntil(s.nextBilling) }))
+    .filter(s => s.daysLeft != null && s.daysLeft <= 7 && s.daysLeft >= 0)
+    .sort((a, b) => a.daysLeft - b.daysLeft);
 
   return (
     <div style={{ display: 'flex', flexDirection: 'column', gap: 20 }}>
-      <div style={{ display: 'flex', gap: 12, flexWrap: 'wrap' }}>
-        <StatCard label="INCOME"        value={fmt(income)}    colour="#4caf7d" sub="This month" />
-        <StatCard label="EXPENSES"      value={fmt(expenses)}  colour="#e55a5a" sub="This month" />
-        <StatCard label="NET"
-          value={(net >= 0 ? '+' : '−') + fmt(net)}
-          colour={net >= 0 ? '#4caf7d' : '#e55a5a'}
-          sub="Balance" />
-        <StatCard label="SUBSCRIPTIONS" value={fmt(monthlySubCost)} sub="Monthly cost" />
-      </div>
 
+      {/* ── Hero balance block ───────────────────────────────────────────────── */}
+      <Panel style={{ padding: '24px 28px' }}>
+        <div style={{ fontSize: 10, color: 'var(--text-muted)', letterSpacing: '0.08em', marginBottom: 8 }}>
+          THIS MONTH · NET
+        </div>
+        <div style={{
+          fontSize: 42, fontWeight: 200, letterSpacing: '-0.01em',
+          color: net >= 0 ? '#4caf7d' : '#e55a5a',
+          lineHeight: 1,
+        }}>
+          {net >= 0 ? '+' : '−'}{fmt(Math.abs(net))}
+        </div>
+        <div style={{ fontSize: 12, color: 'var(--text-muted)', marginTop: 8 }}>
+          {new Date().toLocaleDateString('en-GB', { month: 'long', year: 'numeric' })}
+        </div>
+
+        {/* Stats row */}
+        <div style={{
+          display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)',
+          gap: 1, marginTop: 20,
+          background: 'var(--card-border)',
+          borderRadius: 10, overflow: 'hidden',
+        }}>
+          {[
+            { label: 'INCOME',        value: fmt(income),         colour: '#4caf7d' },
+            { label: 'EXPENSES',      value: fmt(expenses),       colour: '#e55a5a' },
+            { label: 'SUBSCRIPTIONS', value: fmt(monthlySubCost), colour: 'var(--text-secondary)' },
+          ].map(stat => (
+            <div key={stat.label} style={{
+              padding: '14px 16px',
+              background: 'var(--bg-panel)',
+            }}>
+              <div style={{ fontSize: 9.5, color: 'var(--text-muted)', letterSpacing: '0.07em', marginBottom: 6 }}>
+                {stat.label}
+              </div>
+              <div style={{ fontSize: 17, fontWeight: 300, color: stat.colour }}>
+                {stat.value}
+              </div>
+            </div>
+          ))}
+        </div>
+      </Panel>
+
+      {/* ── Upcoming renewals alert ──────────────────────────────────────────── */}
+      {renewalsSoon.length > 0 && (
+        <Panel style={{ padding: '14px 18px', borderColor: '#f4a64244', background: 'rgba(244,166,66,0.04)' }}>
+          <Label>⚠ UPCOMING RENEWALS</Label>
+          <div style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
+            {renewalsSoon.map(s => (
+              <div key={s.id} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                <div style={{ fontSize: 13, color: 'var(--text-primary)' }}>{s.name}</div>
+                <div style={{ display: 'flex', gap: 10, alignItems: 'center' }}>
+                  <span style={{ fontSize: 11, color: '#f4a642' }}>
+                    in {s.daysLeft} day{s.daysLeft !== 1 ? 's' : ''}
+                  </span>
+                  <span style={{ fontSize: 13, color: 'var(--text-secondary)' }}>{fmt(s.amount)}</span>
+                </div>
+              </div>
+            ))}
+          </div>
+        </Panel>
+      )}
+
+      {/* ── Savings goals snapshot ───────────────────────────────────────────── */}
+      {goals.length > 0 && (
+        <Panel>
+          <Label>SAVINGS GOALS</Label>
+          <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
+            {goals.slice(0, 3).map(g => {
+              const pct = g.target > 0 ? Math.min(((g.current || 0) / g.target) * 100, 100) : 0;
+              return (
+                <div key={g.id}>
+                  <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 5 }}>
+                    <span style={{ fontSize: 13, color: 'var(--text-primary)' }}>{g.name}</span>
+                    <span style={{ fontSize: 12, color: pct >= 100 ? '#4caf7d' : 'var(--text-secondary)' }}>
+                      {fmt(g.current || 0)} / {fmt(g.target)}
+                    </span>
+                  </div>
+                  <div style={{
+                    height: 5, borderRadius: 3,
+                    background: 'var(--hover-bg)',
+                    overflow: 'hidden',
+                  }}>
+                    <div style={{
+                      height: '100%', width: `${pct}%`,
+                      background: pct >= 100 ? '#4caf7d' : 'var(--accent)',
+                      borderRadius: 3, transition: 'width 0.4s ease',
+                    }} />
+                  </div>
+                </div>
+              );
+            })}
+          </div>
+        </Panel>
+      )}
+
+      {/* ── Recent transactions ──────────────────────────────────────────────── */}
       <Panel>
         <Label>RECENT TRANSACTIONS</Label>
         {recent.length === 0 ? (
@@ -186,7 +289,7 @@ function Overview({ transactions, goals, subscriptions }) {
 }
 
 // ─── Spending ─────────────────────────────────────────────────────────────────
-function Spending({ transactions, onAdd }) {
+function Spending({ transactions, onAdd, fmt }) {
   const [type,     setType]     = useState('expense');
   const [amount,   setAmount]   = useState('');
   const [category, setCat]      = useState('food');
@@ -369,7 +472,7 @@ function Spending({ transactions, onAdd }) {
 }
 
 // ─── Savings ──────────────────────────────────────────────────────────────────
-function Savings({ goals, onAdd, onUpdate, onRemove }) {
+function Savings({ goals, onAdd, onUpdate, onRemove, fmt }) {
   const [showForm,  setShowForm]  = useState(false);
   const [name,      setName]      = useState('');
   const [target,    setTarget]    = useState('');
@@ -418,12 +521,12 @@ function Savings({ goals, onAdd, onUpdate, onRemove }) {
             <div style={{ display: 'flex', gap: 10 }}>
               <input placeholder="Goal name (e.g. Holiday fund)"
                 value={name} onChange={e => setName(e.target.value)} style={INPUT} />
-              <input type="number" placeholder="Target £"
+              <input type="number" placeholder="Target amount"
                 value={target} onChange={e => setTarget(e.target.value)}
                 style={{ ...INPUT, flex: '0 0 120px' }} />
             </div>
             <div style={{ display: 'flex', gap: 10 }}>
-              <input type="number" placeholder="Already saved £"
+              <input type="number" placeholder="Already saved"
                 value={current} onChange={e => setCurrent(e.target.value)} style={INPUT} />
               <input type="date"
                 value={deadline} onChange={e => setDeadline(e.target.value)}
@@ -506,7 +609,7 @@ function Savings({ goals, onAdd, onUpdate, onRemove }) {
 }
 
 // ─── Subscriptions ────────────────────────────────────────────────────────────
-function Subscriptions({ subs, onAdd, onUpdate, onRemove }) {
+function Subscriptions({ subs, onAdd, onUpdate, onRemove, fmt }) {
   const [showForm,  setShowForm]  = useState(false);
   const [name,      setName]      = useState('');
   const [amount,    setAmount]    = useState('');
@@ -552,7 +655,7 @@ function Subscriptions({ subs, onAdd, onUpdate, onRemove }) {
             <div style={{ display: 'flex', gap: 10 }}>
               <input placeholder="Name (e.g. Netflix)"
                 value={name} onChange={e => setName(e.target.value)} style={INPUT} />
-              <input type="number" placeholder="£" value={amount}
+              <input type="number" placeholder="Amount" value={amount}
                 onChange={e => setAmount(e.target.value)}
                 style={{ ...INPUT, flex: '0 0 90px' }} />
             </div>
@@ -691,6 +794,10 @@ export default function Finance({ settings }) {
   const goals = useCollection('savings_goals', STORAGE_KEYS.SAVINGS);
   const subs  = useCollection('subscriptions', STORAGE_KEYS.SUBSCRIPTIONS);
 
+  // Currency-aware formatter, updates live when settings change
+  const currencyCode = settings?.currency || 'GBP';
+  const fmt = makeFmt(currencyCode);
+
   function addTransaction(data) {
     txn.add({ ...data, createdAt: new Date().toISOString() });
   }
@@ -707,12 +814,14 @@ export default function Finance({ settings }) {
         transactions={txn.items}
         goals={goals.items}
         subscriptions={subs.items}
+        fmt={fmt}
       />
     ),
     spending: (
       <Spending
         transactions={txn.items}
         onAdd={addTransaction}
+        fmt={fmt}
       />
     ),
     savings: (
@@ -721,6 +830,7 @@ export default function Finance({ settings }) {
         onAdd={addGoal}
         onUpdate={goals.update}
         onRemove={goals.remove}
+        fmt={fmt}
       />
     ),
     subscriptions: (
@@ -729,6 +839,7 @@ export default function Finance({ settings }) {
         onAdd={addSub}
         onUpdate={subs.update}
         onRemove={subs.remove}
+        fmt={fmt}
       />
     ),
   };

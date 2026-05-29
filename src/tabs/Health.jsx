@@ -86,67 +86,199 @@ function StatCard({ label, value, unit, colour = 'var(--accent)', ring, children
 }
 
 // ═══════════════════════════════════════════════════════════════════════════════
-// 1. OVERVIEW
+// 1. OVERVIEW — compact stat grid for all sub-sections
 // ═══════════════════════════════════════════════════════════════════════════════
-function Overview({ habits, waterLogs, nutritionLogs, sleepData, settings }) {
+function Overview({ habits, waterLogs, nutritionLogs, sleepData, settings, supplements, suppLogs, stimLogs, workoutLogs, bodyMetrics }) {
   const today = todayStr();
-  const waterGoal = settings?.waterGoal ?? 2500;
+
+  // Water
+  const waterGoal  = settings?.waterGoal ?? 2500;
   const todayWater = useMemo(() =>
     (waterLogs || []).filter(l => l.date === today).reduce((s, l) => s + (l.amount || 0), 0),
     [waterLogs, today]);
+
+  // Nutrition
   const todayNutrition = useMemo(() =>
     (nutritionLogs || []).find(l => l.date === today),
     [nutritionLogs, today]);
+  const macroGoal = settings?.macroGoal ?? 2500;
+  const todayCal  = todayNutrition?.totalCalories ?? 0;
+
+  // Sleep
   const lastSleep = useMemo(() =>
-    [...(sleepData || [])].sort((a, b) => b.date?.localeCompare(a.date ?? '') ?? 0)[0],
+    [...(sleepData || [])].sort((a, b) => (b.date ?? '').localeCompare(a.date ?? ''))[0],
     [sleepData]);
+
+  // Habits
   const todayHabits = useMemo(() => {
     const total = (habits || []).length;
     const done  = (habits || []).filter(h => h.lastCompleted === today).length;
     return { done, total };
   }, [habits, today]);
-  const macroGoal = settings?.macroGoal ?? 2500;
-  const todayCal  = todayNutrition?.totalCalories ?? 0;
+
+  // Supplements
+  const todaySupps = useMemo(() => {
+    const total = (supplements || []).length;
+    const done  = new Set((suppLogs || []).filter(l => l.date === today).map(l => l.suppId)).size;
+    return { done, total };
+  }, [supplements, suppLogs, today]);
+
+  // Stimulants
+  const todayStims = useMemo(() => {
+    const logs = (stimLogs || []).filter(l => l.date === today);
+    return {
+      caffeine: logs.filter(l => l.type === 'caffeine').reduce((s, l) => s + (l.amount || 0), 0),
+      nicotine: logs.filter(l => l.type === 'nicotine').reduce((s, l) => s + (l.amount || 0), 0),
+    };
+  }, [stimLogs, today]);
+  const caffLimit = settings?.caffeineLimitMg ?? 400;
+  const nicLimit  = settings?.nicotineLimitMg ?? 20;
+
+  // Workout today
+  const workedOutToday = useMemo(() =>
+    (workoutLogs || []).some(l => l.date === today),
+    [workoutLogs, today]);
+
+  // Body — latest weight
+  const latestBody = useMemo(() =>
+    [...(bodyMetrics || [])].sort((a, b) => (b.date ?? '').localeCompare(a.date ?? ''))[0],
+    [bodyMetrics]);
+
+  // Compact stat tile component
+  const Tile = ({ label, value, sublabel, colour = 'var(--accent)', ring: ringProps, navTo, onNav }) => (
+    <div
+      onClick={onNav}
+      style={{
+        ...cardSx, flex: '1 1 120px', minWidth: 110, maxWidth: 200,
+        cursor: onNav ? 'pointer' : 'default',
+        transition: 'border-color 0.15s',
+      }}
+      onMouseEnter={e => { if (onNav) e.currentTarget.style.borderColor = 'var(--accent)55'; }}
+      onMouseLeave={e => { if (onNav) e.currentTarget.style.borderColor = 'var(--card-border)'; }}
+    >
+      <div style={{ fontSize: 9.5, color: 'var(--text-muted)', letterSpacing: '0.07em', marginBottom: 6 }}>{label}</div>
+      {ringProps ? (
+        <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
+          <RingChart
+            value={ringProps.value} max={ringProps.max}
+            size={44} thickness={4} colour={colour}
+            label={null}
+          />
+          <div>
+            <div style={{ fontSize: 16, fontWeight: 300, color: 'var(--text-primary)', lineHeight: 1 }}>{value}</div>
+            {sublabel && <div style={{ fontSize: 10, color: 'var(--text-muted)', marginTop: 2 }}>{sublabel}</div>}
+          </div>
+        </div>
+      ) : (
+        <>
+          <div style={{ fontSize: 18, fontWeight: 300, color: colour, lineHeight: 1 }}>{value}</div>
+          {sublabel && <div style={{ fontSize: 10, color: 'var(--text-muted)', marginTop: 3 }}>{sublabel}</div>}
+        </>
+      )}
+    </div>
+  );
 
   return (
     <Section title="Overview">
-      <div style={{ display: 'flex', flexWrap: 'wrap', gap: 12 }}>
-        <StatCard label="SLEEP SCORE" colour="var(--accent)" ring={{
-          value: lastSleep?.efficiency ?? 0, max: 100,
-          label: lastSleep ? `${lastSleep.efficiency ?? '—'}%` : '—',
-          sublabel: lastSleep ? `${Math.floor((lastSleep.duration ?? 0) / 60)}h ${(lastSleep.duration ?? 0) % 60}m` : 'no data',
-        }} />
-        <StatCard label="WATER" colour="#4a9eff" ring={{
-          value: todayWater, max: waterGoal,
-          label: todayWater >= 1000 ? `${(todayWater/1000).toFixed(1)}L` : `${todayWater}ml`,
-          sublabel: `of ${waterGoal >= 1000 ? (waterGoal/1000).toFixed(1)+'L' : waterGoal+'ml'}`,
-        }} />
-        <StatCard label="CALORIES" colour="#f4a642" ring={{
-          value: todayCal, max: macroGoal,
-          label: `${todayCal}`,
-          sublabel: `of ${macroGoal}`,
-        }} />
-        <StatCard label="HABITS" colour="#4caf7d" ring={{
-          value: todayHabits.done, max: todayHabits.total || 1,
-          label: `${todayHabits.done}/${todayHabits.total}`,
-          sublabel: 'today',
-        }} />
+      <div style={{ fontSize: 10.5, color: 'var(--text-muted)', marginBottom: 14, letterSpacing: '0.02em' }}>
+        Today at a glance — tap any card to go to that section
       </div>
 
-      {lastSleep && (
-        <div style={{ ...cardSx, marginTop: 16 }}>
-          <div style={{ fontSize: 10, color: 'var(--text-muted)', letterSpacing: '0.07em', marginBottom: 10 }}>LAST NIGHT</div>
-          <StageBar height={14} stages={[
-            { label: 'Deep',  value: lastSleep.stages?.deep  ?? 0, colour: '#4a9eff' },
-            { label: 'REM',   value: lastSleep.stages?.rem   ?? 0, colour: '#9b5de5' },
-            { label: 'Core',  value: lastSleep.stages?.core  ?? 0, colour: '#4caf7d' },
-            { label: 'Awake', value: lastSleep.stages?.awake ?? 0, colour: 'rgba(255,255,255,0.15)' },
+      {/* Row 1: core vitals */}
+      <div style={{ display: 'flex', flexWrap: 'wrap', gap: 10, marginBottom: 10 }}>
+        <Tile
+          label="SLEEP"
+          value={lastSleep ? `${lastSleep.efficiency ?? '—'}%` : '—'}
+          sublabel={lastSleep ? `${Math.floor((lastSleep.duration ?? 0)/60)}h ${(lastSleep.duration ?? 0)%60}m` : 'no data'}
+          colour="var(--accent)"
+          ring={lastSleep ? { value: lastSleep.efficiency ?? 0, max: 100 } : undefined}
+        />
+        <Tile
+          label="WATER"
+          value={todayWater >= 1000 ? `${(todayWater/1000).toFixed(1)}L` : `${todayWater}ml`}
+          sublabel={`of ${waterGoal >= 1000 ? (waterGoal/1000).toFixed(1)+'L' : waterGoal+'ml'}`}
+          colour="#4a9eff"
+          ring={{ value: todayWater, max: waterGoal }}
+        />
+        <Tile
+          label="CALORIES"
+          value={`${todayCal}`}
+          sublabel={`of ${macroGoal} kcal`}
+          colour="#f4a642"
+          ring={{ value: todayCal, max: macroGoal }}
+        />
+        <Tile
+          label="HABITS"
+          value={`${todayHabits.done}/${todayHabits.total}`}
+          sublabel={todayHabits.total === 0 ? 'none set' : todayHabits.done === todayHabits.total ? '✓ all done' : `${todayHabits.total - todayHabits.done} remaining`}
+          colour="#4caf7d"
+          ring={todayHabits.total > 0 ? { value: todayHabits.done, max: todayHabits.total } : undefined}
+        />
+      </div>
+
+      {/* Row 2: supplementary stats */}
+      <div style={{ display: 'flex', flexWrap: 'wrap', gap: 10, marginBottom: 16 }}>
+        <Tile
+          label="SUPPLEMENTS"
+          value={`${todaySupps.done}/${todaySupps.total}`}
+          sublabel={todaySupps.total === 0 ? 'none set' : todaySupps.done === todaySupps.total ? '✓ all taken' : 'remaining'}
+          colour="#9b5de5"
+          ring={todaySupps.total > 0 ? { value: todaySupps.done, max: todaySupps.total } : undefined}
+        />
+        <Tile
+          label="CAFFEINE"
+          value={`${todayStims.caffeine}mg`}
+          sublabel={`of ${caffLimit}mg`}
+          colour={todayStims.caffeine > caffLimit * 0.8 ? '#f4a642' : 'var(--text-secondary)'}
+          ring={{ value: todayStims.caffeine, max: caffLimit }}
+        />
+        {todayStims.nicotine > 0 && (
+          <Tile
+            label="NICOTINE"
+            value={`${todayStims.nicotine}mg`}
+            sublabel={`of ${nicLimit}mg`}
+            colour={todayStims.nicotine > nicLimit * 0.8 ? '#e55a5a' : '#f4a642'}
+            ring={{ value: todayStims.nicotine, max: nicLimit }}
+          />
+        )}
+        <Tile
+          label="WORKOUT"
+          value={workedOutToday ? 'Done ✓' : 'Not yet'}
+          sublabel={workedOutToday ? 'logged today' : 'no session yet'}
+          colour={workedOutToday ? '#4caf7d' : 'var(--text-muted)'}
+        />
+        {latestBody?.weight && (
+          <Tile
+            label="WEIGHT"
+            value={`${latestBody.weight}kg`}
+            sublabel={latestBody.date === today ? 'logged today' : `as of ${latestBody.date ?? '—'}`}
+            colour="var(--text-secondary)"
+          />
+        )}
+      </div>
+
+      {/* Sleep stage bar if available */}
+      {lastSleep?.stages && (
+        <div style={{ ...cardSx }}>
+          <div style={{ fontSize: 10, color: 'var(--text-muted)', letterSpacing: '0.07em', marginBottom: 10 }}>LAST NIGHT — SLEEP STAGES</div>
+          <StageBar height={12} stages={[
+            { label: 'Deep',  value: lastSleep.stages.deep  ?? 0, colour: '#4a9eff' },
+            { label: 'REM',   value: lastSleep.stages.rem   ?? 0, colour: '#9b5de5' },
+            { label: 'Core',  value: lastSleep.stages.core  ?? 0, colour: '#4caf7d' },
+            { label: 'Awake', value: lastSleep.stages.awake ?? 0, colour: 'rgba(255,255,255,0.15)' },
           ]} />
-          <div style={{ display: 'flex', gap: 8, marginTop: 6 }}>
-            {[{ label:'Deep', colour:'#4a9eff' }, { label:'REM', colour:'#9b5de5' }, { label:'Core', colour:'#4caf7d' }, { label:'Awake', colour:'rgba(255,255,255,0.3)' }].map(s => (
-              <div key={s.label} style={{ display: 'flex', alignItems: 'center', gap: 4 }}>
-                <div style={{ width: 6, height: 6, borderRadius: '50%', background: s.colour }} />
-                <span style={{ fontSize: 9.5, color: 'var(--text-muted)' }}>{s.label}</span>
+          <div style={{ display: 'flex', gap: 12, marginTop: 6, flexWrap: 'wrap' }}>
+            {[
+              { l:'Deep', c:'#4a9eff', v: lastSleep.stages.deep  },
+              { l:'REM',  c:'#9b5de5', v: lastSleep.stages.rem   },
+              { l:'Core', c:'#4caf7d', v: lastSleep.stages.core  },
+              { l:'Awake',c:'rgba(255,255,255,0.3)', v: lastSleep.stages.awake },
+            ].map(s => (
+              <div key={s.l} style={{ display: 'flex', alignItems: 'center', gap: 4 }}>
+                <div style={{ width: 6, height: 6, borderRadius: '50%', background: s.c }} />
+                <span style={{ fontSize: 10, color: 'var(--text-muted)' }}>
+                  {s.l}: {Math.floor((s.v ?? 0)/60)}h{(s.v ?? 0)%60}m
+                </span>
               </div>
             ))}
           </div>
@@ -1051,22 +1183,41 @@ function Sleep({ sleepData }) {
 // ═══════════════════════════════════════════════════════════════════════════════
 // 9. STIMULANT TRACKER
 // ═══════════════════════════════════════════════════════════════════════════════
-const STIM_PRESETS = [
-  { name:'Coffee',       type:'caffeine', amount:95,  unit:'mg' },
-  { name:'Espresso',     type:'caffeine', amount:63,  unit:'mg' },
-  { name:'Energy Drink', type:'caffeine', amount:160, unit:'mg' },
-  { name:'Green Tea',    type:'caffeine', amount:30,  unit:'mg' },
-  { name:'Cigarette',    type:'nicotine', amount:12,  unit:'mg' },
-  { name:'Nicotine Patch',type:'nicotine',amount:21,  unit:'mg' },
-  { name:'Vape',         type:'nicotine', amount:3,   unit:'mg per puff' },
+const DEFAULT_STIM_PRESETS = [
+  { id:'coffee',         name:'Coffee',        type:'caffeine', amount:95,  unit:'mg' },
+  { id:'espresso',       name:'Espresso',       type:'caffeine', amount:63,  unit:'mg' },
+  { id:'energy_drink',   name:'Energy Drink',   type:'caffeine', amount:160, unit:'mg' },
+  { id:'green_tea',      name:'Green Tea',       type:'caffeine', amount:30,  unit:'mg' },
+  { id:'cigarette',      name:'Cigarette',      type:'nicotine', amount:12,  unit:'mg' },
+  { id:'nicotine_patch', name:'Nicotine Patch', type:'nicotine', amount:21,  unit:'mg' },
+  { id:'vape',           name:'Vape',           type:'nicotine', amount:3,   unit:'mg' },
 ];
 
-function Stimulant({ stimLogs, addStimLog, settings }) {
+function Stimulant({ stimLogs, addStimLog, removeStimLog, settings }) {
   const today     = todayStr();
   const caffLimit = settings?.caffeineLimitMg ?? 400;
   const nicLimit  = settings?.nicotineLimitMg ?? 20;
-  const [custom, setCustom] = useState({ name:'', type:'caffeine', amount:'', unit:'mg' });
+
+  // Hidden preset IDs — persisted per user
+  const [hiddenPresets, setHiddenPresets] = useState(
+    () => JSON.parse(localStorage.getItem('valerie_hidden_stim_presets') || '[]')
+  );
+  const [custom, setCustom]         = useState({ name:'', type:'caffeine', amount:'', unit:'mg' });
   const [showCustom, setShowCustom] = useState(false);
+  const [manageMode, setManageMode] = useState(false);
+
+  const visiblePresets = DEFAULT_STIM_PRESETS.filter(p => !hiddenPresets.includes(p.id));
+
+  const hidePreset = (id) => {
+    const next = [...hiddenPresets, id];
+    setHiddenPresets(next);
+    localStorage.setItem('valerie_hidden_stim_presets', JSON.stringify(next));
+  };
+
+  const restorePresets = () => {
+    setHiddenPresets([]);
+    localStorage.removeItem('valerie_hidden_stim_presets');
+  };
 
   const todayLogs = useMemo(() =>
     [...(stimLogs || []).filter(l => l.date === today)].sort((a, b) => (b.time ?? '').localeCompare(a.time ?? '')),
@@ -1082,7 +1233,7 @@ function Stimulant({ stimLogs, addStimLog, settings }) {
   return (
     <Section title="Stimulants">
       {/* Summary rings */}
-      <div style={{ display: 'flex', gap: 20, marginBottom: 20 }}>
+      <div style={{ display: 'flex', gap: 16, marginBottom: 20 }}>
         <div style={{ display:'flex', alignItems:'center', gap:12, ...cardSx, flex:1 }}>
           <RingChart value={caffTotal} max={caffLimit} size={72} thickness={6}
             colour={caffTotal > caffLimit * 0.8 ? '#f4a642' : 'var(--accent)'}
@@ -1104,20 +1255,51 @@ function Stimulant({ stimLogs, addStimLog, settings }) {
       </div>
 
       {/* Quick-log presets */}
-      <div style={{ display:'flex', gap:7, flexWrap:'wrap', marginBottom:14 }}>
-        {STIM_PRESETS.map(p => (
-          <button key={p.name} onClick={() => log(p)} style={{
-            padding:'6px 12px', borderRadius:20, fontSize:11.5, cursor:'pointer',
-            border:'0.5px solid var(--card-border)', background:'var(--hover-bg)',
-            color:'var(--text-secondary)', transition:'all 0.15s ease',
-          }}
-          onMouseEnter={e => e.currentTarget.style.borderColor='var(--accent)'}
-          onMouseLeave={e => e.currentTarget.style.borderColor='var(--card-border)'}>
-            {p.name} <span style={{ opacity:0.6, fontSize:10 }}>{p.amount}{p.unit.replace(' per puff','')}</span>
-          </button>
+      <div style={{ display:'flex', gap:7, flexWrap:'wrap', marginBottom:6, alignItems:'center' }}>
+        {visiblePresets.map(p => (
+          <div key={p.id} style={{ position:'relative', display:'inline-flex' }}>
+            <button onClick={() => log(p)} style={{
+              padding:'6px 12px', borderRadius:20, fontSize:11.5, cursor:'pointer',
+              border:'0.5px solid var(--card-border)', background:'var(--hover-bg)',
+              color:'var(--text-secondary)', transition:'all 0.15s ease',
+              paddingRight: manageMode ? 24 : 12,
+            }}
+            onMouseEnter={e => { if (!manageMode) e.currentTarget.style.borderColor='var(--accent)'; }}
+            onMouseLeave={e => e.currentTarget.style.borderColor='var(--card-border)'}>
+              {p.name} <span style={{ opacity:0.6, fontSize:10 }}>{p.amount}{p.unit}</span>
+            </button>
+            {manageMode && (
+              <button
+                onClick={() => hidePreset(p.id)}
+                title="Remove this preset"
+                style={{
+                  position:'absolute', right:2, top:'50%', transform:'translateY(-50%)',
+                  width:18, height:18, borderRadius:'50%', border:'none', cursor:'pointer',
+                  background:'#e55a5a', color:'#fff', fontSize:11, lineHeight:1,
+                  display:'flex', alignItems:'center', justifyContent:'center',
+                }}
+              >×</button>
+            )}
+          </div>
         ))}
+        <button
+          onClick={() => setManageMode(p => !p)}
+          style={{ ...btnGhost, borderRadius:20, fontSize:11.5, padding:'5px 10px',
+            borderColor: manageMode ? 'var(--accent)' : 'var(--card-border)',
+            color: manageMode ? 'var(--accent)' : 'var(--text-secondary)',
+          }}
+          title="Manage presets"
+        >⚙</button>
         <button onClick={() => setShowCustom(p => !p)} style={{ ...btnGhost, borderRadius:20, fontSize:11.5 }}>+ Custom</button>
       </div>
+
+      {manageMode && hiddenPresets.length > 0 && (
+        <div style={{ marginBottom:10 }}>
+          <button onClick={restorePresets} style={{ ...btnGhost, fontSize:11, padding:'4px 10px' }}>
+            ↩ Restore all presets ({hiddenPresets.length} hidden)
+          </button>
+        </div>
+      )}
 
       {/* Custom log form */}
       {showCustom && (
@@ -1147,14 +1329,19 @@ function Stimulant({ stimLogs, addStimLog, settings }) {
 
       {/* Today's log */}
       <div style={{ ...cardSx }}>
-        <div style={{ fontSize:10, color:'var(--text-muted)', letterSpacing:'0.07em', marginBottom:8 }}>TODAY</div>
+        <div style={{ display:'flex', justifyContent:'space-between', alignItems:'center', marginBottom:8 }}>
+          <div style={{ fontSize:10, color:'var(--text-muted)', letterSpacing:'0.07em' }}>TODAY</div>
+          {todayLogs.length > 0 && (
+            <span style={{ fontSize:10, color:'var(--text-muted)' }}>Tap × to remove an entry</span>
+          )}
+        </div>
         {todayLogs.length === 0 ? (
           <p style={{ fontSize:12.5, color:'var(--text-muted)', margin:0 }}>Nothing logged today.</p>
         ) : (
           todayLogs.map((l, i) => (
             <div key={l.id || i} style={{
               display:'flex', justifyContent:'space-between', alignItems:'center',
-              padding:'6px 0', borderBottom: i < todayLogs.length-1 ? '0.5px solid var(--sidebar-divider)' : 'none',
+              padding:'7px 0', borderBottom: i < todayLogs.length-1 ? '0.5px solid var(--sidebar-divider)' : 'none',
             }}>
               <div>
                 <span style={{ fontSize:12.5, color:'var(--text-primary)' }}>{l.name}</span>
@@ -1162,7 +1349,23 @@ function Stimulant({ stimLogs, addStimLog, settings }) {
                   {l.type === 'caffeine' ? '☕' : '🚬'} {l.amount}{l.unit}
                 </span>
               </div>
-              <span style={{ fontSize:11, color:'var(--text-muted)' }}>{l.time}</span>
+              <div style={{ display:'flex', alignItems:'center', gap:10 }}>
+                <span style={{ fontSize:11, color:'var(--text-muted)' }}>{l.time}</span>
+                {l.id && removeStimLog && (
+                  <button
+                    onClick={() => removeStimLog(l.id)}
+                    title="Remove this entry"
+                    style={{
+                      width:20, height:20, borderRadius:'50%', border:'none', cursor:'pointer',
+                      background:'rgba(229,90,90,0.12)', color:'#e55a5a',
+                      fontSize:13, lineHeight:1, display:'flex', alignItems:'center', justifyContent:'center',
+                      transition:'background 0.15s',
+                    }}
+                    onMouseEnter={e => e.currentTarget.style.background='rgba(229,90,90,0.3)'}
+                    onMouseLeave={e => e.currentTarget.style.background='rgba(229,90,90,0.12)'}
+                  >×</button>
+                )}
+              </div>
             </div>
           ))
         )}
@@ -1198,12 +1401,12 @@ export default function Health({ settings }) {
   const { items: supplements, add: addSupplement, remove: removeSupplement }                        = useCollection('supplements',     STORAGE_KEYS.SUPPLEMENTS);
   const { items: suppLogs,   add: addSuppLog }                                                      = useCollection('supplement_logs', STORAGE_KEYS.SUPP_LOGS);
   const { items: sleepData }                                                                         = useCollection('sleep_data',      STORAGE_KEYS.SLEEP);
-  const { items: stimLogs,   add: addStimLog }                                                      = useCollection('stimulant_logs',  STORAGE_KEYS.STIMULANTS);
+  const { items: stimLogs,   add: addStimLog,   remove: removeStimLog }                             = useCollection('stimulant_logs',  STORAGE_KEYS.STIMULANTS);
 
   const renderSection = () => {
     const p = { settings: settings_ };
     switch (active) {
-      case 'overview':    return <Overview     {...p} habits={habits} waterLogs={waterLogs} nutritionLogs={nutritionLogs} sleepData={sleepData} />;
+      case 'overview':    return <Overview     {...p} habits={habits} waterLogs={waterLogs} nutritionLogs={nutritionLogs} sleepData={sleepData} supplements={supplements} suppLogs={suppLogs} stimLogs={stimLogs} workoutLogs={workoutLogs} bodyMetrics={bodyMetrics} />;
       case 'habits':      return <Habits       habits={habits} addHabit={addHabit} updateHabit={updateHabit} removeHabit={removeHabit} />;
       case 'nutrition':   return <Nutrition    {...p} nutritionLogs={nutritionLogs} addNutritionLog={addNutritionLog} updateNutritionLog={updateNutritionLog} />;
       case 'workout':     return <Workout      workoutLogs={workoutLogs} addWorkoutLog={addWorkoutLog} settings={settings_} />;
@@ -1211,7 +1414,7 @@ export default function Health({ settings }) {
       case 'body':        return <Body         bodyMetrics={bodyMetrics} addBodyMetric={addBodyMetric} />;
       case 'supplements': return <Supplements  supplements={supplements} suppLogs={suppLogs} addSupplement={addSupplement} removeSupplement={removeSupplement} addSuppLog={addSuppLog} />;
       case 'sleep':       return <Sleep        sleepData={sleepData} />;
-      case 'stimulant':   return <Stimulant    {...p} stimLogs={stimLogs} addStimLog={addStimLog} />;
+      case 'stimulant':   return <Stimulant    {...p} stimLogs={stimLogs} addStimLog={addStimLog} removeStimLog={removeStimLog} />;
       default:            return null;
     }
   };

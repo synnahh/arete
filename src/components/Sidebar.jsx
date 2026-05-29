@@ -18,7 +18,7 @@ const ICONS = {
   health:     "M20.84 4.61a5.5 5.5 0 00-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 00-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 000-7.78z",
   finance:    "M12 2v20 M17 5H9.5a3.5 3.5 0 000 7h5a3.5 3.5 0 010 7H6",
   progress:   "M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z",
-  style:      "M20.38 8.57l-1.23 1.85a8 8 0 01-.22 7.58H5.07A8 8 0 0115.58 6.85l1.85-1.23A10 10 0 0121 12 M10.88 21.94A10 10 0 112.06 9.11",
+  style:      "M20.84 7l-3-4H6.16L3 7l3.5 2V20h11V9L20.84 7zM9 4c0 1.65 1.35 3 3 3s3-1.35 3-3",
   essentials: "M21 16V8a2 2 0 00-1-1.73l-7-4a2 2 0 00-2 0l-7 4A2 2 0 003 8v8a2 2 0 001 1.73l7 4a2 2 0 002 0l7-4A2 2 0 0021 16z",
   lists:      "M8 6h13 M8 12h13 M8 18h13 M3 6h.01 M3 12h.01 M3 18h.01",
   focus:      "M12 22c5.523 0 10-4.477 10-10S17.523 2 12 2 2 6.477 2 12s4.477 10 10 10z M12 6v6l4 2",
@@ -222,7 +222,10 @@ function Divider() {
 }
 
 // ─── Main Sidebar ─────────────────────────────────────────────────────────────
-export default function Sidebar({ activeTab, onTabClick, claudeOnline, ollamaOnline, internetOnline, lastPinged, firebaseSynced }) {
+export default function Sidebar({ activeTab, onTabClick, claudeOnline, ollamaOnline, internetOnline, lastPinged, firebaseSynced, hiddenTabs = [] }) {
+
+  // Filter a group, keeping only visible tabs
+  const visible = (tabs) => tabs.filter(t => !hiddenTabs.includes(t.id));
 
   return (
     <aside style={{
@@ -257,19 +260,21 @@ export default function Sidebar({ activeTab, onTabClick, claudeOnline, ollamaOnl
       <div style={{ flex: 1, overflowY: 'auto', width: '100%',
         display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 0 }}>
 
-        <TabGroup tabs={GROUP_1} activeTab={activeTab} onTabClick={onTabClick} />
-        <Divider />
-        <TabGroup tabs={GROUP_2} activeTab={activeTab} onTabClick={onTabClick} />
-        <Divider />
-        <TabGroup tabs={GROUP_3} activeTab={activeTab} onTabClick={onTabClick} />
+        <TabGroup tabs={visible(GROUP_1)} activeTab={activeTab} onTabClick={onTabClick} />
+        {visible(GROUP_2).length > 0 && <><Divider /><TabGroup tabs={visible(GROUP_2)} activeTab={activeTab} onTabClick={onTabClick} /></>}
+        {visible(GROUP_3).length > 0 && <><Divider /><TabGroup tabs={visible(GROUP_3)} activeTab={activeTab} onTabClick={onTabClick} /></>}
       </div>
 
       {/* Bottom pinned section */}
       <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 4 }}>
         <Divider />
-        {BOTTOM.map(tab => (
+        {visible(BOTTOM).map(tab => (
           <TabButton key={tab.id} tab={tab} active={activeTab === tab.id} onClick={onTabClick} />
         ))}
+        {/* Settings is always visible — never hideable */}
+        {hiddenTabs.includes('settings') && (
+          <TabButton tab={{ id: 'settings', label: 'Settings' }} active={activeTab === 'settings'} onClick={onTabClick} />
+        )}
         {/* Connection status indicator */}
         <div style={{ marginTop: 8, marginBottom: 2 }}>
           <StatusIndicator

@@ -532,6 +532,7 @@ function VoiceSection({ settings, onSave }) {
       if (!res.ok) {
         const errText = await res.text().catch(() => '');
         const msg = res.status === 401 ? '401 — API key is invalid or unauthorised'
+          : res.status === 402 ? '402 — Free plan limit reached. Upgrade ElevenLabs or use System TTS below (app falls back automatically).'
           : res.status === 403 ? '403 — This key does not have TTS access'
           : res.status === 422 ? '422 — Voice ID not found on this account'
           : `Error ${res.status}${errText ? ': ' + errText.slice(0, 80) : ''}`;
@@ -569,6 +570,8 @@ function VoiceSection({ settings, onSave }) {
     window.speechSynthesis.speak(utt);
   };
 
+  const [wakeWordEnabled, setWakeWordEnabled] = useState(settings.wakeWordEnabled ?? true);
+
   const handleSave = () => {
     onSave({
       voice: {
@@ -579,6 +582,7 @@ function VoiceSection({ settings, onSave }) {
       azureKey,
       elevenlabsKey:     el11Key,
       elevenlabsVoiceId: el11VoiceId,
+      wakeWordEnabled,
     });
     setSaved(true);
     setTimeout(() => setSaved(false), 2000);
@@ -772,6 +776,24 @@ function VoiceSection({ settings, onSave }) {
           ▶ Preview system voice
         </button>
       </div>
+
+      {/* Wake word */}
+      <Row
+        label="Hey VAL / Hey Valerie wake word"
+        hint="Always-on mic listens for your wake phrase to start a voice session hands-free"
+      >
+        <Toggle value={wakeWordEnabled} onChange={setWakeWordEnabled} />
+        {wakeWordEnabled && (
+          <div style={{
+            marginTop: 8, padding: '8px 12px', borderRadius: 8,
+            background: 'var(--accent)08', border: '0.5px solid var(--accent)33',
+            fontSize: 11, color: 'var(--text-secondary)', lineHeight: 1.5,
+          }}>
+            Say <strong style={{ color: 'var(--accent)' }}>"Hey VAL"</strong> or{' '}
+            <strong style={{ color: 'var(--accent)' }}>"Hey Valerie"</strong> at any time to activate. Requires microphone permission.
+          </div>
+        )}
+      </Row>
 
       <button
         onClick={handleSave}
@@ -1441,19 +1463,42 @@ function ProgressSection({ settings, onSave }) {
 }
 
 // ─── Section: Platforms ───────────────────────────────────────────────────────
-function PlatformsSection() {
-  const tabs = ['Dashboard','Assistant','Tasks','Calendar','Notes','Health','Finance',
-                'Progress','Style','Essentials','Lists','Focus','Vault','Settings'];
-  const [win,         setWin]         = useState(() => Object.fromEntries(tabs.map(t => [t, true])));
+const PLATFORM_TABS = [
+  { id: 'dashboard',  label: 'Dashboard'  },
+  { id: 'assistant',  label: 'Assistant'  },
+  { id: 'tasks',      label: 'Tasks'      },
+  { id: 'calendar',   label: 'Calendar'   },
+  { id: 'notes',      label: 'Notes'      },
+  { id: 'health',     label: 'Health'     },
+  { id: 'finance',    label: 'Finance'    },
+  { id: 'progress',   label: 'Progress'   },
+  { id: 'style',      label: 'Style'      },
+  { id: 'essentials', label: 'Essentials' },
+  { id: 'lists',      label: 'Lists'      },
+  { id: 'focus',      label: 'Focus'      },
+  { id: 'vault',      label: 'Vault'      },
+];
+
+const LAYOUT_OPTIONS = [
+  { value: 'standard', label: 'Standard' },
+  { value: 'compact',  label: 'Compact'  },
+  { value: 'spacious', label: 'Spacious' },
+];
+
+function PlatformsSection({ settings, onSave }) {
+  // hiddenTabs: array of tab IDs that are currently hidden
+  const [hiddenTabs,  setHiddenTabs]  = useState(() => settings.hiddenTabs  || []);
+  // tabLayouts: { [tabId]: 'standard' | 'compact' | 'spacious' }
+  const [tabLayouts,  setTabLayouts]  = useState(() => settings.tabLayouts  || {});
   const [autostart,   setAutostart]   = useState(false);
-  const [autostartOk, setAutostartOk] = useState(false); // true once plugin responds
+  const [autostartOk, setAutostartOk] = useState(false);
 
   // Check current autostart state on mount
   useEffect(() => {
     import('@tauri-apps/plugin-autostart')
       .then(({ isEnabled }) => isEnabled())
       .then(enabled => { setAutostart(enabled); setAutostartOk(true); })
-      .catch(() => setAutostartOk(false)); // not in Tauri context (dev browser)
+      .catch(() => setAutostartOk(false));
   }, []);
 
   const handleAutostartToggle = async (val) => {
@@ -1465,6 +1510,22 @@ function PlatformsSection() {
     } catch (err) {
       console.warn('[Settings] Autostart plugin unavailable:', err.message);
     }
+  };
+
+  // Toggle a tab's visibility — save immediately so Sidebar updates in real time
+  const toggleTab = (tabId, visible) => {
+    const next = visible
+      ? hiddenTabs.filter(id => id !== tabId)
+      : [...hiddenTabs.filter(id => id !== tabId), tabId];
+    setHiddenTabs(next);
+    onSave({ hiddenTabs: next });
+  };
+
+  // Update layout for a tab — save immediately
+  const setLayout = (tabId, layout) => {
+    const next = { ...tabLayouts, [tabId]: layout };
+    setTabLayouts(next);
+    onSave({ tabLayouts: next });
   };
 
   return (
@@ -1482,9 +1543,7 @@ function PlatformsSection() {
           background: 'var(--hover-bg)', border: '0.5px solid var(--card-border)',
         }}>
           <div>
-            <div style={{ fontSize: 13, fontWeight: 600, color: 'var(--text-primary)' }}>
-              Launch on startup
-            </div>
+            <div style={{ fontSize: 13, fontWeight: 600, color: 'var(--text-primary)' }}>Launch on startup</div>
             <div style={{ fontSize: 11, color: 'var(--text-muted)', marginTop: 2 }}>
               VALERIE starts automatically when Windows boots
             </div>
@@ -1496,22 +1555,69 @@ function PlatformsSection() {
         </div>
       </div>
 
-      {/* Tab visibility */}
-      <div style={{ marginBottom: 14 }}>
-        <div style={{ fontSize: 12, fontWeight: 600, color: 'var(--text-secondary)', marginBottom: 12, letterSpacing: '0.04em' }}>
+      {/* Tab visibility + layout density */}
+      <div style={{ marginBottom: 8 }}>
+        <div style={{ fontSize: 12, fontWeight: 600, color: 'var(--text-secondary)', marginBottom: 4, letterSpacing: '0.04em' }}>
           WINDOWS TAB VISIBILITY
         </div>
-        <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
-          {tabs.map(tab => (
-            <div key={tab} style={{
-              display: 'flex', alignItems: 'center', justifyContent: 'space-between',
-              padding: '10px 14px', borderRadius: 8,
-              background: 'var(--hover-bg)', border: '0.5px solid var(--card-border)',
-            }}>
-              <span style={{ fontSize: 13, color: 'var(--text-primary)' }}>{tab}</span>
-              <Toggle value={win[tab] ?? true} onChange={v => setWin(p => ({ ...p, [tab]: v }))} />
-            </div>
-          ))}
+        <div style={{ fontSize: 11, color: 'var(--text-muted)', marginBottom: 12 }}>
+          Hidden tabs disappear from the sidebar — their data is preserved and restored when re-enabled.
+        </div>
+        <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
+          {PLATFORM_TABS.map(tab => {
+            const visible = !hiddenTabs.includes(tab.id);
+            const layout  = tabLayouts[tab.id] || 'standard';
+            return (
+              <div key={tab.id} style={{
+                borderRadius: 10,
+                border: '0.5px solid var(--card-border)',
+                background: 'var(--hover-bg)',
+                overflow: 'hidden',
+              }}>
+                {/* Toggle row */}
+                <div style={{
+                  display: 'flex', alignItems: 'center', justifyContent: 'space-between',
+                  padding: '10px 14px',
+                }}>
+                  <span style={{
+                    fontSize: 13, fontWeight: 500,
+                    color: visible ? 'var(--text-primary)' : 'var(--text-muted)',
+                  }}>
+                    {tab.label}
+                  </span>
+                  <Toggle value={visible} onChange={v => toggleTab(tab.id, v)} />
+                </div>
+
+                {/* Layout density row — only shown when tab is visible */}
+                {visible && (
+                  <div style={{
+                    display: 'flex', alignItems: 'center', gap: 8,
+                    padding: '6px 14px 10px',
+                    borderTop: '0.5px solid var(--sidebar-divider)',
+                  }}>
+                    <span style={{ fontSize: 11, color: 'var(--text-muted)', minWidth: 44 }}>Layout</span>
+                    <div style={{ display: 'flex', gap: 6 }}>
+                      {LAYOUT_OPTIONS.map(opt => (
+                        <button
+                          key={opt.value}
+                          onClick={() => setLayout(tab.id, opt.value)}
+                          style={{
+                            padding: '3px 10px', borderRadius: 6, fontSize: 11, cursor: 'pointer',
+                            border: `0.5px solid ${layout === opt.value ? 'var(--accent)' : 'var(--card-border)'}`,
+                            background: layout === opt.value ? 'var(--accent)22' : 'transparent',
+                            color: layout === opt.value ? 'var(--accent)' : 'var(--text-muted)',
+                            transition: 'all 0.15s',
+                          }}
+                        >
+                          {opt.label}
+                        </button>
+                      ))}
+                    </div>
+                  </div>
+                )}
+              </div>
+            );
+          })}
         </div>
       </div>
     </div>
@@ -1688,7 +1794,7 @@ export default function SettingsTab({ settings: settingsProp }) {
   // Load settings from localStorage — source of truth
   const [settings, setSettings] = useState(() => storage.get(STORAGE_KEYS.SETTINGS, {}));
 
-  // Persist partial updates to localStorage
+  // Persist partial updates to localStorage and notify App in real time
   const handleSave = useCallback((updates) => {
     const merged = { ...settings, ...updates };
     setSettings(merged);
@@ -1696,6 +1802,9 @@ export default function SettingsTab({ settings: settingsProp }) {
 
     // Apply theme immediately if changed
     if (updates.theme) applyTheme(updates.theme);
+
+    // Notify App.jsx so it re-reads settings and re-renders all tabs with new values
+    window.dispatchEvent(new CustomEvent('valerie:settings-changed', { detail: merged }));
   }, [settings]);
 
   const renderSection = () => {
@@ -1709,7 +1818,7 @@ export default function SettingsTab({ settings: settingsProp }) {
       case 'notifications': return <NotificationsSection settings={settings} onSave={handleSave} />;
       case 'integrations':  return <IntegrationsSection  settings={settings} onSave={handleSave} />;
       case 'api_usage':     return <ApiUsageSection      settings={settings} />;
-      case 'platforms':     return <PlatformsSection />;
+      case 'platforms':     return <PlatformsSection     settings={settings} onSave={handleSave} />;
       case 'data':          return <DataSection />;
       case 'security':      return <SecuritySection      settings={settings} onSave={handleSave} />;
       default:              return null;

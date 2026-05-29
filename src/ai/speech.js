@@ -7,7 +7,7 @@
 // Default voice ID — locked in as VALERIE's voice. Overridable in Settings.
 const DEFAULT_VOICE_ID    = import.meta.env.VITE_ELEVENLABS_VOICE_ID || 'yj30vwTGJxSHezdAGsv9';
 const DEFAULT_API_KEY     = import.meta.env.VITE_ELEVENLABS_API_KEY  || '';
-const ELEVENLABS_MODEL    = 'eleven_turbo_v2_5'; // lowest latency — designed for real-time conversation
+const ELEVENLABS_MODEL    = 'eleven_monolingual_v1'; // compatible with free ElevenLabs plans
 const ELEVENLABS_ENDPOINT = 'https://api.elevenlabs.io/v1/text-to-speech';
 
 // Voice character settings — tuned for VALERIE's confident, calm personality

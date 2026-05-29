@@ -15,6 +15,9 @@ import { storage, STORAGE_KEYS }     from '../utils/storage.js';
 // Silence before ending a voice session (ms)
 const VOICE_SILENCE_TIMEOUT = 9000;
 
+// Wake word phrases that trigger voice session
+const WAKE_WORDS = ['hey val', 'hey valerie', 'hey valerie,', 'ok val', 'ok valerie'];
+
 export function useAI() {
 
   // ── Connection state ────────────────────────────────────────────────────────
@@ -291,6 +294,94 @@ export function useAI() {
     cancelCurrentSpeech(); // cancels ElevenLabs audio AND browser TTS
     setOrbState('idle');
   }, []);
+
+  // ── Wake word detection — continuous background listener ───────────────────
+  // Runs whenever a voice session is NOT active and wake word detection is enabled.
+  // Listens for "hey val" / "hey valerie" and auto-starts a voice session.
+  const wakeRecRef = useRef(null);
+
+  const _startWakeWordListener = useCallback(() => {
+    const SR = window.SpeechRecognition || window.webkitSpeechRecognition;
+    if (!SR) return;
+
+    // Check if wake word is enabled in settings
+    const s = storage.get(STORAGE_KEYS.SETTINGS, {});
+    if (s.wakeWordEnabled === false) return;
+
+    // Don't start if already running or voice session is active
+    if (wakeRecRef.current || voiceSessionRef.current) return;
+
+    const rec = new SR();
+    rec.continuous     = false;
+    rec.interimResults = false;
+    rec.lang           = 'en-AU';
+
+    rec.onresult = (e) => {
+      const t = (e.results[0]?.[0]?.transcript ?? '').toLowerCase().trim();
+      const triggered = WAKE_WORDS.some(w => t === w || t.startsWith(w + ' ') || t.startsWith(w + ','));
+      if (triggered && !voiceSessionRef.current) {
+        wakeRecRef.current = null;
+        // Brief orb flash, then start session
+        setOrbState('listening');
+        setTimeout(() => startVoiceSession(), 100);
+      } else {
+        // Not a wake word — restart listener
+        wakeRecRef.current = null;
+        _startWakeWordListener();
+      }
+    };
+
+    rec.onend = () => {
+      wakeRecRef.current = null;
+      // Restart unless a voice session is active or feature disabled
+      const settings = storage.get(STORAGE_KEYS.SETTINGS, {});
+      if (!voiceSessionRef.current && settings.wakeWordEnabled !== false) {
+        setTimeout(_startWakeWordListener, 300);
+      }
+    };
+
+    rec.onerror = (e) => {
+      wakeRecRef.current = null;
+      // Ignore no-speech errors (very common for always-on listener)
+      if (e.error === 'no-speech' || e.error === 'aborted') {
+        if (!voiceSessionRef.current) setTimeout(_startWakeWordListener, 300);
+      }
+    };
+
+    wakeRecRef.current = rec;
+    try { rec.start(); } catch {}
+  }, [startVoiceSession]); // eslint-disable-line react-hooks/exhaustive-deps
+
+  // Stop wake word listener (called when voice session starts)
+  const _stopWakeWordListener = useCallback(() => {
+    if (wakeRecRef.current) {
+      try { wakeRecRef.current.stop(); } catch {}
+      wakeRecRef.current = null;
+    }
+  }, []);
+
+  // Start wake word listener on mount; stop when voice session starts
+  useEffect(() => {
+    const settings = storage.get(STORAGE_KEYS.SETTINGS, {});
+    if (settings.wakeWordEnabled !== false) {
+      // Small delay so everything is initialised
+      const t = setTimeout(_startWakeWordListener, 1500);
+      return () => clearTimeout(t);
+    }
+  }, []); // eslint-disable-line react-hooks/exhaustive-deps
+
+  // Pause wake word listener while a voice session is active
+  useEffect(() => {
+    if (voiceSessionActive) {
+      _stopWakeWordListener();
+    } else {
+      // Restart when session ends
+      const settings = storage.get(STORAGE_KEYS.SETTINGS, {});
+      if (settings.wakeWordEnabled !== false) {
+        setTimeout(_startWakeWordListener, 800);
+      }
+    }
+  }, [voiceSessionActive, _startWakeWordListener, _stopWakeWordListener]);
 
   // ── Single-shot voice input (non-session, original behaviour) ───────────────
   const startListening = useCallback((onResult) => {

@@ -1,7 +1,7 @@
 // ─── Dashboard Tab ────────────────────────────────────────────────────────────
 // Greeting banner · VALERIE launch greeting · Daily brief · Widget grid
 
-import { useState, useEffect, useRef, useCallback } from 'react';
+import { useState, useEffect, useRef, useCallback, memo } from 'react';
 import { getGreeting, formatTime, formatDate } from '../utils/time.js';
 import { storage, STORAGE_KEYS } from '../utils/storage.js';
 import { askClaude } from '../ai/claude.js';
@@ -266,12 +266,137 @@ function DailyBriefCard({ ai }) {
   );
 }
 
+// ── Widget registry ────────────────────────────────────────────────────────────
+const ALL_WIDGETS = [
+  { id: 'brief',    label: 'Daily Brief',     wide: true  },
+  { id: 'quote',    label: 'Daily Quote',     wide: false },
+  { id: 'tasks',    label: 'Tasks',           wide: false },
+  { id: 'clock',    label: 'Clock',           wide: false },
+  { id: 'spotify',  label: 'Spotify',         wide: false },
+  { id: 'progress', label: 'Progress',        wide: false },
+];
+
+const DEFAULT_WIDGET_LAYOUT = ALL_WIDGETS.map(w => ({ id: w.id, enabled: true }));
+
+function loadWidgetLayout(settings) {
+  const saved = settings?.dashboardWidgets;
+  if (!saved?.length) return DEFAULT_WIDGET_LAYOUT;
+  // Merge saved with any new widgets not yet in saved list
+  const existing = new Set(saved.map(w => w.id));
+  const extras = ALL_WIDGETS.filter(w => !existing.has(w.id)).map(w => ({ id: w.id, enabled: true }));
+  return [...saved, ...extras];
+}
+
+function saveWidgetLayout(layout) {
+  const s = storage.get(STORAGE_KEYS.SETTINGS, {});
+  storage.set(STORAGE_KEYS.SETTINGS, { ...s, dashboardWidgets: layout });
+}
+
+// ── Widget editor panel ───────────────────────────────────────────────────────
+function WidgetEditor({ layout, onChange, onClose }) {
+  const toggle = (id) => onChange(layout.map(w => w.id === id ? { ...w, enabled: !w.enabled } : w));
+  const move   = (id, dir) => {
+    const idx  = layout.findIndex(w => w.id === id);
+    const next = [...layout];
+    const swap = idx + dir;
+    if (swap < 0 || swap >= next.length) return;
+    [next[idx], next[swap]] = [next[swap], next[idx]];
+    onChange(next);
+  };
+
+  return (
+    <div style={{
+      position: 'absolute', top: 0, right: 0, bottom: 0,
+      width: 280, background: 'var(--bg-panel)',
+      borderLeft: '0.5px solid var(--card-border)',
+      padding: '20px 18px',
+      display: 'flex', flexDirection: 'column', gap: 10,
+      zIndex: 50, overflowY: 'auto',
+      boxShadow: '-8px 0 32px rgba(0,0,0,0.4)',
+    }}>
+      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 4 }}>
+        <span style={{ fontSize: 12, fontWeight: 700, color: 'var(--text-primary)', letterSpacing: '0.05em' }}>
+          EDIT WIDGETS
+        </span>
+        <button onClick={onClose} style={{
+          background: 'none', border: 'none', cursor: 'pointer',
+          color: 'var(--text-muted)', fontSize: 18, lineHeight: 1,
+        }}>×</button>
+      </div>
+      <div style={{ fontSize: 11, color: 'var(--text-muted)', marginBottom: 8 }}>
+        Toggle widgets on/off and reorder them using the arrows.
+      </div>
+
+      {layout.map((w, i) => {
+        const info = ALL_WIDGETS.find(a => a.id === w.id);
+        if (!info) return null;
+        return (
+          <div key={w.id} style={{
+            display: 'flex', alignItems: 'center', gap: 8,
+            padding: '9px 12px', borderRadius: 8,
+            background: w.enabled ? 'var(--active-bg)' : 'var(--hover-bg)',
+            border: `0.5px solid ${w.enabled ? 'var(--accent)33' : 'var(--card-border)'}`,
+            transition: 'all 0.15s',
+          }}>
+            {/* Up/down arrows */}
+            <div style={{ display: 'flex', flexDirection: 'column', gap: 1 }}>
+              <button onClick={() => move(w.id, -1)} disabled={i === 0} style={{
+                background: 'none', border: 'none', cursor: i === 0 ? 'default' : 'pointer',
+                color: i === 0 ? 'var(--text-muted)' : 'var(--text-secondary)',
+                fontSize: 9, padding: '1px 3px', lineHeight: 1, opacity: i === 0 ? 0.3 : 1,
+              }}>▲</button>
+              <button onClick={() => move(w.id, 1)} disabled={i === layout.length - 1} style={{
+                background: 'none', border: 'none', cursor: i === layout.length - 1 ? 'default' : 'pointer',
+                color: i === layout.length - 1 ? 'var(--text-muted)' : 'var(--text-secondary)',
+                fontSize: 9, padding: '1px 3px', lineHeight: 1, opacity: i === layout.length - 1 ? 0.3 : 1,
+              }}>▼</button>
+            </div>
+
+            <span style={{
+              flex: 1, fontSize: 13,
+              color: w.enabled ? 'var(--text-primary)' : 'var(--text-muted)',
+            }}>
+              {info.label}
+            </span>
+
+            {/* Toggle */}
+            <div
+              onClick={() => toggle(w.id)}
+              style={{
+                width: 36, height: 20, borderRadius: 10, position: 'relative', cursor: 'pointer',
+                background: w.enabled ? 'var(--accent)' : 'var(--hover-bg)',
+                border: '0.5px solid var(--card-border)', transition: 'background 0.2s', flexShrink: 0,
+              }}
+            >
+              <div style={{
+                position: 'absolute', top: 1, left: w.enabled ? 17 : 1,
+                width: 16, height: 16, borderRadius: '50%',
+                background: '#fff', transition: 'left 0.2s',
+                boxShadow: '0 1px 3px rgba(0,0,0,0.3)',
+              }} />
+            </div>
+          </div>
+        );
+      })}
+    </div>
+  );
+}
+
 // ── Main Dashboard ─────────────────────────────────────────────────────────────
 export default function Dashboard({ settings, onTabChange, ai }) {
   const [hasGreeted, setHasGreeted] = useState(false);
+  const [editMode,   setEditMode]   = useState(false);
+  const [layout,     setLayout]     = useState(() => loadWidgetLayout(settings));
+
   const userName = storage.get(STORAGE_KEYS.USER, {})?.name
     ?? storage.get(STORAGE_KEYS.SETTINGS, {})?.userName
     ?? 'there';
+
+  // Persist layout changes
+  const handleLayoutChange = useCallback((next) => {
+    setLayout(next);
+    saveWidgetLayout(next);
+  }, []);
 
   // VALERIE launch greeting — spoken once per session on Dashboard mount
   useEffect(() => {
@@ -303,6 +428,21 @@ export default function Dashboard({ settings, onTabChange, ai }) {
 
   const greeting = getGreeting();
 
+  // Map widget ID to rendered element
+  const renderWidget = (id) => {
+    switch (id) {
+      case 'brief':    return <DailyBriefCard key="brief" ai={ai} />;
+      case 'quote':    return <QuoteWidget    key="quote" />;
+      case 'tasks':    return <TasksWidget    key="tasks"    onTabChange={onTabChange} />;
+      case 'clock':    return <ClockWidget    key="clock" />;
+      case 'spotify':  return <SpotifyWidget  key="spotify" />;
+      case 'progress': return <ProgressWidget key="progress" onTabChange={onTabChange} />;
+      default:         return null;
+    }
+  };
+
+  const enabledWidgets = layout.filter(w => w.enabled);
+
   return (
     <div style={{
       height: '100%',
@@ -311,36 +451,64 @@ export default function Dashboard({ settings, onTabChange, ai }) {
       display: 'flex',
       flexDirection: 'column',
       gap: 24,
+      position: 'relative',
     }}>
 
       {/* ── Greeting banner ────────────────────────────────────────────────── */}
-      <div style={{ display: 'flex', flexDirection: 'column', gap: 4 }}>
-        <h1 style={{
-          fontSize: 26, fontWeight: 300, color: 'var(--text-primary)',
-          letterSpacing: '0.03em', margin: 0,
-        }}>
-          {greeting}, <span style={{ color: 'var(--accent)' }}>{userName}</span>.
-        </h1>
-        <p style={{ fontSize: 13, color: 'var(--text-muted)', margin: 0 }}>
-          {formatDate()} · {formatTime()}
-        </p>
+      <div style={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between' }}>
+        <div style={{ display: 'flex', flexDirection: 'column', gap: 4 }}>
+          <h1 style={{
+            fontSize: 26, fontWeight: 300, color: 'var(--text-primary)',
+            letterSpacing: '0.03em', margin: 0,
+          }}>
+            {greeting}, <span style={{ color: 'var(--accent)' }}>{userName}</span>.
+          </h1>
+          <p style={{ fontSize: 13, color: 'var(--text-muted)', margin: 0 }}>
+            {formatDate()} · {formatTime()}
+          </p>
+        </div>
+
+        {/* Edit widgets button */}
+        <button
+          onClick={() => setEditMode(v => !v)}
+          style={{
+            padding: '6px 14px', borderRadius: 8, fontSize: 12, cursor: 'pointer',
+            border: `0.5px solid ${editMode ? 'var(--accent)' : 'var(--card-border)'}`,
+            background: editMode ? 'var(--accent)15' : 'var(--hover-bg)',
+            color: editMode ? 'var(--accent)' : 'var(--text-secondary)',
+            transition: 'all 0.15s',
+            flexShrink: 0,
+          }}
+        >
+          {editMode ? '✓ Done' : '⊞ Edit'}
+        </button>
       </div>
 
-      {/* ── Daily Brief ───────────────────────────────────────────────────── */}
-      <DailyBriefCard ai={ai} />
-
-      {/* ── Widget grid ───────────────────────────────────────────────────── */}
+      {/* ── Widget grid — respects saved order and enabled state ─────────── */}
       <div style={{
         display: 'grid',
         gridTemplateColumns: 'repeat(auto-fill, minmax(260px, 1fr))',
         gap: 16,
       }}>
-        <ClockWidget />
-        <QuoteWidget />
-        <TasksWidget onTabChange={onTabChange} />
-        <SpotifyWidget />
-        <ProgressWidget onTabChange={onTabChange} />
+        {enabledWidgets.map(w => {
+          const info = ALL_WIDGETS.find(a => a.id === w.id);
+          const el   = renderWidget(w.id);
+          if (!el || !info) return null;
+          // Wide widgets (Daily Brief) span full width
+          return info.wide
+            ? <div key={w.id} style={{ gridColumn: '1 / -1' }}>{el}</div>
+            : el;
+        })}
       </div>
+
+      {/* ── Widget editor panel — slides in from right ───────────────────── */}
+      {editMode && (
+        <WidgetEditor
+          layout={layout}
+          onChange={handleLayoutChange}
+          onClose={() => setEditMode(false)}
+        />
+      )}
     </div>
   );
 }
