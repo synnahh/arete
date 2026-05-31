@@ -292,6 +292,28 @@ html, body, #root {
   50%       { opacity: 0.1; }
 }
 
+/* ─── Layout Density ────────────────────────────────── */
+/* CSS variables tabs can optionally read, plus font-size */
+/* shift on the main wrapper for elements that use em/rem  */
+main[data-layout="compact"] {
+  --tab-gap:     8px;
+  --tab-padding: 14px;
+  --card-radius: 8px;
+  font-size: 0.93em;
+}
+main[data-layout="standard"] {
+  --tab-gap:     16px;
+  --tab-padding: 20px;
+  --card-radius: 12px;
+  font-size: 1em;
+}
+main[data-layout="spacious"] {
+  --tab-gap:     26px;
+  --tab-padding: 30px;
+  --card-radius: 14px;
+  font-size: 1.06em;
+}
+
 /* ─── Voice Orb ─────────────────────────────────────── */
 @keyframes orb-breathe {
   0%, 100% { transform: scale(1);    filter: drop-shadow(0 0 8px var(--orb-glow)); }

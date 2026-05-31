@@ -6,6 +6,16 @@ import { useState, useEffect } from 'react';
 import { useCollection }        from '../firebase/useCollection.js';
 import { STORAGE_KEYS, storage } from '../utils/storage.js';
 
+// ─── Currency helper ───────────────────────────────────────────────────────────
+function getCurrSymbol(currency) {
+  switch (currency) {
+    case 'GBP': return '£';
+    case 'EUR': return '€';
+    case 'AUD': return 'A$';
+    default:    return '$';
+  }
+}
+
 // ─── Constants ─────────────────────────────────────────────────────────────────
 
 const OCCASIONS = ['Smart Casual', 'Date Night', 'Work', 'Gym', 'Beach', 'Evening'];
@@ -315,7 +325,7 @@ function ResultCard({ result, onSave }) {
 
 // ─── BoardCard ─────────────────────────────────────────────────────────────────
 
-function BoardCard({ item, selected, onSelect }) {
+function BoardCard({ item, selected, onSelect, currSymbol = '$' }) {
   const cfg = STATUS_CONFIG[item.status] || STATUS_CONFIG.wishlist;
   const [imgErr, setImgErr] = useState(false);
 
@@ -372,7 +382,7 @@ function BoardCard({ item, selected, onSelect }) {
         </p>
         <p style={{ margin: 0, fontSize: 11, color: 'var(--text-secondary)' }}>
           {item.category}
-          {item.price != null ? ` · £${Number(item.price).toFixed(2)}` : ''}
+          {item.price != null ? ` · ${currSymbol}${Number(item.price).toFixed(2)}` : ''}
         </p>
       </div>
     </div>
@@ -381,7 +391,7 @@ function BoardCard({ item, selected, onSelect }) {
 
 // ─── DetailPanel ───────────────────────────────────────────────────────────────
 
-function DetailPanel({ item, onUpdate, onRemove, onClose }) {
+function DetailPanel({ item, onUpdate, onRemove, onClose, currSymbol = '$' }) {
   const [fields, setFields] = useState({
     title:    item.title    || '',
     brand:    item.brand    || '',
@@ -505,7 +515,7 @@ function DetailPanel({ item, onUpdate, onRemove, onClose }) {
         {[
           { key: 'title',  label: 'Title',    type: 'text'   },
           { key: 'brand',  label: 'Brand',    type: 'text'   },
-          { key: 'price',  label: 'Price (£)', type: 'number' },
+          { key: 'price',  label: `Price (${currSymbol})`, type: 'number' },
           { key: 'url',    label: 'Shop URL', type: 'url'    },
         ].map(({ key, label, type }) => (
           <label key={key} style={{ display: 'block', marginBottom: 10 }}>
@@ -609,7 +619,7 @@ function DetailPanel({ item, onUpdate, onRemove, onClose }) {
 
 // ─── AddManualModal ────────────────────────────────────────────────────────────
 
-function AddManualModal({ onAdd, onClose }) {
+function AddManualModal({ onAdd, onClose, currSymbol = '$' }) {
   const [form, setForm] = useState({
     title: '', brand: '', category: 'Clothing', status: 'wishlist',
     price: '', url: '', notes: '', imageUrl: '',
@@ -687,7 +697,7 @@ function AddManualModal({ onAdd, onClose }) {
             />
           </label>
           <label style={{ flex: 1 }}>
-            <span style={{ fontSize: 11, color: 'var(--text-secondary)', display: 'block', marginBottom: 4 }}>Price (£)</span>
+            <span style={{ fontSize: 11, color: 'var(--text-secondary)', display: 'block', marginBottom: 4 }}>Price ({currSymbol})</span>
             <input
               type="number"
               value={form.price}
@@ -852,7 +862,7 @@ function AddManualModal({ onAdd, onClose }) {
 
 // ─── DiscoverView ──────────────────────────────────────────────────────────────
 
-function DiscoverView({ settings, onSaveResult }) {
+function DiscoverView({ settings, onSaveResult, currSymbol = '$' }) {
   const [occasion,    setOccasion]    = useState('');
   const [query,       setQuery]       = useState('');
   const [budget,      setBudget]      = useState('');
@@ -871,7 +881,7 @@ function DiscoverView({ settings, onSaveResult }) {
     try {
       let res;
       if (hasGoogle) {
-        const q = [occasion, query.trim(), budget ? `under £${budget}` : '']
+        const q = [occasion, query.trim(), budget ? `under ${currSymbol}${budget}` : '']
           .filter(Boolean).join(' ');
         res = await searchGoogle(q, settings.googleSearchKey, settings.googleSearchCx);
       } else {
@@ -955,7 +965,7 @@ function DiscoverView({ settings, onSaveResult }) {
               position: 'absolute', left: 10, top: '50%', transform: 'translateY(-50%)',
               color: 'var(--text-secondary)', fontSize: 13, pointerEvents: 'none',
             }}>
-              £
+              {currSymbol}
             </span>
             <input
               type="number"
@@ -964,7 +974,7 @@ function DiscoverView({ settings, onSaveResult }) {
               onKeyDown={handleKey}
               placeholder="Budget"
               style={{
-                width: 100, padding: '9px 10px 9px 22px',
+                width: 110, padding: `9px 10px 9px ${currSymbol.length > 1 ? 32 : 22}px`,
                 background: 'var(--bg-secondary)', border: '1px solid var(--border)',
                 borderRadius: 8, color: 'var(--text-primary)', fontSize: 13, outline: 'none',
               }}
@@ -1061,7 +1071,7 @@ function DiscoverView({ settings, onSaveResult }) {
 
 // ─── BoardView ─────────────────────────────────────────────────────────────────
 
-function BoardView({ items, onAdd, onUpdate, onRemove }) {
+function BoardView({ items, onAdd, onUpdate, onRemove, currSymbol = '$' }) {
   const [boardCat,      setBoardCat]      = useState('All');
   const [statusFilter,  setStatusFilter]  = useState('all');
   const [selected,      setSelected]      = useState(null);
@@ -1205,6 +1215,7 @@ function BoardView({ items, onAdd, onUpdate, onRemove }) {
                   item={item}
                   selected={selected?.id === item.id}
                   onSelect={setSelected}
+                  currSymbol={currSymbol}
                 />
               ))}
             </div>
@@ -1218,6 +1229,7 @@ function BoardView({ items, onAdd, onUpdate, onRemove }) {
             onUpdate={onUpdate}
             onRemove={onRemove}
             onClose={() => setSelected(null)}
+            currSymbol={currSymbol}
           />
         )}
       </div>
@@ -1227,6 +1239,7 @@ function BoardView({ items, onAdd, onUpdate, onRemove }) {
         <AddManualModal
           onAdd={async (data) => { await onAdd(data); setAddOpen(false); }}
           onClose={() => setAddOpen(false)}
+          currSymbol={currSymbol}
         />
       )}
     </div>
@@ -1238,6 +1251,7 @@ function BoardView({ items, onAdd, onUpdate, onRemove }) {
 export default function StyleTab({ settings }) {
   const { items, add, update, remove } = useCollection('style_board', STORAGE_KEYS.STYLE_BOARD);
   const [view, setView] = useState('discover');
+  const currSymbol = getCurrSymbol(settings?.currency || 'AUD');
 
   const handleSaveResult = async (data) => {
     await add({
@@ -1297,8 +1311,8 @@ export default function StyleTab({ settings }) {
       {/* Content */}
       <div style={{ flex: 1, overflow: 'hidden' }}>
         {view === 'discover'
-          ? <DiscoverView settings={settings} onSaveResult={handleSaveResult} />
-          : <BoardView items={items} onAdd={add} onUpdate={update} onRemove={remove} />
+          ? <DiscoverView settings={settings} onSaveResult={handleSaveResult} currSymbol={currSymbol} />
+          : <BoardView items={items} onAdd={add} onUpdate={update} onRemove={remove} currSymbol={currSymbol} />
         }
       </div>
     </div>

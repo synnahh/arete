@@ -144,6 +144,9 @@ export default function App() {
   // ── Main app shell ────────────────────────────────────────────────────────
   const ActiveTab = TAB_MAP[activeTab] || Dashboard;
 
+  // Layout density for the active tab — drives CSS variable + prop
+  const layoutDensity = settings?.tabLayouts?.[activeTab] || 'standard';
+
   return (
     <div
       style={{ width: '100%', height: '100%', display: 'flex', overflow: 'hidden' }}
@@ -162,16 +165,20 @@ export default function App() {
       />
 
       {/* Main content area */}
-      <main style={{
-        flex: 1, height: '100%',
-        overflow: 'hidden',
-        display: 'flex', flexDirection: 'column',
-        position: 'relative',
-      }}>
+      <main
+        data-layout={layoutDensity}
+        style={{
+          flex: 1, height: '100%',
+          overflow: 'hidden',
+          display: 'flex', flexDirection: 'column',
+          position: 'relative',
+        }}
+      >
         <ActiveTab
           settings={settings}
           onTabChange={setActiveTab}
           ai={ai}
+          density={layoutDensity}
         />
 
         {/* Quick Capture — floats above all content */}

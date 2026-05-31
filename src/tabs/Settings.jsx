@@ -512,11 +512,15 @@ function VoiceSection({ settings, onSave }) {
     if (el11Key) fetchEl11Voices(el11Key);
   }, []); // eslint-disable-line react-hooks/exhaustive-deps
 
+  // el11Status: null | 'plan_required' | 'bad_key' | 'no_voice' | 'ok'
+  const [el11Status, setEl11Status] = useState(null);
+
   // Preview using ElevenLabs — plays real audio from her voice
   const handleEl11Preview = async () => {
     if (!el11Key || el11Playing) return;
     setEl11Playing(true);
     setEl11PreviewErr('');
+    setEl11Status(null);
     try {
       const trimmedKey = el11Key.trim();
       const res = await fetch(`https://api.elevenlabs.io/v1/text-to-speech/${el11VoiceId}`, {
@@ -524,37 +528,36 @@ function VoiceSection({ settings, onSave }) {
         headers: { 'xi-api-key': trimmedKey, 'Content-Type': 'application/json', 'Accept': 'audio/mpeg' },
         body: JSON.stringify({
           text:           "Ready when you are, Rob.",
-          model_id:       'eleven_turbo_v2_5',
+          model_id:       'eleven_monolingual_v1',
           voice_settings: { stability: 0.45, similarity_boost: 0.80, style: 0.20, use_speaker_boost: true },
         }),
         signal: AbortSignal.timeout(15000),
       });
       if (!res.ok) {
-        const errText = await res.text().catch(() => '');
-        const msg = res.status === 401 ? '401 — API key is invalid or unauthorised'
-          : res.status === 402 ? '402 — Free plan limit reached. Upgrade ElevenLabs or use System TTS below (app falls back automatically).'
-          : res.status === 403 ? '403 — This key does not have TTS access'
-          : res.status === 422 ? '422 — Voice ID not found on this account'
-          : `Error ${res.status}${errText ? ': ' + errText.slice(0, 80) : ''}`;
-        throw new Error(msg);
+        if (res.status === 402 || res.status === 403) {
+          setEl11Status('plan_required');
+          setEl11Playing(false);
+          return;
+        }
+        if (res.status === 401) { setEl11Status('bad_key'); setEl11Playing(false); return; }
+        if (res.status === 422) { setEl11Status('no_voice'); setEl11Playing(false); return; }
+        setEl11PreviewErr(`Preview failed (${res.status}) — check your connection and try again.`);
+        setEl11Playing(false);
+        return;
       }
+      setEl11Status('ok');
       const blob  = await res.blob();
       const url   = URL.createObjectURL(blob);
       const audio = new Audio(url);
       audio.onended = () => { URL.revokeObjectURL(url); setEl11Playing(false); };
-      audio.onerror = (e) => {
+      audio.onerror = () => {
         setEl11PreviewErr('Audio playback failed — check that audio is not muted');
         setEl11Playing(false);
       };
-      const playResult = audio.play();
-      if (playResult && typeof playResult.catch === 'function') {
-        playResult.catch(err => {
-          setEl11PreviewErr(`Playback blocked: ${err.message}`);
-          setEl11Playing(false);
-        });
-      }
+      const p = audio.play();
+      if (p?.catch) p.catch(err => { setEl11PreviewErr(`Playback blocked: ${err.message}`); setEl11Playing(false); });
     } catch (err) {
-      setEl11PreviewErr(err.message || 'Preview failed');
+      setEl11PreviewErr('Preview failed — check your connection.');
       setEl11Playing(false);
     }
   };
@@ -588,7 +591,8 @@ function VoiceSection({ settings, onSave }) {
     setTimeout(() => setSaved(false), 2000);
   };
 
-  const isEl11Active      = !!el11Key;
+  // Active only if key is present AND hasn't been rejected (no 401/load error)
+  const isEl11Active      = !!el11Key && !el11Error;
   const defaultVoiceId    = import.meta.env.VITE_ELEVENLABS_VOICE_ID || 'yj30vwTGJxSHezdAGsv9';
   const selectedVoiceName = el11Voices.find(v => v.voice_id === el11VoiceId)?.name || '';
   const enSysVoices       = sysVoices.filter(v => v.lang?.startsWith('en'));
@@ -713,10 +717,26 @@ function VoiceSection({ settings, onSave }) {
         >
           {el11Playing ? '▶ Playing…' : "▶ Preview VALERIE's voice"}
         </button>
-        {el11PreviewErr && (
-          <p style={{ margin: '8px 0 0', fontSize: 11, color: '#e55a5a', lineHeight: 1.4 }}>
-            {el11PreviewErr}
-          </p>
+        {/* Clean status banner — no raw API text ever shown */}
+        {(el11Status || el11PreviewErr) && (
+          <div style={{
+            marginTop: 10, padding: '10px 14px', borderRadius: 8, fontSize: 12, lineHeight: 1.5,
+            ...(el11Status === 'ok'
+              ? { background: '#4caf7d14', border: '0.5px solid #4caf7d44', color: '#4caf7d' }
+              : el11Status === 'plan_required'
+              ? { background: 'rgba(245,166,35,0.08)', border: '0.5px solid rgba(245,166,35,0.4)', color: '#f5a623' }
+              : el11Status === 'bad_key'
+              ? { background: 'rgba(229,90,90,0.08)', border: '0.5px solid rgba(229,90,90,0.35)', color: '#e55a5a' }
+              : el11Status === 'no_voice'
+              ? { background: 'rgba(245,166,35,0.08)', border: '0.5px solid rgba(245,166,35,0.4)', color: '#f5a623' }
+              : { background: 'rgba(229,90,90,0.08)', border: '0.5px solid rgba(229,90,90,0.35)', color: '#e55a5a' }),
+          }}>
+            {el11Status === 'ok'           && '✓ Voice preview played successfully.'}
+            {el11Status === 'plan_required' && 'ElevenLabs plan required — this model is not available on your current tier. VALERIE will use system TTS as fallback.'}
+            {el11Status === 'bad_key'       && 'API key rejected. Double-check your ElevenLabs key above and try again.'}
+            {el11Status === 'no_voice'      && 'Voice ID not found. Click Load voices and select a different one.'}
+            {!el11Status && el11PreviewErr  && el11PreviewErr}
+          </div>
         )}
       </div>
 

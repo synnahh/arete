@@ -383,7 +383,7 @@ function WidgetEditor({ layout, onChange, onClose }) {
 }
 
 // ── Main Dashboard ─────────────────────────────────────────────────────────────
-export default function Dashboard({ settings, onTabChange, ai }) {
+export default function Dashboard({ settings, onTabChange, ai, density = 'standard' }) {
   const [hasGreeted, setHasGreeted] = useState(false);
   const [editMode,   setEditMode]   = useState(false);
   const [layout,     setLayout]     = useState(() => loadWidgetLayout(settings));
@@ -443,14 +443,18 @@ export default function Dashboard({ settings, onTabChange, ai }) {
 
   const enabledWidgets = layout.filter(w => w.enabled);
 
+  // Density-driven spacing
+  const densityPad = density === 'compact' ? '14px 18px' : density === 'spacious' ? '36px 40px' : '28px 32px';
+  const densityGap = density === 'compact' ? 12 : density === 'spacious' ? 32 : 24;
+
   return (
     <div style={{
       height: '100%',
       overflowY: 'auto',
-      padding: '28px 32px',
+      padding: densityPad,
       display: 'flex',
       flexDirection: 'column',
-      gap: 24,
+      gap: densityGap,
       position: 'relative',
     }}>
 
