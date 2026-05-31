@@ -475,8 +475,12 @@ function VoiceSection({ settings, onSave }) {
   const [pitch,       setPitch]       = useState(settings.voice?.pitch    ?? 1.0);
 
   // ── Azure state ───────────────────────────────────────────────────────────
-  const [azureKey,    setAzureKey]    = useState(settings.azureKey || '');
-  const [saved,       setSaved]       = useState(false);
+  const [azureKey,       setAzureKey]       = useState(settings.voice?.azureKey    || settings.azureKey    || '');
+  const [azureRegion,    setAzureRegion]    = useState(settings.voice?.azureRegion || settings.azureRegion || 'australiaeast');
+  const [azureVoiceName, setAzureVoiceName] = useState(settings.voice?.azureVoiceName || 'en-AU-NatashaNeural');
+  const [azurePlaying,   setAzurePlaying]   = useState(false);
+  const [azureStatus,    setAzureStatus]    = useState(null); // null | 'ok' | 'bad_key' | 'bad_region' | 'error'
+  const [saved,          setSaved]          = useState(false);
 
   // Fetch available voices from ElevenLabs API
   const fetchEl11Voices = async (key) => {
@@ -575,14 +579,63 @@ function VoiceSection({ settings, onSave }) {
 
   const [wakeWordEnabled, setWakeWordEnabled] = useState(settings.wakeWordEnabled ?? true);
 
+  // Preview Azure TTS
+  const handleAzurePreview = async () => {
+    if (!azureKey.trim() || !azureRegion || azurePlaying) return;
+    setAzurePlaying(true);
+    setAzureStatus(null);
+    try {
+      const langMatch = azureVoiceName.match(/^([a-z]{2}-[A-Z]{2})/);
+      const lang      = langMatch ? langMatch[1] : 'en-AU';
+      const ssml = `<speak version='1.0' xmlns='http://www.w3.org/2001/10/synthesis' xml:lang='${lang}'>`
+        + `<voice name='${azureVoiceName}'>Ready when you are, Rob.</voice></speak>`;
+
+      const res = await fetch(
+        `https://${azureRegion}.tts.speech.microsoft.com/cognitiveservices/v1`,
+        {
+          method: 'POST',
+          headers: {
+            'Ocp-Apim-Subscription-Key': azureKey.trim(),
+            'Content-Type':              'application/ssml+xml',
+            'X-Microsoft-OutputFormat':  'audio-16khz-128kbitrate-mono-mp3',
+          },
+          body:   ssml,
+          signal: AbortSignal.timeout(15000),
+        }
+      );
+      if (!res.ok) {
+        if (res.status === 401 || res.status === 403) { setAzureStatus('bad_key'); setAzurePlaying(false); return; }
+        if (res.status === 404) { setAzureStatus('bad_region'); setAzurePlaying(false); return; }
+        setAzureStatus('error'); setAzurePlaying(false); return;
+      }
+      setAzureStatus('ok');
+      const blob  = await res.blob();
+      const url   = URL.createObjectURL(blob);
+      const audio = new Audio(url);
+      audio.onended = () => { URL.revokeObjectURL(url); setAzurePlaying(false); };
+      audio.onerror = () => { setAzurePlaying(false); };
+      audio.play().catch(() => setAzurePlaying(false));
+    } catch {
+      setAzureStatus('error');
+      setAzurePlaying(false);
+    }
+  };
+
   const handleSave = () => {
     onSave({
       voice: {
         voiceURI, rate, pitch, volume: 1.0, lang: 'en-AU',
         elevenlabsKey:     el11Key,
         elevenlabsVoiceId: el11VoiceId,
+        // Azure credentials go inside voice so speakText() can read them
+        azureKey:          azureKey.trim(),
+        azureRegion,
+        azureVoiceName,
       },
-      azureKey,
+      // Also kept at top level for backwards compat / Settings display
+      azureKey:      azureKey.trim(),
+      azureRegion,
+      azureVoiceName,
       elevenlabsKey:     el11Key,
       elevenlabsVoiceId: el11VoiceId,
       wakeWordEnabled,
@@ -602,28 +655,40 @@ function VoiceSection({ settings, onSave }) {
       <SectionTitle>Voice <SavedBadge show={saved} /></SectionTitle>
 
       {/* Active engine banner */}
-      <div style={{
-        display: 'flex', alignItems: 'center', gap: 10,
-        padding: '12px 16px', borderRadius: 10, marginBottom: 22,
-        background: isEl11Active ? '#4caf7d14' : 'var(--hover-bg)',
-        border: `1px solid ${isEl11Active ? '#4caf7d44' : 'var(--card-border)'}`,
-      }}>
-        <div style={{
-          width: 8, height: 8, borderRadius: '50%', flexShrink: 0,
-          background: isEl11Active ? '#4caf7d' : '#666',
-          boxShadow: isEl11Active ? '0 0 6px #4caf7d99' : 'none',
-        }} />
-        <div style={{ flex: 1 }}>
-          <div style={{ fontSize: 13, fontWeight: 600, color: 'var(--text-primary)' }}>
-            {isEl11Active ? 'ElevenLabs — Active' : 'System TTS — Active'}
+      {/* ─── Active engine banner ──────────────────────────────────────────── */}
+      {(() => {
+        const isAzureConfigured = !!azureKey.trim();
+        const engineLabel  = isEl11Active ? 'ElevenLabs' : isAzureConfigured ? 'Azure Neural' : 'System TTS';
+        const engineColor  = isEl11Active || isAzureConfigured ? '#4caf7d' : '#666';
+        const engineGlow   = isEl11Active || isAzureConfigured ? '#4caf7d99' : 'none';
+        const engineBg     = isEl11Active || isAzureConfigured ? '#4caf7d14' : 'var(--hover-bg)';
+        const engineBorder = isEl11Active || isAzureConfigured ? '#4caf7d44' : 'var(--card-border)';
+        const engineSub    = isEl11Active
+          ? `Priority: ElevenLabs → Azure Neural → System TTS${selectedVoiceName ? ` · ${selectedVoiceName}` : ''}`
+          : isAzureConfigured
+          ? `Priority: Azure Neural (${azureVoiceName}) → System TTS — ElevenLabs not configured`
+          : 'Add an ElevenLabs or Azure key below for VALERIE\'s real voice';
+        return (
+          <div style={{
+            display: 'flex', alignItems: 'center', gap: 10,
+            padding: '12px 16px', borderRadius: 10, marginBottom: 22,
+            background: engineBg, border: `1px solid ${engineBorder}`,
+          }}>
+            <div style={{
+              width: 8, height: 8, borderRadius: '50%', flexShrink: 0,
+              background: engineColor, boxShadow: `0 0 6px ${engineGlow}`,
+            }} />
+            <div style={{ flex: 1 }}>
+              <div style={{ fontSize: 13, fontWeight: 600, color: 'var(--text-primary)' }}>
+                {engineLabel} — Active
+              </div>
+              <div style={{ fontSize: 11, color: 'var(--text-muted)', marginTop: 1 }}>
+                {engineSub}
+              </div>
+            </div>
           </div>
-          <div style={{ fontSize: 11, color: 'var(--text-muted)', marginTop: 1 }}>
-            {isEl11Active
-              ? `Priority order: ElevenLabs → Azure Neural → System${selectedVoiceName ? ` · ${selectedVoiceName}` : ''}`
-              : "Add an ElevenLabs API key below to enable VALERIE's real voice"}
-          </div>
-        </div>
-      </div>
+        );
+      })()}
 
       {/* ─── ElevenLabs block ─────────────────────────────────────────────── */}
       <div style={{
@@ -740,16 +805,137 @@ function VoiceSection({ settings, onSave }) {
         )}
       </div>
 
-      {/* ─── Azure fallback ───────────────────────────────────────────────── */}
-      <div style={{ marginBottom: 20 }}>
-        <div style={{
-          fontSize: 11, fontWeight: 700, color: 'var(--text-muted)',
-          letterSpacing: '0.06em', marginBottom: 8,
-        }}>
-          AZURE NEURAL VOICES <span style={{ fontWeight: 400 }}>(fallback tier 2)</span>
-        </div>
-        <Input value={azureKey} onChange={setAzureKey} placeholder="Your Azure Cognitive Services key" masked />
-      </div>
+      {/* ─── Azure Neural TTS ─────────────────────────────────────────────── */}
+      {(() => {
+        const isAzureActive = !!azureKey.trim();
+        return (
+          <div style={{
+            border: `1px solid ${isAzureActive ? 'var(--accent)55' : 'var(--card-border)'}`,
+            borderRadius: 12, padding: '16px 18px', marginBottom: 20,
+            background: isAzureActive ? 'var(--accent)07' : 'var(--hover-bg)',
+          }}>
+            <div style={{
+              fontSize: 11, fontWeight: 700, letterSpacing: '0.06em', marginBottom: 14,
+              display: 'flex', alignItems: 'center', gap: 8,
+              color: isAzureActive ? 'var(--accent)' : 'var(--text-muted)',
+            }}>
+              AZURE NEURAL VOICES
+              <span style={{ fontWeight: 400, fontSize: 10, color: 'var(--text-muted)' }}>(tier 2 fallback)</span>
+              {isAzureActive && (
+                <span style={{
+                  fontSize: 9, background: 'var(--accent)22', color: 'var(--accent)',
+                  padding: '2px 8px', borderRadius: 10, fontWeight: 700,
+                }}>CONFIGURED</span>
+              )}
+            </div>
+
+            {/* API Key */}
+            <div style={{ marginBottom: 12 }}>
+              <div style={{ fontSize: 11, color: 'var(--text-secondary)', marginBottom: 5 }}>API Key</div>
+              <Input value={azureKey} onChange={v => { setAzureKey(v); setAzureStatus(null); }}
+                placeholder="Azure Cognitive Services subscription key" masked />
+            </div>
+
+            {/* Region */}
+            <div style={{ marginBottom: 12 }}>
+              <div style={{ fontSize: 11, color: 'var(--text-secondary)', marginBottom: 5 }}>
+                Region <span style={{ color: 'var(--text-muted)' }}>— must match your Azure resource region</span>
+              </div>
+              <select
+                value={azureRegion}
+                onChange={e => { setAzureRegion(e.target.value); setAzureStatus(null); }}
+                style={{
+                  width: '100%', padding: '9px 12px',
+                  background: 'var(--bg-panel)', border: '0.5px solid var(--card-border)',
+                  borderRadius: 8, color: 'var(--text-primary)', fontSize: 13,
+                }}
+              >
+                {[
+                  ['australiaeast',   'Australia East'],
+                  ['eastus',          'East US'],
+                  ['eastus2',         'East US 2'],
+                  ['westus',          'West US'],
+                  ['westus2',         'West US 2'],
+                  ['centralus',       'Central US'],
+                  ['northeurope',     'North Europe'],
+                  ['westeurope',      'West Europe'],
+                  ['uksouth',         'UK South'],
+                  ['southeastasia',   'Southeast Asia'],
+                  ['japaneast',       'Japan East'],
+                  ['canadacentral',   'Canada Central'],
+                ].map(([val, label]) => (
+                  <option key={val} value={val}>{label} — {val}</option>
+                ))}
+              </select>
+            </div>
+
+            {/* Voice */}
+            <div style={{ marginBottom: 14 }}>
+              <div style={{ fontSize: 11, color: 'var(--text-secondary)', marginBottom: 5 }}>Voice</div>
+              <select
+                value={azureVoiceName}
+                onChange={e => { setAzureVoiceName(e.target.value); setAzureStatus(null); }}
+                style={{
+                  width: '100%', padding: '9px 12px',
+                  background: 'var(--bg-panel)', border: '0.5px solid var(--card-border)',
+                  borderRadius: 8, color: 'var(--text-primary)', fontSize: 13,
+                }}
+              >
+                <optgroup label="Australian English">
+                  <option value="en-AU-NatashaNeural">Natasha — en-AU Female ★ VALERIE default</option>
+                  <option value="en-AU-WilliamNeural">William — en-AU Male</option>
+                </optgroup>
+                <optgroup label="British English">
+                  <option value="en-GB-SoniaNeural">Sonia — en-GB Female</option>
+                  <option value="en-GB-RyanNeural">Ryan — en-GB Male</option>
+                  <option value="en-GB-LibbyNeural">Libby — en-GB Female</option>
+                </optgroup>
+                <optgroup label="US English">
+                  <option value="en-US-JennyNeural">Jenny — en-US Female</option>
+                  <option value="en-US-AriaNeural">Aria — en-US Female</option>
+                  <option value="en-US-GuyNeural">Guy — en-US Male</option>
+                  <option value="en-US-SaraNeural">Sara — en-US Female</option>
+                </optgroup>
+              </select>
+            </div>
+
+            {/* Preview */}
+            <button
+              onClick={handleAzurePreview}
+              disabled={!azureKey.trim() || azurePlaying}
+              style={{
+                padding: '7px 16px', borderRadius: 8,
+                border: `0.5px solid ${isAzureActive ? 'var(--accent)' : 'var(--card-border)'}`,
+                background: isAzureActive ? 'var(--accent)15' : 'var(--hover-bg)',
+                color: isAzureActive ? 'var(--accent)' : 'var(--text-muted)',
+                fontSize: 12, cursor: !azureKey.trim() || azurePlaying ? 'not-allowed' : 'pointer',
+                opacity: !azureKey.trim() || azurePlaying ? 0.5 : 1,
+              }}
+            >
+              {azurePlaying ? '▶ Playing…' : '▶ Preview Azure voice'}
+            </button>
+
+            {/* Status */}
+            {azureStatus && (
+              <div style={{
+                marginTop: 10, padding: '10px 14px', borderRadius: 8, fontSize: 12, lineHeight: 1.5,
+                ...(azureStatus === 'ok'
+                  ? { background: '#4caf7d14', border: '0.5px solid #4caf7d44', color: '#4caf7d' }
+                  : azureStatus === 'bad_key'
+                  ? { background: 'rgba(229,90,90,0.08)', border: '0.5px solid rgba(229,90,90,0.35)', color: '#e55a5a' }
+                  : azureStatus === 'bad_region'
+                  ? { background: 'rgba(245,166,35,0.08)', border: '0.5px solid rgba(245,166,35,0.4)', color: '#f5a623' }
+                  : { background: 'rgba(229,90,90,0.08)', border: '0.5px solid rgba(229,90,90,0.35)', color: '#e55a5a' }),
+              }}>
+                {azureStatus === 'ok'         && '✓ Azure voice preview played successfully.'}
+                {azureStatus === 'bad_key'    && 'API key rejected — check your Azure subscription key.'}
+                {azureStatus === 'bad_region' && 'Region not found — make sure the region matches your Azure resource (e.g. australiaeast).'}
+                {azureStatus === 'error'      && 'Preview failed — check your key and region, then try again.'}
+              </div>
+            )}
+          </div>
+        );
+      })()}
 
       {/* ─── System TTS fallback ──────────────────────────────────────────── */}
       <div style={{ marginBottom: 24 }}>

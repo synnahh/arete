@@ -8,6 +8,11 @@
 const DEFAULT_VOICE_ID    = import.meta.env.VITE_ELEVENLABS_VOICE_ID || 'yj30vwTGJxSHezdAGsv9';
 const DEFAULT_API_KEY     = import.meta.env.VITE_ELEVENLABS_API_KEY  || '';
 const ELEVENLABS_MODEL    = 'eleven_monolingual_v1'; // compatible with free ElevenLabs plans
+
+// Session-level disables — set to true on first auth/plan rejection to avoid
+// hammering broken credentials on every message.
+let _el11Disabled   = false;
+let _azureDisabled  = false;
 const ELEVENLABS_ENDPOINT = 'https://api.elevenlabs.io/v1/text-to-speech';
 
 // Voice character settings — tuned for VALERIE's confident, calm personality
@@ -158,6 +163,49 @@ async function _fetchElevenLabsAudio(text, apiKey, voiceId) {
   return response.blob();
 }
 
+// ─── Azure TTS fetch ──────────────────────────────────────────────────────────
+// Calls the Azure Cognitive Services Speech REST API.
+// voiceName must be a valid Neural voice name, e.g. "en-AU-NatashaNeural".
+// region is the Azure region slug, e.g. "australiaeast".
+
+function _escapeXml(str) {
+  return str
+    .replace(/&/g, '&amp;')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;')
+    .replace(/"/g, '&quot;')
+    .replace(/'/g, '&apos;');
+}
+
+async function _fetchAzureAudio(text, apiKey, region, voiceName = 'en-AU-NatashaNeural') {
+  // Derive xml:lang from the voice name prefix (e.g. "en-AU-NatashaNeural" → "en-AU")
+  const langMatch = voiceName.match(/^([a-z]{2}-[A-Z]{2})/);
+  const lang      = langMatch ? langMatch[1] : 'en-AU';
+
+  const ssml = `<speak version='1.0' xmlns='http://www.w3.org/2001/10/synthesis' xml:lang='${lang}'>`
+    + `<voice name='${voiceName}'>${_escapeXml(text)}</voice></speak>`;
+
+  const response = await fetch(
+    `https://${region}.tts.speech.microsoft.com/cognitiveservices/v1`,
+    {
+      method:  'POST',
+      headers: {
+        'Ocp-Apim-Subscription-Key': apiKey,
+        'Content-Type':              'application/ssml+xml',
+        'X-Microsoft-OutputFormat':  'audio-16khz-128kbitrate-mono-mp3',
+      },
+      body:   ssml,
+      signal: AbortSignal.timeout(20000),
+    }
+  );
+
+  if (!response.ok) {
+    throw new Error(`Azure TTS ${response.status}`);
+  }
+
+  return response.blob();
+}
+
 // ─── speakText ─────────────────────────────────────────────────────────────────
 // Primary speech function. ElevenLabs is always tried first.
 // Falls back to browser SpeechSynthesis if ElevenLabs fails or has no key.
@@ -179,16 +227,14 @@ export async function speakText(text, voiceSettings = {}, { onStart, onEnd, onEr
   cancelCurrentSpeech();
 
   // ── Priority 1: ElevenLabs ───────────────────────────────────────────────────
-  if (apiKey) {
+  if (apiKey && !_el11Disabled) {
     try {
       const audioBlob = await _fetchElevenLabsAudio(text, apiKey, voiceId);
       const audioUrl  = URL.createObjectURL(audioBlob);
       const audio     = new Audio(audioUrl);
       _currentAudio   = audio;
 
-      audio.onplay = () => {
-        onStart?.();
-      };
+      audio.onplay = () => onStart?.();
 
       audio.onended = () => {
         _currentAudio = null;
@@ -207,13 +253,61 @@ export async function speakText(text, voiceSettings = {}, { onStart, onEnd, onEr
       return; // success — done
 
     } catch (err) {
-      // ElevenLabs failed — log warning, fall through to browser TTS
-      console.warn('[VALERIE/Voice] ElevenLabs failed, falling back to browser TTS:', err.message);
       _currentAudio = null;
+      const msg = err.message || '';
+
+      // Disable for the rest of this session if the plan/key is rejected
+      if (msg.includes('402') || msg.includes('403') || msg.includes('payment_required')) {
+        _el11Disabled = true;
+        console.info('[VALERIE/Voice] ElevenLabs disabled for this session (plan/key issue). Using System TTS.');
+      } else {
+        console.warn('[VALERIE/Voice] ElevenLabs failed, falling back to browser TTS:', msg);
+      }
     }
   }
 
-  // ── Priority 2: Browser SpeechSynthesis ─────────────────────────────────────
+  // ── Priority 2: Azure Neural TTS ────────────────────────────────────────────
+  const azureKey    = voiceSettings.azureKey;
+  const azureRegion = voiceSettings.azureRegion;
+  if (azureKey && azureRegion && !_azureDisabled) {
+    try {
+      const voiceName  = voiceSettings.azureVoiceName || 'en-AU-NatashaNeural';
+      const audioBlob  = await _fetchAzureAudio(text, azureKey, azureRegion, voiceName);
+      const audioUrl   = URL.createObjectURL(audioBlob);
+      const audio      = new Audio(audioUrl);
+      _currentAudio    = audio;
+
+      audio.onplay = () => onStart?.();
+
+      audio.onended = () => {
+        _currentAudio = null;
+        try { URL.revokeObjectURL(audioUrl); } catch {}
+        onEnd?.();
+      };
+
+      audio.onerror = () => {
+        _currentAudio = null;
+        try { URL.revokeObjectURL(audioUrl); } catch {}
+        onError?.();
+        onEnd?.();
+      };
+
+      await audio.play();
+      return; // success — done
+
+    } catch (err) {
+      _currentAudio = null;
+      const msg = err.message || '';
+      if (msg.includes('401') || msg.includes('403')) {
+        _azureDisabled = true;
+        console.info('[VALERIE/Voice] Azure TTS disabled for this session (key rejected).');
+      } else {
+        console.warn('[VALERIE/Voice] Azure TTS failed, falling back to browser TTS:', msg);
+      }
+    }
+  }
+
+  // ── Priority 3: Browser SpeechSynthesis ─────────────────────────────────────
   _speakWithBrowser(text, voiceSettings, { onStart, onEnd, onError });
 }
 
