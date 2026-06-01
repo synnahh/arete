@@ -967,43 +967,49 @@ export default function Dashboard({ settings, onTabChange, ai, density = 'standa
   const gap  = density === 'compact' ? 10 : density === 'spacious' ? 24 : 14;
 
   return (
-    <div style={{ height: '100%', overflowY: 'auto', padding: pad, display: 'flex', flexDirection: 'column', gap, position: 'relative' }}>
+    // Scroll wrapper — height:100% + overflow; inner content drives its own height
+    <div style={{ height: '100%', overflowY: 'auto', overflowX: 'hidden' }}>
+      <div style={{ padding: pad, display: 'flex', flexDirection: 'column', gap, position: 'relative', minHeight: '100%', boxSizing: 'border-box' }}>
 
-      {/* ── Greeting banner ──────────────────────────────────────────────── */}
-      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
-        <div style={{ display: 'flex', alignItems: 'baseline', gap: 10 }}>
-          <h1 style={{ fontSize: 22, fontWeight: 300, color: 'var(--text-primary)', letterSpacing: '0.03em', margin: 0 }}>
-            {getGreeting()}, <span style={{ color: 'var(--accent)' }}>{userName}</span>.
-          </h1>
-          <span style={{ fontSize: 12, color: 'var(--text-muted)' }}>{formatDate()}</span>
+        {/* ── Greeting banner ────────────────────────────────────────────── */}
+        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexShrink: 0 }}>
+          <div style={{ display: 'flex', alignItems: 'baseline', gap: 10 }}>
+            <h1 style={{ fontSize: 22, fontWeight: 300, color: 'var(--text-primary)', letterSpacing: '0.03em', margin: 0 }}>
+              {getGreeting()}, <span style={{ color: 'var(--accent)' }}>{userName}</span>.
+            </h1>
+            <span style={{ fontSize: 12, color: 'var(--text-muted)' }}>{formatDate()}</span>
+          </div>
+          <InlineClock />
         </div>
-        <InlineClock />
-      </div>
 
-      {/* ── Top strip — 4 stat cards ──────────────────────────────────────── */}
-      <div style={{ display: 'flex', gap, minHeight: 0 }}>
-        <TasksCountCard />
-        <QuoteCard />
-        <VerseCard />
-        <WeatherCard />
-      </div>
-
-      {/* ── Main body — Tasks left | Right stack ─────────────────────────── */}
-      <div style={{ display: 'flex', gap, alignItems: 'flex-start' }}>
-        <TasksPanel onTabChange={onTabChange} />
-
-        <div style={{ flex: '0.9 1 0', minWidth: 0, display: 'flex', flexDirection: 'column', gap }}>
-          <DailyBriefCard ai={ai} />
-          <SpotifyCard />
-          <PeakStateCard peakState={peakState} onTabChange={onTabChange} />
-          <Card style={{ justifyContent: 'center' }}>
-            <DayRing />
-          </Card>
+        {/* ── Top strip — 4 stat cards ─────────────────────────────────── */}
+        <div style={{ display: 'flex', gap, flexShrink: 0 }}>
+          <TasksCountCard />
+          <QuoteCard />
+          <VerseCard />
+          <WeatherCard />
         </div>
-      </div>
 
-      {/* ── Productivity strip — full width ──────────────────────────────── */}
-      <ProductivityWidget onTabChange={onTabChange} />
+        {/* ── Main body — Tasks left | Right stack ─────────────────────── */}
+        <div style={{ display: 'flex', gap, alignItems: 'flex-start', flexShrink: 0 }}>
+          <TasksPanel onTabChange={onTabChange} />
+
+          <div style={{ flex: '0.9 1 0', minWidth: 0, display: 'flex', flexDirection: 'column', gap }}>
+            <DailyBriefCard ai={ai} />
+            <SpotifyCard />
+            <PeakStateCard peakState={peakState} onTabChange={onTabChange} />
+            <Card style={{ justifyContent: 'center' }}>
+              <DayRing />
+            </Card>
+          </div>
+        </div>
+
+        {/* ── Productivity strip — full width ─────────────────────────── */}
+        <div style={{ flexShrink: 0 }}>
+          <ProductivityWidget onTabChange={onTabChange} />
+        </div>
+
+      </div>
     </div>
   );
 }
