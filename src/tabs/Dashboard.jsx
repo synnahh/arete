@@ -369,7 +369,7 @@ function TasksPanel({ onTabChange }) {
       flex: '1.1 1 0', minWidth: 0, display: 'flex', flexDirection: 'column', gap: 0,
       background: 'var(--bg-panel)', borderRadius: 12,
       border: '0.5px solid var(--card-border)',
-      overflow: 'hidden',
+      overflow: 'hidden', minHeight: 320,
     }}>
       {/* Header */}
       <div style={{
@@ -389,7 +389,7 @@ function TasksPanel({ onTabChange }) {
       </div>
 
       {/* Task list */}
-      <div style={{ flex: 1, overflowY: 'auto', padding: '8px 0' }}>
+      <div style={{ overflowY: 'auto', padding: '8px 0', minHeight: 200 }}>
         {visible.length === 0 ? (
           <div style={{ padding: '20px 18px', fontSize: 13, color: 'var(--text-muted)' }}>
             All clear — you're on top of everything.
@@ -989,7 +989,7 @@ export default function Dashboard({ settings, onTabChange, ai, density = 'standa
       </div>
 
       {/* ── Main body — Tasks left | Right stack ─────────────────────────── */}
-      <div style={{ display: 'flex', gap, flex: 1, minHeight: 400 }}>
+      <div style={{ display: 'flex', gap, alignItems: 'flex-start' }}>
         <TasksPanel onTabChange={onTabChange} />
 
         <div style={{ flex: '0.9 1 0', minWidth: 0, display: 'flex', flexDirection: 'column', gap }}>
