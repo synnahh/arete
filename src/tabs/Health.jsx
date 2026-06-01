@@ -167,102 +167,129 @@ function Overview({ habits, waterLogs, nutritionLogs, sleepData, settings, suppl
     );
   };
 
+  const effColour = e => e>=85?'#4caf7d':e>=70?'#f4a642':'#e55a5a';
+  const C28 = 2*Math.PI*28; // ring circumference for r=28
+
+  // Large macro card
+  const MacroCard = ({ label, value, display, goal, goalDisplay, colour, onClick }) => {
+    const pct = Math.min((value/Math.max(goal,1))*100,100);
+    return (
+      <div onClick={onClick} style={{flex:'1 1 0',minWidth:0,padding:'14px 16px',background:'rgba(255,255,255,0.03)',borderRadius:12,border:'0.5px solid rgba(255,255,255,0.07)',cursor:'pointer',transition:'background 0.15s'}}
+        onMouseEnter={e=>e.currentTarget.style.background='rgba(255,255,255,0.06)'}
+        onMouseLeave={e=>e.currentTarget.style.background='rgba(255,255,255,0.03)'}
+      >
+        <div style={{fontSize:8.5,fontWeight:700,letterSpacing:'0.16em',textTransform:'uppercase',color:'rgba(255,255,255,0.28)',fontFamily:'ui-monospace,monospace',marginBottom:8}}>{label}</div>
+        <div style={{fontSize:26,fontWeight:300,color:colour,lineHeight:1,fontVariantNumeric:'tabular-nums',marginBottom:4}}>{display}</div>
+        <div style={{fontSize:10,color:'rgba(255,255,255,0.25)',marginBottom:8}}>of {goalDisplay}</div>
+        <div style={{height:4,borderRadius:2,background:'rgba(255,255,255,0.08)',overflow:'hidden'}}>
+          <div style={{height:'100%',width:`${pct}%`,background:colour,borderRadius:2,transition:'width 0.5s ease'}}/>
+        </div>
+      </div>
+    );
+  };
+
   return (
     <Section title="Overview">
-      {/* ── Vitals strip ── */}
-      <GlassLabel>Vitals</GlassLabel>
-      <div style={{display:'flex',gap:6,marginBottom:10}}>
-        <Stat label="Sleep" value={lastSleep?`${lastSleep.efficiency??'—'}%`:'—'} sub={lastSleep?`${sleepH}h ${sleepM}m · ${lastSleep.stages?'staged':'no stages'}`:'no data'} colour={lastSleep?.efficiency>=85?'#4caf7d':lastSleep?.efficiency>=70?'#f4a642':'#e55a5a'} nav={()=>onNav('sleep')} />
-        <Stat label="Water" value={todayWater>=1000?`${(todayWater/1000).toFixed(1)}L`:`${todayWater}ml`} sub={`of ${waterGoal>=1000?(waterGoal/1000).toFixed(1)+'L':waterGoal+'ml'}`} colour="#4a9eff" warn={todayWater===0} nav={()=>onNav('water')} />
-        <Stat label="Calories" value={todayCal} sub={`of ${macroGoal} kcal`} colour="#f4a642" nav={()=>onNav('nutrition')} />
-        <Stat label="Protein" value={`${todayProtein}g`} sub={`of ${proteinGoal}g`} colour="#f97316" nav={()=>onNav('nutrition')} />
-        <Stat label="Habits" value={`${todayHabits.done}/${todayHabits.total}`} sub={todayHabits.done===todayHabits.total&&todayHabits.total>0?'✓ all done':`${todayHabits.total-todayHabits.done} left`} colour="#4caf7d" nav={()=>onNav('habits')} />
-        <Stat label="Supplements" value={`${todaySupps.done}/${todaySupps.total}`} sub={todaySupps.done===todaySupps.total&&todaySupps.total>0?'✓ all taken':'remaining'} colour="#9b5de5" nav={()=>onNav('supplements')} />
-        <Stat label="Workout" value={workedOutToday?'Done ✓':'Not yet'} colour={workedOutToday?'#4caf7d':'rgba(255,255,255,0.3)'} sub={workedOutToday?'logged today':'no session'} nav={()=>onNav('workout')} />
-        {latestBody?.weight&&<Stat label="Weight" value={`${latestBody.weight}kg`} sub={latestBody.date===today?'today':`${latestBody.date?.slice(5)??'—'}`} colour="rgba(255,255,255,0.65)" nav={()=>onNav('body')} />}
-      </div>
 
-      {/* ── Stimulants strip ── */}
-      <GlassLabel>Stimulants</GlassLabel>
-      <div style={{display:'flex',gap:6,marginBottom:10}}>
-        <div style={{flex:'1 1 0',padding:'10px 14px',background:'rgba(255,255,255,0.03)',borderRadius:10,border:`0.5px solid ${todayStims.caffeine>caffLimit*0.9?'rgba(244,166,66,0.4)':'rgba(255,255,255,0.07)'}`}}>
-          <div style={{fontSize:8.5,fontWeight:700,letterSpacing:'0.16em',textTransform:'uppercase',color:'rgba(255,255,255,0.28)',fontFamily:'ui-monospace,monospace',marginBottom:4}}>Caffeine</div>
-          <div style={{display:'flex',alignItems:'baseline',gap:6}}>
-            <span style={{fontSize:20,fontWeight:600,color:todayStims.caffeine>caffLimit*0.9?'#f4a642':'rgba(255,255,255,0.85)',fontVariantNumeric:'tabular-nums'}}>{todayStims.caffeine}</span>
-            <span style={{fontSize:11,color:'rgba(255,255,255,0.3)'}}>/ {caffLimit}mg</span>
-          </div>
-          <Bar value={todayStims.caffeine} max={caffLimit} colour={todayStims.caffeine>caffLimit*0.9?'#f4a642':'#4a9eff'} />
-        </div>
-        {todayStims.nicotine>0&&(
-          <div style={{flex:'1 1 0',padding:'10px 14px',background:'rgba(255,255,255,0.03)',borderRadius:10,border:'0.5px solid rgba(255,255,255,0.07)'}}>
-            <div style={{fontSize:8.5,fontWeight:700,letterSpacing:'0.16em',textTransform:'uppercase',color:'rgba(255,255,255,0.28)',fontFamily:'ui-monospace,monospace',marginBottom:4}}>Nicotine</div>
-            <div style={{display:'flex',alignItems:'baseline',gap:6}}>
-              <span style={{fontSize:20,fontWeight:600,color:'#f4a642',fontVariantNumeric:'tabular-nums'}}>{todayStims.nicotine}</span>
-              <span style={{fontSize:11,color:'rgba(255,255,255,0.3)'}}>/ {nicLimit}mg</span>
+      {/* ── SLEEP QUALITY — prominent block ── */}
+      <GlassLabel>Sleep Quality</GlassLabel>
+      <GlassCard style={{marginBottom:10,cursor:'pointer'}} onClick={()=>onNav('sleep')}>
+        {lastSleep ? (
+          <div style={{display:'flex',gap:20,alignItems:'flex-start'}}>
+            {/* Efficiency ring */}
+            <div style={{position:'relative',width:90,height:90,flexShrink:0}}>
+              <svg viewBox="0 0 72 72" width="90" height="90">
+                <circle cx="36" cy="36" r="28" fill="none" stroke="rgba(255,255,255,0.06)" strokeWidth="6"/>
+                <circle cx="36" cy="36" r="28" fill="none"
+                  stroke={effColour(lastSleep.efficiency??0)} strokeWidth="6" strokeLinecap="round"
+                  strokeDasharray={C28}
+                  strokeDashoffset={C28*(1-(lastSleep.efficiency??0)/100)}
+                  style={{transform:'rotate(-90deg)',transformOrigin:'center',transition:'stroke-dashoffset 0.8s'}}
+                />
+              </svg>
+              <div style={{position:'absolute',inset:0,display:'flex',flexDirection:'column',alignItems:'center',justifyContent:'center',pointerEvents:'none'}}>
+                <div style={{fontSize:16,fontWeight:700,color:effColour(lastSleep.efficiency??0),lineHeight:1}}>{lastSleep.efficiency??'—'}%</div>
+                <div style={{fontSize:7.5,color:'rgba(255,255,255,0.3)',letterSpacing:'0.08em',marginTop:2}}>EFF</div>
+              </div>
             </div>
-            <Bar value={todayStims.nicotine} max={nicLimit} colour="#f4a642" />
+
+            {/* Duration + times + stages */}
+            <div style={{flex:1,minWidth:0}}>
+              <div style={{display:'flex',alignItems:'baseline',gap:12,marginBottom:2}}>
+                <span style={{fontSize:30,fontWeight:200,color:'rgba(255,255,255,0.92)',lineHeight:1}}>{sleepH}h <span style={{fontSize:20}}>{sleepM}m</span></span>
+                <span style={{fontSize:12,color:'rgba(255,255,255,0.35)',fontFamily:'ui-monospace,monospace'}}>{lastSleep.bedTime??'—'} → {lastSleep.wakeTime??'—'}</span>
+              </div>
+
+              {lastSleep.stages ? (
+                <>
+                  <StageBar height={7} stages={[
+                    {label:'Deep', value:lastSleep.stages.deep??0,  colour:'#4a9eff'},
+                    {label:'REM',  value:lastSleep.stages.rem??0,   colour:'#9b5de5'},
+                    {label:'Core', value:lastSleep.stages.core??0,  colour:'#4caf7d'},
+                    {label:'Awake',value:lastSleep.stages.awake??0, colour:'rgba(255,255,255,0.15)'},
+                  ]}/>
+                  <div style={{display:'flex',gap:14,marginTop:6,flexWrap:'wrap'}}>
+                    {[{l:'Deep',c:'#4a9eff',v:lastSleep.stages.deep},{l:'REM',c:'#9b5de5',v:lastSleep.stages.rem},{l:'Core',c:'#4caf7d',v:lastSleep.stages.core},{l:'Awake',c:'rgba(255,255,255,0.25)',v:lastSleep.stages.awake}].map(s=>(
+                      <div key={s.l} style={{display:'flex',alignItems:'center',gap:4}}>
+                        <div style={{width:5,height:5,borderRadius:'50%',background:s.c,flexShrink:0}}/>
+                        <span style={{fontSize:9.5,color:'rgba(255,255,255,0.35)',fontFamily:'ui-monospace,monospace'}}>{s.l}: {Math.floor((s.v??0)/60)}h{String((s.v??0)%60).padStart(2,'0')}m</span>
+                      </div>
+                    ))}
+                  </div>
+                </>
+              ) : (
+                <div style={{fontSize:11,color:'rgba(255,255,255,0.25)',marginTop:6}}>No stage data</div>
+              )}
+            </div>
+          </div>
+        ) : (
+          <div style={{display:'flex',alignItems:'center',gap:14,padding:'4px 0'}}>
+            <div style={{width:90,height:90,borderRadius:'50%',border:'0.5px solid rgba(255,255,255,0.08)',display:'flex',alignItems:'center',justifyContent:'center',flexShrink:0}}>
+              <span style={{fontSize:22,opacity:0.15}}>🌙</span>
+            </div>
+            <div>
+              <div style={{fontSize:14,color:'rgba(255,255,255,0.3)',marginBottom:4}}>No sleep logged yet</div>
+              <div style={{fontSize:11,color:'rgba(255,255,255,0.18)'}}>Log via Sleep tab or sync Apple Health on iOS →</div>
+            </div>
           </div>
         )}
-        <div style={{flex:'3 1 0',minWidth:0}}/>
+      </GlassCard>
+
+      {/* ── VITALS — macros row ── */}
+      <GlassLabel>Vitals</GlassLabel>
+      <div style={{display:'flex',gap:8,marginBottom:10}}>
+        <MacroCard label="Water" value={todayWater} display={todayWater>=1000?`${(todayWater/1000).toFixed(1)}L`:`${todayWater}ml`} goal={waterGoal} goalDisplay={waterGoal>=1000?`${(waterGoal/1000).toFixed(1)}L`:`${waterGoal}ml`} colour="#4a9eff" onClick={()=>onNav('water')} />
+        <MacroCard label="Calories" value={todayCal} display={`${todayCal}`} goal={macroGoal} goalDisplay={`${macroGoal} kcal`} colour="#f4a642" onClick={()=>onNav('nutrition')} />
+        <MacroCard label="Protein" value={todayProtein} display={`${todayProtein}g`} goal={proteinGoal} goalDisplay={`${proteinGoal}g`} colour="#f97316" onClick={()=>onNav('nutrition')} />
       </div>
 
-      {/* ── Two column: sleep stages + today's activity ── */}
-      <div style={{display:'flex',gap:8}}>
-        {/* Sleep stages */}
-        <GlassCard style={{flex:1,marginBottom:0}}>
-          <GlassLabel>Last night — sleep stages</GlassLabel>
-          {lastSleep?.stages ? (
-            <>
-              <StageBar height={8} stages={[
-                {label:'Deep', value:lastSleep.stages.deep??0, colour:'#4a9eff'},
-                {label:'REM',  value:lastSleep.stages.rem??0,  colour:'#9b5de5'},
-                {label:'Core', value:lastSleep.stages.core??0, colour:'#4caf7d'},
-                {label:'Awake',value:lastSleep.stages.awake??0,colour:'rgba(255,255,255,0.15)'},
-              ]}/>
-              <div style={{display:'flex',gap:12,marginTop:8,flexWrap:'wrap'}}>
-                {[{l:'Deep',c:'#4a9eff',v:lastSleep.stages.deep},{l:'REM',c:'#9b5de5',v:lastSleep.stages.rem},{l:'Core',c:'#4caf7d',v:lastSleep.stages.core},{l:'Awake',c:'rgba(255,255,255,0.3)',v:lastSleep.stages.awake}].map(s=>(
-                  <div key={s.l} style={{display:'flex',alignItems:'center',gap:4}}>
-                    <div style={{width:5,height:5,borderRadius:'50%',background:s.c,flexShrink:0}}/>
-                    <span style={{fontSize:9.5,color:'rgba(255,255,255,0.35)',fontFamily:'ui-monospace,monospace'}}>{s.l} {Math.floor((s.v??0)/60)}h{(s.v??0)%60}m</span>
-                  </div>
-                ))}
-              </div>
-            </>
-          ) : (
-            <div style={{fontSize:12,color:'rgba(255,255,255,0.25)',padding:'8px 0'}}>No sleep data yet — log via Sleep tab or Apple Health sync.</div>
-          )}
-          {lastSleep&&<div style={{marginTop:10,display:'flex',gap:16}}>
-            {[{l:'Bed',v:lastSleep.bedTime},{l:'Wake',v:lastSleep.wakeTime},{l:'Efficiency',v:`${lastSleep.efficiency??'—'}%`}].map(s=>(
-              <div key={s.l}>
-                <div style={{fontSize:8.5,color:'rgba(255,255,255,0.25)',letterSpacing:'0.1em',fontFamily:'ui-monospace,monospace'}}>{s.l.toUpperCase()}</div>
-                <div style={{fontSize:13,color:'rgba(255,255,255,0.7)',fontVariantNumeric:'tabular-nums'}}>{s.v??'—'}</div>
-              </div>
-            ))}
-          </div>}
-        </GlassCard>
-
-        {/* Today's quick activity */}
-        <GlassCard style={{flex:1,marginBottom:0}}>
-          <GlassLabel>Today's progress</GlassLabel>
-          <div style={{display:'flex',flexDirection:'column',gap:8}}>
-            {[
-              {label:'Water',value:todayWater,max:waterGoal,colour:'#4a9eff',display:todayWater>=1000?`${(todayWater/1000).toFixed(1)}L`:`${todayWater}ml`,goal:waterGoal>=1000?`${(waterGoal/1000).toFixed(1)}L`:`${waterGoal}ml`},
-              {label:'Calories',value:todayCal,max:macroGoal,colour:'#f4a642',display:`${todayCal} kcal`,goal:`${macroGoal} kcal`},
-              {label:'Protein',value:todayProtein,max:proteinGoal,colour:'#f97316',display:`${todayProtein}g`,goal:`${proteinGoal}g`},
-              {label:'Supplements',value:todaySupps.done,max:Math.max(todaySupps.total,1),colour:'#9b5de5',display:`${todaySupps.done} of ${todaySupps.total}`,goal:'complete'},
-              {label:'Habits',value:todayHabits.done,max:Math.max(todayHabits.total,1),colour:'#4caf7d',display:`${todayHabits.done} of ${todayHabits.total}`,goal:'complete'},
-            ].map(row=>(
-              <div key={row.label}>
-                <div style={{display:'flex',justifyContent:'space-between',marginBottom:3}}>
-                  <span style={{fontSize:10.5,color:'rgba(255,255,255,0.5)'}}>{row.label}</span>
-                  <span style={{fontSize:10.5,color:'rgba(255,255,255,0.5)',fontFamily:'ui-monospace,monospace'}}>{row.display} <span style={{opacity:0.4}}>/ {row.goal}</span></span>
-                </div>
-                <Bar value={row.value} max={row.max} colour={row.colour}/>
-              </div>
-            ))}
+      {/* ── Status chips row ── */}
+      <div style={{display:'flex',gap:6,marginBottom:10}}>
+        <Stat label="Habits"      value={`${todayHabits.done}/${todayHabits.total}`} sub={todayHabits.done===todayHabits.total&&todayHabits.total>0?'✓ all done':`${todayHabits.total-todayHabits.done} left`} colour="#4caf7d" nav={()=>onNav('habits')} />
+        <Stat label="Supplements" value={`${todaySupps.done}/${todaySupps.total}`}   sub={todaySupps.done===todaySupps.total&&todaySupps.total>0?'✓ all taken':'remaining'} colour="#9b5de5" nav={()=>onNav('supplements')} />
+        <Stat label="Workout"     value={workedOutToday?'Done ✓':'Not yet'} colour={workedOutToday?'#4caf7d':'rgba(255,255,255,0.3)'} sub={workedOutToday?'logged today':'no session'} nav={()=>onNav('workout')} />
+        {latestBody?.weight&&<Stat label="Weight" value={`${latestBody.weight}kg`} sub={latestBody.date===today?'today':`${latestBody.date?.slice(5)??'—'}`} colour="rgba(255,255,255,0.65)" nav={()=>onNav('body')} />}
+        {/* Caffeine inline */}
+        <div style={{flex:'1 1 0',minWidth:0,padding:'10px 12px',background:'rgba(255,255,255,0.03)',borderRadius:10,border:`0.5px solid ${todayStims.caffeine>caffLimit*0.9?'rgba(244,166,66,0.4)':'rgba(255,255,255,0.07)'}`}}>
+          <div style={{fontSize:8.5,fontWeight:700,letterSpacing:'0.16em',textTransform:'uppercase',color:'rgba(255,255,255,0.28)',fontFamily:'ui-monospace,monospace',marginBottom:4}}>Caffeine</div>
+          <div style={{display:'flex',alignItems:'baseline',gap:4}}>
+            <span style={{fontSize:16,fontWeight:600,color:todayStims.caffeine>caffLimit*0.9?'#f4a642':'rgba(255,255,255,0.85)',fontVariantNumeric:'tabular-nums'}}>{todayStims.caffeine}</span>
+            <span style={{fontSize:9.5,color:'rgba(255,255,255,0.3)'}}>/{caffLimit}mg</span>
           </div>
-        </GlassCard>
+          <Bar value={todayStims.caffeine} max={caffLimit} colour={todayStims.caffeine>caffLimit*0.9?'#f4a642':'#4a9eff'}/>
+        </div>
+        {todayStims.nicotine>0&&(
+          <div style={{flex:'1 1 0',minWidth:0,padding:'10px 12px',background:'rgba(255,255,255,0.03)',borderRadius:10,border:'0.5px solid rgba(255,255,255,0.07)'}}>
+            <div style={{fontSize:8.5,fontWeight:700,letterSpacing:'0.16em',textTransform:'uppercase',color:'rgba(255,255,255,0.28)',fontFamily:'ui-monospace,monospace',marginBottom:4}}>Nicotine</div>
+            <div style={{display:'flex',alignItems:'baseline',gap:4}}>
+              <span style={{fontSize:16,fontWeight:600,color:'#f4a642',fontVariantNumeric:'tabular-nums'}}>{todayStims.nicotine}</span>
+              <span style={{fontSize:9.5,color:'rgba(255,255,255,0.3)'}}>/{nicLimit}mg</span>
+            </div>
+            <Bar value={todayStims.nicotine} max={nicLimit} colour="#f4a642"/>
+          </div>
+        )}
       </div>
+
     </Section>
   );
 }
