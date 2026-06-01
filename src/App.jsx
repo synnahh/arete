@@ -5,6 +5,7 @@ import { applyTheme }            from './styles/themes.js';
 import { getTimeOfDay }          from './utils/time.js';
 import { useAI }                 from './ai/useAI.js';
 import { useFirebaseStatus }    from './firebase/useFirebaseStatus.js';
+import { usePeakState }         from './hooks/usePeakState.js';
 import Onboarding                from './onboarding/Onboarding.jsx';
 import Sidebar                   from './components/Sidebar.jsx';
 import QuickCapture              from './components/QuickCapture.jsx';
@@ -57,6 +58,9 @@ export default function App() {
 
   // ── Firebase status ───────────────────────────────────────────────────────
   const firebaseSynced = useFirebaseStatus();
+
+  // ── Peak State — computed once at app level, shared to Sidebar + Dashboard ─
+  const peakState = usePeakState(settings);
 
   // ── Wire VALERIE's navigate action to the real tab-change function ─────────
   useEffect(() => {
@@ -179,6 +183,7 @@ export default function App() {
         lastPinged={ai.lastPinged}
         firebaseSynced={firebaseSynced}
         hiddenTabs={settings?.hiddenTabs ?? []}
+        peakState={peakState}
       />
 
       {/* Main content area */}
@@ -196,6 +201,7 @@ export default function App() {
           onTabChange={setActiveTab}
           ai={ai}
           density={layoutDensity}
+          peakState={peakState}
         />
 
         {/* Quick Capture — floats above all content */}

@@ -223,7 +223,66 @@ function Divider() {
 }
 
 // ─── Main Sidebar ─────────────────────────────────────────────────────────────
-export default function Sidebar({ activeTab, onTabClick, claudeOnline, ollamaOnline, internetOnline, lastPinged, firebaseSynced, hiddenTabs = [] }) {
+// ─── Peak State dot indicator ─────────────────────────────────────────────────
+function PeakStateDot({ peakState }) {
+  const [expanded, setExpanded] = useState(false);
+  if (!peakState) return null;
+  const { score, color, suggestion, factors } = peakState;
+
+  return (
+    <div style={{ position: 'relative' }}>
+      <button
+        onMouseEnter={() => setExpanded(true)}
+        onMouseLeave={() => setExpanded(false)}
+        style={{ background: 'none', border: 'none', cursor: 'pointer', padding: 4, display: 'flex', alignItems: 'center', justifyContent: 'center' }}
+        title={`Peak State: ${score}/100`}
+      >
+        <div style={{
+          width: 10, height: 10, borderRadius: '50%',
+          background: color,
+          boxShadow: `0 0 7px ${color}99`,
+          transition: 'all 0.3s ease',
+          transform: expanded ? 'scale(1.3)' : 'scale(1)',
+        }} />
+      </button>
+
+      {expanded && (
+        <div style={{
+          position: 'absolute', left: 28, bottom: 0,
+          background: 'var(--bg-panel)', border: '0.5px solid var(--card-border)',
+          borderRadius: 12, padding: '14px 16px', width: 240, zIndex: 200,
+          boxShadow: '0 8px 32px rgba(0,0,0,0.5)',
+        }}>
+          {/* Score header */}
+          <div style={{ display: 'flex', alignItems: 'baseline', gap: 6, marginBottom: 10 }}>
+            <span style={{ fontSize: 28, fontWeight: 800, color, lineHeight: 1, fontVariantNumeric: 'tabular-nums' }}>{score}</span>
+            <span style={{ fontSize: 11, color: 'var(--text-muted)' }}>/100 Peak State</span>
+          </div>
+
+          {/* Factor rows */}
+          <div style={{ display: 'flex', flexDirection: 'column', gap: 5, marginBottom: 10 }}>
+            {Object.values(factors).map(f => (
+              <div key={f.label} style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
+                <div style={{ flex: 1, fontSize: 10, color: 'var(--text-muted)', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{f.label}</div>
+                <div style={{ width: 60, height: 4, borderRadius: 2, background: 'rgba(255,255,255,0.07)', overflow: 'hidden', flexShrink: 0 }}>
+                  <div style={{ width: `${f.pct}%`, height: '100%', background: color, borderRadius: 2, transition: 'width 0.4s' }} />
+                </div>
+                <div style={{ fontSize: 10, color: 'var(--text-secondary)', minWidth: 28, textAlign: 'right', fontVariantNumeric: 'tabular-nums' }}>{f.pts}/{f.max}</div>
+              </div>
+            ))}
+          </div>
+
+          {/* Suggestion */}
+          <div style={{ fontSize: 10.5, color: 'var(--text-muted)', lineHeight: 1.5, borderTop: '0.5px solid var(--sidebar-divider)', paddingTop: 8 }}>
+            {suggestion}
+          </div>
+        </div>
+      )}
+    </div>
+  );
+}
+
+export default function Sidebar({ activeTab, onTabClick, claudeOnline, ollamaOnline, internetOnline, lastPinged, firebaseSynced, hiddenTabs = [], peakState }) {
 
   // Load platform-specific tab order from storage
   const [orderedTabs, setOrderedTabs] = useState(() => {
@@ -315,8 +374,10 @@ export default function Sidebar({ activeTab, onTabClick, claudeOnline, ollamaOnl
         {hiddenTabs.includes('settings') && (
           <TabButton tab={{ id: 'settings', label: 'Settings' }} active={activeTab === 'settings'} onClick={onTabClick} />
         )}
+        {/* Peak State dot */}
+        <PeakStateDot peakState={peakState} />
         {/* Connection status indicator */}
-        <div style={{ marginTop: 8, marginBottom: 2 }}>
+        <div style={{ marginBottom: 2 }}>
           <StatusIndicator
             claudeOnline={claudeOnline ?? false}
             ollamaOnline={ollamaOnline ?? false}

@@ -868,7 +868,71 @@ function ProductivityWidget({ onTabChange }) {
 }
 
 // ── Main Dashboard ─────────────────────────────────────────────────────────────
-export default function Dashboard({ settings, onTabChange, ai, density = 'standard' }) {
+// ── Peak State Card ───────────────────────────────────────────────────────────
+function PeakStateCard({ peakState, onTabChange }) {
+  if (!peakState) return null;
+  const { score, color, suggestion, factors } = peakState;
+
+  return (
+    <Card style={{ gap: 0 }}>
+      {/* Header */}
+      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 12 }}>
+        <div style={{ fontSize: 9.5, color: 'var(--text-muted)', letterSpacing: '0.08em' }}>PEAK STATE</div>
+        <button onClick={() => onTabChange?.('health')}
+          style={{ fontSize: 10.5, color: 'var(--accent)', background: 'none', border: 'none', cursor: 'pointer', padding: 0 }}>
+          Health →
+        </button>
+      </div>
+
+      {/* Score + ring */}
+      <div style={{ display: 'flex', alignItems: 'center', gap: 16, marginBottom: 12 }}>
+        {/* Mini ring */}
+        <div style={{ position: 'relative', width: 72, height: 72, flexShrink: 0 }}>
+          <svg viewBox="0 0 72 72" width="72" height="72">
+            <defs>
+              <filter id="ps-glow">
+                <feGaussianBlur stdDeviation="1.5" result="b" />
+                <feMerge><feMergeNode in="b" /><feMergeNode in="SourceGraphic" /></feMerge>
+              </filter>
+            </defs>
+            <circle cx="36" cy="36" r="28" fill="none" stroke="rgba(255,255,255,0.06)" strokeWidth="6" />
+            <circle cx="36" cy="36" r="28" fill="none"
+              stroke={color} strokeWidth="6" strokeLinecap="round"
+              strokeDasharray={2 * Math.PI * 28}
+              strokeDashoffset={2 * Math.PI * 28 * (1 - score / 100)}
+              filter="url(#ps-glow)"
+              style={{ transform: 'rotate(-90deg)', transformOrigin: 'center', transition: 'stroke-dashoffset 0.8s cubic-bezier(0.22,1,0.36,1), stroke 0.5s' }}
+            />
+          </svg>
+          <div style={{ position: 'absolute', inset: 0, display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', pointerEvents: 'none' }}>
+            <div style={{ fontSize: 18, fontWeight: 800, color, lineHeight: 1, fontVariantNumeric: 'tabular-nums' }}>{score}</div>
+            <div style={{ fontSize: 8, color: 'var(--text-muted)', letterSpacing: '0.08em', marginTop: 1 }}>/ 100</div>
+          </div>
+        </div>
+
+        {/* Factor bars */}
+        <div style={{ flex: 1, display: 'flex', flexDirection: 'column', gap: 4 }}>
+          {Object.values(factors).map(f => (
+            <div key={f.label} style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
+              <div style={{ fontSize: 9, color: 'var(--text-muted)', width: 70, flexShrink: 0, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{f.label}</div>
+              <div style={{ flex: 1, height: 3, borderRadius: 2, background: 'rgba(255,255,255,0.06)' }}>
+                <div style={{ width: `${f.pct}%`, height: '100%', background: f.pct >= 80 ? '#4caf7d' : f.pct >= 50 ? '#f4a642' : '#e25d7a', borderRadius: 2, transition: 'width 0.6s' }} />
+              </div>
+              <div style={{ fontSize: 9, color: 'var(--text-muted)', minWidth: 22, textAlign: 'right', fontVariantNumeric: 'tabular-nums' }}>{f.pts}</div>
+            </div>
+          ))}
+        </div>
+      </div>
+
+      {/* Suggestion */}
+      <div style={{ fontSize: 11, color: 'var(--text-muted)', lineHeight: 1.5, paddingTop: 10, borderTop: '0.5px solid rgba(255,255,255,0.06)' }}>
+        <span style={{ color, fontWeight: 600 }}>→ </span>{suggestion}
+      </div>
+    </Card>
+  );
+}
+
+export default function Dashboard({ settings, onTabChange, ai, density = 'standard', peakState }) {
   const [hasGreeted, setHasGreeted] = useState(false);
 
   const userName = storage.get(STORAGE_KEYS.USER, {})?.name
@@ -931,6 +995,7 @@ export default function Dashboard({ settings, onTabChange, ai, density = 'standa
         <div style={{ flex: '0.9 1 0', minWidth: 0, display: 'flex', flexDirection: 'column', gap }}>
           <DailyBriefCard ai={ai} />
           <SpotifyCard />
+          <PeakStateCard peakState={peakState} onTabChange={onTabChange} />
           <Card style={{ justifyContent: 'center' }}>
             <DayRing />
           </Card>
