@@ -18,6 +18,16 @@ const CATEGORIES = [
 ];
 const CAT_MAP = Object.fromEntries(CATEGORIES.map(c => [c.id, c]));
 
+const PURCHASE_CATS = [
+  { id: 'restock',  label: 'Restock',  colour: '#4a9eff', icon: '🔄' },
+  { id: 'fashion',  label: 'Fashion',  colour: '#e25d7a', icon: '👚' },
+  { id: 'tech',     label: 'Tech',     colour: '#9b5de5', icon: '💻' },
+  { id: 'home',     label: 'Home',     colour: '#f4a642', icon: '🏠' },
+  { id: 'fitness',  label: 'Fitness',  colour: '#4caf7d', icon: '💪' },
+  { id: 'other',    label: 'Other',    colour: '#6b7280', icon: '📦' },
+];
+const PCAT_MAP = Object.fromEntries(PURCHASE_CATS.map(c => [c.id, c]));
+
 const SUB_CATS = [
   { id: 'streaming', label: 'Streaming', icon: '📺' },
   { id: 'software',  label: 'Software',  icon: '💻' },
@@ -34,6 +44,7 @@ const TABS = [
   { id: 'spending',      label: 'SPENDING'       },
   { id: 'savings',       label: 'SAVINGS'        },
   { id: 'subscriptions', label: 'SUBSCRIPTIONS'  },
+  { id: 'purchases',      label: 'PURCHASES'      },
 ];
 
 // ─── Utilities ────────────────────────────────────────────────────────────────
@@ -276,7 +287,7 @@ function StockTicker({ watchlist, finnhubKey }) {
 }
 
 // ─── Overview panel ───────────────────────────────────────────────────────────
-function Overview({ transactions, goals, subscriptions, fmt, currencySymbol }) {
+function Overview({ transactions, goals, subscriptions, purchases = [], fmt, currencySymbol }) {
   const now        = new Date();
   const monthStart = new Date(now.getFullYear(), now.getMonth(), 1).toISOString().split('T')[0];
   const yearStart  = new Date(now.getFullYear(), 0, 1).toISOString().split('T')[0];
@@ -290,6 +301,7 @@ function Overview({ transactions, goals, subscriptions, fmt, currencySymbol }) {
   const allIncome  = transactions.filter(t => t.type === 'income').reduce((s, t) => s + (t.amount || 0), 0);
   const allExpense = transactions.filter(t => t.type === 'expense').reduce((s, t) => s + (t.amount || 0), 0);
   const allNet     = allIncome - allExpense;
+  const pendingSpend = purchases.filter(p => !p.completed).reduce((s, p) => s + (parseFloat(p.amount) || 0), 0);
 
   const monthlySubCost = subscriptions
     .filter(s => s.status === 'active')
@@ -832,12 +844,172 @@ function Subscriptions({ subs, onAdd, onUpdate, onRemove, fmt }) {
 }
 
 // ─── Main Finance Tab ─────────────────────────────────────────────────────────
+
+// ═══════════════════════════════════════════════════════════════════════════════
+// PLANNED PURCHASES
+// ═══════════════════════════════════════════════════════════════════════════════
+function PlannedPurchases({ purchases, onAdd, onRemove, onComplete, fmt }) {
+  const [showAdd, setShowAdd] = useState(false);
+  const [form, setForm] = useState({ name: '', amount: '', category: 'restock', notes: '' });
+  const [completing, setCompleting] = useState(null);
+
+  const pending  = purchases.filter(p => !p.completed);
+  const total    = pending.reduce((s, p) => s + (parseFloat(p.amount) || 0), 0);
+
+  const handleAdd = async () => {
+    if (!form.name.trim() || !form.amount) return;
+    await onAdd({ name: form.name.trim(), amount: parseFloat(form.amount), category: form.category, notes: form.notes.trim(), completed: false });
+    setForm({ name: '', amount: '', category: 'restock', notes: '' });
+    setShowAdd(false);
+  };
+
+  const handleComplete = async (item) => {
+    setCompleting(item.id);
+    await onComplete(item);
+    setCompleting(null);
+  };
+
+  const inputSx = {
+    width: '100%', background: 'rgba(255,255,255,0.05)', border: '0.5px solid rgba(255,255,255,0.1)',
+    borderRadius: 8, padding: '8px 11px', fontSize: 13, color: 'rgba(255,255,255,0.9)',
+    outline: 'none', boxSizing: 'border-box',
+  };
+  const lblSx = { display: 'block', fontSize: 10, color: 'rgba(255,255,255,0.3)', letterSpacing: '0.06em', marginBottom: 4 };
+
+  return (
+    <div style={{ padding: '20px 24px 32px' }}>
+
+      {/* Header row */}
+      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 20 }}>
+        <div>
+          <div style={{ fontSize: 13, fontWeight: 600, color: 'rgba(255,255,255,0.9)' }}>Planned Purchases</div>
+          <div style={{ fontSize: 11, color: 'rgba(255,255,255,0.3)', marginTop: 2 }}>
+            {pending.length} item{pending.length !== 1 ? 's' : ''} · pending spend {fmt(total)}
+          </div>
+        </div>
+        <button onClick={() => setShowAdd(v => !v)} style={{
+          padding: '7px 16px', borderRadius: 8, border: '0.5px solid rgba(255,255,255,0.12)',
+          background: showAdd ? 'rgba(255,255,255,0.08)' : 'transparent',
+          color: 'rgba(255,255,255,0.7)', cursor: 'pointer', fontSize: 12,
+        }}>
+          {showAdd ? '✕ Cancel' : '+ Add item'}
+        </button>
+      </div>
+
+      {/* Add form */}
+      {showAdd && (
+        <GlassCard style={{ marginBottom: 16 }}>
+          <SectionLabel>New purchase</SectionLabel>
+          <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
+            <div style={{ display: 'grid', gridTemplateColumns: '1fr auto', gap: 10 }}>
+              <div>
+                <span style={lblSx}>ITEM NAME</span>
+                <input value={form.name} onChange={e => setForm(p => ({ ...p, name: e.target.value }))}
+                  placeholder="e.g. New trainers" style={inputSx}
+                  onKeyDown={e => e.key === 'Enter' && handleAdd()} />
+              </div>
+              <div>
+                <span style={lblSx}>COST</span>
+                <input type="number" value={form.amount} onChange={e => setForm(p => ({ ...p, amount: e.target.value }))}
+                  placeholder="0.00" style={{ ...inputSx, width: 110 }} min="0" step="0.01" />
+              </div>
+            </div>
+
+            <div>
+              <span style={lblSx}>CATEGORY</span>
+              <div style={{ display: 'flex', gap: 6, flexWrap: 'wrap' }}>
+                {PURCHASE_CATS.map(c => (
+                  <button key={c.id} onClick={() => setForm(p => ({ ...p, category: c.id }))} style={{
+                    padding: '5px 12px', borderRadius: 20, cursor: 'pointer', fontSize: 11.5,
+                    border: `0.5px solid ${form.category === c.id ? c.colour : 'rgba(255,255,255,0.1)'}`,
+                    background: form.category === c.id ? `${c.colour}20` : 'transparent',
+                    color: form.category === c.id ? c.colour : 'rgba(255,255,255,0.45)',
+                    transition: 'all 0.12s',
+                  }}>{c.icon} {c.label}</button>
+                ))}
+              </div>
+            </div>
+
+            <div>
+              <span style={lblSx}>NOTES (optional)</span>
+              <input value={form.notes} onChange={e => setForm(p => ({ ...p, notes: e.target.value }))}
+                placeholder="Size, colour, link…" style={inputSx} />
+            </div>
+
+            <button onClick={handleAdd} style={{
+              padding: '10px 0', borderRadius: 9, border: '0.5px solid rgba(255,255,255,0.2)',
+              background: 'rgba(255,255,255,0.07)', color: 'rgba(255,255,255,0.9)',
+              fontSize: 13, fontWeight: 600, cursor: 'pointer', transition: 'all 0.15s',
+            }}>Add to list</button>
+          </div>
+        </GlassCard>
+      )}
+
+      {/* Purchase list */}
+      {pending.length === 0 ? (
+        <div style={{ textAlign: 'center', padding: '60px 0', color: 'rgba(255,255,255,0.2)', fontSize: 13 }}>
+          No planned purchases yet.<br />
+          <span style={{ fontSize: 11, opacity: 0.7 }}>Add items to track upcoming spend.</span>
+        </div>
+      ) : (
+        <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
+          {pending.map(item => {
+            const cat = PCAT_MAP[item.category] ?? PCAT_MAP.other;
+            const isCompleting = completing === item.id;
+            return (
+              <div key={item.id} style={{
+                display: 'flex', alignItems: 'center', gap: 14, padding: '14px 16px',
+                borderRadius: 12, background: 'rgba(255,255,255,0.03)',
+                border: '0.5px solid rgba(255,255,255,0.07)',
+                transition: 'opacity 0.2s', opacity: isCompleting ? 0.5 : 1,
+              }}>
+                {/* Category dot */}
+                <div style={{ width: 10, height: 10, borderRadius: '50%', background: cat.colour, flexShrink: 0 }} />
+
+                {/* Details */}
+                <div style={{ flex: 1, minWidth: 0 }}>
+                  <div style={{ fontSize: 13, fontWeight: 500, color: 'rgba(255,255,255,0.9)', marginBottom: 2 }}>{item.name}</div>
+                  <div style={{ fontSize: 11, color: 'rgba(255,255,255,0.3)' }}>
+                    {cat.label}{item.notes ? ` · ${item.notes}` : ''}
+                  </div>
+                </div>
+
+                {/* Amount */}
+                <div style={{ fontSize: 15, fontWeight: 600, color: cat.colour, fontVariantNumeric: 'tabular-nums', flexShrink: 0 }}>
+                  {fmt(item.amount)}
+                </div>
+
+                {/* Complete button */}
+                <button onClick={() => handleComplete(item)} disabled={isCompleting} style={{
+                  padding: '6px 14px', borderRadius: 8, cursor: 'pointer', fontSize: 11.5, fontWeight: 600,
+                  border: '0.5px solid rgba(76,175,125,0.4)', background: 'rgba(76,175,125,0.1)',
+                  color: '#4caf7d', transition: 'all 0.15s', flexShrink: 0,
+                }}>
+                  {isCompleting ? '…' : '✓ Purchased'}
+                </button>
+
+                {/* Remove */}
+                <button onClick={() => onRemove(item.id)} style={{
+                  padding: '6px 8px', borderRadius: 8, cursor: 'pointer', fontSize: 11,
+                  border: '0.5px solid rgba(229,90,90,0.25)', background: 'transparent',
+                  color: 'rgba(229,90,90,0.6)', transition: 'all 0.15s', flexShrink: 0,
+                }}>✕</button>
+              </div>
+            );
+          })}
+        </div>
+      )}
+    </div>
+  );
+}
+
 export default function Finance({ settings = {} }) {
   const [section, setSection] = useState('overview');
 
   const txn   = useCollection('transactions',  STORAGE_KEYS.TRANSACTIONS);
   const goals = useCollection('savings_goals', STORAGE_KEYS.SAVINGS);
-  const subs  = useCollection('subscriptions', STORAGE_KEYS.SUBSCRIPTIONS);
+  const subs      = useCollection('subscriptions',      STORAGE_KEYS.SUBSCRIPTIONS);
+  const purchases = useCollection('planned_purchases',   STORAGE_KEYS.LISTS);
 
   const currencyCode   = settings?.currency || 'GBP';
   const currencySymbol = getCurrencySymbol(currencyCode);
@@ -847,6 +1019,13 @@ export default function Finance({ settings = {} }) {
 
   function addTransaction(data) { txn.add({ ...data, createdAt: new Date().toISOString() }); }
   function addGoal(data)        { goals.add({ ...data, createdAt: new Date().toISOString() }); }
+  function addPurchase(data)    { purchases.add({ ...data, createdAt: new Date().toISOString() }); }
+  async function completePurchase(item) {
+    // Fire the actual expense transaction
+    await txn.add({ type: 'expense', amount: item.amount, description: item.name, category: 'shopping', date: todayISO(), createdAt: new Date().toISOString() });
+    // Remove from planned list
+    purchases.remove(item.id);
+  }
   function addSub(data)         { subs.add({ ...data, createdAt: new Date().toISOString() }); }
 
   return (
@@ -887,7 +1066,7 @@ export default function Finance({ settings = {} }) {
       {/* ── Scrollable content ──────────────────────────────────────────────── */}
       <div style={{ flex: 1, overflowY: 'auto' }}>
         {section === 'overview' && (
-          <Overview transactions={txn.items} goals={goals.items} subscriptions={subs.items} fmt={fmt} currencySymbol={currencySymbol} />
+          <Overview transactions={txn.items} goals={goals.items} subscriptions={subs.items} purchases={purchases.items} fmt={fmt} currencySymbol={currencySymbol} />
         )}
         {section === 'spending' && (
           <Spending transactions={txn.items} onAdd={addTransaction} fmt={fmt} />
@@ -897,6 +1076,9 @@ export default function Finance({ settings = {} }) {
         )}
         {section === 'subscriptions' && (
           <Subscriptions subs={subs.items} onAdd={addSub} onUpdate={subs.update} onRemove={subs.remove} fmt={fmt} />
+        )}
+        {section === 'purchases' && (
+          <PlannedPurchases purchases={purchases.items} onAdd={addPurchase} onRemove={purchases.remove} onComplete={completePurchase} fmt={fmt} />
         )}
       </div>
     </div>
