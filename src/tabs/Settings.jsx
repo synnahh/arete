@@ -1300,18 +1300,16 @@ function NotificationsSection({ settings, onSave }) {
   const [habitRemind,   setHabitRemind]   = useState(settings.notifications?.habitReminders  ?? true);
   const [waterRemind,   setWaterRemind]   = useState(settings.notifications?.waterReminders  ?? false);
   const [weeklyFinance, setWeeklyFinance] = useState(settings.notifications?.weeklyFinance   ?? true);
-  const [twilioNumber,    setTwilioNumber]    = useState(settings.twilioNumber    || '');
-  const [twilioDevNumber, setTwilioDevNumber] = useState(settings.twilioDevNumber || '');
-  const [activeProfile,   setActiveProfile]   = useState(settings.activeTwilioProfile || 'valerie');
+  const [twilioReminders, setTwilioReminders] = useState(settings.twilioReminders || settings.twilioNumber    || '');
+  const [twilioSentry,    setTwilioSentry]    = useState(settings.twilioSentry    || settings.twilioDevNumber || '');
   const [phoneNumber,     setPhoneNumber]     = useState(settings.phoneNumber     || '');
   const [saved,           setSaved]           = useState(false);
 
   const handleSave = () => {
     onSave({
       notifications: { enabled, proactiveNudges: nudges, taskReminders, habitReminders: habitRemind, waterReminders: waterRemind, weeklyFinance },
-      twilioNumber,
-      twilioDevNumber,
-      activeTwilioProfile: activeProfile,
+      twilioReminders,
+      twilioSentry,
       phoneNumber,
     });
     setSaved(true);
@@ -1346,28 +1344,11 @@ function NotificationsSection({ settings, onSave }) {
               TWILIO SMS NUMBERS
             </div>
             <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
-              <Row label="VALERIE (primary)" hint="Your main Twilio number for production alerts">
-                <Input value={twilioNumber} onChange={setTwilioNumber} placeholder="+614XXXXXXXX" />
+              <Row label="Reminders" hint="Twilio number used for regular reminders — habits, water, tasks, finance">
+                <Input value={twilioReminders} onChange={setTwilioReminders} placeholder="+614XXXXXXXX" />
               </Row>
-              <Row label="VALERIE Dev" hint="Secondary number for development and testing">
-                <Input value={twilioDevNumber} onChange={setTwilioDevNumber} placeholder="+614XXXXXXXX" />
-              </Row>
-              <Row label="Active profile" hint="Which Twilio number sends SMS alerts">
-                <div style={{ display: 'flex', gap: 8 }}>
-                  {[{ id: 'valerie', label: 'VALERIE' }, { id: 'dev', label: 'VALERIE Dev' }].map(opt => (
-                    <button
-                      key={opt.id}
-                      onClick={() => setActiveProfile(opt.id)}
-                      style={{
-                        padding: '6px 16px', borderRadius: 7, fontSize: 12, fontWeight: 600, cursor: 'pointer',
-                        border: activeProfile === opt.id ? '1.5px solid var(--accent)' : '0.5px solid var(--border)',
-                        background: activeProfile === opt.id ? 'rgba(var(--accent-rgb),0.12)' : 'transparent',
-                        color: activeProfile === opt.id ? 'var(--accent)' : 'var(--text-secondary)',
-                        transition: 'all 0.15s',
-                      }}
-                    >{opt.label}</button>
-                  ))}
-                </div>
+              <Row label="Sentry alerts" hint="Twilio number used for sentry and critical system notifications">
+                <Input value={twilioSentry} onChange={setTwilioSentry} placeholder="+614XXXXXXXX" />
               </Row>
             </div>
           </div>
