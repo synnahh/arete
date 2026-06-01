@@ -6,6 +6,7 @@ import { useCollection }                  from '../firebase/useCollection.js';
 import { useDocument }                    from '../firebase/useDocument.js';
 import { storage, STORAGE_KEYS }          from '../utils/storage.js';
 import { RingChart, ProgressBar, StageBar, BarChart } from '../components/Charts.jsx';
+import { fetch as tauriFetch } from '@tauri-apps/plugin-http';
 
 // ── Helpers ───────────────────────────────────────────────────────────────────
 const todayStr = () => new Date().toISOString().slice(0, 10);
@@ -1832,6 +1833,278 @@ function Stimulant({ stimLogs, addStimLog, removeStimLog, settings }) {
 // ═══════════════════════════════════════════════════════════════════════════════
 // MAIN HEALTH TAB
 // ═══════════════════════════════════════════════════════════════════════════════
+
+// ═══════════════════════════════════════════════════════════════════════════════
+// MEAL PLANNER — AI-generated personalised weekly plan
+// ═══════════════════════════════════════════════════════════════════════════════
+const MEAL_TYPES = ['breakfast','lunch','dinner','snack'];
+const MEAL_TYPE_COLOUR = { breakfast:'#f4a642', lunch:'#4caf7d', dinner:'#4a9eff', snack:'#9b5de5' };
+const DAYS = ['Monday','Tuesday','Wednesday','Thursday','Friday','Saturday','Sunday'];
+
+async function generateMealPlan({ calorieGoal, proteinGoal, carbGoal, fatGoal, weight, mealsPerDay, dietaryNotes, supplements, apiKey }) {
+  const suppList = supplements.length ? supplements.map(s => s.name).join(', ') : 'none';
+  const prompt = `Generate a detailed personalised 7-day meal plan.
+
+User profile:
+- Daily targets: ${calorieGoal} kcal, protein ${proteinGoal}g, carbs ${carbGoal}g, fat ${fatGoal}g
+- Body weight: ${weight || 'unknown'}kg
+- Meals per day: ${mealsPerDay}
+- Dietary notes: ${dietaryNotes || 'none'}
+- Current supplements: ${suppList}
+
+Return ONLY a valid JSON object (no markdown, no explanation) with this exact structure:
+{
+  "plan": [
+    {
+      "day": "Monday",
+      "meals": [
+        {
+          "name": "Meal name",
+          "description": "1-2 sentence description with ingredients/prep",
+          "type": "breakfast",
+          "calories": 520,
+          "protein": 38,
+          "carbs": 52,
+          "fat": 14
+        }
+      ],
+      "totals": { "calories": 2400, "protein": 172, "carbs": 245, "fat": 78 }
+    }
+  ]
+}
+
+Rules:
+- Each day must have exactly ${mealsPerDay} meals (distribute types sensibly)
+- Day totals must be close to targets (within 10%)
+- Use realistic, specific meal names (not "Healthy Meal")
+- Descriptions should be practical and appetising
+- Vary meals across the week — no repeated meals
+- Adjust protein timing around workouts where relevant`;
+
+  const res = await tauriFetch('https://api.anthropic.com/v1/messages', {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json',
+      'x-api-key': apiKey,
+      'anthropic-version': '2023-06-01',
+      'anthropic-dangerous-direct-browser-access': 'true',
+    },
+    body: JSON.stringify({
+      model: 'claude-sonnet-4-20250514',
+      max_tokens: 4096,
+      messages: [{ role: 'user', content: prompt }],
+    }),
+  });
+  if (!res.ok) { const e = await res.json().catch(() => ({})); throw new Error(e?.error?.message || `API error ${res.status}`); }
+  const data = await res.json();
+  const text = data.content?.[0]?.text ?? '';
+  // Strip any markdown fences just in case
+  const clean = text.replace(/```json?\n?/g, '').replace(/```/g, '').trim();
+  return JSON.parse(clean);
+}
+
+function MealPlanner({ settings, savedMeals = [], addSavedMeal, bodyMetrics = [], supplements = [] }) {
+  const apiKey = settings?.claudeApiKey || settings?.apiKey || '';
+  const goals  = settings?.macros ?? {};
+  const calorieGoal = settings?.macroGoal ?? 2500;
+  const proteinGoal = settings?.proteinGoal ?? 160;
+  const carbGoal    = goals?.carbs ?? 250;
+  const fatGoal     = goals?.fat ?? 80;
+  const latestBody  = [...bodyMetrics].sort((a,b)=>(b.date??'').localeCompare(a.date??''))[0];
+
+  const [mealsPerDay, setMealsPerDay] = useState(4);
+  const [dietaryNotes, setDietaryNotes] = useState('');
+  const [plan, setPlan] = useState(null);
+  const [generating, setGenerating] = useState(false);
+  const [error, setError] = useState('');
+  const [activeDay, setActiveDay] = useState(0);
+  const [saved, setSaved] = useState({});
+
+  const generate = async () => {
+    if (!apiKey) { setError('No Claude API key — add it in Settings → AI.'); return; }
+    setGenerating(true); setError(''); setPlan(null);
+    try {
+      const result = await generateMealPlan({
+        calorieGoal, proteinGoal, carbGoal, fatGoal,
+        weight: latestBody?.weight,
+        mealsPerDay, dietaryNotes,
+        supplements, apiKey,
+      });
+      setPlan(result.plan ?? result);
+      setActiveDay(0);
+    } catch (err) {
+      setError(err.message || 'Generation failed — try again.');
+    } finally {
+      setGenerating(false);
+    }
+  };
+
+  const saveMeal = async (meal) => {
+    await addSavedMeal({ name: meal.name, calories: meal.calories, protein: meal.protein, carbs: meal.carbs, fat: meal.fat });
+    setSaved(p => ({ ...p, [meal.name]: true }));
+    setTimeout(() => setSaved(p => { const n = {...p}; delete n[meal.name]; return n; }), 2000);
+  };
+
+  const totalColour = (actual, target) => {
+    const pct = actual / Math.max(target, 1);
+    return pct >= 0.9 && pct <= 1.1 ? '#4caf7d' : pct >= 0.8 ? '#f4a642' : '#e25d7a';
+  };
+
+  return (
+    <Section title="AI Meal Plan">
+      <div style={{ maxWidth: 740 }}>
+
+        {/* Config panel */}
+        <GlassCard style={{ marginBottom: 18 }}>
+          <GlassLabel>Plan parameters</GlassLabel>
+          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 14, marginBottom: 14 }}>
+            {/* Targets (read from settings) */}
+            <div style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
+              <span style={lblSx}>DAILY TARGETS (from Settings)</span>
+              <div style={{ display: 'flex', gap: 10, flexWrap: 'wrap' }}>
+                {[['Kcal', calorieGoal, '#f4a642'], ['Protein', `${proteinGoal}g`, '#4a9eff'], ['Carbs', `${carbGoal}g`, '#4caf7d'], ['Fat', `${fatGoal}g`, '#9b5de5']].map(([l, v, c]) => (
+                  <div key={l} style={{ padding: '5px 10px', borderRadius: 8, background: `${c}14`, border: `0.5px solid ${c}40` }}>
+                    <div style={{ fontSize: 9, color: c, fontWeight: 700, letterSpacing: '0.08em' }}>{l}</div>
+                    <div style={{ fontSize: 14, fontWeight: 600, color: c }}>{v}</div>
+                  </div>
+                ))}
+              </div>
+            </div>
+            <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
+              <div>
+                <span style={lblSx}>MEALS PER DAY</span>
+                <div style={{ display: 'flex', gap: 0, borderRadius: 8, overflow: 'hidden', border: '0.5px solid var(--card-border)', width: 'fit-content' }}>
+                  {[3,4,5,6].map(n => (
+                    <button key={n} onClick={() => setMealsPerDay(n)} style={{
+                      width: 40, height: 34, border: 'none', cursor: 'pointer', fontSize: 13, fontWeight: 500,
+                      background: mealsPerDay === n ? 'rgba(255,255,255,0.9)' : 'var(--card-fill)',
+                      color: mealsPerDay === n ? '#111' : 'var(--text-secondary)', transition: 'all 0.12s',
+                    }}>{n}</button>
+                  ))}
+                </div>
+              </div>
+            </div>
+          </div>
+          <div style={{ marginBottom: 14 }}>
+            <span style={lblSx}>DIETARY NOTES / RESTRICTIONS</span>
+            <input value={dietaryNotes} onChange={e => setDietaryNotes(e.target.value)}
+              placeholder="e.g. no dairy, high-protein focus, prefer Mediterranean, avoid spicy…"
+              style={{ ...inputSx }}
+              onFocus={e => e.target.style.borderColor = 'var(--accent)'}
+              onBlur={e => e.target.style.borderColor = 'var(--input-border)'} />
+          </div>
+          {latestBody?.weight && (
+            <div style={{ fontSize: 11, color: 'rgba(255,255,255,0.3)', marginBottom: 12 }}>
+              Using body weight: <span style={{ color: 'var(--accent)' }}>{latestBody.weight}kg</span>
+              {supplements.length > 0 && <> · Supplements: <span style={{ color: 'var(--accent)' }}>{supplements.slice(0,3).map(s=>s.name).join(', ')}{supplements.length > 3 ? ` +${supplements.length-3}` : ''}</span></>}
+            </div>
+          )}
+          <button onClick={generate} disabled={generating} style={{
+            width: '100%', padding: '12px 0', borderRadius: 10,
+            border: '0.5px solid rgba(255,255,255,0.2)',
+            background: generating ? 'rgba(255,255,255,0.04)' : 'rgba(255,255,255,0.07)',
+            color: generating ? 'var(--text-muted)' : 'var(--text-primary)',
+            fontSize: 13, fontWeight: 600, cursor: generating ? 'default' : 'pointer',
+            letterSpacing: '0.03em', transition: 'all 0.15s',
+          }}>
+            {generating ? '⌛ Generating your plan…' : plan ? '↻ Regenerate plan' : '✨ Generate 7-day meal plan'}
+          </button>
+          {error && <div style={{ marginTop: 10, fontSize: 11.5, color: '#e25d7a', padding: '7px 12px', borderRadius: 8, background: 'rgba(226,93,122,0.08)', border: '0.5px solid rgba(226,93,122,0.25)' }}>{error}</div>}
+        </GlassCard>
+
+        {/* Plan display */}
+        {plan && (
+          <>
+            {/* Day tabs */}
+            <div style={{ display: 'flex', gap: 6, marginBottom: 14, flexWrap: 'wrap' }}>
+              {plan.map((day, i) => (
+                <button key={i} onClick={() => setActiveDay(i)} style={{
+                  padding: '6px 14px', borderRadius: 20, cursor: 'pointer', fontSize: 11.5, fontWeight: 500,
+                  border: `0.5px solid ${activeDay === i ? 'var(--accent)' : 'var(--card-border)'}`,
+                  background: activeDay === i ? 'var(--active-bg)' : 'transparent',
+                  color: activeDay === i ? 'var(--accent)' : 'var(--text-secondary)', transition: 'all 0.12s',
+                }}>{day.day}</button>
+              ))}
+            </div>
+
+            {/* Active day */}
+            {(() => {
+              const day = plan[activeDay];
+              if (!day) return null;
+              return (
+                <div>
+                  {/* Day totals */}
+                  <GlassCard style={{ marginBottom: 14 }}>
+                    <GlassLabel>{day.day} — Daily Totals</GlassLabel>
+                    <div style={{ display: 'flex', gap: 10 }}>
+                      {[['Calories', day.totals?.calories, calorieGoal, '#f4a642', ''], ['Protein', day.totals?.protein, proteinGoal, '#4a9eff', 'g'], ['Carbs', day.totals?.carbs, carbGoal, '#4caf7d', 'g'], ['Fat', day.totals?.fat, fatGoal, '#9b5de5', 'g']].map(([l, v, t, c, u]) => (
+                        <div key={l} style={{ flex: 1, padding: '12px 14px', borderRadius: 10, background: 'rgba(255,255,255,0.03)', border: `0.5px solid ${totalColour(v, t)}30` }}>
+                          <div style={{ fontSize: 9, fontWeight: 700, letterSpacing: '0.1em', color: 'rgba(255,255,255,0.3)', marginBottom: 6 }}>{l.toUpperCase()}</div>
+                          <div style={{ fontSize: 22, fontWeight: 600, color: totalColour(v, t), lineHeight: 1 }}>{v}{u}</div>
+                          <div style={{ fontSize: 9.5, color: 'rgba(255,255,255,0.25)', marginTop: 3 }}>target {t}{u}</div>
+                        </div>
+                      ))}
+                    </div>
+                  </GlassCard>
+
+                  {/* Meals */}
+                  <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
+                    {day.meals.map((meal, mi) => {
+                      const typeColour = MEAL_TYPE_COLOUR[meal.type] ?? 'var(--accent)';
+                      const isSaved = saved[meal.name];
+                      const alreadySaved = savedMeals.some(s => s.name === meal.name);
+                      return (
+                        <div key={mi} style={{ padding: '16px 18px', borderRadius: 12, background: 'rgba(255,255,255,0.03)', border: '0.5px solid rgba(255,255,255,0.07)' }}>
+                          <div style={{ display: 'flex', alignItems: 'flex-start', gap: 12 }}>
+                            <div style={{ flexShrink: 0, marginTop: 2 }}>
+                              <div style={{ width: 8, height: 8, borderRadius: '50%', background: typeColour }} />
+                            </div>
+                            <div style={{ flex: 1, minWidth: 0 }}>
+                              <div style={{ display: 'flex', alignItems: 'baseline', gap: 8, marginBottom: 4 }}>
+                                <div style={{ fontSize: 13.5, fontWeight: 600, color: 'rgba(255,255,255,0.9)' }}>{meal.name}</div>
+                                <span style={{ fontSize: 9.5, padding: '2px 7px', borderRadius: 99, background: `${typeColour}18`, color: typeColour, fontWeight: 700, letterSpacing: '0.06em', textTransform: 'uppercase' }}>{meal.type}</span>
+                              </div>
+                              <div style={{ fontSize: 11.5, color: 'rgba(255,255,255,0.45)', lineHeight: 1.55, marginBottom: 10 }}>{meal.description}</div>
+                              <div style={{ display: 'flex', gap: 12, flexWrap: 'wrap' }}>
+                                {[['Kcal', meal.calories, '#f4a642'], ['P', meal.protein, '#4a9eff'], ['C', meal.carbs, '#4caf7d'], ['F', meal.fat, '#9b5de5']].map(([l, v, c]) => (
+                                  <div key={l} style={{ display: 'flex', alignItems: 'baseline', gap: 3 }}>
+                                    <span style={{ fontSize: 9, fontWeight: 700, color: 'rgba(255,255,255,0.25)', letterSpacing: '0.06em' }}>{l}</span>
+                                    <span style={{ fontSize: 13, fontWeight: 600, color: c, fontVariantNumeric: 'tabular-nums' }}>{v}{l!=='Kcal'?'g':''}</span>
+                                  </div>
+                                ))}
+                              </div>
+                            </div>
+                            <button onClick={() => saveMeal(meal)} disabled={alreadySaved || isSaved} style={{
+                              flexShrink: 0, padding: '5px 11px', borderRadius: 8, cursor: alreadySaved ? 'default' : 'pointer',
+                              fontSize: 11, fontWeight: 500, transition: 'all 0.15s',
+                              border: `0.5px solid ${isSaved ? 'rgba(76,175,125,0.5)' : alreadySaved ? 'rgba(255,255,255,0.08)' : 'rgba(255,255,255,0.12)'}`,
+                              background: isSaved ? 'rgba(76,175,125,0.12)' : 'transparent',
+                              color: isSaved ? '#4caf7d' : alreadySaved ? 'rgba(255,255,255,0.2)' : 'rgba(255,255,255,0.6)',
+                            }}>
+                              {isSaved ? '✓ Saved' : alreadySaved ? '✓ In My Meals' : '⊕ Save meal'}
+                            </button>
+                          </div>
+                        </div>
+                      );
+                    })}
+                  </div>
+                </div>
+              );
+            })()}
+          </>
+        )}
+
+        {!plan && !generating && (
+          <div style={{ textAlign: 'center', padding: '40px 0', color: 'rgba(255,255,255,0.2)', fontSize: 13 }}>
+            Configure your plan above and hit Generate.
+          </div>
+        )}
+
+      </div>
+    </Section>
+  );
+}
+
 const SUB_SECTIONS = [
   { id:'overview',    label:'Overview',    icon:'⬡' },
   { id:'habits',      label:'Habits',      icon:'🔥' },
@@ -1841,6 +2114,7 @@ const SUB_SECTIONS = [
   { id:'supplements', label:'Supplements', icon:'💊' },
   { id:'sleep',       label:'Sleep',       icon:'🌙' },
   { id:'stimulant',   label:'Stimulant',   icon:'☕' },
+  { id:'mealplan',    label:'Meal Plan',   icon:'📝' },
 ];
 
 export default function Health({ settings, onTabChange }) {
@@ -1868,6 +2142,7 @@ export default function Health({ settings, onTabChange }) {
       case 'supplements': return <Supplements  supplements={supplements} suppLogs={suppLogs} addSupplement={addSupplement} removeSupplement={removeSupplement} addSuppLog={addSuppLog} />;
       case 'sleep':       return <Sleep        sleepData={sleepData} />;
       case 'stimulant':   return <Stimulant    {...p} stimLogs={stimLogs} addStimLog={addStimLog} removeStimLog={removeStimLog} />;
+      case 'mealplan':   return <MealPlanner {...p} savedMeals={savedMeals} addSavedMeal={addSavedMeal} bodyMetrics={bodyMetrics} supplements={supplements} />;
       default:            return null;
     }
   };
