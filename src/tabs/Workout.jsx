@@ -155,7 +155,7 @@ function Stepper({ value, onChange, min = 0, step = 1, label }) {
 // ── Toggle group ─────────────────────────────────────────────────────────────
 function ToggleGroup({ label, options, value, onChange }) {
   return (
-    <div style={{ display: 'flex', gap: 8, alignItems: 'center' }}>
+    <div style={{ display: 'flex', gap: 8, alignItems: 'center', flex: 1 }}>
       {label && <span style={{ fontSize: 10, fontWeight: 700, letterSpacing: '0.1em', color: 'var(--text-muted)', minWidth: 36, textTransform: 'uppercase' }}>{label}</span>}
       <div style={{ display: 'flex', flex: 1, borderRadius: 8, overflow: 'hidden', border: '0.5px solid var(--card-border)' }}>
         {options.map(o => (
