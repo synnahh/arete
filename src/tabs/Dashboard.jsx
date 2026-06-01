@@ -998,12 +998,12 @@ export default function Dashboard({ settings, onTabChange, ai, density = 'standa
           <ProductivityWidget onTabChange={onTabChange} />
         </div>
 
-        {/* Right column: stacked cards fill same height */}
-        <div style={{ flex: '0.9 1 0', minWidth: 0, display: 'flex', flexDirection: 'column', gap, minHeight: 0 }}>
-          <DailyBriefCard ai={ai} />
-          <SpotifyCard />
-          <PeakStateCard peakState={peakState} onTabChange={onTabChange} />
-          <Card style={{ flex: 1, minHeight: 0, justifyContent: 'center' }}>
+        {/* Right column: stacked cards fill same height, clipped to container */}
+        <div style={{ flex: '0.9 1 0', minWidth: 0, display: 'flex', flexDirection: 'column', gap: 10, minHeight: 0, overflow: 'hidden' }}>
+          <div style={{ flexShrink: 0 }}><DailyBriefCard ai={ai} /></div>
+          <div style={{ flexShrink: 0 }}><SpotifyCard /></div>
+          <div style={{ flexShrink: 0 }}><PeakStateCard peakState={peakState} onTabChange={onTabChange} /></div>
+          <Card style={{ flex: 1, minHeight: 0, overflow: 'hidden', justifyContent: 'center' }}>
             <DayRing />
           </Card>
         </div>
