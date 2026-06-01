@@ -110,7 +110,7 @@ export default function DayRing() {
   const pctLabel = state.percent === 0 ? '—' : `${Math.round(state.percent)}%`;
 
   return (
-    <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 26, flexWrap: 'wrap' }}>
+    <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 18, flexWrap: 'nowrap', minWidth: 0 }}>
       {/* Ring */}
       <div style={{ width: 168, height: 168, position: 'relative', flexShrink: 0 }}>
         <svg viewBox="0 0 120 120" width="168" height="168">
