@@ -34,7 +34,7 @@ import { THEMES, applyTheme }    from '../styles/themes.js';
 import { testClaudeKey }         from '../ai/claude.js';
 import { TIER_CONFIG, TIER_THRESHOLDS, XP_SOURCES } from '../utils/xp.js';
 import { ALL_TABS }              from '../components/Sidebar.jsx';
-import { doc, setDoc, onSnapshot } from 'firebase/firestore';
+import { doc, setDoc } from 'firebase/firestore';
 import { db, getDeviceId }       from '../firebase/firebase.js';
 
 // ─── Sections ────────────────────────────────────────────────────────────────
@@ -2267,24 +2267,6 @@ export default function SettingsTab({ settings: settingsProp }) {
 
   // Load settings from localStorage — source of truth
   const [settings, setSettings] = useState(() => storage.get(STORAGE_KEYS.SETTINGS, {}));
-
-  // Cross-device sync — apply Firestore settings changes from other platforms
-  useEffect(() => {
-    const userId = getDeviceId();
-    const unsub = onSnapshot(
-      doc(db, 'users', userId, 'meta', 'settings'),
-      snap => {
-        if (!snap.exists()) return;
-        const d = snap.data();
-        storage.set(STORAGE_KEYS.SETTINGS, d);
-        setSettings(d);
-        if (d.theme) applyTheme(d.theme);
-        window.dispatchEvent(new CustomEvent('valerie:settings-changed', { detail: d }));
-      },
-      err => console.warn('[Settings Firestore]', err.message),
-    );
-    return () => unsub();
-  }, []); // eslint-disable-line react-hooks/exhaustive-deps
 
   // Persist partial updates to localStorage + Firestore and notify App in real time
   const handleSave = useCallback((updates) => {
