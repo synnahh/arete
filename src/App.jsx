@@ -1,4 +1,5 @@
 import { useState, useEffect, useCallback } from 'react';
+import { invoke }                from '@tauri-apps/api/core';
 import { storage, STORAGE_KEYS } from './utils/storage.js';
 import { applyTheme }            from './styles/themes.js';
 import { getTimeOfDay }          from './utils/time.js';
@@ -24,6 +25,8 @@ import Lists      from './tabs/Lists.jsx';
 import Focus      from './tabs/Focus.jsx';
 import Vault      from './tabs/Vault.jsx';
 import Settings   from './tabs/Settings.jsx';
+import Routines   from './tabs/Routines.jsx';
+import DailyBrief from './components/DailyBrief.jsx';
 
 const TAB_MAP = {
   dashboard:  Dashboard,
@@ -40,6 +43,7 @@ const TAB_MAP = {
   focus:      Focus,
   vault:      Vault,
   settings:   Settings,
+  routines:   Routines,
 };
 
 export default function App() {
@@ -104,6 +108,19 @@ export default function App() {
     }
 
     setOnboarded(isOnboarded);
+
+    // Launch Ollama silently in the background — no terminal window
+    invoke('launch_ollama').catch(() => {});
+
+    // Log unhandled errors without suppressing React's own error handling
+    const onError       = (e) => { console.error('[VALERIE] error:', e.error || e.message); };
+    const onRejection   = (e) => { e.preventDefault(); console.error('[VALERIE] rejection:', e.reason); };
+    window.addEventListener('error',              onError);
+    window.addEventListener('unhandledrejection', onRejection);
+    return () => {
+      window.removeEventListener('error',              onError);
+      window.removeEventListener('unhandledrejection', onRejection);
+    };
   }, []);
 
   // ── Live settings sync — update state when Settings tab saves changes ──────
@@ -192,6 +209,9 @@ export default function App() {
         onTabChange={setActiveTab}
         ai={ai}
       />
+
+      {/* Daily Brief — once-per-day greeting overlay */}
+      <DailyBrief ai={ai} settings={settings} />
     </div>
   );
 }

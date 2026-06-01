@@ -59,4 +59,9 @@ export const STORAGE_KEYS = {
   STYLE_BOARD:    'style_board',
   MOOD_LOGS:      'mood_logs',
   XP:             'xp',
+  // Session 6 additions
+  ROUTINES:             'routines',
+  SIDEBAR_ORDER_DESKTOP:'sidebar_order_desktop',
+  SIDEBAR_ORDER_IOS:    'sidebar_order_ios',
+  DAILY_BRIEF_DATE:     'daily_brief_date',
 };

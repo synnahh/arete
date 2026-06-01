@@ -5,6 +5,7 @@
 import { db, getDeviceId } from '../firebase/firebase.js';
 import { collection, addDoc } from 'firebase/firestore';
 import { storage, STORAGE_KEYS } from '../utils/storage.js';
+import { sanitizePayload } from '../utils/sanitize.js';
 
 // ─── Callback registry ─────────────────────────────────────────────────────────
 // Components register handlers here so VALERIE can trigger UI actions.
@@ -88,11 +89,10 @@ async function _executeOne(action) {
       };
       try {
         const userId = getDeviceId();
-        await addDoc(collection(db, 'users', userId, 'tasks'), payload);
+        await addDoc(collection(db, 'users', userId, 'tasks'), sanitizePayload(payload));
       } catch {
-        // Optimistic local save if Firebase fails
         const local = storage.get(STORAGE_KEYS.TASKS, []);
-        storage.set(STORAGE_KEYS.TASKS, [{ id: `local_${Date.now()}`, ...payload }, ...local]);
+        storage.set(STORAGE_KEYS.TASKS, [{ id: `local_${Date.now()}`, ...sanitizePayload(payload) }, ...local]);
       }
       break;
     }
@@ -109,10 +109,10 @@ async function _executeOne(action) {
       };
       try {
         const userId = getDeviceId();
-        await addDoc(collection(db, 'users', userId, 'notes'), payload);
+        await addDoc(collection(db, 'users', userId, 'notes'), sanitizePayload(payload));
       } catch {
         const local = storage.get(STORAGE_KEYS.NOTES, []);
-        storage.set(STORAGE_KEYS.NOTES, [{ id: `local_${Date.now()}`, ...payload }, ...local]);
+        storage.set(STORAGE_KEYS.NOTES, [{ id: `local_${Date.now()}`, ...sanitizePayload(payload) }, ...local]);
       }
       break;
     }
@@ -155,6 +155,89 @@ async function _executeOne(action) {
     // ── Open settings ──────────────────────────────────────────────────────
     case 'openSettings': {
       _registry.navigate?.('settings');
+      break;
+    }
+
+    // ── Add transaction (income or expense) ───────────────────────────────
+    case 'addTransaction': {
+      const amount = Math.abs(Number(action.amount));
+      if (!amount) break;
+      const type = action.transactionType === 'expense' ? 'expense' : 'income';
+      const today = new Date().toISOString().split('T')[0];
+      const payload = {
+        type,
+        amount,
+        category:    String(action.category    || (type === 'income' ? 'Income' : 'General')),
+        description: String(action.description || ''),
+        date:        action.date || today,
+        createdAt:   Date.now(),
+        updatedAt:   Date.now(),
+      };
+      try {
+        const userId = getDeviceId();
+        await addDoc(collection(db, 'users', userId, 'transactions'), sanitizePayload(payload));
+      } catch {
+        const local = storage.get(STORAGE_KEYS.TRANSACTIONS, []);
+        storage.set(STORAGE_KEYS.TRANSACTIONS, [{ id: `local_${Date.now()}`, ...sanitizePayload(payload) }, ...local]);
+      }
+      break;
+    }
+
+    // ── Log calories ───────────────────────────────────────────────────────
+    case 'logCalories': {
+      const cal   = Math.abs(Number(action.calories));
+      if (!cal) break;
+      const today = new Date().toISOString().split('T')[0];
+      const health = storage.get(STORAGE_KEYS.HEALTH, {});
+      const logs   = health.calorieLogs || [];
+      const entry  = { date: today, calories: cal, meal: action.meal || '', ts: Date.now() };
+      health.calorieLogs = [entry, ...logs.filter(l => l.date !== today || l.meal !== entry.meal)].slice(0, 200);
+      storage.set(STORAGE_KEYS.HEALTH, health);
+      break;
+    }
+
+    // ── Log sleep ──────────────────────────────────────────────────────────
+    case 'logSleep': {
+      const hours = Number(action.hours);
+      if (!hours) break;
+      const today = new Date().toISOString().split('T')[0];
+      const sleep = storage.get(STORAGE_KEYS.SLEEP, { logs: [] });
+      sleep.logs  = [{ date: today, hours, quality: action.quality || null, ts: Date.now() },
+                     ...(sleep.logs || []).filter(l => l.date !== today)].slice(0, 90);
+      storage.set(STORAGE_KEYS.SLEEP, sleep);
+      break;
+    }
+
+    // ── Toggle a boolean setting ──────────────────────────────────────────
+    case 'toggleSetting': {
+      const key = action.key;
+      if (!key) break;
+      const s = storage.get(STORAGE_KEYS.SETTINGS, {});
+      const newVal = !s[key];
+      storage.set(STORAGE_KEYS.SETTINGS, { ...s, [key]: newVal });
+      window.dispatchEvent(new CustomEvent('valerie:settings-changed', { detail: { ...s, [key]: newVal } }));
+      break;
+    }
+
+    // ── Change a specific setting value ───────────────────────────────────
+    case 'changeSetting': {
+      const { key: sKey, value: sVal } = action;
+      if (!sKey) break;
+      const s2 = storage.get(STORAGE_KEYS.SETTINGS, {});
+      const updated = { ...s2, [sKey]: sVal };
+      storage.set(STORAGE_KEYS.SETTINGS, updated);
+      window.dispatchEvent(new CustomEvent('valerie:settings-changed', { detail: updated }));
+      break;
+    }
+
+    // ── Open a specific settings section ──────────────────────────────────
+    case 'openSettingsSection': {
+      _registry.navigate?.('settings');
+      if (action.section) {
+        setTimeout(() => {
+          window.dispatchEvent(new CustomEvent('valerie:settings-section', { detail: action.section }));
+        }, 300);
+      }
       break;
     }
 

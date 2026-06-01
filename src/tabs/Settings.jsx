@@ -2,11 +2,38 @@
 // Full 11-section settings hub. Every change persists to localStorage instantly.
 // Split view: left nav (130px) + right scrollable content.
 
-import { useState, useEffect, useCallback, useRef } from 'react';
+import { useState, useEffect, useCallback, useRef, Component } from 'react';
+import { fetch } from '@tauri-apps/plugin-http';
+
+// Local error boundary — catches crashes inside any settings section
+class SectionErrorBoundary extends Component {
+  constructor(props) { super(props); this.state = { error: null }; }
+  static getDerivedStateFromError(e) { return { error: e }; }
+  render() {
+    if (this.state.error) {
+      return (
+        <div style={{ padding: 24, color: '#e55a5a', fontSize: 13 }}>
+          Something went wrong in this section.{' '}
+          <button onClick={() => this.setState({ error: null })}
+            style={{ marginLeft: 8, padding: '4px 12px', borderRadius: 6,
+              border: '0.5px solid #e55a5a', background: 'transparent',
+              color: '#e55a5a', cursor: 'pointer', fontSize: 12 }}>
+            Retry
+          </button>
+          <div style={{ marginTop: 8, fontSize: 11, color: '#64748b', fontFamily: 'monospace' }}>
+            {String(this.state.error?.message || this.state.error)}
+          </div>
+        </div>
+      );
+    }
+    return this.props.children;
+  }
+}
 import { storage, STORAGE_KEYS } from '../utils/storage.js';
 import { THEMES, applyTheme }    from '../styles/themes.js';
-import { testClaudeKey }                       from '../ai/claude.js';
+import { testClaudeKey }         from '../ai/claude.js';
 import { TIER_CONFIG, TIER_THRESHOLDS, XP_SOURCES } from '../utils/xp.js';
+import { ALL_TABS }              from '../components/Sidebar.jsx';
 
 // ─── Sections ────────────────────────────────────────────────────────────────
 const SECTIONS = [
@@ -21,6 +48,8 @@ const SECTIONS = [
   { id: 'api_usage',     label: 'API Usage',        icon: '📊' },
   { id: 'platforms',     label: 'Platforms',        icon: '🖥️' },
   { id: 'data',          label: 'Data',             icon: '💾' },
+  { id: 'daily_brief',   label: 'Daily Brief',      icon: '🌅' },
+  { id: 'sidebar',       label: 'Sidebar Order',    icon: '☰'  },
   { id: 'security',      label: 'Security',         icon: '🔒' },
 ];
 
@@ -456,12 +485,8 @@ function AppearanceSection({ settings, onSave }) {
 function VoiceSection({ settings, onSave }) {
 
   // ── ElevenLabs state ──────────────────────────────────────────────────────
-  const [el11Key,     setEl11Key]     = useState(
-    settings.elevenlabsKey || import.meta.env.VITE_ELEVENLABS_API_KEY || ''
-  );
-  const [el11VoiceId, setEl11VoiceId] = useState(
-    settings.elevenlabsVoiceId || import.meta.env.VITE_ELEVENLABS_VOICE_ID || 'yj30vwTGJxSHezdAGsv9'
-  );
+  const [el11Key,     setEl11Key]     = useState(settings.voice?.elevenlabsKey     || settings.elevenlabsKey     || import.meta.env.VITE_ELEVENLABS_API_KEY  || '');
+  const [el11VoiceId, setEl11VoiceId] = useState(settings.voice?.elevenlabsVoiceId || settings.elevenlabsVoiceId || import.meta.env.VITE_ELEVENLABS_VOICE_ID || 'yj30vwTGJxSHezdAGsv9');
   const [el11Voices,  setEl11Voices]  = useState([]);
   const [el11Loading, setEl11Loading] = useState(false);
   const [el11Error,   setEl11Error]   = useState('');
@@ -513,7 +538,7 @@ function VoiceSection({ settings, onSave }) {
 
   // Auto-fetch ElevenLabs voices on mount if key is already set
   useEffect(() => {
-    if (el11Key) fetchEl11Voices(el11Key);
+    if (el11Key) fetchEl11Voices(el11Key).catch(() => {});
   }, []); // eslint-disable-line react-hooks/exhaustive-deps
 
   // el11Status: null | 'plan_required' | 'bad_key' | 'no_voice' | 'ok'
@@ -755,13 +780,16 @@ function VoiceSection({ settings, onSave }) {
                 {el11VoiceId ? `${el11VoiceId} (load voices to see name)` : 'Enter key and click Load voices'}
               </option>
             ) : (
-              el11Voices.map(v => (
-                <option key={v.voice_id} value={v.voice_id}>
-                  {v.name}
+              el11Voices.map(v => {
+                const accent = typeof v.labels?.accent === 'string' ? v.labels.accent : '';
+                return (
+                <option key={v.voice_id ?? v.name} value={v.voice_id ?? ''}>
+                  {String(v.name ?? '')}
                   {v.voice_id === defaultVoiceId ? ' ★ VALERIE default' : ''}
-                  {v.labels?.accent ? ` — ${v.labels.accent}` : ''}
+                  {accent ? ` — ${accent}` : ''}
                 </option>
-              ))
+                );
+              })
             )}
           </select>
         </div>
@@ -1313,13 +1341,30 @@ function IntegrationsSection({ settings, onSave }) {
   const [googleSearchKey, setGoogleSearchKey] = useState(settings.googleSearchKey || '');
   const [googleSearchCx,  setGoogleSearchCx]  = useState(settings.googleSearchCx  || '');
   const [exerciseDbKey,   setExerciseDbKey]   = useState(settings.exerciseDbKey   || '');
+  const [finnhubKey,      setFinnhubKey]      = useState(settings.finnhubKey      || '');
+  const [watchlistInput,  setWatchlistInput]  = useState('');
+  const [watchlist,       setWatchlist]       = useState(settings.stocksWatchlist || []);
   const [saved,           setSaved]           = useState(false);
 
   const handleSave = () => {
-    onSave({ googleSearchKey, googleSearchCx, exerciseDbKey });
+    onSave({ googleSearchKey, googleSearchCx, exerciseDbKey, finnhubKey, stocksWatchlist: watchlist });
     setSaved(true);
     setTimeout(() => setSaved(false), 2000);
   };
+
+  function addTicker() {
+    const sym = watchlistInput.trim().toUpperCase();
+    if (!sym || watchlist.includes(sym)) { setWatchlistInput(''); return; }
+    const next = [...watchlist, sym];
+    setWatchlist(next);
+    setWatchlistInput('');
+    onSave({ stocksWatchlist: next });
+  }
+  function removeTicker(sym) {
+    const next = watchlist.filter(s => s !== sym);
+    setWatchlist(next);
+    onSave({ stocksWatchlist: next });
+  }
 
   const OAuthStub = ({ name, connected, icon }) => (
     <div style={{
@@ -1374,6 +1419,41 @@ function IntegrationsSection({ settings, onSave }) {
         <Row label="ExerciseDB API key" hint="Exercise library with GIFs for workout planning. Free tier available at rapidapi.com">
           <Input value={exerciseDbKey} onChange={setExerciseDbKey} placeholder="Your RapidAPI key" masked />
         </Row>
+        <Row label="Finnhub API key" hint="Free real-time stock quotes — sign up at finnhub.io (no credit card). 60 calls/min free tier.">
+          <Input value={finnhubKey} onChange={setFinnhubKey} placeholder="Your Finnhub API key" masked />
+        </Row>
+      </div>
+
+      <div style={{ marginBottom: 20 }}>
+        <div style={{ fontSize: 12, fontWeight: 600, color: 'var(--text-secondary)', marginBottom: 12, letterSpacing: '0.04em' }}>
+          STOCKS WATCHLIST
+        </div>
+        <Row label="Add ticker" hint="US stocks, ETFs, and indices. E.g. AAPL, MSFT, SPY, BTC-USD">
+          <div style={{ display: 'flex', gap: 8 }}>
+            <input
+              value={watchlistInput}
+              onChange={e => setWatchlistInput(e.target.value.toUpperCase())}
+              onKeyDown={e => e.key === 'Enter' && addTicker()}
+              placeholder="AAPL"
+              style={{
+                flex: 1, padding: '8px 12px', borderRadius: 8,
+                background: 'var(--bg-panel)', border: '0.5px solid var(--card-border)',
+                color: 'var(--text-primary)', fontSize: 13, outline: 'none',
+              }}
+            />
+            <button onClick={addTicker} style={{ padding: '8px 16px', borderRadius: 8, border: 'none', cursor: 'pointer', background: 'var(--accent)', color: '#fff', fontSize: 13 }}>Add</button>
+          </div>
+        </Row>
+        {watchlist.length > 0 && (
+          <div style={{ display: 'flex', flexWrap: 'wrap', gap: 8, marginTop: 10 }}>
+            {watchlist.map(sym => (
+              <div key={sym} style={{ display: 'flex', alignItems: 'center', gap: 6, padding: '5px 12px', borderRadius: 20, background: 'rgba(255,255,255,0.06)', border: '0.5px solid var(--card-border)' }}>
+                <span style={{ fontSize: 12, color: 'var(--text-primary)', fontWeight: 500 }}>{sym}</span>
+                <button onClick={() => removeTicker(sym)} style={{ background: 'none', border: 'none', cursor: 'pointer', color: '#e55a5a', fontSize: 14, lineHeight: 1, padding: 0 }}>×</button>
+              </div>
+            ))}
+          </div>
+        )}
       </div>
 
       <div style={{
@@ -1906,6 +1986,148 @@ function DataSection() {
   );
 }
 
+// ─── Section: Daily Brief ─────────────────────────────────────────────────────
+function DailyBriefSection({ settings, onSave }) {
+  const cfg = settings.dailyBrief ?? {};
+  const [weather,  setWeather]  = useState(cfg.weather  !== false);
+  const [calendar, setCalendar] = useState(cfg.calendar !== false);
+  const [tasks,    setTasks]    = useState(cfg.tasks    !== false);
+  const [vitamins, setVitamins] = useState(cfg.vitamins !== false);
+  const [routine,  setRoutine]  = useState(cfg.routine  !== false);
+  const [saved,    setSaved]    = useState(false);
+
+  function handleSave() {
+    onSave({ dailyBrief: { weather, calendar, tasks, vitamins, routine } });
+    setSaved(true);
+    setTimeout(() => setSaved(false), 2000);
+  }
+
+  function resetToday() {
+    storage.remove('daily_brief_date');
+    alert('Daily brief will appear again on next app launch.');
+  }
+
+  return (
+    <div>
+      <SectionTitle>Daily Brief <SavedBadge show={saved} /></SectionTitle>
+      <div style={{ fontSize: 13, color: 'var(--text-muted)', marginBottom: 24, lineHeight: 1.55 }}>
+        VALERIE greets you on first launch each day and offers a spoken brief. Toggle each section on or off.
+      </div>
+
+      <Row label="Weather" hint="Current temperature and conditions using your device location (Open-Meteo, no API key required)">
+        <Toggle value={weather} onChange={setWeather} />
+      </Row>
+      <Row label="Calendar" hint="Today's events from your Calendar tab">
+        <Toggle value={calendar} onChange={setCalendar} />
+      </Row>
+      <Row label="Tasks" hint="Outstanding high-priority tasks">
+        <Toggle value={tasks} onChange={setTasks} />
+      </Row>
+      <Row label="Vitamins & Supplements" hint="Morning supplements from your Health tab">
+        <Toggle value={vitamins} onChange={setVitamins} />
+      </Row>
+      <Row label="Morning Routine" hint="Active routine steps from the Routines tab">
+        <Toggle value={routine} onChange={setRoutine} />
+      </Row>
+
+      <div style={{ display: 'flex', gap: 10, marginTop: 8 }}>
+        <button onClick={handleSave} style={{ padding: '9px 24px', borderRadius: 8, border: 'none', background: 'var(--accent)', color: '#fff', fontSize: 13, fontWeight: 700, cursor: 'pointer' }}>
+          Save
+        </button>
+        <button onClick={resetToday} style={{ padding: '9px 20px', borderRadius: 8, border: '0.5px solid var(--card-border)', background: 'transparent', color: 'var(--text-secondary)', fontSize: 13, cursor: 'pointer' }}>
+          Show brief again today
+        </button>
+      </div>
+    </div>
+  );
+}
+
+// ─── Section: Sidebar Order ───────────────────────────────────────────────────
+function SidebarSection({ settings, onSave }) {
+  const defaultOrder = ALL_TABS.map(t => t.id);
+  const [order, setOrder] = useState(() => {
+    const saved = storage.get(STORAGE_KEYS.SIDEBAR_ORDER_DESKTOP, null);
+    if (saved?.length) {
+      const known = new Set(saved);
+      const extra = defaultOrder.filter(id => !known.has(id));
+      return [...saved.filter(id => defaultOrder.includes(id)), ...extra];
+    }
+    return defaultOrder;
+  });
+  const [dragIdx, setDragIdx] = useState(null);
+  const [saved,   setSaved]   = useState(false);
+
+  const tabLabels = Object.fromEntries(ALL_TABS.map(t => [t.id, t.label]));
+
+  function handleDragStart(i) { setDragIdx(i); }
+  function handleDragOver(e, i) {
+    e.preventDefault();
+    if (dragIdx === null || dragIdx === i) return;
+    setOrder(prev => {
+      const next = [...prev];
+      const [moved] = next.splice(dragIdx, 1);
+      next.splice(i, 0, moved);
+      return next;
+    });
+    setDragIdx(i);
+  }
+  function handleDragEnd() { setDragIdx(null); }
+
+  function saveOrder() {
+    storage.set(STORAGE_KEYS.SIDEBAR_ORDER_DESKTOP, order);
+    window.dispatchEvent(new Event('valerie:sidebar-order-changed'));
+    setSaved(true);
+    setTimeout(() => setSaved(false), 2000);
+  }
+  function resetOrder() {
+    setOrder(defaultOrder);
+    storage.set(STORAGE_KEYS.SIDEBAR_ORDER_DESKTOP, defaultOrder);
+    window.dispatchEvent(new Event('valerie:sidebar-order-changed'));
+  }
+
+  return (
+    <div>
+      <SectionTitle>Sidebar Order <SavedBadge show={saved} /></SectionTitle>
+      <div style={{ fontSize: 13, color: 'var(--text-muted)', marginBottom: 20, lineHeight: 1.55 }}>
+        Drag to reorder sidebar tabs. Vault and Settings are always pinned at the bottom.
+        Order is saved per platform — desktop and iOS have separate orders.
+      </div>
+
+      <div style={{ display: 'flex', flexDirection: 'column', gap: 6, marginBottom: 20 }}>
+        {order.map((id, i) => (
+          <div
+            key={id}
+            draggable
+            onDragStart={() => handleDragStart(i)}
+            onDragOver={e => handleDragOver(e, i)}
+            onDragEnd={handleDragEnd}
+            style={{
+              display: 'flex', alignItems: 'center', gap: 12,
+              padding: '10px 14px', borderRadius: 10,
+              background: dragIdx === i ? 'var(--accent)15' : 'var(--bg-panel)',
+              border: `0.5px solid ${dragIdx === i ? 'var(--accent)' : 'var(--card-border)'}`,
+              cursor: 'grab', userSelect: 'none', transition: 'background 0.1s',
+            }}
+          >
+            <span style={{ color: 'var(--text-muted)', fontSize: 12, cursor: 'grab' }}>⠿</span>
+            <span style={{ fontSize: 13, color: 'var(--text-primary)' }}>{tabLabels[id] || id}</span>
+            <span style={{ fontSize: 10, color: 'var(--text-muted)', marginLeft: 'auto' }}>{i + 1}</span>
+          </div>
+        ))}
+      </div>
+
+      <div style={{ display: 'flex', gap: 10 }}>
+        <button onClick={saveOrder} style={{ padding: '9px 24px', borderRadius: 8, border: 'none', background: 'var(--accent)', color: '#fff', fontSize: 13, fontWeight: 700, cursor: 'pointer' }}>
+          Save Order
+        </button>
+        <button onClick={resetOrder} style={{ padding: '9px 20px', borderRadius: 8, border: '0.5px solid var(--card-border)', background: 'transparent', color: 'var(--text-secondary)', fontSize: 13, cursor: 'pointer' }}>
+          Reset to default
+        </button>
+      </div>
+    </div>
+  );
+}
+
 // ─── Section: Security ────────────────────────────────────────────────────────
 function SecuritySection({ settings, onSave }) {
   const [autoLock,   setAutoLock]   = useState(settings.vaultAutoLockMinutes ?? 5);
@@ -1997,36 +2219,50 @@ function SecuritySection({ settings, onSave }) {
 export default function SettingsTab({ settings: settingsProp }) {
   const [activeSection, setActiveSection] = useState('identity');
 
+  // Allow VALERIE to navigate to a specific settings section via action
+  useEffect(() => {
+    const handler = (e) => { if (e.detail) setActiveSection(e.detail); };
+    window.addEventListener('valerie:settings-section', handler);
+    return () => window.removeEventListener('valerie:settings-section', handler);
+  }, []);
+
   // Load settings from localStorage — source of truth
   const [settings, setSettings] = useState(() => storage.get(STORAGE_KEYS.SETTINGS, {}));
 
   // Persist partial updates to localStorage and notify App in real time
   const handleSave = useCallback((updates) => {
-    const merged = { ...settings, ...updates };
-    setSettings(merged);
-    storage.set(STORAGE_KEYS.SETTINGS, merged);
+    try {
+      // Strip any non-serialisable data before merging (prevents localStorage QuotaExceededError)
+      const safeUpdates = JSON.parse(JSON.stringify(updates));
+      const merged = { ...settings, ...safeUpdates };
+      setSettings(merged);
+      try { storage.set(STORAGE_KEYS.SETTINGS, merged); } catch {}
 
-    // Apply theme immediately if changed
-    if (updates.theme) applyTheme(updates.theme);
+      if (updates.theme) applyTheme(updates.theme);
 
-    // Notify App.jsx so it re-reads settings and re-renders all tabs with new values
-    window.dispatchEvent(new CustomEvent('valerie:settings-changed', { detail: merged }));
+      window.dispatchEvent(new CustomEvent('valerie:settings-changed', { detail: merged }));
+    } catch (err) {
+      console.error('[Settings] handleSave error:', err);
+    }
   }, [settings]);
 
   const renderSection = () => {
+    const wrap = (el) => <SectionErrorBoundary key={activeSection}>{el}</SectionErrorBoundary>;
     switch (activeSection) {
-      case 'identity':      return <IdentitySection      settings={settings} onSave={handleSave} />;
-      case 'appearance':    return <AppearanceSection    settings={settings} onSave={handleSave} />;
-      case 'voice':         return <VoiceSection         settings={settings} onSave={handleSave} />;
-      case 'ai':            return <AISection            settings={settings} onSave={handleSave} />;
-      case 'units':         return <UnitsSection         settings={settings} onSave={handleSave} />;
-      case 'progress':      return <ProgressSection      settings={settings} onSave={handleSave} />;
-      case 'notifications': return <NotificationsSection settings={settings} onSave={handleSave} />;
-      case 'integrations':  return <IntegrationsSection  settings={settings} onSave={handleSave} />;
-      case 'api_usage':     return <ApiUsageSection      settings={settings} />;
-      case 'platforms':     return <PlatformsSection     settings={settings} onSave={handleSave} />;
-      case 'data':          return <DataSection />;
-      case 'security':      return <SecuritySection      settings={settings} onSave={handleSave} />;
+      case 'identity':      return wrap(<IdentitySection      settings={settings} onSave={handleSave} />);
+      case 'appearance':    return wrap(<AppearanceSection    settings={settings} onSave={handleSave} />);
+      case 'voice':         return wrap(<VoiceSection         settings={settings} onSave={handleSave} />);
+      case 'ai':            return wrap(<AISection            settings={settings} onSave={handleSave} />);
+      case 'units':         return wrap(<UnitsSection         settings={settings} onSave={handleSave} />);
+      case 'progress':      return wrap(<ProgressSection      settings={settings} onSave={handleSave} />);
+      case 'notifications': return wrap(<NotificationsSection settings={settings} onSave={handleSave} />);
+      case 'integrations':  return wrap(<IntegrationsSection  settings={settings} onSave={handleSave} />);
+      case 'api_usage':     return wrap(<ApiUsageSection      settings={settings} />);
+      case 'platforms':     return wrap(<PlatformsSection     settings={settings} onSave={handleSave} />);
+      case 'data':          return wrap(<DataSection />);
+      case 'daily_brief':   return wrap(<DailyBriefSection   settings={settings} onSave={handleSave} />);
+      case 'sidebar':       return wrap(<SidebarSection      settings={settings} onSave={handleSave} />);
+      case 'security':      return wrap(<SecuritySection      settings={settings} onSave={handleSave} />);
       default:              return null;
     }
   };

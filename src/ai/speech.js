@@ -3,10 +3,13 @@
 // Includes: speech cleaning pipeline, ElevenLabs fetch, audio playback management,
 //           voice session stop-intent detection.
 
+import { rateLimitElevenLabs } from '../utils/rateLimit.js';
+
 // ─── VALERIE's voice identity ──────────────────────────────────────────────────
 // Default voice ID — locked in as VALERIE's voice. Overridable in Settings.
-const DEFAULT_VOICE_ID    = import.meta.env.VITE_ELEVENLABS_VOICE_ID || 'yj30vwTGJxSHezdAGsv9';
-const DEFAULT_API_KEY     = import.meta.env.VITE_ELEVENLABS_API_KEY  || '';
+const DEFAULT_VOICE_ID = import.meta.env.VITE_ELEVENLABS_VOICE_ID || 'yj30vwTGJxSHezdAGsv9';
+// API key is NOT read from env — enter it in Settings → Voice so it stays out of the bundle
+const DEFAULT_API_KEY  = '';
 const ELEVENLABS_MODEL    = 'eleven_monolingual_v1'; // compatible with free ElevenLabs plans
 
 // Session-level disables — set to true on first auth/plan rejection to avoid
@@ -140,6 +143,7 @@ export function isStopIntent(transcript) {
 // Makes the actual API call and returns a Blob of audio/mpeg.
 
 async function _fetchElevenLabsAudio(text, apiKey, voiceId) {
+  rateLimitElevenLabs();
   const response = await fetch(`${ELEVENLABS_ENDPOINT}/${voiceId}`, {
     method:  'POST',
     headers: {

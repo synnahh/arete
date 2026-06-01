@@ -24,7 +24,8 @@ export default function Step1Welcome({ next }) {
           Welcome.
         </h1>
         <p style={{ fontSize: 15, color: 'var(--text-secondary)', lineHeight: 1.6, maxWidth: 340 }}>
-          I'm VALERIE — your personal AI assistant.{' '}
+          I'm <strong>VALERIE</strong> — your personal{' '}
+          <em>Vocal Adaptive Layer for Emotional Responsive Intelligent Engine</em>.{' '}
           Let's get you set up. This takes about 2 minutes.
         </p>
       </div>

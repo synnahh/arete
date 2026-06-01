@@ -1,3 +1,6 @@
+import { fetch } from '@tauri-apps/plugin-http';
+import { rateLimitClaude } from '../utils/rateLimit.js';
+
 // ─── Claude API (Anthropic) ────────────────────────────────────────────────────
 // Model: claude-sonnet-4-20250514
 // VALERIE's primary reasoning engine — complex conversation, planning, context
@@ -58,13 +61,20 @@ RESPONSE FORMAT — ALWAYS respond in this exact JSON. No exceptions. No extra t
 }
 
 AVAILABLE ACTIONS (include in the actions array when intent is clear):
-- Navigate to a tab: {"type": "navigate", "target": "tasks"} — targets: dashboard, assistant, tasks, calendar, notes, health, finance, progress, style, essentials, lists, focus, vault, settings
+- Navigate to a tab: {"type": "navigate", "target": "tasks"} — targets: dashboard, assistant, tasks, calendar, notes, health, finance, progress, style, essentials, lists, focus, routines, vault, settings
 - Add a task: {"type": "addTask", "title": "task title", "priority": "high|medium|low", "description": "optional"}
 - Add a note: {"type": "addNote", "title": "note title", "content": "note content"}
 - Log mood (1-10): {"type": "logMood", "value": 7, "note": "optional note"}
 - Log water (ml): {"type": "logWater", "amount": 500}
+- Log calories: {"type": "logCalories", "calories": 650, "meal": "lunch"}
+- Log sleep: {"type": "logSleep", "hours": 7.5, "quality": "good"}
+- Add income transaction: {"type": "addTransaction", "transactionType": "income", "amount": 212, "category": "Work", "description": "daily income", "date": "2026-05-31"}
+- Add expense transaction: {"type": "addTransaction", "transactionType": "expense", "amount": 45, "category": "Food", "description": "groceries", "date": "2026-05-31"}
 - Start focus: {"type": "startFocus", "duration": 25}
 - Open settings: {"type": "openSettings"}
+- Open a settings section: {"type": "openSettingsSection", "section": "voice"} — sections: identity, appearance, voice, ai, units, notifications, integrations, daily_brief, sidebar, security
+- Toggle a boolean setting: {"type": "toggleSetting", "key": "wakeWordEnabled"} — keys: wakeWordEnabled, darkMode, autoLaunch
+- Change a setting value: {"type": "changeSetting", "key": "theme", "value": "obsidian"} — use for theme, volume, and other scalar settings
 
 MEMORY — Store something new you've learned about Rob: set "remember" to a single concise sentence. Only do this when genuinely new/useful. Leave as null otherwise.
 
@@ -94,6 +104,8 @@ export async function askClaude(message, history = [], apiKey, { context = '', m
   const key = (apiKey || '').trim();
   if (!key) throw new Error('No Claude API key');
 
+  rateLimitClaude();
+
   const messages = [
     ...history.slice(-12),
     { role: 'user', content: message },
@@ -105,6 +117,7 @@ export async function askClaude(message, history = [], apiKey, { context = '', m
       'Content-Type': 'application/json',
       'x-api-key': key,
       'anthropic-version': '2023-06-01',
+      'anthropic-dangerous-direct-browser-access': 'true',
     },
     body: JSON.stringify({
       model:      CLAUDE_MODEL,
@@ -134,6 +147,7 @@ export async function pingClaude(apiKey) {
       headers: {
         'x-api-key':           key,
         'anthropic-version':   '2023-06-01',
+        'anthropic-dangerous-direct-browser-access': 'true',
       },
       signal: AbortSignal.timeout(10000),
     });
@@ -151,7 +165,11 @@ export async function testClaudeKey(apiKey) {
   try {
     const res = await fetch('https://api.anthropic.com/v1/models', {
       method: 'GET',
-      headers: { 'x-api-key': key, 'anthropic-version': '2023-06-01' },
+      headers: {
+        'x-api-key': key,
+        'anthropic-version': '2023-06-01',
+        'anthropic-dangerous-direct-browser-access': 'true',
+      },
       signal: AbortSignal.timeout(10000),
     });
     if (res.ok)            return { ok: true,  reason: 'Connected — API key valid' };
@@ -159,7 +177,8 @@ export async function testClaudeKey(apiKey) {
     if (res.status === 403) return { ok: false, reason: 'Key lacks permission (403)' };
     return { ok: false, reason: `API error ${res.status}` };
   } catch (err) {
-    if (err.name === 'TimeoutError') return { ok: false, reason: 'Request timed out — check internet' };
-    return { ok: false, reason: `Network error: ${err.message}` };
+    const msg = err?.message || (typeof err === 'string' ? err : null);
+    if (err?.name === 'TimeoutError' || msg?.includes('timed out')) return { ok: false, reason: 'Request timed out — check internet' };
+    return { ok: false, reason: `Network error: ${msg || 'Could not reach Anthropic API'}` };
   }
 }

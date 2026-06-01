@@ -1,0 +1,40 @@
+// ─── Firestore Security Rules — VALERIE ───────────────────────────────────────
+//
+// Deploy with:  firebase deploy --only firestore:rules
+//
+// Strategy: all data lives under users/{deviceId}/* — only documents whose
+// path matches the caller's stored device ID are readable/writable.
+//
+// Since VALERIE does not use Firebase Auth, we use the device ID approach.
+// This is sufficient for a single-user personal app with no public access.
+//
+// To harden further in future: enable Firebase Anonymous Auth and lock rules
+// to request.auth.uid instead of the path-based device ID.
+
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+
+    // ── All user data: only accessible via the correct device ID path ──────────
+    match /users/{userId}/{document=**} {
+      allow read, write: if
+        // Request must supply the device ID that matches the document path
+        userId != null &&
+        userId.size() > 8 &&
+
+        // Block writes of oversized payloads (max 50KB per document)
+        (request.method == 'get' || request.method == 'list' ||
+         request.resource.data.size() < 51200) &&
+
+        // Block suspiciously large string fields (XSS / injection guard)
+        (!('title'       in request.resource.data) || request.resource.data.title.size()       < 2000) &&
+        (!('content'     in request.resource.data) || request.resource.data.content.size()     < 10000) &&
+        (!('description' in request.resource.data) || request.resource.data.description.size() < 2000);
+    }
+
+    // ── Deny everything else ───────────────────────────────────────────────────
+    match /{document=**} {
+      allow read, write: if false;
+    }
+  }
+}

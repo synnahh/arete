@@ -8,6 +8,20 @@
     "opener:default",
     "autostart:allow-enable",
     "autostart:allow-disable",
-    "autostart:allow-is-enabled"
+    "autostart:allow-is-enabled",
+    {
+      "identifier": "http:default",
+      "allow": [
+        { "url": "https://api.anthropic.com/**" },
+        { "url": "http://localhost:11434/**" },
+        { "url": "http://127.0.0.1:11434/**" },
+        { "url": "https://api.elevenlabs.io/**" },
+        { "url": "https://*.tts.speech.microsoft.com/**" },
+        { "url": "https://*.cognitiveservices.azure.com/**" },
+        { "url": "https://finnhub.io/**" },
+        { "url": "https://api.open-meteo.com/**" },
+        { "url": "https://nominatim.openstreetmap.org/**" }
+      ]
+    }
   ]
 }

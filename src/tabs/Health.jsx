@@ -21,6 +21,35 @@ const PlusIcon   = () => <Icon d="M12 5v14 M5 12h14" />;
 const MicIcon    = () => <Icon d="M12 1a3 3 0 00-3 3v8a3 3 0 006 0V4a3 3 0 00-3-3z M19 10v2a7 7 0 01-14 0v-2 M12 19v4 M8 23h8" />;
 const ScanIcon   = () => <Icon d="M3 7V5a2 2 0 012-2h2 M17 3h2a2 2 0 012 2v2 M21 17v2a2 2 0 01-2 2h-2 M7 21H5a2 2 0 01-2-2v-2 M7 12h10" />;
 
+// ── Glass card (matches Finance tab aesthetic) ─────────────────────────────────
+const GLASS = {
+  background: 'rgba(255,255,255,0.04)',
+  borderRadius: 16,
+  padding: '16px 18px',
+  marginBottom: 10,
+  backdropFilter: 'blur(24px)',
+  boxShadow: '0 1px 0 0 rgba(255,255,255,0.07) inset, 0 12px 40px rgba(0,0,0,0.4)',
+  position: 'relative',
+  overflow: 'hidden',
+};
+function GlassCard({ children, style }) {
+  return (
+    <div style={{ ...GLASS, ...style }}>
+      <div style={{ position: 'absolute', top: 0, left: 14, right: 14, height: 1, background: 'linear-gradient(90deg,transparent,rgba(255,255,255,0.16),transparent)', pointerEvents: 'none' }} />
+      {children}
+    </div>
+  );
+}
+function GlassLabel({ children }) {
+  return (
+    <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: 14 }}>
+      <div style={{ width: 18, height: 1, background: 'rgba(255,255,255,0.25)', flexShrink: 0 }} />
+      <span style={{ fontSize: 10, fontWeight: 700, letterSpacing: '0.18em', textTransform: 'uppercase', color: 'rgba(255,255,255,0.35)', fontFamily: 'ui-monospace,monospace', whiteSpace: 'nowrap' }}>{children}</span>
+      <div style={{ flex: 1, height: 1, background: 'linear-gradient(90deg,rgba(255,255,255,0.1),transparent)' }} />
+    </div>
+  );
+}
+
 // ── Shared style tokens ────────────────────────────────────────────────────────
 const inputSx = {
   width: '100%', background: 'var(--input-bg)', border: '0.5px solid var(--input-border)',
@@ -144,71 +173,56 @@ function Overview({ habits, waterLogs, nutritionLogs, sleepData, settings, suppl
     [...(bodyMetrics || [])].sort((a, b) => (b.date ?? '').localeCompare(a.date ?? ''))[0],
     [bodyMetrics]);
 
-  // Compact stat tile component
-  const Tile = ({ label, value, sublabel, colour = 'var(--accent)', ring: ringProps, navTo, onNav }) => (
-    <div
-      onClick={onNav}
-      style={{
-        ...cardSx, flex: '1 1 120px', minWidth: 110, maxWidth: 200,
-        cursor: onNav ? 'pointer' : 'default',
-        transition: 'border-color 0.15s',
-      }}
-      onMouseEnter={e => { if (onNav) e.currentTarget.style.borderColor = 'var(--accent)55'; }}
-      onMouseLeave={e => { if (onNav) e.currentTarget.style.borderColor = 'var(--card-border)'; }}
+  // Glass stat tile
+  const Tile = ({ label, value, sublabel, colour = 'var(--accent)', ring: ringProps, onNav }) => (
+    <GlassCard
+      style={{ flex: '1 1 120px', minWidth: 110, maxWidth: 220, marginBottom: 0, padding: '14px 16px', cursor: onNav ? 'pointer' : 'default' }}
     >
-      <div style={{ fontSize: 9.5, color: 'var(--text-muted)', letterSpacing: '0.07em', marginBottom: 6 }}>{label}</div>
-      {ringProps ? (
-        <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
-          <RingChart
-            value={ringProps.value} max={ringProps.max}
-            size={44} thickness={4} colour={colour}
-            label={null}
-          />
-          <div>
-            <div style={{ fontSize: 16, fontWeight: 300, color: 'var(--text-primary)', lineHeight: 1 }}>{value}</div>
-            {sublabel && <div style={{ fontSize: 10, color: 'var(--text-muted)', marginTop: 2 }}>{sublabel}</div>}
+      <div onClick={onNav} style={{ height: '100%' }}>
+        <div style={{ fontSize: 9, fontWeight: 700, letterSpacing: '0.16em', textTransform: 'uppercase', color: 'rgba(255,255,255,0.3)', fontFamily: 'ui-monospace,monospace', marginBottom: 10 }}>{label}</div>
+        {ringProps ? (
+          <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
+            <RingChart value={ringProps.value} max={ringProps.max} size={44} thickness={4} colour={colour} label={null} />
+            <div>
+              <div style={{ fontSize: 17, fontWeight: 600, color: colour, lineHeight: 1, fontVariantNumeric: 'tabular-nums' }}>{value}</div>
+              {sublabel && <div style={{ fontSize: 10, color: 'rgba(255,255,255,0.3)', marginTop: 3, fontFamily: 'ui-monospace,monospace' }}>{sublabel}</div>}
+            </div>
           </div>
-        </div>
-      ) : (
-        <>
-          <div style={{ fontSize: 18, fontWeight: 300, color: colour, lineHeight: 1 }}>{value}</div>
-          {sublabel && <div style={{ fontSize: 10, color: 'var(--text-muted)', marginTop: 3 }}>{sublabel}</div>}
-        </>
-      )}
-    </div>
+        ) : (
+          <>
+            <div style={{ fontSize: 20, fontWeight: 600, color: colour, lineHeight: 1, fontVariantNumeric: 'tabular-nums' }}>{value}</div>
+            {sublabel && <div style={{ fontSize: 10, color: 'rgba(255,255,255,0.3)', marginTop: 4, fontFamily: 'ui-monospace,monospace' }}>{sublabel}</div>}
+          </>
+        )}
+      </div>
+    </GlassCard>
   );
 
   return (
     <Section title="Overview">
-      <div style={{ fontSize: 10.5, color: 'var(--text-muted)', marginBottom: 14, letterSpacing: '0.02em' }}>
-        Today at a glance — tap any card to go to that section
-      </div>
+      <GlassLabel>Today at a glance</GlassLabel>
 
       {/* Row 1: core vitals */}
-      <div style={{ display: 'flex', flexWrap: 'wrap', gap: 10, marginBottom: 10 }}>
-        <Tile
-          label="SLEEP"
+      <div style={{ display: 'flex', flexWrap: 'wrap', gap: 8, marginBottom: 8 }}>
+        <Tile label="SLEEP"
           value={lastSleep ? `${lastSleep.efficiency ?? '—'}%` : '—'}
           sublabel={lastSleep ? `${Math.floor((lastSleep.duration ?? 0)/60)}h ${(lastSleep.duration ?? 0)%60}m` : 'no data'}
           colour="var(--accent)"
           ring={lastSleep ? { value: lastSleep.efficiency ?? 0, max: 100 } : undefined}
         />
-        <Tile
-          label="WATER"
+        <Tile label="WATER"
           value={todayWater >= 1000 ? `${(todayWater/1000).toFixed(1)}L` : `${todayWater}ml`}
           sublabel={`of ${waterGoal >= 1000 ? (waterGoal/1000).toFixed(1)+'L' : waterGoal+'ml'}`}
           colour="#4a9eff"
           ring={{ value: todayWater, max: waterGoal }}
         />
-        <Tile
-          label="CALORIES"
+        <Tile label="CALORIES"
           value={`${todayCal}`}
           sublabel={`of ${macroGoal} kcal`}
           colour="#f4a642"
           ring={{ value: todayCal, max: macroGoal }}
         />
-        <Tile
-          label="HABITS"
+        <Tile label="HABITS"
           value={`${todayHabits.done}/${todayHabits.total}`}
           sublabel={todayHabits.total === 0 ? 'none set' : todayHabits.done === todayHabits.total ? '✓ all done' : `${todayHabits.total - todayHabits.done} remaining`}
           colour="#4caf7d"
@@ -217,72 +231,67 @@ function Overview({ habits, waterLogs, nutritionLogs, sleepData, settings, suppl
       </div>
 
       {/* Row 2: supplementary stats */}
-      <div style={{ display: 'flex', flexWrap: 'wrap', gap: 10, marginBottom: 16 }}>
-        <Tile
-          label="SUPPLEMENTS"
+      <div style={{ display: 'flex', flexWrap: 'wrap', gap: 8, marginBottom: 8 }}>
+        <Tile label="SUPPLEMENTS"
           value={`${todaySupps.done}/${todaySupps.total}`}
           sublabel={todaySupps.total === 0 ? 'none set' : todaySupps.done === todaySupps.total ? '✓ all taken' : 'remaining'}
           colour="#9b5de5"
           ring={todaySupps.total > 0 ? { value: todaySupps.done, max: todaySupps.total } : undefined}
         />
-        <Tile
-          label="CAFFEINE"
+        <Tile label="CAFFEINE"
           value={`${todayStims.caffeine}mg`}
           sublabel={`of ${caffLimit}mg`}
-          colour={todayStims.caffeine > caffLimit * 0.8 ? '#f4a642' : 'var(--text-secondary)'}
+          colour={todayStims.caffeine > caffLimit * 0.8 ? '#f4a642' : 'rgba(255,255,255,0.55)'}
           ring={{ value: todayStims.caffeine, max: caffLimit }}
         />
         {todayStims.nicotine > 0 && (
-          <Tile
-            label="NICOTINE"
+          <Tile label="NICOTINE"
             value={`${todayStims.nicotine}mg`}
             sublabel={`of ${nicLimit}mg`}
             colour={todayStims.nicotine > nicLimit * 0.8 ? '#e55a5a' : '#f4a642'}
             ring={{ value: todayStims.nicotine, max: nicLimit }}
           />
         )}
-        <Tile
-          label="WORKOUT"
+        <Tile label="WORKOUT"
           value={workedOutToday ? 'Done ✓' : 'Not yet'}
           sublabel={workedOutToday ? 'logged today' : 'no session yet'}
-          colour={workedOutToday ? '#4caf7d' : 'var(--text-muted)'}
+          colour={workedOutToday ? '#4caf7d' : 'rgba(255,255,255,0.3)'}
         />
         {latestBody?.weight && (
-          <Tile
-            label="WEIGHT"
+          <Tile label="WEIGHT"
             value={`${latestBody.weight}kg`}
             sublabel={latestBody.date === today ? 'logged today' : `as of ${latestBody.date ?? '—'}`}
-            colour="var(--text-secondary)"
+            colour="rgba(255,255,255,0.55)"
           />
         )}
       </div>
 
-      {/* Sleep stage bar if available */}
+      {/* Sleep stages */}
       {lastSleep?.stages && (
-        <div style={{ ...cardSx }}>
-          <div style={{ fontSize: 10, color: 'var(--text-muted)', letterSpacing: '0.07em', marginBottom: 10 }}>LAST NIGHT — SLEEP STAGES</div>
-          <StageBar height={12} stages={[
+        <GlassCard>
+          <GlassLabel>Last night — sleep stages</GlassLabel>
+          <StageBar height={10} stages={[
             { label: 'Deep',  value: lastSleep.stages.deep  ?? 0, colour: '#4a9eff' },
             { label: 'REM',   value: lastSleep.stages.rem   ?? 0, colour: '#9b5de5' },
             { label: 'Core',  value: lastSleep.stages.core  ?? 0, colour: '#4caf7d' },
             { label: 'Awake', value: lastSleep.stages.awake ?? 0, colour: 'rgba(255,255,255,0.15)' },
           ]} />
-          <div style={{ display: 'flex', gap: 12, marginTop: 6, flexWrap: 'wrap' }}>
+          <div style={{ display: 'flex', gap: 14, marginTop: 8, flexWrap: 'wrap' }}>
             {[
-              { l:'Deep', c:'#4a9eff', v: lastSleep.stages.deep  },
-              { l:'REM',  c:'#9b5de5', v: lastSleep.stages.rem   },
-              { l:'Core', c:'#4caf7d', v: lastSleep.stages.core  },
-              { l:'Awake',c:'rgba(255,255,255,0.3)', v: lastSleep.stages.awake },
+              { l:'Deep',  c:'#4a9eff', v: lastSleep.stages.deep  },
+              { l:'REM',   c:'#9b5de5', v: lastSleep.stages.rem   },
+              { l:'Core',  c:'#4caf7d', v: lastSleep.stages.core  },
+              { l:'Awake', c:'rgba(255,255,255,0.3)', v: lastSleep.stages.awake },
             ].map(s => (
-              <div key={s.l} style={{ display: 'flex', alignItems: 'center', gap: 4 }}>
-                <div style={{ width: 6, height: 6, borderRadius: '50%', background: s.c }} />
-                <span style={{ fontSize: 10, color: 'var(--text-muted)' }}>
+              <div key={s.l} style={{ display: 'flex', alignItems: 'center', gap: 5 }}>
+                <div style={{ width: 5, height: 5, borderRadius: '50%', background: s.c, flexShrink: 0 }} />
+                <span style={{ fontSize: 10, color: 'rgba(255,255,255,0.35)', fontFamily: 'ui-monospace,monospace' }}>
                   {s.l}: {Math.floor((s.v ?? 0)/60)}h{(s.v ?? 0)%60}m
                 </span>
               </div>
             ))}
           </div>
-        </div>
+        </GlassCard>
       )}
     </Section>
   );

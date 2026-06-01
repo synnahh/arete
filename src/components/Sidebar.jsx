@@ -1,4 +1,5 @@
-import { useState, useEffect, useRef } from 'react';
+import { useState, useEffect, useRef, useMemo } from 'react';
+import { storage, STORAGE_KEYS } from '../utils/storage.js';
 
 // ─── Icons (inline SVG — no external dep needed for now) ──────────────────────
 const Icon = ({ d, size = 20 }) => (
@@ -24,29 +25,29 @@ const ICONS = {
   focus:      "M12 22c5.523 0 10-4.477 10-10S17.523 2 12 2 2 6.477 2 12s4.477 10 10 10z M12 6v6l4 2",
   vault:      "M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z",
   settings:   "M12 20a8 8 0 100-16 8 8 0 000 16z M12 14a2 2 0 100-4 2 2 0 000 4z",
+  routines:   "M4 4h16v2H4z M4 8h10v2H4z M4 12h16v2H4z M4 16h10v2H4z M17 15l4 4-4 4",
 };
 
-// ─── Tab definitions in the locked order ──────────────────────────────────────
-const GROUP_1 = [
-  { id: 'dashboard', label: 'Dashboard' },
-  { id: 'assistant', label: 'Assistant' },
-  { id: 'tasks',     label: 'Tasks' },
-  { id: 'calendar',  label: 'Calendar' },
-  { id: 'notes',     label: 'Notes' },
-];
-const GROUP_2 = [
-  { id: 'health',   label: 'Health' },
-  { id: 'finance',  label: 'Finance' },
-  { id: 'progress', label: 'Progress' },
-];
-const GROUP_3 = [
-  { id: 'style',      label: 'Style' },
+// ─── All reorderable tabs in default order ────────────────────────────────────
+export const ALL_TABS = [
+  { id: 'dashboard',  label: 'Dashboard'  },
+  { id: 'assistant',  label: 'Assistant'  },
+  { id: 'tasks',      label: 'Tasks'      },
+  { id: 'calendar',   label: 'Calendar'   },
+  { id: 'notes',      label: 'Notes'      },
+  { id: 'health',     label: 'Health'     },
+  { id: 'finance',    label: 'Finance'    },
+  { id: 'progress',   label: 'Progress'   },
+  { id: 'style',      label: 'Style'      },
   { id: 'essentials', label: 'Essentials' },
-  { id: 'lists',      label: 'Lists' },
-  { id: 'focus',      label: 'Focus' },
+  { id: 'lists',      label: 'Lists'      },
+  { id: 'focus',      label: 'Focus'      },
+  { id: 'routines',   label: 'Routines'   },
 ];
+
+// Always pinned at bottom, not reorderable
 const BOTTOM = [
-  { id: 'vault',    label: 'Vault' },
+  { id: 'vault',    label: 'Vault'    },
   { id: 'settings', label: 'Settings' },
 ];
 
@@ -224,8 +225,44 @@ function Divider() {
 // ─── Main Sidebar ─────────────────────────────────────────────────────────────
 export default function Sidebar({ activeTab, onTabClick, claudeOnline, ollamaOnline, internetOnline, lastPinged, firebaseSynced, hiddenTabs = [] }) {
 
-  // Filter a group, keeping only visible tabs
+  // Load platform-specific tab order from storage
+  const [orderedTabs, setOrderedTabs] = useState(() => {
+    const saved = storage.get(STORAGE_KEYS.SIDEBAR_ORDER_DESKTOP, null);
+    if (saved?.length) {
+      // Merge saved order with ALL_TABS — include any new tabs at end
+      const known = new Set(saved);
+      const extra = ALL_TABS.filter(t => !known.has(t.id));
+      return [...saved.map(id => ALL_TABS.find(t => t.id === id)).filter(Boolean), ...extra];
+    }
+    return ALL_TABS;
+  });
+
+  // Sync when storage changes (Settings tab reorders)
+  useEffect(() => {
+    const handler = () => {
+      const saved = storage.get(STORAGE_KEYS.SIDEBAR_ORDER_DESKTOP, null);
+      if (saved?.length) {
+        const known = new Set(saved);
+        const extra = ALL_TABS.filter(t => !known.has(t.id));
+        setOrderedTabs([...saved.map(id => ALL_TABS.find(t => t.id === id)).filter(Boolean), ...extra]);
+      }
+    };
+    window.addEventListener('valerie:sidebar-order-changed', handler);
+    return () => window.removeEventListener('valerie:sidebar-order-changed', handler);
+  }, []);
+
   const visible = (tabs) => tabs.filter(t => !hiddenTabs.includes(t.id));
+  const visibleMain = visible(orderedTabs);
+
+  // Insert dividers at positions 5 and 8 of the original default order for visual grouping
+  const withDividers = useMemo(() => {
+    const result = [];
+    visibleMain.forEach((tab, i) => {
+      if (i === 5 || i === 8) result.push({ divider: true, key: `div-${i}` });
+      result.push(tab);
+    });
+    return result;
+  }, [visibleMain]);
 
   return (
     <aside style={{
@@ -259,10 +296,13 @@ export default function Sidebar({ activeTab, onTabClick, claudeOnline, ollamaOnl
       {/* Scrollable tab area */}
       <div style={{ flex: 1, overflowY: 'auto', width: '100%',
         display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 0 }}>
-
-        <TabGroup tabs={visible(GROUP_1)} activeTab={activeTab} onTabClick={onTabClick} />
-        {visible(GROUP_2).length > 0 && <><Divider /><TabGroup tabs={visible(GROUP_2)} activeTab={activeTab} onTabClick={onTabClick} /></>}
-        {visible(GROUP_3).length > 0 && <><Divider /><TabGroup tabs={visible(GROUP_3)} activeTab={activeTab} onTabClick={onTabClick} /></>}
+        <div style={{ display: 'flex', flexDirection: 'column', gap: 4, padding: '4px 0' }}>
+          {withDividers.map(item =>
+            item.divider
+              ? <Divider key={item.key} />
+              : <TabButton key={item.id} tab={item} active={activeTab === item.id} onClick={onTabClick} />
+          )}
+        </div>
       </div>
 
       {/* Bottom pinned section */}

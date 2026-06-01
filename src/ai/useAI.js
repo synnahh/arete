@@ -296,19 +296,30 @@ export function useAI() {
   }, []);
 
   // ── Wake word detection — continuous background listener ───────────────────
-  // Runs whenever a voice session is NOT active and wake word detection is enabled.
-  // Listens for "hey val" / "hey valerie" and auto-starts a voice session.
-  const wakeRecRef = useRef(null);
+  const wakeRecRef    = useRef(null);
+  const micGrantedRef = useRef(false); // true once getUserMedia succeeds
+
+  // Pre-request mic permission via getUserMedia so WebView2 shows the OS prompt.
+  // SpeechRecognition alone doesn't trigger the permission dialog in Tauri/WebView2.
+  const _requestMicPermission = useCallback(async () => {
+    if (micGrantedRef.current) return true;
+    try {
+      const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+      stream.getTracks().forEach(t => t.stop()); // release mic immediately
+      micGrantedRef.current = true;
+      return true;
+    } catch (err) {
+      console.warn('[VALERIE wake word] Mic permission denied:', err.message);
+      return false;
+    }
+  }, []);
 
   const _startWakeWordListener = useCallback(() => {
     const SR = window.SpeechRecognition || window.webkitSpeechRecognition;
-    if (!SR) return;
+    if (!SR) { console.warn('[VALERIE wake word] SpeechRecognition not supported'); return; }
 
-    // Check if wake word is enabled in settings
     const s = storage.get(STORAGE_KEYS.SETTINGS, {});
     if (s.wakeWordEnabled === false) return;
-
-    // Don't start if already running or voice session is active
     if (wakeRecRef.current || voiceSessionRef.current) return;
 
     const rec = new SR();
@@ -321,11 +332,9 @@ export function useAI() {
       const triggered = WAKE_WORDS.some(w => t === w || t.startsWith(w + ' ') || t.startsWith(w + ','));
       if (triggered && !voiceSessionRef.current) {
         wakeRecRef.current = null;
-        // Brief orb flash, then start session
         setOrbState('listening');
         setTimeout(() => startVoiceSession(), 100);
       } else {
-        // Not a wake word — restart listener
         wakeRecRef.current = null;
         _startWakeWordListener();
       }
@@ -333,7 +342,6 @@ export function useAI() {
 
     rec.onend = () => {
       wakeRecRef.current = null;
-      // Restart unless a voice session is active or feature disabled
       const settings = storage.get(STORAGE_KEYS.SETTINGS, {});
       if (!voiceSessionRef.current && settings.wakeWordEnabled !== false) {
         setTimeout(_startWakeWordListener, 300);
@@ -342,17 +350,31 @@ export function useAI() {
 
     rec.onerror = (e) => {
       wakeRecRef.current = null;
-      // Ignore no-speech errors (very common for always-on listener)
+      console.warn('[VALERIE wake word] SpeechRecognition error:', e.error);
       if (e.error === 'no-speech' || e.error === 'aborted') {
+        // Normal — just restart
         if (!voiceSessionRef.current) setTimeout(_startWakeWordListener, 300);
+      } else if (e.error === 'not-allowed' || e.error === 'service-not-allowed') {
+        // Mic permission denied — retry after requesting permission properly
+        console.error('[VALERIE wake word] Mic access denied. Will retry after permission request.');
+        micGrantedRef.current = false;
+        _requestMicPermission().then(granted => {
+          if (granted && !voiceSessionRef.current) setTimeout(_startWakeWordListener, 500);
+        });
+      } else if (e.error === 'network') {
+        // Speech service network issue — back off longer
+        if (!voiceSessionRef.current) setTimeout(_startWakeWordListener, 3000);
       }
+      // Any other error: don't restart (avoid tight error loops)
     };
 
     wakeRecRef.current = rec;
-    try { rec.start(); } catch {}
-  }, [startVoiceSession]); // eslint-disable-line react-hooks/exhaustive-deps
+    try { rec.start(); } catch (err) {
+      console.warn('[VALERIE wake word] rec.start() threw:', err);
+      wakeRecRef.current = null;
+    }
+  }, [startVoiceSession, _requestMicPermission]); // eslint-disable-line react-hooks/exhaustive-deps
 
-  // Stop wake word listener (called when voice session starts)
   const _stopWakeWordListener = useCallback(() => {
     if (wakeRecRef.current) {
       try { wakeRecRef.current.stop(); } catch {}
@@ -360,14 +382,19 @@ export function useAI() {
     }
   }, []);
 
-  // Start wake word listener on mount; stop when voice session starts
+  // On mount: request mic permission first, then start wake word listener
   useEffect(() => {
     const settings = storage.get(STORAGE_KEYS.SETTINGS, {});
-    if (settings.wakeWordEnabled !== false) {
-      // Small delay so everything is initialised
-      const t = setTimeout(_startWakeWordListener, 1500);
-      return () => clearTimeout(t);
-    }
+    if (settings.wakeWordEnabled === false) return;
+
+    // getUserMedia first so WebView2 shows the OS microphone permission prompt.
+    // Without this, SpeechRecognition.start() silently fails with not-allowed in Tauri.
+    const t = setTimeout(async () => {
+      const granted = await _requestMicPermission();
+      if (granted) _startWakeWordListener();
+    }, 1500);
+
+    return () => clearTimeout(t);
   }, []); // eslint-disable-line react-hooks/exhaustive-deps
 
   // Pause wake word listener while a voice session is active

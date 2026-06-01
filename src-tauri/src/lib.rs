@@ -6,11 +6,84 @@ use tauri::{
     tray::{MouseButton, MouseButtonState, TrayIconBuilder, TrayIconEvent},
     Manager,
 };
+use serde::{Deserialize, Serialize};
+use serde_json::Value;
+
+const OLLAMA_BASE: &str = "http://127.0.0.1:11434";
+
+#[derive(Serialize, Deserialize)]
+struct OllamaMessage {
+    role: String,
+    content: String,
+}
+
+// Ping Ollama via Rust — bypasses WebView plugin restrictions on localhost HTTP
+#[tauri::command]
+async fn ping_ollama() -> bool {
+    let client = reqwest::Client::builder()
+        .timeout(std::time::Duration::from_secs(3))
+        .build()
+        .unwrap_or_default();
+    client
+        .get(format!("{}/api/tags", OLLAMA_BASE))
+        .send()
+        .await
+        .map(|r| r.status().is_success())
+        .unwrap_or(false)
+}
+
+// Chat with Ollama via Rust
+#[tauri::command]
+async fn ask_ollama(messages: Vec<OllamaMessage>, model: String) -> Result<String, String> {
+    let client = reqwest::Client::builder()
+        .timeout(std::time::Duration::from_secs(120))
+        .build()
+        .map_err(|e| e.to_string())?;
+
+    let body = serde_json::json!({
+        "model": model,
+        "messages": messages,
+        "stream": false,
+    });
+
+    let res = client
+        .post(format!("{}/api/chat", OLLAMA_BASE))
+        .json(&body)
+        .send()
+        .await
+        .map_err(|e| e.to_string())?;
+
+    if !res.status().is_success() {
+        return Err(format!("Ollama error {}", res.status()));
+    }
+
+    let data: Value = res.json().await.map_err(|e| e.to_string())?;
+    Ok(data["message"]["content"].as_str().unwrap_or("").to_string())
+}
+
+#[tauri::command]
+fn launch_ollama() {
+    #[cfg(target_os = "windows")]
+    {
+        use std::os::windows::process::CommandExt;
+        let _ = std::process::Command::new("ollama")
+            .arg("serve")
+            .creation_flags(0x08000000) // CREATE_NO_WINDOW — no terminal popup
+            .spawn();
+    }
+    #[cfg(not(target_os = "windows"))]
+    {
+        let _ = std::process::Command::new("ollama")
+            .arg("serve")
+            .spawn();
+    }
+}
 
 #[cfg_attr(mobile, tauri::mobile_entry_point)]
 pub fn run() {
     tauri::Builder::default()
         // ── Plugins ──────────────────────────────────────────────────────────
+        .plugin(tauri_plugin_http::init())
         .plugin(tauri_plugin_opener::init())
         .plugin(tauri_plugin_autostart::init(
             tauri_plugin_autostart::MacosLauncher::LaunchAgent,
@@ -67,7 +140,7 @@ pub fn run() {
             Ok(())
         })
 
-        .invoke_handler(tauri::generate_handler![])
+        .invoke_handler(tauri::generate_handler![launch_ollama, ping_ollama, ask_ollama])
         .run(tauri::generate_context!())
         .expect("error while running VALERIE");
 }
