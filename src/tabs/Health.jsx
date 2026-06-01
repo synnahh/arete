@@ -1,5 +1,5 @@
-// ─── Health Tab ───────────────────────────────────────────────────────────────
-// 9 sub-sections: Overview · Habits · Nutrition · Workout · Water · Body · Supplements · Sleep · Stimulant
+﻿// â”€â”€â”€ Health Tab â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+// 9 sub-sections: Overview Â· Habits Â· Nutrition Â· Workout Â· Water Â· Body Â· Supplements Â· Sleep Â· Stimulant
 
 import { useState, useEffect, useCallback, useMemo, useRef } from 'react';
 import { useCollection }                  from '../firebase/useCollection.js';
@@ -7,7 +7,7 @@ import { useDocument }                    from '../firebase/useDocument.js';
 import { storage, STORAGE_KEYS }          from '../utils/storage.js';
 import { RingChart, ProgressBar, StageBar, BarChart } from '../components/Charts.jsx';
 
-// ── Helpers ───────────────────────────────────────────────────────────────────
+// â”€â”€ Helpers â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 const todayStr = () => new Date().toISOString().slice(0, 10);
 const nowStr   = () => new Date().toLocaleTimeString('en-AU', { hour: '2-digit', minute: '2-digit', hour12: false });
 
@@ -22,7 +22,7 @@ const PlusIcon   = () => <Icon d="M12 5v14 M5 12h14" />;
 const MicIcon    = () => <Icon d="M12 1a3 3 0 00-3 3v8a3 3 0 006 0V4a3 3 0 00-3-3z M19 10v2a7 7 0 01-14 0v-2 M12 19v4 M8 23h8" />;
 const ScanIcon   = () => <Icon d="M3 7V5a2 2 0 012-2h2 M17 3h2a2 2 0 012 2v2 M21 17v2a2 2 0 01-2 2h-2 M7 21H5a2 2 0 01-2-2v-2 M7 12h10" />;
 
-// ── Glass card (matches Finance tab aesthetic) ─────────────────────────────────
+// â”€â”€ Glass card (matches Finance tab aesthetic) â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 const GLASS = {
   background: 'rgba(255,255,255,0.04)',
   borderRadius: 16,
@@ -51,7 +51,7 @@ function GlassLabel({ children }) {
   );
 }
 
-// ── Shared style tokens ────────────────────────────────────────────────────────
+// â”€â”€ Shared style tokens â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 const inputSx = {
   width: '100%', background: 'var(--input-bg)', border: '0.5px solid var(--input-border)',
   borderRadius: 7, padding: '7px 10px', fontSize: 12.5, color: 'var(--text-primary)',
@@ -76,7 +76,7 @@ const lblSx = {
   letterSpacing: '0.06em', marginBottom: 4,
 };
 
-// ── Section wrapper ───────────────────────────────────────────────────────────
+// â”€â”€ Section wrapper â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 function Section({ title, children, action }) {
   return (
     <div style={{ height: '100%', display: 'flex', flexDirection: 'column', overflow: 'hidden' }}>
@@ -94,7 +94,7 @@ function Section({ title, children, action }) {
   );
 }
 
-// ── Stat card ─────────────────────────────────────────────────────────────────
+// â”€â”€ Stat card â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 function StatCard({ label, value, unit, colour = 'var(--accent)', ring, children }) {
   return (
     <div style={{ ...cardSx, display: 'flex', alignItems: 'center', gap: 14, flex: 1, minWidth: 130 }}>
@@ -115,8 +115,8 @@ function StatCard({ label, value, unit, colour = 'var(--accent)', ring, children
   );
 }
 
-// ═══════════════════════════════════════════════════════════════════════════════
-// ── Demo data shown when nothing is logged ────────────────────────────────────
+// â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
+// â”€â”€ Demo data shown when nothing is logged â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 const DEMO_SLEEP = { date:'demo', efficiency:82, duration:445, bedTime:'22:45', wakeTime:'07:00',
   stages:{ deep:62, rem:88, core:228, awake:67 } };
 const DEMO_NUTRITION = { calories:1650, protein:95, carbs:182, fat:54, meals:[
@@ -129,9 +129,9 @@ const DEMO_NUTRITION = { calories:1650, protein:95, carbs:182, fat:54, meals:[
 const DEMO_BODY = { weight:82.4, bodyFat:14.8, muscle:68.2 };
 const DEMO_WATER = 1850;
 
-// 1. OVERVIEW — dense command centre
-// ═══════════════════════════════════════════════════════════════════════════════
-function Overview({ habits, waterLogs, nutritionLogs, sleepData, settings, supplements, suppLogs, stimLogs, workoutLogs, bodyMetrics, onNav }) {
+// 1. OVERVIEW â€” dense command centre
+// â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
+function Overview({ habits, waterLogs, nutritionLogs, sleepData, settings, supplements, suppLogs, stimLogs, workoutLogs, bodyMetrics, onNav, onTabChange }) {
   const today = todayStr();
 
   const waterGoal   = settings?.waterGoal ?? 2500;
@@ -155,7 +155,7 @@ function Overview({ habits, waterLogs, nutritionLogs, sleepData, settings, suppl
   const workedOutToday  = useMemo(()=>(workoutLogs||[]).some(l=>l.date===today),[workoutLogs,today]);
   const latestBodyRaw   = useMemo(()=>[...(bodyMetrics||[])].sort((a,b)=>(b.date??'').localeCompare(a.date??''))[0],[bodyMetrics]);
 
-  // Demo fallbacks — used when nothing logged so the UI looks populated
+  // Demo fallbacks â€” used when nothing logged so the UI looks populated
   const useDemo       = !rawLastSleep && rawWater === 0 && todayCal === 0;
   const lastSleep     = rawLastSleep ?? (useDemo ? DEMO_SLEEP : null);
   const todayWater    = rawWater   > 0 ? rawWater    : useDemo ? DEMO_WATER    : 0;
@@ -223,11 +223,11 @@ function Overview({ habits, waterLogs, nutritionLogs, sleepData, settings, suppl
     <Section title="Overview">
       {useDemo && (
         <div style={{padding:'6px 12px',borderRadius:8,marginBottom:10,background:'rgba(74,158,255,0.07)',border:'0.5px solid rgba(74,158,255,0.2)',fontSize:10.5,color:'rgba(74,158,255,0.7)'}}>
-          📊 Showing demo data — log your first entry to see real stats
+          ðŸ“Š Showing demo data â€” log your first entry to see real stats
         </div>
       )}
 
-      {/* ── SLEEP QUALITY — prominent block ── */}
+      {/* â”€â”€ SLEEP QUALITY â€” prominent block â”€â”€ */}
       <GlassLabel>Sleep Quality</GlassLabel>
       <GlassCard style={{marginBottom:10,cursor:'pointer'}} onClick={()=>onNav('sleep')}>
         {lastSleep ? (
@@ -244,7 +244,7 @@ function Overview({ habits, waterLogs, nutritionLogs, sleepData, settings, suppl
                 />
               </svg>
               <div style={{position:'absolute',inset:0,display:'flex',flexDirection:'column',alignItems:'center',justifyContent:'center',pointerEvents:'none'}}>
-                <div style={{fontSize:16,fontWeight:700,color:effColour(lastSleep.efficiency??0),lineHeight:1}}>{lastSleep.efficiency??'—'}%</div>
+                <div style={{fontSize:16,fontWeight:700,color:effColour(lastSleep.efficiency??0),lineHeight:1}}>{lastSleep.efficiency??'â€”'}%</div>
                 <div style={{fontSize:7.5,color:'rgba(255,255,255,0.3)',letterSpacing:'0.08em',marginTop:2}}>EFF</div>
               </div>
             </div>
@@ -253,7 +253,7 @@ function Overview({ habits, waterLogs, nutritionLogs, sleepData, settings, suppl
             <div style={{flex:1,minWidth:0}}>
               <div style={{display:'flex',alignItems:'baseline',gap:12,marginBottom:2}}>
                 <span style={{fontSize:30,fontWeight:200,color:'rgba(255,255,255,0.92)',lineHeight:1}}>{sleepH}h <span style={{fontSize:20}}>{sleepM}m</span></span>
-                <span style={{fontSize:12,color:'rgba(255,255,255,0.35)',fontFamily:'ui-monospace,monospace'}}>{lastSleep.bedTime??'—'} → {lastSleep.wakeTime??'—'}</span>
+                <span style={{fontSize:12,color:'rgba(255,255,255,0.35)',fontFamily:'ui-monospace,monospace'}}>{lastSleep.bedTime??'â€”'} â†’ {lastSleep.wakeTime??'â€”'}</span>
               </div>
 
               {lastSleep.stages ? (
@@ -281,17 +281,17 @@ function Overview({ habits, waterLogs, nutritionLogs, sleepData, settings, suppl
         ) : (
           <div style={{display:'flex',alignItems:'center',gap:14,padding:'4px 0'}}>
             <div style={{width:90,height:90,borderRadius:'50%',border:'0.5px solid rgba(255,255,255,0.08)',display:'flex',alignItems:'center',justifyContent:'center',flexShrink:0}}>
-              <span style={{fontSize:22,opacity:0.15}}>🌙</span>
+              <span style={{fontSize:22,opacity:0.15}}>ðŸŒ™</span>
             </div>
             <div>
               <div style={{fontSize:14,color:'rgba(255,255,255,0.3)',marginBottom:4}}>No sleep logged yet</div>
-              <div style={{fontSize:11,color:'rgba(255,255,255,0.18)'}}>Log via Sleep tab or sync Apple Health on iOS →</div>
+              <div style={{fontSize:11,color:'rgba(255,255,255,0.18)'}}>Log via Sleep tab or sync Apple Health on iOS â†’</div>
             </div>
           </div>
         )}
       </GlassCard>
 
-      {/* ── VITALS — 5 macro cards ── */}
+      {/* â”€â”€ VITALS â€” 5 macro cards â”€â”€ */}
       <GlassLabel>Vitals</GlassLabel>
       <div style={{display:'flex',gap:8,marginBottom:10}}>
         <MacroCard label="Water"    value={todayWater} display={todayWater>=1000?`${(todayWater/1000).toFixed(1)}L`:`${todayWater}ml`}  goal={waterGoal} goalDisplay={waterGoal>=1000?`${(waterGoal/1000).toFixed(1)}L`:`${waterGoal}ml`} colour="#4a9eff" onClick={()=>onNav('water')} />
@@ -301,11 +301,11 @@ function Overview({ habits, waterLogs, nutritionLogs, sleepData, settings, suppl
         <MacroCard label="Fat"      value={todayFat}   display={`${todayFat}g`}  goal={fatGoal}  goalDisplay={`${fatGoal}g`}       colour="#9b5de5" onClick={()=>onNav('nutrition')} />
       </div>
 
-      {/* ── STATUS chips: habits / supps / workout / stimulants ── */}
+      {/* â”€â”€ STATUS chips: habits / supps / workout / stimulants â”€â”€ */}
       <div style={{display:'flex',gap:6,marginBottom:10,flexWrap:'wrap'}}>
-        <Stat label="Habits"      value={`${todayHabits.done}/${todayHabits.total}`} sub={todayHabits.done===todayHabits.total&&todayHabits.total>0?'✓ all done':`${todayHabits.total-todayHabits.done} left`} colour="#4caf7d" nav={()=>onNav('habits')} />
-        <Stat label="Supplements" value={`${todaySupps.done}/${todaySupps.total}`}   sub={todaySupps.done===todaySupps.total&&todaySupps.total>0?'✓ all taken':'remaining'} colour="#9b5de5" nav={()=>onNav('supplements')} />
-        <Stat label="Workout"     value={workedOutToday?'Done ✓':'Not yet'} colour={workedOutToday?'#4caf7d':'rgba(255,255,255,0.35)'} sub={workedOutToday?'logged today':'no session'} nav={()=>onNav('workout')} />
+        <Stat label="Habits"      value={`${todayHabits.done}/${todayHabits.total}`} sub={todayHabits.done===todayHabits.total&&todayHabits.total>0?'âœ“ all done':`${todayHabits.total-todayHabits.done} left`} colour="#4caf7d" nav={()=>onNav('habits')} />
+        <Stat label="Supplements" value={`${todaySupps.done}/${todaySupps.total}`}   sub={todaySupps.done===todaySupps.total&&todaySupps.total>0?'âœ“ all taken':'remaining'} colour="#9b5de5" nav={()=>onNav('supplements')} />
+        <Stat label="Workout"     value={workedOutToday?'Done âœ“':'Not yet'} colour={workedOutToday?'#4caf7d':'rgba(255,255,255,0.35)'} sub={workedOutToday?'logged today':'no session'} nav={()=>onTabChange?.('workout')} />
         <div style={{flex:'1 1 0',minWidth:0,padding:'10px 12px',background:'rgba(255,255,255,0.03)',borderRadius:10,border:`0.5px solid ${todayStims.caffeine>caffLimit*0.9?'rgba(244,166,66,0.4)':'rgba(255,255,255,0.07)'}`}}>
           <div style={{fontSize:8.5,fontWeight:700,letterSpacing:'0.16em',textTransform:'uppercase',color:'rgba(255,255,255,0.28)',fontFamily:'ui-monospace,monospace',marginBottom:4}}>Caffeine</div>
           <div style={{display:'flex',alignItems:'baseline',gap:4}}>
@@ -326,7 +326,7 @@ function Overview({ habits, waterLogs, nutritionLogs, sleepData, settings, suppl
         )}
       </div>
 
-      {/* ── BODY metrics ── */}
+      {/* â”€â”€ BODY metrics â”€â”€ */}
       {latestBody && (
         <>
           <GlassLabel>Body</GlassLabel>
@@ -336,7 +336,7 @@ function Overview({ habits, waterLogs, nutritionLogs, sleepData, settings, suppl
               onMouseLeave={e=>e.currentTarget.style.background='rgba(255,255,255,0.03)'}>
               <div style={{fontSize:8.5,fontWeight:700,letterSpacing:'0.16em',textTransform:'uppercase',color:'rgba(255,255,255,0.28)',fontFamily:'ui-monospace,monospace',marginBottom:8}}>Weight</div>
               <div style={{fontSize:28,fontWeight:200,color:'rgba(255,255,255,0.9)',lineHeight:1}}>{latestBody.weight}<span style={{fontSize:13,color:'rgba(255,255,255,0.3)',marginLeft:3}}>kg</span></div>
-              {latestBody.date&&<div style={{fontSize:9.5,color:'rgba(255,255,255,0.25)',marginTop:4,fontFamily:'ui-monospace,monospace'}}>{latestBody.date===today?'logged today':latestBody.date?.slice(5)??'—'}</div>}
+              {latestBody.date&&<div style={{fontSize:9.5,color:'rgba(255,255,255,0.25)',marginTop:4,fontFamily:'ui-monospace,monospace'}}>{latestBody.date===today?'logged today':latestBody.date?.slice(5)??'â€”'}</div>}
             </div>
             {latestBody.bodyFat!=null&&(
               <div onClick={()=>onNav('body')} style={{flex:1,padding:'14px 16px',background:'rgba(255,255,255,0.03)',borderRadius:12,border:'0.5px solid rgba(255,255,255,0.07)',cursor:'pointer'}}
@@ -359,14 +359,14 @@ function Overview({ habits, waterLogs, nutritionLogs, sleepData, settings, suppl
         </>
       )}
 
-      {/* ── TODAY'S MEALS ── */}
+      {/* â”€â”€ TODAY'S MEALS â”€â”€ */}
       <GlassLabel>Today's meals</GlassLabel>
       <GlassCard style={{marginBottom:0}}>
         {todayMeals.length > 0 ? (
           <div style={{display:'flex',flexDirection:'column',gap:0}}>
             {todayMeals.map((m,i)=>(
               <div key={m.id||i} style={{display:'flex',alignItems:'center',gap:12,padding:'9px 0',borderBottom:i<todayMeals.length-1?'0.5px solid rgba(255,255,255,0.05)':'none'}}>
-                <span style={{fontSize:10,color:'rgba(255,255,255,0.25)',fontFamily:'ui-monospace,monospace',minWidth:36}}>{m.time??'—'}</span>
+                <span style={{fontSize:10,color:'rgba(255,255,255,0.25)',fontFamily:'ui-monospace,monospace',minWidth:36}}>{m.time??'â€”'}</span>
                 <span style={{flex:1,fontSize:12,color:'rgba(255,255,255,0.75)',overflow:'hidden',textOverflow:'ellipsis',whiteSpace:'nowrap'}}>{m.name}</span>
                 <div style={{display:'flex',gap:10,flexShrink:0}}>
                   {[{v:m.calories,u:'kcal',c:'#f4a642'},{v:m.protein,u:'p',c:'#4a9eff'},{v:m.carbs,u:'c',c:'#4caf7d'},{v:m.fat,u:'f',c:'#9b5de5'}].map(({v,u,c})=>(
@@ -383,7 +383,7 @@ function Overview({ habits, waterLogs, nutritionLogs, sleepData, settings, suppl
           </div>
         )}
         <div style={{display:'flex',justifyContent:'flex-end',marginTop:8}}>
-          <button onClick={()=>onNav('nutrition')} style={{fontSize:10.5,color:'var(--accent)',background:'none',border:'none',cursor:'pointer',padding:0}}>View nutrition →</button>
+          <button onClick={()=>onNav('nutrition')} style={{fontSize:10.5,color:'var(--accent)',background:'none',border:'none',cursor:'pointer',padding:0}}>View nutrition â†’</button>
         </div>
       </GlassCard>
 
@@ -391,12 +391,12 @@ function Overview({ habits, waterLogs, nutritionLogs, sleepData, settings, suppl
   );
 }
 
-// ═══════════════════════════════════════════════════════════════════════════════
+// â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
 // 2. HABITS
-// ═══════════════════════════════════════════════════════════════════════════════
+// â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
 function Habits({ habits, addHabit, updateHabit, removeHabit }) {
   const [adding, setAdding] = useState(false);
-  const [form, setForm]     = useState({ name: '', icon: '✅', frequency: 'daily' });
+  const [form, setForm]     = useState({ name: '', icon: 'âœ…', frequency: 'daily' });
   const today = todayStr();
 
   const toggle = async (habit) => {
@@ -409,7 +409,7 @@ function Habits({ habits, addHabit, updateHabit, removeHabit }) {
     });
   };
 
-  const ICONS = ['✅','🏃','💧','📚','🧘','💪','🎯','🌙','🥗','🚭','☕','🛌'];
+  const ICONS = ['âœ…','ðŸƒ','ðŸ’§','ðŸ“š','ðŸ§˜','ðŸ’ª','ðŸŽ¯','ðŸŒ™','ðŸ¥—','ðŸš­','â˜•','ðŸ›Œ'];
 
   return (
     <Section title="Habits" action={
@@ -447,7 +447,7 @@ function Habits({ habits, addHabit, updateHabit, removeHabit }) {
             <button onClick={async () => {
               if (!form.name.trim()) return;
               await addHabit({ name: form.name.trim(), icon: form.icon, frequency: form.frequency, streak: 0, lastCompleted: '' });
-              setForm({ name: '', icon: '✅', frequency: 'daily' });
+              setForm({ name: '', icon: 'âœ…', frequency: 'daily' });
               setAdding(false);
             }} style={{ ...btnPrimary, flex: 1 }}>Add</button>
           </div>
@@ -457,7 +457,7 @@ function Habits({ habits, addHabit, updateHabit, removeHabit }) {
       {/* Habit list */}
       {habits.length === 0 && !adding ? (
         <div style={{ textAlign: 'center', padding: 40, opacity: 0.4 }}>
-          <div style={{ fontSize: 28 }}>🎯</div>
+          <div style={{ fontSize: 28 }}>ðŸŽ¯</div>
           <p style={{ fontSize: 13, color: 'var(--text-muted)', marginTop: 8 }}>No habits yet. Add one to start tracking.</p>
         </div>
       ) : (
@@ -477,7 +477,7 @@ function Habits({ habits, addHabit, updateHabit, removeHabit }) {
                     {h.name}
                   </div>
                   <div style={{ fontSize: 11, color: 'var(--text-muted)', marginTop: 2 }}>
-                    🔥 {h.streak || 0} day streak
+                    ðŸ”¥ {h.streak || 0} day streak
                   </div>
                 </div>
                 <button onClick={() => toggle(h)} style={{
@@ -487,7 +487,7 @@ function Habits({ habits, addHabit, updateHabit, removeHabit }) {
                   color: 'var(--accent)', display: 'flex', alignItems: 'center', justifyContent: 'center',
                   fontSize: 14, transition: 'all 0.15s ease',
                 }}>
-                  {done ? '✓' : ''}
+                  {done ? 'âœ“' : ''}
                 </button>
                 <button onClick={() => removeHabit(h.id)} style={{
                   background: 'none', border: 'none', cursor: 'pointer',
@@ -502,9 +502,9 @@ function Habits({ habits, addHabit, updateHabit, removeHabit }) {
   );
 }
 
-// ═══════════════════════════════════════════════════════════════════════════════
+// â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
 // 3. NUTRITION
-// ═══════════════════════════════════════════════════════════════════════════════
+// â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
 async function searchOpenFoodFacts(query) {
   const url = `https://world.openfoodfacts.org/cgi/search.pl?action=process&search_terms=${encodeURIComponent(query)}&json=1&fields=product_name,nutriments&page_size=8&search_simple=1`;
   const res = await fetch(url);
@@ -678,12 +678,12 @@ function Nutrition({ nutritionLogs, addNutritionLog, updateNutritionLog, setting
           <div style={{ display: 'flex', gap: 6 }}>
             <input value={search} onChange={e => setSearch(e.target.value)}
               onKeyDown={e => e.key === 'Enter' && doSearch()}
-              placeholder="Search food or scan barcode…" style={{ ...inputSx, flex: 1 }}
+              placeholder="Search food or scan barcodeâ€¦" style={{ ...inputSx, flex: 1 }}
               onFocus={e => e.target.style.borderColor = 'var(--accent)'}
               onBlur={e => e.target.style.borderColor = 'var(--input-border)'}
             />
             <button onClick={doSearch} style={btnPrimary} disabled={searching}>
-              {searching ? '…' : 'Search'}
+              {searching ? 'â€¦' : 'Search'}
             </button>
           </div>
 
@@ -695,7 +695,7 @@ function Nutrition({ nutritionLogs, addNutritionLog, updateNutritionLog, setting
             }}>
               <div style={{ fontSize: 12.5, color: 'var(--text-primary)' }}>{r.name}</div>
               <div style={{ fontSize: 10.5, color: 'var(--text-muted)', marginTop: 2 }}>
-                {r.per100.calories} kcal · P {r.per100.protein}g · C {r.per100.carbs}g · F {r.per100.fat}g — per 100g
+                {r.per100.calories} kcal Â· P {r.per100.protein}g Â· C {r.per100.carbs}g Â· F {r.per100.fat}g â€” per 100g
               </div>
             </div>
           ))}
@@ -738,7 +738,7 @@ function Nutrition({ nutritionLogs, addNutritionLog, updateNutritionLog, setting
               <div>
                 <div style={{ fontSize: 12.5, color: 'var(--text-primary)' }}>{m.name}</div>
                 <div style={{ fontSize: 10.5, color: 'var(--text-muted)', marginTop: 2 }}>
-                  {m.time} · {m.qty}{m.unit}
+                  {m.time} Â· {m.qty}{m.unit}
                 </div>
               </div>
               <div style={{ fontSize: 12, color: 'var(--text-secondary)', textAlign: 'right' }}>
@@ -753,9 +753,9 @@ function Nutrition({ nutritionLogs, addNutritionLog, updateNutritionLog, setting
   );
 }
 
-// ═══════════════════════════════════════════════════════════════════════════════
+// â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
 // 4. WORKOUT
-// ═══════════════════════════════════════════════════════════════════════════════
+// â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
 const LOCAL_EXERCISES = [
   { id:'bp',   name:'Barbell Bench Press',     muscle:'chest',      secondary:'triceps, shoulders', equipment:'barbell' },
   { id:'sq',   name:'Barbell Back Squat',      muscle:'quads',      secondary:'glutes, hamstrings', equipment:'barbell' },
@@ -799,377 +799,10 @@ async function fetchExercisesFromDB(apiKey) {
   }));
 }
 
-// ── Default exercise library (Push/Pull/Legs, Home + Commercial) ───────────────
-const DEFAULT_OVERLOAD_EXERCISES = [
-  // Push
-  { id:'bp',  name:'Bench Press',         gym:'both',       day:'push', bodyweight:false, startingWeight:40, repsMin:6, repsMax:8,  increment:2.5 },
-  { id:'ohp', name:'Overhead Press',      gym:'both',       day:'push', bodyweight:false, startingWeight:30, repsMin:6, repsMax:8,  increment:2.5 },
-  { id:'dip', name:'Dips',                gym:'both',       day:'push', bodyweight:true,  startingWeight:0,  repsMin:6, repsMax:10, increment:0   },
-  { id:'ppe', name:'Push Press',          gym:'commercial', day:'push', bodyweight:false, startingWeight:35, repsMin:5, repsMax:8,  increment:2.5 },
-  { id:'dbp', name:'DB Shoulder Press',   gym:'both',       day:'push', bodyweight:false, startingWeight:16, repsMin:8, repsMax:12, increment:2   },
-  // Pull
-  { id:'dl',  name:'Deadlift',            gym:'both',       day:'pull', bodyweight:false, startingWeight:60, repsMin:4, repsMax:6,  increment:5   },
-  { id:'pu',  name:'Pull-ups',            gym:'both',       day:'pull', bodyweight:true,  startingWeight:0,  repsMin:5, repsMax:8,  increment:0   },
-  { id:'br',  name:'Barbell Row',         gym:'both',       day:'pull', bodyweight:false, startingWeight:40, repsMin:6, repsMax:8,  increment:2.5 },
-  { id:'lr',  name:'Lat Pulldown',        gym:'commercial', day:'pull', bodyweight:false, startingWeight:50, repsMin:8, repsMax:12, increment:5   },
-  { id:'fc',  name:'Face Pulls',          gym:'commercial', day:'pull', bodyweight:false, startingWeight:20, repsMin:12,repsMax:15, increment:2.5 },
-  // Legs
-  { id:'sq',  name:'Barbell Squat',       gym:'both',       day:'legs', bodyweight:false, startingWeight:60, repsMin:5, repsMax:8,  increment:2.5 },
-  { id:'rdl', name:'Romanian Deadlift',   gym:'both',       day:'legs', bodyweight:false, startingWeight:50, repsMin:8, repsMax:10, increment:2.5 },
-  { id:'lp',  name:'Leg Press',           gym:'commercial', day:'legs', bodyweight:false, startingWeight:80, repsMin:8, repsMax:12, increment:10  },
-  { id:'lg',  name:'Leg Curl',            gym:'commercial', day:'legs', bodyweight:false, startingWeight:40, repsMin:8, repsMax:12, increment:5   },
-  { id:'lu',  name:'Walking Lunges',      gym:'both',       day:'legs', bodyweight:true,  startingWeight:0,  repsMin:10,repsMax:14, increment:0   },
-  { id:'crf', name:'Calf Raises',         gym:'both',       day:'legs', bodyweight:false, startingWeight:20, repsMin:12,repsMax:15, increment:5   },
-];
-
-const DEFAULT_SPLITS = { push: 'Push', pull: 'Pull', legs: 'Legs' };
-
-function computeProgression(ex, workoutLogs) {
-  const logs = (workoutLogs || [])
-    .filter(l => l.exerciseName === ex.name && l.topSet)
-    .sort((a, b) => b.date.localeCompare(a.date));
-  const last = logs[0] ?? null;
-
-  const currentWeight = last?.topSet?.weight ?? ex.startingWeight;
-  const lastReps      = last?.topSet?.reps   ?? null;
-
-  let nextWeight = currentWeight;
-  let action = 'FIRST SET';
-  let hint   = `Start at ${ex.bodyweight ? 'bodyweight' : `${currentWeight}kg`}. Target ${ex.repsMin}–${ex.repsMax} reps.`;
-
-  if (lastReps !== null) {
-    if (lastReps >= ex.repsMax) {
-      nextWeight = parseFloat((currentWeight + ex.increment).toFixed(2));
-      action = 'ADD WEIGHT';
-      hint = `You hit ${lastReps} reps — time to add ${ex.increment}kg. Expect ${ex.repsMin}–${ex.repsMin + 1} next session.`;
-    } else if (lastReps >= ex.repsMin) {
-      action = 'HOLD';
-      hint = `You hit ${lastReps} reps — stay at ${currentWeight}kg and push for ${ex.repsMax}.`;
-    } else {
-      nextWeight = Math.max(0, parseFloat((currentWeight - ex.increment).toFixed(2)));
-      action = 'DROP WEIGHT';
-      hint = `Only ${lastReps} reps — drop to ${nextWeight}kg and rebuild.`;
-    }
-  }
-
-  return { last, currentWeight, nextWeight, action, hint };
-}
-
-// ── Stepper ─────────────────────────────────────────────────────────────────────
-function Stepper({ value, onChange, min = 0, step = 1, label }) {
-  return (
-    <div style={{ display: 'flex', flexDirection: 'column', gap: 4 }}>
-      {label && <span style={{ ...lblSx }}>{label}</span>}
-      <div style={{ display: 'flex', alignItems: 'center', gap: 0 }}>
-        <button onClick={() => onChange(Math.max(min, parseFloat((value - step).toFixed(2))))}
-          style={{ width: 40, height: 42, borderRadius: '8px 0 0 8px', border: '0.5px solid var(--card-border)', background: 'var(--card-fill)', color: 'var(--text-primary)', fontSize: 18, cursor: 'pointer' }}>−</button>
-        <div style={{ flex: 1, height: 42, display: 'flex', alignItems: 'center', justifyContent: 'center', border: '0.5px solid var(--card-border)', borderLeft: 'none', borderRight: 'none', background: 'var(--input-bg)', fontSize: 18, fontWeight: 700, color: 'var(--text-primary)', minWidth: 70 }}>
-          {value}
-        </div>
-        <button onClick={() => onChange(parseFloat((value + step).toFixed(2)))}
-          style={{ width: 40, height: 42, borderRadius: '0 8px 8px 0', border: '0.5px solid var(--card-border)', background: 'var(--card-fill)', color: 'var(--text-primary)', fontSize: 18, cursor: 'pointer' }}>+</button>
-      </div>
-    </div>
-  );
-}
-
-// ── Toggle group ─────────────────────────────────────────────────────────────────
-function ToggleGroup({ label, options, value, onChange }) {
-  return (
-    <div style={{ display: 'flex', gap: 8, alignItems: 'center' }}>
-      <span style={{ fontSize: 10, fontWeight: 700, letterSpacing: '0.1em', color: 'var(--text-muted)', minWidth: 36, textTransform: 'uppercase' }}>{label}</span>
-      <div style={{ display: 'flex', flex: 1, borderRadius: 8, overflow: 'hidden', border: '0.5px solid var(--card-border)' }}>
-        {options.map(o => (
-          <button key={o.value} onClick={() => onChange(o.value)} style={{
-            flex: 1, padding: '8px 0', border: 'none',
-            background: value === o.value ? 'rgba(255,255,255,0.92)' : 'var(--card-fill)',
-            color: value === o.value ? '#111' : 'var(--text-secondary)',
-            fontWeight: value === o.value ? 600 : 400,
-            fontSize: 12.5, cursor: 'pointer', transition: 'all 0.15s',
-          }}>{o.label}</button>
-        ))}
-      </div>
-    </div>
-  );
-}
-
-function AddExerciseModal({ onClose, onSave }) {
-  const [name, setName]           = useState('');
-  const [gym, setGym]             = useState('both');
-  const [day, setDay]             = useState('push');
-  const [bodyweight, setBodyweight] = useState(false);
-  const [startWeight, setStartWeight] = useState(20);
-  const [repsMin, setRepsMin]     = useState(6);
-  const [repsMax, setRepsMax]     = useState(10);
-  const [increment, setIncrement] = useState(2.5);
-
-  const save = () => {
-    if (!name.trim()) return;
-    onSave({ id: Date.now().toString(), name: name.trim(), gym, day, bodyweight, startingWeight: startWeight, repsMin, repsMax, increment });
-  };
-
-  return (
-    <div style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.7)', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 400 }}
-      onClick={onClose}>
-      <div onClick={e => e.stopPropagation()} style={{
-        background: 'var(--bg-panel)', border: '0.5px solid var(--card-border)',
-        borderRadius: 16, padding: '24px 22px', width: 340, maxHeight: '90vh', overflowY: 'auto',
-        display: 'flex', flexDirection: 'column', gap: 14,
-      }}>
-        <div style={{ fontSize: 14, fontWeight: 600, color: 'var(--text-primary)', letterSpacing: '0.04em', textTransform: 'uppercase' }}>Add exercise</div>
-
-        <div>
-          <span style={lblSx}>NAME</span>
-          <input value={name} onChange={e => setName(e.target.value)} placeholder="e.g. Incline DB Press"
-            style={{ ...inputSx }} onFocus={e => e.target.style.borderColor = 'var(--accent)'} onBlur={e => e.target.style.borderColor = 'var(--input-border)'} />
-        </div>
-
-        <ToggleGroup label="GYM" options={[{value:'home',label:'Home Gym'},{value:'commercial',label:'Commercial Gym'},{value:'both',label:'Both'}]} value={gym} onChange={setGym} />
-        <ToggleGroup label="DAY" options={[{value:'push',label:'Push'},{value:'pull',label:'Pull'},{value:'legs',label:'Legs'}]} value={day} onChange={setDay} />
-
-        <label style={{ display: 'flex', alignItems: 'center', gap: 8, cursor: 'pointer', fontSize: 12, color: 'var(--text-secondary)' }}>
-          <input type="checkbox" checked={bodyweight} onChange={e => setBodyweight(e.target.checked)} style={{ width: 14, height: 14, accentColor: 'var(--accent)' }} />
-          Bodyweight (track reps only, no weight)
-        </label>
-
-        {!bodyweight && <Stepper label="STARTING WEIGHT" value={startWeight} onChange={setStartWeight} step={2.5} />}
-        <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 10 }}>
-          <Stepper label="REPS MIN" value={repsMin} onChange={setRepsMin} min={1} step={1} />
-          <Stepper label="REPS MAX" value={repsMax} onChange={v => setRepsMax(Math.max(repsMin, v))} min={1} step={1} />
-        </div>
-        {!bodyweight && <Stepper label="INCREMENT (KG)" value={increment} onChange={setIncrement} step={0.5} />}
-
-        <div style={{ display: 'flex', gap: 8, marginTop: 4 }}>
-          <button onClick={onClose} style={{ ...btnGhost, flex: 1 }}>Cancel</button>
-          <button onClick={save} style={{ ...btnPrimary, flex: 1 }}>Save</button>
-        </div>
-      </div>
-    </div>
-  );
-}
-
-function Workout({ workoutLogs, addWorkoutLog }) {
-  const { data: storedExercises,  save: saveExercisesDoc  } = useDocument('overload_exercises', 'overload_exercises', null);
-  const { data: storedSplitNames, save: saveSplitNamesDoc } = useDocument('split_names', 'split_names', DEFAULT_SPLITS);
-
-  const [exercises, setExercises]   = useState(() => {
-    const d = storedExercises;
-    return (Array.isArray(d) && d.length) ? d : DEFAULT_OVERLOAD_EXERCISES;
-  });
-  const [splitNames, setSplitNames] = useState(() =>
-    storedSplitNames?.push ? storedSplitNames : { ...DEFAULT_SPLITS }
-  );
-  const [editingSplits, setEditingSplits] = useState(false);
-  const [draftNames, setDraftNames] = useState(() =>
-    storedSplitNames?.push ? storedSplitNames : { ...DEFAULT_SPLITS }
-  );
-
-  // Sync from Firestore when cross-device changes arrive
-  useEffect(() => {
-    if (Array.isArray(storedExercises) && storedExercises.length) setExercises(storedExercises);
-  }, [storedExercises]);
-  useEffect(() => {
-    if (storedSplitNames?.push) { setSplitNames(storedSplitNames); setDraftNames(storedSplitNames); }
-  }, [storedSplitNames]);
-  const [gym, setGym]               = useState('home');
-  const [day, setDay]               = useState('push');
-  const [selectedId, setSelectedId] = useState(null);
-  const [weight, setWeight]         = useState(20);
-  const [selectedReps, setSelectedReps] = useState(null);
-  const [saving, setSaving]         = useState(false);
-  const [saved, setSaved]           = useState(false);
-  const [showAdd, setShowAdd]       = useState(false);
-
-  const saveSplits = () => {
-    const trimmed = { push: draftNames.push.trim() || 'Push', pull: draftNames.pull.trim() || 'Pull', legs: draftNames.legs.trim() || 'Legs' };
-    setSplitNames(trimmed);
-    saveSplitNamesDoc(trimmed);
-    setEditingSplits(false);
-  };
-
-  const filtered = useMemo(() =>
-    exercises.filter(e => (e.gym === gym || e.gym === 'both') && e.day === day),
-    [exercises, gym, day]);
-
-  const selected = useMemo(() => filtered.find(e => e.id === selectedId) ?? filtered[0] ?? null, [filtered, selectedId]);
-
-  useEffect(() => {
-    if (filtered.length && (!selectedId || !filtered.find(e => e.id === selectedId))) {
-      setSelectedId(filtered[0]?.id ?? null);
-    }
-  }, [filtered]);
-
-  const prog = useMemo(() => selected ? computeProgression(selected, workoutLogs) : null, [selected, workoutLogs]);
-
-  useEffect(() => {
-    if (prog) {
-      setWeight(prog.currentWeight);
-      setSelectedReps(null);
-    }
-  }, [selected?.id]);
-
-  const repRange = useMemo(() => {
-    if (!selected) return [];
-    const min = Math.max(1, selected.repsMin - 2);
-    const max = selected.repsMax + 2;
-    return Array.from({ length: max - min + 1 }, (_, i) => min + i);
-  }, [selected]);
-
-  const handleLog = async () => {
-    if (!selected || selectedReps === null || saving) return;
-    setSaving(true);
-    await addWorkoutLog({
-      date: todayStr(),
-      exerciseName: selected.name,
-      muscle: selected.day,
-      topSet: { weight: selected.bodyweight ? 0 : weight, reps: selectedReps },
-    });
-    setSaving(false);
-    setSaved(true);
-    setTimeout(() => setSaved(false), 2000);
-  };
-
-  const addExercise = ex => {
-    const updated = [...exercises, ex];
-    setExercises(updated);
-    saveExercisesDoc(updated);
-    setSelectedId(ex.id);
-    setShowAdd(false);
-  };
-
-  const actionColour = { 'ADD WEIGHT': '#4caf7d', 'HOLD': 'rgba(255,255,255,0.5)', 'DROP WEIGHT': '#e25d7a', 'FIRST SET': 'var(--accent)' };
-
-  return (
-    <Section title="Progressive Overload">
-      <div style={{ display: 'flex', flexDirection: 'column', gap: 16, maxWidth: 560 }}>
-
-        {/* Gym / Day toggles */}
-        <GlassCard>
-          <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
-            <ToggleGroup label="GYM" options={[{value:'home',label:'Home Gym'},{value:'commercial',label:'Commercial Gym'}]} value={gym} onChange={setGym} />
-
-            {/* DAY row with editable split names */}
-            {editingSplits ? (
-              <div style={{ display: 'flex', gap: 8, alignItems: 'center' }}>
-                <span style={{ fontSize: 10, fontWeight: 700, letterSpacing: '0.1em', color: 'var(--text-muted)', minWidth: 36, textTransform: 'uppercase' }}>DAY</span>
-                {['push','pull','legs'].map(k => (
-                  <input key={k} value={draftNames[k]} onChange={e => setDraftNames(p => ({ ...p, [k]: e.target.value }))}
-                    style={{ ...inputSx, flex: 1, padding: '6px 8px', fontSize: 12, textAlign: 'center' }}
-                    onFocus={e => e.target.style.borderColor = 'var(--accent)'}
-                    onBlur={e => e.target.style.borderColor = 'var(--input-border)'}
-                  />
-                ))}
-                <button onClick={saveSplits} style={{ ...btnPrimary, padding: '6px 12px', fontSize: 11, whiteSpace: 'nowrap' }}>Save</button>
-                <button onClick={() => { setDraftNames(splitNames); setEditingSplits(false); }} style={{ ...btnGhost, padding: '6px 10px', fontSize: 11 }}>✕</button>
-              </div>
-            ) : (
-              <div style={{ display: 'flex', gap: 8, alignItems: 'center' }}>
-                <ToggleGroup label="DAY"
-                  options={[{value:'push',label:splitNames.push},{value:'pull',label:splitNames.pull},{value:'legs',label:splitNames.legs}]}
-                  value={day} onChange={setDay} />
-                <button onClick={() => { setDraftNames(splitNames); setEditingSplits(true); }}
-                  style={{ flexShrink: 0, background: 'none', border: '0.5px solid var(--card-border)', borderRadius: 6, padding: '6px 8px', cursor: 'pointer', color: 'var(--text-muted)', fontSize: 11, lineHeight: 1 }}
-                  title="Rename splits">✏</button>
-              </div>
-            )}
-          </div>
-        </GlassCard>
-
-        {/* Exercise selector */}
-        <div>
-          <GlassLabel>Exercise</GlassLabel>
-          <div style={{ display: 'flex', gap: 8 }}>
-            <select value={selected?.id ?? ''} onChange={e => setSelectedId(e.target.value)}
-              style={{ ...inputSx, flex: 1, fontSize: 14, fontWeight: 500 }}>
-              {filtered.map(e => <option key={e.id} value={e.id}>{e.name}{prog && e.id === selected?.id ? ` · ${prog.currentWeight}kg` : ''}</option>)}
-              {filtered.length === 0 && <option disabled>No exercises for this selection</option>}
-            </select>
-            <button onClick={() => setShowAdd(true)} style={{ ...btnGhost, padding: '0 14px', fontSize: 18, borderRadius: 8 }} title="Add exercise">+</button>
-          </div>
-        </div>
-
-        {/* Log top set */}
-        {selected && prog && (
-          <>
-            <div>
-              <GlassLabel>Log Today's Top Set</GlassLabel>
-              {prog.last && (
-                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 14, padding: '8px 12px', borderRadius: 8, background: 'rgba(255,255,255,0.03)', border: '0.5px solid var(--card-border)' }}>
-                  <span style={{ fontSize: 11, color: 'var(--text-muted)', letterSpacing: '0.06em' }}>LAST TIME</span>
-                  <span style={{ fontSize: 13, fontWeight: 600, color: 'var(--text-primary)' }}>
-                    {selected.bodyweight ? `BW` : `${prog.last.topSet?.weight}kg`} × {prog.last.topSet?.reps}
-                  </span>
-                  <span style={{ fontSize: 10.5, color: 'var(--text-muted)' }}>{prog.last.date === todayStr() ? 'today' : prog.last.date?.slice(5)}</span>
-                </div>
-              )}
-
-              {!selected.bodyweight && (
-                <div style={{ marginBottom: 16 }}>
-                  <Stepper label="WEIGHT (KG)" value={weight} onChange={setWeight} step={selected.increment || 2.5} />
-                </div>
-              )}
-
-              <div>
-                <span style={lblSx}>REPS</span>
-                <div style={{ display: 'flex', gap: 6, flexWrap: 'wrap' }}>
-                  {repRange.map(r => (
-                    <button key={r} onClick={() => setSelectedReps(r)} style={{
-                      width: 38, height: 38, borderRadius: 8, border: `0.5px solid ${selectedReps === r ? 'rgba(255,255,255,0.8)' : 'var(--card-border)'}`,
-                      background: selectedReps === r ? 'rgba(255,255,255,0.9)' : 'var(--card-fill)',
-                      color: selectedReps === r ? '#111' : 'var(--text-secondary)',
-                      fontSize: 13, fontWeight: selectedReps === r ? 700 : 400, cursor: 'pointer', transition: 'all 0.12s',
-                    }}>{r}</button>
-                  ))}
-                </div>
-              </div>
-            </div>
-
-            <button onClick={handleLog} disabled={selectedReps === null || saving} style={{
-              width: '100%', padding: '14px 0', borderRadius: 10,
-              border: '0.5px solid rgba(255,255,255,0.25)',
-              background: saved ? 'rgba(76,175,125,0.15)' : 'rgba(255,255,255,0.08)',
-              color: saved ? '#4caf7d' : 'var(--text-primary)',
-              fontSize: 14, fontWeight: 600, cursor: selectedReps === null ? 'not-allowed' : 'pointer',
-              opacity: selectedReps === null ? 0.4 : 1, transition: 'all 0.15s',
-              letterSpacing: '0.03em',
-            }}>
-              {saved ? '✓ Logged' : saving ? 'Saving…' : 'Log set'}
-            </button>
-
-            {/* Next session */}
-            <GlassCard style={{ background: 'rgba(30,50,30,0.55)', border: '0.5px solid rgba(76,175,125,0.2)' }}>
-              <GlassLabel>Next Session</GlassLabel>
-              <div style={{ fontSize: 10, letterSpacing: '0.1em', color: 'rgba(255,255,255,0.35)', marginBottom: 6, textTransform: 'uppercase' }}>{selected.name}</div>
-              <div style={{ fontSize: 26, fontWeight: 700, color: 'var(--text-primary)', marginBottom: 8 }}>
-                {selected.bodyweight ? 'Bodyweight' : `${prog.nextWeight}kg`} × {selected.repsMin} reps
-              </div>
-              <span style={{
-                display: 'inline-block', padding: '2px 9px', borderRadius: 12, fontSize: 10, fontWeight: 700,
-                background: `${actionColour[prog.action]}22`, color: actionColour[prog.action],
-                border: `0.5px solid ${actionColour[prog.action]}55`, letterSpacing: '0.08em', marginBottom: 10,
-              }}>{prog.action}</span>
-              <div style={{ fontSize: 12, color: 'rgba(255,255,255,0.45)', lineHeight: 1.5 }}>{prog.hint}</div>
-            </GlassCard>
-          </>
-        )}
-
-        {filtered.length === 0 && (
-          <div style={{ textAlign: 'center', padding: '40px 0', color: 'var(--text-muted)', fontSize: 13 }}>
-            No exercises for {gym === 'home' ? 'Home Gym' : 'Commercial Gym'} / {splitNames[day]}.<br />
-            <button onClick={() => setShowAdd(true)} style={{ ...btnPrimary, marginTop: 12 }}>Add one</button>
-          </div>
-        )}
-      </div>
-
-      {showAdd && <AddExerciseModal onClose={() => setShowAdd(false)} onSave={addExercise} />}
-    </Section>
-  );
-}
-
-// ═══════════════════════════════════════════════════════════════════════════════
+// â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
 // 5. WATER
-// ═══════════════════════════════════════════════════════════════════════════════
-// Water goal formula: weight(kg)×35 + activity bonus + caffeine bonus
+// â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
+// Water goal formula: weight(kg)Ã—35 + activity bonus + caffeine bonus
 function calcWaterGoal(profile) {
   const { weight=75, activityHours=0, caffeineMg=0, sex='male' } = profile;
   let base = weight * 35; // ml
@@ -1209,14 +842,14 @@ function Water({ waterLogs, addWaterLog, settings }) {
   return (
     <Section title="Water" action={
       <button onClick={()=>setShowSettings(v=>!v)} style={{...btnGhost,fontSize:11}}>
-        {showSettings?'✕ Close':'⚙ Settings'}
+        {showSettings?'âœ• Close':'âš™ Settings'}
       </button>
     }>
 
-      {/* ── Profile / Settings panel ── */}
+      {/* â”€â”€ Profile / Settings panel â”€â”€ */}
       {showSettings&&(
         <GlassCard style={{marginBottom:14}}>
-          <GlassLabel>Personal profile — daily goal calculator</GlassLabel>
+          <GlassLabel>Personal profile â€” daily goal calculator</GlassLabel>
           <div style={{display:'grid',gridTemplateColumns:'1fr 1fr',gap:10,marginBottom:10}}>
             {/* Weight */}
             <div>
@@ -1264,7 +897,7 @@ function Water({ waterLogs, addWaterLog, settings }) {
             <label style={lblSx}>Average daily caffeine (mg)</label>
             <input type="number" value={profile.caffeineMg} onChange={e=>saveProfile({...profile,caffeineMg:+e.target.value})} style={inputSx}/>
             <div style={{fontSize:10,color:'var(--text-muted)',marginTop:4}}>
-              ☕ 1 coffee ≈ 95mg · espresso ≈ 75mg · energy drink ≈ 160mg. Above 200mg adds to daily water target.
+              â˜• 1 coffee â‰ˆ 95mg Â· espresso â‰ˆ 75mg Â· energy drink â‰ˆ 160mg. Above 200mg adds to daily water target.
             </div>
           </div>
           {/* Calculated goal */}
@@ -1275,7 +908,7 @@ function Water({ waterLogs, addWaterLog, settings }) {
         </GlassCard>
       )}
 
-      {/* ── Main: ring + log ── */}
+      {/* â”€â”€ Main: ring + log â”€â”€ */}
       <div style={{display:'flex',gap:16,marginBottom:14,alignItems:'flex-start'}}>
         {/* Ring */}
         <div style={{display:'flex',flexDirection:'column',alignItems:'center',gap:10,flexShrink:0}}>
@@ -1301,7 +934,7 @@ function Water({ waterLogs, addWaterLog, settings }) {
           </div>
           <div style={{display:'flex',gap:6,marginBottom:14}}>
             <input type="number" value={custom} onChange={e=>setCustom(e.target.value)}
-              placeholder="Custom ml…" style={{...inputSx,flex:1}}
+              placeholder="Custom mlâ€¦" style={{...inputSx,flex:1}}
               onKeyDown={e=>e.key==='Enter'&&custom&&(log(parseInt(custom)),setCustom(''))}
               onFocus={e=>e.target.style.borderColor='var(--accent)'} onBlur={e=>e.target.style.borderColor='var(--input-border)'}
             />
@@ -1328,13 +961,13 @@ function Water({ waterLogs, addWaterLog, settings }) {
   );
 }
 
-// ═══════════════════════════════════════════════════════════════════════════════
+// â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
 // 6. BODY
-// ═══════════════════════════════════════════════════════════════════════════════
+// â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
 const BODY_TABS = [
-  { id:'weight',       label:'Weight',       emoji:'⚖' },
-  { id:'measurements', label:'Measurements', emoji:'📏' },
-  { id:'photos',       label:'Photos',       emoji:'📸' },
+  { id:'weight',       label:'Weight',       emoji:'âš–' },
+  { id:'measurements', label:'Measurements', emoji:'ðŸ“' },
+  { id:'photos',       label:'Photos',       emoji:'ðŸ“¸' },
 ];
 
 function Body({ bodyMetrics, addBodyMetric }) {
@@ -1379,8 +1012,8 @@ function Body({ bodyMetrics, addBodyMetric }) {
 
   return (
     <Section title="Body" action={
-      bodyTab==='weight'?<button onClick={()=>setAdding(v=>!v)} style={btnPrimary}>{adding?'✕ Close':'+ Log'}</button>:
-      bodyTab==='photos'?<button onClick={()=>fileRef.current?.click()} style={btnPrimary}>📸 Add photo</button>:null
+      bodyTab==='weight'?<button onClick={()=>setAdding(v=>!v)} style={btnPrimary}>{adding?'âœ• Close':'+ Log'}</button>:
+      bodyTab==='photos'?<button onClick={()=>fileRef.current?.click()} style={btnPrimary}>ðŸ“¸ Add photo</button>:null
     }>
       <input ref={fileRef} type="file" accept="image/*" style={{display:'none'}} onChange={addPhoto}/>
 
@@ -1396,7 +1029,7 @@ function Body({ bodyMetrics, addBodyMetric }) {
         ))}
       </div>
 
-      {/* ── Weight tab ── */}
+      {/* â”€â”€ Weight tab â”€â”€ */}
       {bodyTab==='weight'&&(
         <>
           {/* Log form */}
@@ -1443,18 +1076,18 @@ function Body({ bodyMetrics, addBodyMetric }) {
           {/* Trend chart */}
           {weightData.length>1?(
             <GlassCard>
-              <GlassLabel>Weight trend — last {weightData.length} entries</GlassLabel>
+              <GlassLabel>Weight trend â€” last {weightData.length} entries</GlassLabel>
               <BarChart data={weightData} maxHeight={80}/>
             </GlassCard>
           ):(
             <div style={{textAlign:'center',padding:32,opacity:0.35}}>
-              <div style={{fontSize:28}}>⚖</div>
+              <div style={{fontSize:28}}>âš–</div>
               <p style={{fontSize:12,color:'var(--text-muted)',marginTop:8}}>Log a few entries to see your trend.</p>
             </div>
           )}
 
           <div style={{padding:'10px 14px',borderRadius:8,background:'rgba(255,255,255,0.02)',border:'0.5px solid var(--card-border)',fontSize:11.5,color:'var(--text-muted)',marginTop:10}}>
-            🔵 Eufy body metrics sync automatically from Apple Health on iOS. Log manually on desktop until iPhone is set up.
+            ðŸ”µ Eufy body metrics sync automatically from Apple Health on iOS. Log manually on desktop until iPhone is set up.
       </div>
 
       {/* Add metrics form */}
@@ -1465,7 +1098,7 @@ function Body({ bodyMetrics, addBodyMetric }) {
             <div key={k}>
               <label style={lblSx}>{l}</label>
               <input type="number" value={form[k]} onChange={e => setForm(p => ({ ...p, [k]: e.target.value }))}
-                placeholder="—" style={inputSx}
+                placeholder="â€”" style={inputSx}
                 onFocus={e => e.target.style.borderColor='var(--accent)'} onBlur={e => e.target.style.borderColor='var(--input-border)'}
               />
             </div>
@@ -1488,7 +1121,7 @@ function Body({ bodyMetrics, addBodyMetric }) {
               {sorted.slice(0,8).map((m,i)=>(
                 <div key={m.id||i} style={{display:'flex',justifyContent:'space-between',padding:'5px 0',borderBottom:i<Math.min(sorted.length,8)-1?'0.5px solid rgba(255,255,255,0.05)':'none'}}>
                   <span style={{fontSize:11,color:'var(--text-muted)',fontFamily:'ui-monospace,monospace'}}>{m.date}</span>
-                  <span style={{fontSize:11.5,color:'var(--text-secondary)'}}>{m.weight&&`${m.weight}kg`}{m.bodyFat&&` · ${m.bodyFat}% fat`}{m.muscle&&` · ${m.muscle}% muscle`}</span>
+                  <span style={{fontSize:11.5,color:'var(--text-secondary)'}}>{m.weight&&`${m.weight}kg`}{m.bodyFat&&` Â· ${m.bodyFat}% fat`}{m.muscle&&` Â· ${m.muscle}% muscle`}</span>
                 </div>
               ))}
             </GlassCard>
@@ -1496,7 +1129,7 @@ function Body({ bodyMetrics, addBodyMetric }) {
         </>
       )}
 
-      {/* ── Measurements tab ── */}
+      {/* â”€â”€ Measurements tab â”€â”€ */}
       {bodyTab==='measurements'&&(
         <div style={{display:'flex',flexDirection:'column',gap:10}}>
           <GlassLabel>Current measurements</GlassLabel>
@@ -1505,7 +1138,7 @@ function Body({ bodyMetrics, addBodyMetric }) {
               <div key={f.key} style={{...cardSx}}>
                 <label style={lblSx}>{f.label} ({f.unit})</label>
                 <input type="number" value={measures[f.key]??''} onChange={e=>saveMeasures({...measures,[f.key]:e.target.value})}
-                  placeholder="—" style={{...inputSx,fontSize:16,fontWeight:300,padding:'6px 8px'}}/>
+                  placeholder="â€”" style={{...inputSx,fontSize:16,fontWeight:300,padding:'6px 8px'}}/>
               </div>
             ))}
           </div>
@@ -1513,12 +1146,12 @@ function Body({ bodyMetrics, addBodyMetric }) {
         </div>
       )}
 
-      {/* ── Photos tab ── */}
+      {/* â”€â”€ Photos tab â”€â”€ */}
       {bodyTab==='photos'&&(
         <>
           {photos.length===0?(
             <div style={{textAlign:'center',padding:40,opacity:0.4}}>
-              <div style={{fontSize:36}}>📸</div>
+              <div style={{fontSize:36}}>ðŸ“¸</div>
               <p style={{fontSize:13,color:'var(--text-muted)',marginTop:8}}>No progress photos yet.</p>
               <button onClick={()=>fileRef.current?.click()} style={{...btnPrimary,marginTop:10}}>Add first photo</button>
             </div>
@@ -1533,8 +1166,8 @@ function Body({ bodyMetrics, addBodyMetric }) {
                       <div key={idx} style={{flex:1}}>
                         <select value={compare[idx]??''} onChange={e=>{const c=[...compare];c[idx]=e.target.value;setCompare(c);}}
                           style={{...inputSx,marginBottom:6,fontSize:11}}>
-                          <option value="">— pick photo —</option>
-                          {photos.map(p=><option key={p.id} value={p.id}>{p.date} {p.note&&`· ${p.note}`}</option>)}
+                          <option value="">â€” pick photo â€”</option>
+                          {photos.map(p=><option key={p.id} value={p.id}>{p.date} {p.note&&`Â· ${p.note}`}</option>)}
                         </select>
                         {compare[idx]&&(()=>{
                           const p=photos.find(ph=>String(ph.id)===String(compare[idx]));
@@ -1554,7 +1187,7 @@ function Body({ bodyMetrics, addBodyMetric }) {
                     <img src={p.src} alt={p.date} style={{width:'100%',aspectRatio:'3/4',objectFit:'cover',display:'block'}}/>
                     <div style={{padding:'6px 8px',background:'rgba(0,0,0,0.7)',position:'absolute',bottom:0,left:0,right:0,display:'flex',justifyContent:'space-between',alignItems:'center'}}>
                       <span style={{fontSize:10,color:'rgba(255,255,255,0.7)',fontFamily:'ui-monospace,monospace'}}>{p.date}</span>
-                      <button onClick={()=>savePhotos(photos.filter(ph=>ph.id!==p.id))} style={{background:'none',border:'none',cursor:'pointer',color:'rgba(255,100,100,0.7)',fontSize:12,padding:0}}>✕</button>
+                      <button onClick={()=>savePhotos(photos.filter(ph=>ph.id!==p.id))} style={{background:'none',border:'none',cursor:'pointer',color:'rgba(255,100,100,0.7)',fontSize:12,padding:0}}>âœ•</button>
                     </div>
                   </div>
                 ))}
@@ -1567,32 +1200,32 @@ function Body({ bodyMetrics, addBodyMetric }) {
   );
 }
 
-// ═══════════════════════════════════════════════════════════════════════════════
-// 7. SUPPLEMENTS — tap-to-take stack
-// ═══════════════════════════════════════════════════════════════════════════════
+// â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
+// 7. SUPPLEMENTS â€” tap-to-take stack
+// â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
 const SUPP_COLOURS = ['#4a9eff','#4caf7d','#f4a642','#9b5de5','#e55a5a','#00c9a7','#f7b731'];
 const TIME_SLOTS   = [
-  { id: 'morning', label: 'Morning', emoji: '🌅', range: '7–10 AM' },
-  { id: 'midday',  label: 'Midday',  emoji: '☀️', range: '11 AM–2 PM' },
-  { id: 'evening', label: 'Evening', emoji: '🌙', range: '7–10 PM' },
-  { id: 'anytime', label: 'Anytime', emoji: '⏱',  range: '' },
+  { id: 'morning', label: 'Morning', emoji: 'ðŸŒ…', range: '7â€“10 AM' },
+  { id: 'midday',  label: 'Midday',  emoji: 'â˜€ï¸', range: '11 AMâ€“2 PM' },
+  { id: 'evening', label: 'Evening', emoji: 'ðŸŒ™', range: '7â€“10 PM' },
+  { id: 'anytime', label: 'Anytime', emoji: 'â±',  range: '' },
 ];
 const SUPP_SUGGESTIONS = [
-  { name:'Creatine',         dose:'5g',   info:'Post-workout · increases strength' },
-  { name:'Magnesium',        dose:'400mg',info:'Evening · sleep quality + recovery' },
-  { name:'Vitamin D3',       dose:'5000IU',info:'Morning · with fat for absorption' },
-  { name:'Omega-3',          dose:'2g',   info:'Morning · with food' },
-  { name:'Zinc',             dose:'15mg', info:'Evening · immune + testosterone' },
-  { name:'Ashwagandha',      dose:'600mg',info:'Evening · cortisol + stress' },
-  { name:'L-Citrulline',     dose:'6–8g', info:'Morning · ~30 min pre-workout' },
-  { name:'L-Carnitine',      dose:'1–2g', info:'Morning · with carbs' },
+  { name:'Creatine',         dose:'5g',   info:'Post-workout Â· increases strength' },
+  { name:'Magnesium',        dose:'400mg',info:'Evening Â· sleep quality + recovery' },
+  { name:'Vitamin D3',       dose:'5000IU',info:'Morning Â· with fat for absorption' },
+  { name:'Omega-3',          dose:'2g',   info:'Morning Â· with food' },
+  { name:'Zinc',             dose:'15mg', info:'Evening Â· immune + testosterone' },
+  { name:'Ashwagandha',      dose:'600mg',info:'Evening Â· cortisol + stress' },
+  { name:'L-Citrulline',     dose:'6â€“8g', info:'Morning Â· ~30 min pre-workout' },
+  { name:'L-Carnitine',      dose:'1â€“2g', info:'Morning Â· with carbs' },
   { name:'Glutamine',        dose:'5g',   info:'Post-workout or bedtime' },
-  { name:'Vitamin C',        dose:'1000mg',info:'Morning · antioxidant' },
-  { name:'B-Complex',        dose:'1 cap',info:'Morning · energy metabolism' },
-  { name:'Probiotics',       dose:'1 cap',info:'Morning · empty stomach' },
-  { name:'Collagen',         dose:'10g',  info:'Morning · with vitamin C' },
-  { name:'Berberine',        dose:'500mg',info:'With meals · blood sugar' },
-  { name:'NMN',              dose:'500mg',info:'Morning · NAD+ precursor' },
+  { name:'Vitamin C',        dose:'1000mg',info:'Morning Â· antioxidant' },
+  { name:'B-Complex',        dose:'1 cap',info:'Morning Â· energy metabolism' },
+  { name:'Probiotics',       dose:'1 cap',info:'Morning Â· empty stomach' },
+  { name:'Collagen',         dose:'10g',  info:'Morning Â· with vitamin C' },
+  { name:'Berberine',        dose:'500mg',info:'With meals Â· blood sugar' },
+  { name:'NMN',              dose:'500mg',info:'Morning Â· NAD+ precursor' },
   { name:'Protein Powder',   dose:'30g',  info:'Post-workout or morning' },
   { name:'Pre-workout',      dose:'1 scoop',info:'30 min before training' },
 ];
@@ -1636,12 +1269,12 @@ function Supplements({ supplements, suppLogs, addSupplement, removeSupplement, a
       <div style={{display:'flex',gap:6,alignItems:'center'}}>
         {totalSupps>0&&<span style={{fontSize:11,color:'var(--text-muted)'}}>{totalTaken}/{totalSupps} taken</span>}
         <button onClick={()=>{setShowForm(v=>!v);setSearch('');}} style={btnPrimary}>
-          {showForm?'✕ Close':'+ Add'}
+          {showForm?'âœ• Close':'+ Add'}
         </button>
       </div>
     }>
 
-      {/* ── Add form ── */}
+      {/* â”€â”€ Add form â”€â”€ */}
       {showForm&&(
         <GlassCard style={{marginBottom:14}}>
           <GlassLabel>Add to stack</GlassLabel>
@@ -1650,7 +1283,7 @@ function Supplements({ supplements, suppLogs, addSupplement, removeSupplement, a
             <input
               value={search||form.name}
               onChange={e=>{setSearch(e.target.value);setForm(p=>({...p,name:e.target.value}));setShowSuggestions(true);}}
-              placeholder="Search or type supplement name…"
+              placeholder="Search or type supplement nameâ€¦"
               style={{...inputSx}}
               onFocus={()=>setShowSuggestions(true)}
             />
@@ -1663,7 +1296,7 @@ function Supplements({ supplements, suppLogs, addSupplement, removeSupplement, a
                     onMouseLeave={e=>e.currentTarget.style.background='transparent'}
                   >
                     <span style={{fontSize:13,color:'var(--text-primary)'}}>{s.name}</span>
-                    <span style={{fontSize:10.5,color:'var(--text-muted)'}}>{s.dose} · {s.info}</span>
+                    <span style={{fontSize:10.5,color:'var(--text-muted)'}}>{s.dose} Â· {s.info}</span>
                   </div>
                 ))}
               </div>
@@ -1700,10 +1333,10 @@ function Supplements({ supplements, suppLogs, addSupplement, removeSupplement, a
         </GlassCard>
       )}
 
-      {/* ── Stack grouped by time ── */}
+      {/* â”€â”€ Stack grouped by time â”€â”€ */}
       {supplements.length===0&&!showForm?(
         <div style={{textAlign:'center',padding:40,opacity:0.4}}>
-          <div style={{fontSize:32}}>💊</div>
+          <div style={{fontSize:32}}>ðŸ’Š</div>
           <p style={{fontSize:13,color:'var(--text-muted)',marginTop:8}}>No supplements in your stack yet.</p>
         </div>
       ):(
@@ -1726,7 +1359,7 @@ function Supplements({ supplements, suppLogs, addSupplement, removeSupplement, a
                     Mark all taken
                   </button>
                 )}
-                {allTaken&&<span style={{fontSize:10.5,color:'#4caf7d'}}>✓ All taken</span>}
+                {allTaken&&<span style={{fontSize:10.5,color:'#4caf7d'}}>âœ“ All taken</span>}
               </div>
 
               {/* Supplement rows */}
@@ -1749,7 +1382,7 @@ function Supplements({ supplements, suppLogs, addSupplement, removeSupplement, a
                         display:'flex',alignItems:'center',justifyContent:'center',
                         transition:'all 0.2s',
                       }}>
-                        {taken&&<span style={{fontSize:13,color:'#fff',lineHeight:1}}>✓</span>}
+                        {taken&&<span style={{fontSize:13,color:'#fff',lineHeight:1}}>âœ“</span>}
                       </div>
 
                       {/* Colour dot */}
@@ -1758,13 +1391,13 @@ function Supplements({ supplements, suppLogs, addSupplement, removeSupplement, a
                       {/* Info */}
                       <div style={{flex:1,minWidth:0}}>
                         <div style={{fontSize:13,color:taken?'var(--text-muted)':'var(--text-primary)',textDecoration:taken?'line-through':'none',transition:'all 0.2s'}}>{s.name}</div>
-                        {s.dose&&<div style={{fontSize:10.5,color:'var(--text-muted)',marginTop:1}}>{s.dose}{s.notes?` · ${s.notes}`:''}</div>}
+                        {s.dose&&<div style={{fontSize:10.5,color:'var(--text-muted)',marginTop:1}}>{s.dose}{s.notes?` Â· ${s.notes}`:''}</div>}
                       </div>
 
-                      {/* Running low badge — if quantity tracked */}
+                      {/* Running low badge â€” if quantity tracked */}
                       {s.runningLow&&(
                         <span style={{fontSize:9.5,fontWeight:700,padding:'2px 7px',borderRadius:4,background:'rgba(244,166,66,0.15)',color:'#f4a642',letterSpacing:'0.04em',flexShrink:0}}>
-                          ⚠ Running low
+                          âš  Running low
                         </span>
                       )}
 
@@ -1797,9 +1430,9 @@ function Supplements({ supplements, suppLogs, addSupplement, removeSupplement, a
   );
 }
 
-// ═══════════════════════════════════════════════════════════════════════════════
+// â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
 // 8. SLEEP
-// ═══════════════════════════════════════════════════════════════════════════════
+// â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
 function Sleep({ sleepData }) {
   const sorted = useMemo(() =>
     [...(sleepData || [])].sort((a, b) => (b.date ?? '').localeCompare(a.date ?? '')),
@@ -1829,7 +1462,7 @@ function Sleep({ sleepData }) {
           background: 'rgba(74,158,255,0.08)', border: '0.5px solid rgba(74,158,255,0.25)',
           fontSize: 11.5, color: '#4a9eff',
         }}>
-          📱 Live sleep data syncs from Apple Health on iPhone. Showing demo data below.
+          ðŸ“± Live sleep data syncs from Apple Health on iPhone. Showing demo data below.
         </div>
       )}
 
@@ -1839,7 +1472,7 @@ function Sleep({ sleepData }) {
             value={displayLatest.efficiency ?? 0} max={100}
             size={120} thickness={10}
             colour={effColour(displayLatest.efficiency ?? 0)}
-            label={`${displayLatest.efficiency ?? '—'}%`}
+            label={`${displayLatest.efficiency ?? 'â€”'}%`}
             sublabel="efficiency"
             labelSize={20}
           />
@@ -1849,7 +1482,7 @@ function Sleep({ sleepData }) {
               <span style={{ fontSize: 16 }}>{(displayLatest.duration ?? 0) % 60}m</span>
             </div>
             <div style={{ fontSize: 11.5, color: 'var(--text-muted)' }}>
-              {displayLatest.bedTime} → {displayLatest.wakeTime}
+              {displayLatest.bedTime} â†’ {displayLatest.wakeTime}
             </div>
           </div>
         </div>
@@ -1896,9 +1529,9 @@ function Sleep({ sleepData }) {
   );
 }
 
-// ═══════════════════════════════════════════════════════════════════════════════
+// â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
 // 9. STIMULANT TRACKER
-// ═══════════════════════════════════════════════════════════════════════════════
+// â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
 const DEFAULT_STIM_PRESETS = [
   { id:'coffee',         name:'Coffee',        type:'caffeine', amount:95,  unit:'mg' },
   { id:'espresso',       name:'Espresso',       type:'caffeine', amount:63,  unit:'mg' },
@@ -1914,7 +1547,7 @@ function Stimulant({ stimLogs, addStimLog, removeStimLog, settings }) {
   const caffLimit = settings?.caffeineLimitMg ?? 400;
   const nicLimit  = settings?.nicotineLimitMg ?? 20;
 
-  // Hidden preset IDs — persisted per user
+  // Hidden preset IDs â€” persisted per user
   const [hiddenPresets, setHiddenPresets] = useState(
     () => JSON.parse(localStorage.getItem('valerie_hidden_stim_presets') || '[]')
   );
@@ -1994,7 +1627,7 @@ function Stimulant({ stimLogs, addStimLog, removeStimLog, settings }) {
                   background:'#e55a5a', color:'#fff', fontSize:11, lineHeight:1,
                   display:'flex', alignItems:'center', justifyContent:'center',
                 }}
-              >×</button>
+              >Ã—</button>
             )}
           </div>
         ))}
@@ -2005,14 +1638,14 @@ function Stimulant({ stimLogs, addStimLog, removeStimLog, settings }) {
             color: manageMode ? 'var(--accent)' : 'var(--text-secondary)',
           }}
           title="Manage presets"
-        >⚙</button>
+        >âš™</button>
         <button onClick={() => setShowCustom(p => !p)} style={{ ...btnGhost, borderRadius:20, fontSize:11.5 }}>+ Custom</button>
       </div>
 
       {manageMode && hiddenPresets.length > 0 && (
         <div style={{ marginBottom:10 }}>
           <button onClick={restorePresets} style={{ ...btnGhost, fontSize:11, padding:'4px 10px' }}>
-            ↩ Restore all presets ({hiddenPresets.length} hidden)
+            â†© Restore all presets ({hiddenPresets.length} hidden)
           </button>
         </div>
       )}
@@ -2048,7 +1681,7 @@ function Stimulant({ stimLogs, addStimLog, removeStimLog, settings }) {
         <div style={{ display:'flex', justifyContent:'space-between', alignItems:'center', marginBottom:8 }}>
           <div style={{ fontSize:10, color:'var(--text-muted)', letterSpacing:'0.07em' }}>TODAY</div>
           {todayLogs.length > 0 && (
-            <span style={{ fontSize:10, color:'var(--text-muted)' }}>Tap × to remove an entry</span>
+            <span style={{ fontSize:10, color:'var(--text-muted)' }}>Tap Ã— to remove an entry</span>
           )}
         </div>
         {todayLogs.length === 0 ? (
@@ -2062,7 +1695,7 @@ function Stimulant({ stimLogs, addStimLog, removeStimLog, settings }) {
               <div>
                 <span style={{ fontSize:12.5, color:'var(--text-primary)' }}>{l.name}</span>
                 <span style={{ fontSize:10.5, color:'var(--text-muted)', marginLeft:8 }}>
-                  {l.type === 'caffeine' ? '☕' : '🚬'} {l.amount}{l.unit}
+                  {l.type === 'caffeine' ? 'â˜•' : 'ðŸš¬'} {l.amount}{l.unit}
                 </span>
               </div>
               <div style={{ display:'flex', alignItems:'center', gap:10 }}>
@@ -2079,7 +1712,7 @@ function Stimulant({ stimLogs, addStimLog, removeStimLog, settings }) {
                     }}
                     onMouseEnter={e => e.currentTarget.style.background='rgba(229,90,90,0.3)'}
                     onMouseLeave={e => e.currentTarget.style.background='rgba(229,90,90,0.12)'}
-                  >×</button>
+                  >Ã—</button>
                 )}
               </div>
             </div>
@@ -2090,29 +1723,28 @@ function Stimulant({ stimLogs, addStimLog, removeStimLog, settings }) {
   );
 }
 
-// ═══════════════════════════════════════════════════════════════════════════════
+// â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
 // MAIN HEALTH TAB
-// ═══════════════════════════════════════════════════════════════════════════════
+// â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
 const SUB_SECTIONS = [
-  { id:'overview',    label:'Overview',    icon:'⬡' },
-  { id:'habits',      label:'Habits',      icon:'🔥' },
-  { id:'nutrition',   label:'Nutrition',   icon:'🥗' },
-  { id:'workout',     label:'Workout',     icon:'💪' },
-  { id:'water',       label:'Water',       icon:'💧' },
-  { id:'body',        label:'Body',        icon:'⚖' },
-  { id:'supplements', label:'Supplements', icon:'💊' },
-  { id:'sleep',       label:'Sleep',       icon:'🌙' },
-  { id:'stimulant',   label:'Stimulant',   icon:'☕' },
+  { id:'overview',    label:'Overview',    icon:'â¬¡' },
+  { id:'habits',      label:'Habits',      icon:'ðŸ”¥' },
+  { id:'nutrition',   label:'Nutrition',   icon:'ðŸ¥—' },
+  { id:'water',       label:'Water',       icon:'ðŸ’§' },
+  { id:'body',        label:'Body',        icon:'âš–' },
+  { id:'supplements', label:'Supplements', icon:'ðŸ’Š' },
+  { id:'sleep',       label:'Sleep',       icon:'ðŸŒ™' },
+  { id:'stimulant',   label:'Stimulant',   icon:'â˜•' },
 ];
 
-export default function Health({ settings }) {
+export default function Health({ settings, onTabChange }) {
   const [active, setActive] = useState('overview');
   const settings_ = settings ?? storage.get(STORAGE_KEYS.SETTINGS, {});
 
   const { items: habits,     add: addHabit,     update: updateHabit,     remove: removeHabit }     = useCollection('habits',          STORAGE_KEYS.HABITS);
   const { items: waterLogs,  add: addWaterLog  }                                                    = useCollection('water_logs',      STORAGE_KEYS.WATER);
   const { items: nutritionLogs, add: addNutritionLog, update: updateNutritionLog }                 = useCollection('nutrition_logs',  STORAGE_KEYS.MACROS);
-  const { items: workoutLogs, add: addWorkoutLog }                                                  = useCollection('workout_logs',    STORAGE_KEYS.WORKOUT_LOGS);
+  const { items: workoutLogs }                                                  = useCollection('workout_logs',    STORAGE_KEYS.WORKOUT_LOGS);
   const { items: bodyMetrics, add: addBodyMetric }                                                  = useCollection('body_metrics',    STORAGE_KEYS.BODY);
   const { items: supplements, add: addSupplement, remove: removeSupplement }                        = useCollection('supplements',     STORAGE_KEYS.SUPPLEMENTS);
   const { items: suppLogs,   add: addSuppLog }                                                      = useCollection('supplement_logs', STORAGE_KEYS.SUPP_LOGS);
@@ -2122,10 +1754,9 @@ export default function Health({ settings }) {
   const renderSection = () => {
     const p = { settings: settings_ };
     switch (active) {
-      case 'overview':    return <Overview     {...p} habits={habits} waterLogs={waterLogs} nutritionLogs={nutritionLogs} sleepData={sleepData} supplements={supplements} suppLogs={suppLogs} stimLogs={stimLogs} workoutLogs={workoutLogs} bodyMetrics={bodyMetrics} onNav={setActive} />;
+      case 'overview':    return <Overview {...p} onTabChange={onTabChange} habits={habits} waterLogs={waterLogs} nutritionLogs={nutritionLogs} sleepData={sleepData} supplements={supplements} suppLogs={suppLogs} stimLogs={stimLogs} workoutLogs={workoutLogs} bodyMetrics={bodyMetrics} onNav={setActive} />;
       case 'habits':      return <Habits       habits={habits} addHabit={addHabit} updateHabit={updateHabit} removeHabit={removeHabit} />;
       case 'nutrition':   return <Nutrition    {...p} nutritionLogs={nutritionLogs} addNutritionLog={addNutritionLog} updateNutritionLog={updateNutritionLog} />;
-      case 'workout':     return <Workout      workoutLogs={workoutLogs} addWorkoutLog={addWorkoutLog} settings={settings_} />;
       case 'water':       return <Water        {...p} waterLogs={waterLogs} addWaterLog={addWaterLog} />;
       case 'body':        return <Body         bodyMetrics={bodyMetrics} addBodyMetric={addBodyMetric} />;
       case 'supplements': return <Supplements  supplements={supplements} suppLogs={suppLogs} addSupplement={addSupplement} removeSupplement={removeSupplement} addSuppLog={addSuppLog} />;
@@ -2167,3 +1798,6 @@ export default function Health({ settings }) {
     </div>
   );
 }
+
+
+

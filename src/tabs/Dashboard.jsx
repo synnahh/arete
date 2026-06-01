@@ -1,11 +1,14 @@
 // ─── Dashboard Tab — Dense Layout ─────────────────────────────────────────────
-import { useState, useEffect, useRef, useCallback } from 'react';
+import { useState, useEffect, useRef, useCallback, useMemo } from 'react';
 import { getGreeting, formatTime, formatDate } from '../utils/time.js';
 import { storage, STORAGE_KEYS } from '../utils/storage.js';
 import { askClaude } from '../ai/claude.js';
 import { askOllama } from '../ai/ollama.js';
 import { getXP, getRank, TIER_CONFIG, TIER_THRESHOLDS } from '../utils/xp.js';
 import DayRing from '../components/DayRing.jsx';
+import { useCollection } from '../firebase/useCollection.js';
+import { useDocument }   from '../firebase/useDocument.js';
+import { DEFAULT_OVERLOAD_EXERCISES } from './Workout.jsx';
 
 // ── Badge SVG (mirrored from Progress.jsx) ────────────────────────────────────
 const toRad = d => d * Math.PI / 180;
@@ -869,6 +872,45 @@ function ProductivityWidget({ onTabChange }) {
 
 // ── Main Dashboard ─────────────────────────────────────────────────────────────
 // ── Peak State Card ───────────────────────────────────────────────────────────
+// ── Today's Workout card ──────────────────────────────────────────────────────
+const DAY_KEYS_W = ['sun','mon','tue','wed','thu','fri','sat'];
+const SPLIT_COLOURS_W = { push:'#e25d7a', pull:'#4a9eff', legs:'#f4a642', rest:'rgba(255,255,255,0.2)', custom:'#9b5de5' };
+
+function TodayWorkoutCard({ onTabChange }) {
+  const { items: programs } = useCollection('programs', 'programs');
+  const { data: storedExercises } = useDocument('overload_exercises', 'overload_exercises', null);
+  const exercises = (Array.isArray(storedExercises) && storedExercises.length) ? storedExercises : DEFAULT_OVERLOAD_EXERCISES;
+
+  const todayKey     = DAY_KEYS_W[new Date().getDay()];
+  const active       = programs.find(p => p.isActive) ?? null;
+  const todayData    = active?.days?.[todayKey] ?? null;
+  const splitType    = todayData?.splitType ?? null;
+  const label        = todayData?.label ?? 'Workout';
+  const isRest       = !splitType || splitType === 'rest';
+  const exCount      = isRest ? 0 : exercises.filter(e => e.day === splitType).length;
+  const colour       = SPLIT_COLOURS_W[splitType] ?? 'var(--accent)';
+
+  if (!active) return null;
+
+  return (
+    <div onClick={() => onTabChange?.('workout')} style={{
+      padding: '10px 14px', borderRadius: 12, cursor: 'pointer',
+      background: isRest ? 'rgba(255,255,255,0.03)' : `${colour}12`,
+      border: `0.5px solid ${isRest ? 'rgba(255,255,255,0.08)' : `${colour}35`}`,
+      display: 'flex', alignItems: 'center', justifyContent: 'space-between',
+      transition: 'all 0.15s ease',
+    }}>
+      <div>
+        <div style={{ fontSize: 9, fontWeight: 700, letterSpacing: '0.1em', color: isRest ? 'rgba(255,255,255,0.3)' : colour, textTransform: 'uppercase', marginBottom: 3 }}>Today</div>
+        <div style={{ fontSize: 13, fontWeight: 600, color: 'var(--text-primary)' }}>
+          {isRest ? 'Rest Day' : `${label} Day — ${exCount} exercise${exCount !== 1 ? 's' : ''}`}
+        </div>
+      </div>
+      <div style={{ fontSize: 11, color: isRest ? 'rgba(255,255,255,0.2)' : colour, opacity: 0.7 }}>→</div>
+    </div>
+  );
+}
+
 function PeakStateCard({ peakState, onTabChange }) {
   if (!peakState) return null;
   const { score, color, suggestion, factors } = peakState;
@@ -1003,6 +1045,7 @@ export default function Dashboard({ settings, onTabChange, ai, density = 'standa
           <div style={{ flexShrink: 0 }}><DailyBriefCard ai={ai} /></div>
           <div style={{ flexShrink: 0 }}><SpotifyCard /></div>
           <div style={{ flexShrink: 0 }}><PeakStateCard peakState={peakState} onTabChange={onTabChange} /></div>
+          <div style={{ flexShrink: 0 }}><TodayWorkoutCard onTabChange={onTabChange} /></div>
           <Card style={{ flex: 1, minHeight: 0, overflow: 'hidden', justifyContent: 'center' }}>
             <DayRing />
           </Card>

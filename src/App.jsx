@@ -18,6 +18,7 @@ import Tasks      from './tabs/Tasks.jsx';
 import Calendar   from './tabs/Calendar.jsx';
 import Notes      from './tabs/Notes.jsx';
 import Health     from './tabs/Health.jsx';
+import Workout    from './tabs/Workout.jsx';
 import Finance    from './tabs/Finance.jsx';
 import Progress   from './tabs/Progress.jsx';
 import Style      from './tabs/Style.jsx';
@@ -36,6 +37,7 @@ const TAB_MAP = {
   calendar:   Calendar,
   notes:      Notes,
   health:     Health,
+  workout:    Workout,
   finance:    Finance,
   progress:   Progress,
   style:      Style,
