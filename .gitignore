@@ -32,3 +32,6 @@ JARVIS-Vault/API KEY*
 *.njsproj
 *.sln
 *.sw?
+
+# Release output
+release/

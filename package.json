@@ -7,7 +7,9 @@
     "dev": "vite",
     "build": "vite build",
     "preview": "vite preview",
-    "tauri": "tauri"
+    "tauri": "tauri",
+    "release": "npm run tauri build -- --bundles nsis && powershell -ExecutionPolicy Bypass -File scripts/package-release.ps1",
+    "package": "powershell -ExecutionPolicy Bypass -File scripts/package-release.ps1"
   },
   "dependencies": {
     "@tauri-apps/api": "^2",
