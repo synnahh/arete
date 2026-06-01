@@ -115,184 +115,154 @@ function StatCard({ label, value, unit, colour = 'var(--accent)', ring, children
 }
 
 // ═══════════════════════════════════════════════════════════════════════════════
-// 1. OVERVIEW — compact stat grid for all sub-sections
+// 1. OVERVIEW — dense command centre
 // ═══════════════════════════════════════════════════════════════════════════════
-function Overview({ habits, waterLogs, nutritionLogs, sleepData, settings, supplements, suppLogs, stimLogs, workoutLogs, bodyMetrics }) {
+function Overview({ habits, waterLogs, nutritionLogs, sleepData, settings, supplements, suppLogs, stimLogs, workoutLogs, bodyMetrics, onNav }) {
   const today = todayStr();
 
-  // Water
-  const waterGoal  = settings?.waterGoal ?? 2500;
-  const todayWater = useMemo(() =>
-    (waterLogs || []).filter(l => l.date === today).reduce((s, l) => s + (l.amount || 0), 0),
-    [waterLogs, today]);
+  const waterGoal      = settings?.waterGoal ?? 2500;
+  const macroGoal      = settings?.macroGoal ?? 2500;
+  const caffLimit      = settings?.caffeineLimitMg ?? 400;
+  const nicLimit       = settings?.nicotineLimitMg ?? 20;
+  const proteinGoal    = settings?.proteinGoal ?? 160;
 
-  // Nutrition
-  const todayNutrition = useMemo(() =>
-    (nutritionLogs || []).find(l => l.date === today),
-    [nutritionLogs, today]);
-  const macroGoal = settings?.macroGoal ?? 2500;
-  const todayCal  = todayNutrition?.totalCalories ?? 0;
+  const todayWater     = useMemo(() => (waterLogs||[]).filter(l=>l.date===today).reduce((s,l)=>s+(l.amount||0),0),[waterLogs,today]);
+  const todayNutrition = useMemo(() => (nutritionLogs||[]).find(l=>l.date===today),[nutritionLogs,today]);
+  const todayCal       = todayNutrition?.totalCalories ?? 0;
+  const todayProtein   = todayNutrition?.protein ?? 0;
+  const lastSleep      = useMemo(() => [...(sleepData||[])].sort((a,b)=>(b.date??'').localeCompare(a.date??''))[0],[sleepData]);
+  const todayHabits    = useMemo(()=>{ const t=(habits||[]).length; const d=(habits||[]).filter(h=>h.lastCompleted===today).length; return{done:d,total:t};},[habits,today]);
+  const todaySupps     = useMemo(()=>{ const t=(supplements||[]).length; const d=new Set((suppLogs||[]).filter(l=>l.date===today).map(l=>l.suppId)).size; return{done:d,total:t};},[supplements,suppLogs,today]);
+  const todayStims     = useMemo(()=>{ const logs=(stimLogs||[]).filter(l=>l.date===today); return{ caffeine:logs.filter(l=>l.type==='caffeine').reduce((s,l)=>s+(l.amount||0),0), nicotine:logs.filter(l=>l.type==='nicotine').reduce((s,l)=>s+(l.amount||0),0) };},[stimLogs,today]);
+  const workedOutToday = useMemo(()=>(workoutLogs||[]).some(l=>l.date===today),[workoutLogs,today]);
+  const latestBody     = useMemo(()=>[...(bodyMetrics||[])].sort((a,b)=>(b.date??'').localeCompare(a.date??''))[0],[bodyMetrics]);
 
-  // Sleep
-  const lastSleep = useMemo(() =>
-    [...(sleepData || [])].sort((a, b) => (b.date ?? '').localeCompare(a.date ?? ''))[0],
-    [sleepData]);
+  const sleepH = Math.floor((lastSleep?.duration??0)/60);
+  const sleepM = (lastSleep?.duration??0)%60;
 
-  // Habits
-  const todayHabits = useMemo(() => {
-    const total = (habits || []).length;
-    const done  = (habits || []).filter(h => h.lastCompleted === today).length;
-    return { done, total };
-  }, [habits, today]);
-
-  // Supplements
-  const todaySupps = useMemo(() => {
-    const total = (supplements || []).length;
-    const done  = new Set((suppLogs || []).filter(l => l.date === today).map(l => l.suppId)).size;
-    return { done, total };
-  }, [supplements, suppLogs, today]);
-
-  // Stimulants
-  const todayStims = useMemo(() => {
-    const logs = (stimLogs || []).filter(l => l.date === today);
-    return {
-      caffeine: logs.filter(l => l.type === 'caffeine').reduce((s, l) => s + (l.amount || 0), 0),
-      nicotine: logs.filter(l => l.type === 'nicotine').reduce((s, l) => s + (l.amount || 0), 0),
-    };
-  }, [stimLogs, today]);
-  const caffLimit = settings?.caffeineLimitMg ?? 400;
-  const nicLimit  = settings?.nicotineLimitMg ?? 20;
-
-  // Workout today
-  const workedOutToday = useMemo(() =>
-    (workoutLogs || []).some(l => l.date === today),
-    [workoutLogs, today]);
-
-  // Body — latest weight
-  const latestBody = useMemo(() =>
-    [...(bodyMetrics || [])].sort((a, b) => (b.date ?? '').localeCompare(a.date ?? ''))[0],
-    [bodyMetrics]);
-
-  // Glass stat tile
-  const Tile = ({ label, value, sublabel, colour = 'var(--accent)', ring: ringProps, onNav }) => (
-    <GlassCard
-      style={{ flex: '1 1 120px', minWidth: 110, maxWidth: 220, marginBottom: 0, padding: '14px 16px', cursor: onNav ? 'pointer' : 'default' }}
+  // Inline stat row item
+  const Stat = ({ label, value, sub, colour='rgba(255,255,255,0.85)', warn, nav }) => (
+    <div onClick={nav} style={{
+      flex:'1 1 0', minWidth:0, padding:'10px 12px', cursor:nav?'pointer':'default',
+      background:'rgba(255,255,255,0.03)', borderRadius:10,
+      border:`0.5px solid ${warn?'rgba(229,90,90,0.4)':'rgba(255,255,255,0.07)'}`,
+      transition:'background 0.15s',
+    }}
+      onMouseEnter={e=>nav&&(e.currentTarget.style.background='rgba(255,255,255,0.06)')}
+      onMouseLeave={e=>nav&&(e.currentTarget.style.background='rgba(255,255,255,0.03)')}
     >
-      <div onClick={onNav} style={{ height: '100%' }}>
-        <div style={{ fontSize: 9, fontWeight: 700, letterSpacing: '0.16em', textTransform: 'uppercase', color: 'rgba(255,255,255,0.3)', fontFamily: 'ui-monospace,monospace', marginBottom: 10 }}>{label}</div>
-        {ringProps ? (
-          <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
-            <RingChart value={ringProps.value} max={ringProps.max} size={44} thickness={4} colour={colour} label={null} />
-            <div>
-              <div style={{ fontSize: 17, fontWeight: 600, color: colour, lineHeight: 1, fontVariantNumeric: 'tabular-nums' }}>{value}</div>
-              {sublabel && <div style={{ fontSize: 10, color: 'rgba(255,255,255,0.3)', marginTop: 3, fontFamily: 'ui-monospace,monospace' }}>{sublabel}</div>}
-            </div>
-          </div>
-        ) : (
-          <>
-            <div style={{ fontSize: 20, fontWeight: 600, color: colour, lineHeight: 1, fontVariantNumeric: 'tabular-nums' }}>{value}</div>
-            {sublabel && <div style={{ fontSize: 10, color: 'rgba(255,255,255,0.3)', marginTop: 4, fontFamily: 'ui-monospace,monospace' }}>{sublabel}</div>}
-          </>
-        )}
-      </div>
-    </GlassCard>
+      <div style={{fontSize:8.5,fontWeight:700,letterSpacing:'0.16em',textTransform:'uppercase',color:'rgba(255,255,255,0.28)',fontFamily:'ui-monospace,monospace',marginBottom:5}}>{label}</div>
+      <div style={{fontSize:16,fontWeight:600,color:warn?'#e55a5a':colour,lineHeight:1,fontVariantNumeric:'tabular-nums'}}>{value}</div>
+      {sub&&<div style={{fontSize:9.5,color:'rgba(255,255,255,0.28)',marginTop:3,fontFamily:'ui-monospace,monospace'}}>{sub}</div>}
+    </div>
   );
+
+  // Mini progress bar
+  const Bar = ({value,max,colour})=>{
+    const pct=Math.min((value/Math.max(max,1))*100,100);
+    return(
+      <div style={{height:3,borderRadius:2,background:'rgba(255,255,255,0.08)',overflow:'hidden',marginTop:5}}>
+        <div style={{height:'100%',width:`${pct}%`,background:colour,borderRadius:2,transition:'width 0.5s ease'}}/>
+      </div>
+    );
+  };
 
   return (
     <Section title="Overview">
-      <GlassLabel>Today at a glance</GlassLabel>
-
-      {/* Row 1: core vitals */}
-      <div style={{ display: 'flex', flexWrap: 'wrap', gap: 8, marginBottom: 8 }}>
-        <Tile label="SLEEP"
-          value={lastSleep ? `${lastSleep.efficiency ?? '—'}%` : '—'}
-          sublabel={lastSleep ? `${Math.floor((lastSleep.duration ?? 0)/60)}h ${(lastSleep.duration ?? 0)%60}m` : 'no data'}
-          colour="var(--accent)"
-          ring={lastSleep ? { value: lastSleep.efficiency ?? 0, max: 100 } : undefined}
-        />
-        <Tile label="WATER"
-          value={todayWater >= 1000 ? `${(todayWater/1000).toFixed(1)}L` : `${todayWater}ml`}
-          sublabel={`of ${waterGoal >= 1000 ? (waterGoal/1000).toFixed(1)+'L' : waterGoal+'ml'}`}
-          colour="#4a9eff"
-          ring={{ value: todayWater, max: waterGoal }}
-        />
-        <Tile label="CALORIES"
-          value={`${todayCal}`}
-          sublabel={`of ${macroGoal} kcal`}
-          colour="#f4a642"
-          ring={{ value: todayCal, max: macroGoal }}
-        />
-        <Tile label="HABITS"
-          value={`${todayHabits.done}/${todayHabits.total}`}
-          sublabel={todayHabits.total === 0 ? 'none set' : todayHabits.done === todayHabits.total ? '✓ all done' : `${todayHabits.total - todayHabits.done} remaining`}
-          colour="#4caf7d"
-          ring={todayHabits.total > 0 ? { value: todayHabits.done, max: todayHabits.total } : undefined}
-        />
+      {/* ── Vitals strip ── */}
+      <GlassLabel>Vitals</GlassLabel>
+      <div style={{display:'flex',gap:6,marginBottom:10}}>
+        <Stat label="Sleep" value={lastSleep?`${lastSleep.efficiency??'—'}%`:'—'} sub={lastSleep?`${sleepH}h ${sleepM}m · ${lastSleep.stages?'staged':'no stages'}`:'no data'} colour={lastSleep?.efficiency>=85?'#4caf7d':lastSleep?.efficiency>=70?'#f4a642':'#e55a5a'} nav={()=>onNav('sleep')} />
+        <Stat label="Water" value={todayWater>=1000?`${(todayWater/1000).toFixed(1)}L`:`${todayWater}ml`} sub={`of ${waterGoal>=1000?(waterGoal/1000).toFixed(1)+'L':waterGoal+'ml'}`} colour="#4a9eff" warn={todayWater===0} nav={()=>onNav('water')} />
+        <Stat label="Calories" value={todayCal} sub={`of ${macroGoal} kcal`} colour="#f4a642" nav={()=>onNav('nutrition')} />
+        <Stat label="Protein" value={`${todayProtein}g`} sub={`of ${proteinGoal}g`} colour="#f97316" nav={()=>onNav('nutrition')} />
+        <Stat label="Habits" value={`${todayHabits.done}/${todayHabits.total}`} sub={todayHabits.done===todayHabits.total&&todayHabits.total>0?'✓ all done':`${todayHabits.total-todayHabits.done} left`} colour="#4caf7d" nav={()=>onNav('habits')} />
+        <Stat label="Supplements" value={`${todaySupps.done}/${todaySupps.total}`} sub={todaySupps.done===todaySupps.total&&todaySupps.total>0?'✓ all taken':'remaining'} colour="#9b5de5" nav={()=>onNav('supplements')} />
+        <Stat label="Workout" value={workedOutToday?'Done ✓':'Not yet'} colour={workedOutToday?'#4caf7d':'rgba(255,255,255,0.3)'} sub={workedOutToday?'logged today':'no session'} nav={()=>onNav('workout')} />
+        {latestBody?.weight&&<Stat label="Weight" value={`${latestBody.weight}kg`} sub={latestBody.date===today?'today':`${latestBody.date?.slice(5)??'—'}`} colour="rgba(255,255,255,0.65)" nav={()=>onNav('body')} />}
       </div>
 
-      {/* Row 2: supplementary stats */}
-      <div style={{ display: 'flex', flexWrap: 'wrap', gap: 8, marginBottom: 8 }}>
-        <Tile label="SUPPLEMENTS"
-          value={`${todaySupps.done}/${todaySupps.total}`}
-          sublabel={todaySupps.total === 0 ? 'none set' : todaySupps.done === todaySupps.total ? '✓ all taken' : 'remaining'}
-          colour="#9b5de5"
-          ring={todaySupps.total > 0 ? { value: todaySupps.done, max: todaySupps.total } : undefined}
-        />
-        <Tile label="CAFFEINE"
-          value={`${todayStims.caffeine}mg`}
-          sublabel={`of ${caffLimit}mg`}
-          colour={todayStims.caffeine > caffLimit * 0.8 ? '#f4a642' : 'rgba(255,255,255,0.55)'}
-          ring={{ value: todayStims.caffeine, max: caffLimit }}
-        />
-        {todayStims.nicotine > 0 && (
-          <Tile label="NICOTINE"
-            value={`${todayStims.nicotine}mg`}
-            sublabel={`of ${nicLimit}mg`}
-            colour={todayStims.nicotine > nicLimit * 0.8 ? '#e55a5a' : '#f4a642'}
-            ring={{ value: todayStims.nicotine, max: nicLimit }}
-          />
+      {/* ── Stimulants strip ── */}
+      <GlassLabel>Stimulants</GlassLabel>
+      <div style={{display:'flex',gap:6,marginBottom:10}}>
+        <div style={{flex:'1 1 0',padding:'10px 14px',background:'rgba(255,255,255,0.03)',borderRadius:10,border:`0.5px solid ${todayStims.caffeine>caffLimit*0.9?'rgba(244,166,66,0.4)':'rgba(255,255,255,0.07)'}`}}>
+          <div style={{fontSize:8.5,fontWeight:700,letterSpacing:'0.16em',textTransform:'uppercase',color:'rgba(255,255,255,0.28)',fontFamily:'ui-monospace,monospace',marginBottom:4}}>Caffeine</div>
+          <div style={{display:'flex',alignItems:'baseline',gap:6}}>
+            <span style={{fontSize:20,fontWeight:600,color:todayStims.caffeine>caffLimit*0.9?'#f4a642':'rgba(255,255,255,0.85)',fontVariantNumeric:'tabular-nums'}}>{todayStims.caffeine}</span>
+            <span style={{fontSize:11,color:'rgba(255,255,255,0.3)'}}>/ {caffLimit}mg</span>
+          </div>
+          <Bar value={todayStims.caffeine} max={caffLimit} colour={todayStims.caffeine>caffLimit*0.9?'#f4a642':'#4a9eff'} />
+        </div>
+        {todayStims.nicotine>0&&(
+          <div style={{flex:'1 1 0',padding:'10px 14px',background:'rgba(255,255,255,0.03)',borderRadius:10,border:'0.5px solid rgba(255,255,255,0.07)'}}>
+            <div style={{fontSize:8.5,fontWeight:700,letterSpacing:'0.16em',textTransform:'uppercase',color:'rgba(255,255,255,0.28)',fontFamily:'ui-monospace,monospace',marginBottom:4}}>Nicotine</div>
+            <div style={{display:'flex',alignItems:'baseline',gap:6}}>
+              <span style={{fontSize:20,fontWeight:600,color:'#f4a642',fontVariantNumeric:'tabular-nums'}}>{todayStims.nicotine}</span>
+              <span style={{fontSize:11,color:'rgba(255,255,255,0.3)'}}>/ {nicLimit}mg</span>
+            </div>
+            <Bar value={todayStims.nicotine} max={nicLimit} colour="#f4a642" />
+          </div>
         )}
-        <Tile label="WORKOUT"
-          value={workedOutToday ? 'Done ✓' : 'Not yet'}
-          sublabel={workedOutToday ? 'logged today' : 'no session yet'}
-          colour={workedOutToday ? '#4caf7d' : 'rgba(255,255,255,0.3)'}
-        />
-        {latestBody?.weight && (
-          <Tile label="WEIGHT"
-            value={`${latestBody.weight}kg`}
-            sublabel={latestBody.date === today ? 'logged today' : `as of ${latestBody.date ?? '—'}`}
-            colour="rgba(255,255,255,0.55)"
-          />
-        )}
+        <div style={{flex:'3 1 0',minWidth:0}}/>
       </div>
 
-      {/* Sleep stages */}
-      {lastSleep?.stages && (
-        <GlassCard>
+      {/* ── Two column: sleep stages + today's activity ── */}
+      <div style={{display:'flex',gap:8}}>
+        {/* Sleep stages */}
+        <GlassCard style={{flex:1,marginBottom:0}}>
           <GlassLabel>Last night — sleep stages</GlassLabel>
-          <StageBar height={10} stages={[
-            { label: 'Deep',  value: lastSleep.stages.deep  ?? 0, colour: '#4a9eff' },
-            { label: 'REM',   value: lastSleep.stages.rem   ?? 0, colour: '#9b5de5' },
-            { label: 'Core',  value: lastSleep.stages.core  ?? 0, colour: '#4caf7d' },
-            { label: 'Awake', value: lastSleep.stages.awake ?? 0, colour: 'rgba(255,255,255,0.15)' },
-          ]} />
-          <div style={{ display: 'flex', gap: 14, marginTop: 8, flexWrap: 'wrap' }}>
+          {lastSleep?.stages ? (
+            <>
+              <StageBar height={8} stages={[
+                {label:'Deep', value:lastSleep.stages.deep??0, colour:'#4a9eff'},
+                {label:'REM',  value:lastSleep.stages.rem??0,  colour:'#9b5de5'},
+                {label:'Core', value:lastSleep.stages.core??0, colour:'#4caf7d'},
+                {label:'Awake',value:lastSleep.stages.awake??0,colour:'rgba(255,255,255,0.15)'},
+              ]}/>
+              <div style={{display:'flex',gap:12,marginTop:8,flexWrap:'wrap'}}>
+                {[{l:'Deep',c:'#4a9eff',v:lastSleep.stages.deep},{l:'REM',c:'#9b5de5',v:lastSleep.stages.rem},{l:'Core',c:'#4caf7d',v:lastSleep.stages.core},{l:'Awake',c:'rgba(255,255,255,0.3)',v:lastSleep.stages.awake}].map(s=>(
+                  <div key={s.l} style={{display:'flex',alignItems:'center',gap:4}}>
+                    <div style={{width:5,height:5,borderRadius:'50%',background:s.c,flexShrink:0}}/>
+                    <span style={{fontSize:9.5,color:'rgba(255,255,255,0.35)',fontFamily:'ui-monospace,monospace'}}>{s.l} {Math.floor((s.v??0)/60)}h{(s.v??0)%60}m</span>
+                  </div>
+                ))}
+              </div>
+            </>
+          ) : (
+            <div style={{fontSize:12,color:'rgba(255,255,255,0.25)',padding:'8px 0'}}>No sleep data yet — log via Sleep tab or Apple Health sync.</div>
+          )}
+          {lastSleep&&<div style={{marginTop:10,display:'flex',gap:16}}>
+            {[{l:'Bed',v:lastSleep.bedTime},{l:'Wake',v:lastSleep.wakeTime},{l:'Efficiency',v:`${lastSleep.efficiency??'—'}%`}].map(s=>(
+              <div key={s.l}>
+                <div style={{fontSize:8.5,color:'rgba(255,255,255,0.25)',letterSpacing:'0.1em',fontFamily:'ui-monospace,monospace'}}>{s.l.toUpperCase()}</div>
+                <div style={{fontSize:13,color:'rgba(255,255,255,0.7)',fontVariantNumeric:'tabular-nums'}}>{s.v??'—'}</div>
+              </div>
+            ))}
+          </div>}
+        </GlassCard>
+
+        {/* Today's quick activity */}
+        <GlassCard style={{flex:1,marginBottom:0}}>
+          <GlassLabel>Today's progress</GlassLabel>
+          <div style={{display:'flex',flexDirection:'column',gap:8}}>
             {[
-              { l:'Deep',  c:'#4a9eff', v: lastSleep.stages.deep  },
-              { l:'REM',   c:'#9b5de5', v: lastSleep.stages.rem   },
-              { l:'Core',  c:'#4caf7d', v: lastSleep.stages.core  },
-              { l:'Awake', c:'rgba(255,255,255,0.3)', v: lastSleep.stages.awake },
-            ].map(s => (
-              <div key={s.l} style={{ display: 'flex', alignItems: 'center', gap: 5 }}>
-                <div style={{ width: 5, height: 5, borderRadius: '50%', background: s.c, flexShrink: 0 }} />
-                <span style={{ fontSize: 10, color: 'rgba(255,255,255,0.35)', fontFamily: 'ui-monospace,monospace' }}>
-                  {s.l}: {Math.floor((s.v ?? 0)/60)}h{(s.v ?? 0)%60}m
-                </span>
+              {label:'Water',value:todayWater,max:waterGoal,colour:'#4a9eff',display:todayWater>=1000?`${(todayWater/1000).toFixed(1)}L`:`${todayWater}ml`,goal:waterGoal>=1000?`${(waterGoal/1000).toFixed(1)}L`:`${waterGoal}ml`},
+              {label:'Calories',value:todayCal,max:macroGoal,colour:'#f4a642',display:`${todayCal} kcal`,goal:`${macroGoal} kcal`},
+              {label:'Protein',value:todayProtein,max:proteinGoal,colour:'#f97316',display:`${todayProtein}g`,goal:`${proteinGoal}g`},
+              {label:'Supplements',value:todaySupps.done,max:Math.max(todaySupps.total,1),colour:'#9b5de5',display:`${todaySupps.done} of ${todaySupps.total}`,goal:'complete'},
+              {label:'Habits',value:todayHabits.done,max:Math.max(todayHabits.total,1),colour:'#4caf7d',display:`${todayHabits.done} of ${todayHabits.total}`,goal:'complete'},
+            ].map(row=>(
+              <div key={row.label}>
+                <div style={{display:'flex',justifyContent:'space-between',marginBottom:3}}>
+                  <span style={{fontSize:10.5,color:'rgba(255,255,255,0.5)'}}>{row.label}</span>
+                  <span style={{fontSize:10.5,color:'rgba(255,255,255,0.5)',fontFamily:'ui-monospace,monospace'}}>{row.display} <span style={{opacity:0.4}}>/ {row.goal}</span></span>
+                </div>
+                <Bar value={row.value} max={row.max} colour={row.colour}/>
               </div>
             ))}
           </div>
         </GlassCard>
-      )}
+      </div>
     </Section>
   );
 }
@@ -825,68 +795,164 @@ function LogSetModal({ exercise, onClose, onSave }) {
 // ═══════════════════════════════════════════════════════════════════════════════
 // 5. WATER
 // ═══════════════════════════════════════════════════════════════════════════════
-function Water({ waterLogs, addWaterLog, settings }) {
-  const today    = todayStr();
-  const goal     = settings?.waterGoal ?? 2500;
-  const todayLogs = useMemo(() =>
-    [...(waterLogs || []).filter(l => l.date === today)].sort((a, b) => (a.time ?? '').localeCompare(b.time ?? '')),
-    [waterLogs, today]);
-  const total = todayLogs.reduce((s, l) => s + (l.amount || 0), 0);
-  const pct   = Math.min((total / goal) * 100, 100);
+// Water goal formula: weight(kg)×35 + activity bonus + caffeine bonus
+function calcWaterGoal(profile) {
+  const { weight=75, activityHours=0, caffeineMg=0, sex='male' } = profile;
+  let base = weight * 35; // ml
+  if (sex === 'female') base = weight * 31;
+  const activityBonus  = (activityHours / 7) * 500;
+  const caffBonus      = Math.max(0, (caffeineMg - 200) * 1.5);
+  return Math.round((base + activityBonus + caffBonus) / 50) * 50; // round to 50ml
+}
 
-  const QUICK = [250, 500, 750, 1000];
+const WATER_PROFILE_KEY = 'valerie_water_profile';
+
+function Water({ waterLogs, addWaterLog, settings }) {
+  const today     = todayStr();
+  const [showSettings, setShowSettings] = useState(false);
+  const [profile, setProfile] = useState(() => {
+    try { return JSON.parse(localStorage.getItem(WATER_PROFILE_KEY)) || { weight:75, age:25, sex:'male', activityHours:5, caffeineMg:200, unit:'ml' }; }
+    catch { return { weight:75, age:25, sex:'male', activityHours:5, caffeineMg:200, unit:'ml' }; }
+  });
   const [custom, setCustom] = useState('');
 
-  const log = async (ml) => {
-    await addWaterLog({ date: today, amount: ml, time: nowStr() });
+  const saveProfile = (p) => {
+    setProfile(p);
+    localStorage.setItem(WATER_PROFILE_KEY, JSON.stringify(p));
   };
 
-  const colour = pct >= 100 ? '#4caf7d' : pct >= 60 ? '#4a9eff' : pct >= 30 ? '#f4a642' : '#e55a5a';
+  const goal = calcWaterGoal(profile);
+
+  const todayLogs = useMemo(() =>
+    [...(waterLogs||[]).filter(l=>l.date===today)].sort((a,b)=>(a.time??'').localeCompare(b.time??'')),
+    [waterLogs, today]);
+  const total = todayLogs.reduce((s,l)=>s+(l.amount||0),0);
+  const pct   = Math.min((total/goal)*100,100);
+  const colour = pct>=100?'#4caf7d':pct>=60?'#4a9eff':pct>=30?'#f4a642':'#e55a5a';
+
+  const log = async (ml) => addWaterLog({ date:today, amount:ml, time:nowStr() });
+
+  const fmtWater = (ml) => profile.unit==='L'&&ml>=1000?`${(ml/1000).toFixed(1)}L`:`${ml}ml`;
+
+  const QUICK = [250, 330, 500, 750, 1000];
 
   return (
-    <Section title="Water">
-      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', marginBottom: 24, gap: 24 }}>
-        <RingChart value={total} max={goal} size={140} thickness={11} colour={colour}
-          label={total >= 1000 ? `${(total/1000).toFixed(1)}L` : `${total}ml`}
-          sublabel={`of ${goal >= 1000 ? (goal/1000).toFixed(1)+'L' : goal+'ml'}`}
-          labelSize={18}
-        />
-      </div>
+    <Section title="Water" action={
+      <button onClick={()=>setShowSettings(v=>!v)} style={{...btnGhost,fontSize:11}}>
+        {showSettings?'✕ Close':'⚙ Settings'}
+      </button>
+    }>
 
-      {/* Quick log */}
-      <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap', marginBottom: 14, justifyContent: 'center' }}>
-        {QUICK.map(ml => (
-          <button key={ml} onClick={() => log(ml)} style={{
-            ...btnGhost, minWidth: 72, textAlign: 'center',
-          }}>{ml < 1000 ? `${ml}ml` : `${ml/1000}L`}</button>
-        ))}
-        <div style={{ display: 'flex', gap: 6 }}>
-          <input type="number" value={custom} onChange={e => setCustom(e.target.value)}
-            placeholder="ml" style={{ ...inputSx, width: 80 }}
-            onFocus={e => e.target.style.borderColor='var(--accent)'} onBlur={e => e.target.style.borderColor='var(--input-border)'}
-          />
-          <button onClick={() => { if (custom) { log(parseInt(custom)); setCustom(''); } }} style={btnPrimary}>Log</button>
-        </div>
-      </div>
-
-      {/* Today's log */}
-      <div style={{ ...cardSx }}>
-        <div style={{ fontSize: 10, color: 'var(--text-muted)', letterSpacing: '0.07em', marginBottom: 8 }}>TODAY</div>
-        {todayLogs.length === 0 ? (
-          <p style={{ fontSize: 12.5, color: 'var(--text-muted)', margin: 0 }}>No water logged yet today.</p>
-        ) : (
-          todayLogs.slice(-8).reverse().map((l, i) => (
-            <div key={l.id || i} style={{
-              display: 'flex', justifyContent: 'space-between', alignItems: 'center',
-              padding: '5px 0', borderBottom: i < Math.min(todayLogs.length, 8) - 1 ? '0.5px solid var(--sidebar-divider)' : 'none',
-            }}>
-              <span style={{ fontSize: 12, color: 'var(--text-secondary)' }}>
-                {l.amount >= 1000 ? `${(l.amount/1000).toFixed(1)}L` : `${l.amount}ml`}
-              </span>
-              <span style={{ fontSize: 11, color: 'var(--text-muted)' }}>{l.time}</span>
+      {/* ── Profile / Settings panel ── */}
+      {showSettings&&(
+        <GlassCard style={{marginBottom:14}}>
+          <GlassLabel>Personal profile — daily goal calculator</GlassLabel>
+          <div style={{display:'grid',gridTemplateColumns:'1fr 1fr',gap:10,marginBottom:10}}>
+            {/* Weight */}
+            <div>
+              <label style={lblSx}>Weight</label>
+              <div style={{display:'flex',gap:6}}>
+                <input type="number" value={profile.weight} onChange={e=>saveProfile({...profile,weight:+e.target.value})} style={{...inputSx,flex:1}}/>
+                <div style={{display:'flex',borderRadius:7,overflow:'hidden',border:'0.5px solid var(--card-border)'}}>
+                  {['kg','lb'].map(u=>(
+                    <button key={u} onClick={()=>saveProfile({...profile,weightUnit:u})} style={{
+                      padding:'7px 10px',fontSize:11,border:'none',cursor:'pointer',
+                      background:profile.weightUnit===u?'var(--accent)':'var(--hover-bg)',
+                      color:profile.weightUnit===u?'#fff':'var(--text-muted)',
+                    }}>{u}</button>
+                  ))}
+                </div>
+              </div>
             </div>
-          ))
-        )}
+            {/* Age */}
+            <div>
+              <label style={lblSx}>Age</label>
+              <input type="number" value={profile.age} onChange={e=>saveProfile({...profile,age:+e.target.value})} style={inputSx}/>
+            </div>
+            {/* Sex */}
+            <div>
+              <label style={lblSx}>Sex</label>
+              <div style={{display:'flex',borderRadius:7,overflow:'hidden',border:'0.5px solid var(--card-border)'}}>
+                {['male','female','other'].map(s=>(
+                  <button key={s} onClick={()=>saveProfile({...profile,sex:s})} style={{
+                    flex:1,padding:'7px 6px',fontSize:11,border:'none',cursor:'pointer',
+                    background:profile.sex===s?'var(--accent)':'var(--hover-bg)',
+                    color:profile.sex===s?'#fff':'var(--text-muted)',
+                    textTransform:'capitalize',
+                  }}>{s}</button>
+                ))}
+              </div>
+            </div>
+            {/* Activity */}
+            <div>
+              <label style={lblSx}>Training hours / week</label>
+              <input type="number" value={profile.activityHours} onChange={e=>saveProfile({...profile,activityHours:+e.target.value})} style={inputSx} min={0} max={21}/>
+            </div>
+          </div>
+          {/* Caffeine */}
+          <div style={{marginBottom:10}}>
+            <label style={lblSx}>Average daily caffeine (mg)</label>
+            <input type="number" value={profile.caffeineMg} onChange={e=>saveProfile({...profile,caffeineMg:+e.target.value})} style={inputSx}/>
+            <div style={{fontSize:10,color:'var(--text-muted)',marginTop:4}}>
+              ☕ 1 coffee ≈ 95mg · espresso ≈ 75mg · energy drink ≈ 160mg. Above 200mg adds to daily water target.
+            </div>
+          </div>
+          {/* Calculated goal */}
+          <div style={{padding:'10px 14px',borderRadius:8,background:'rgba(74,158,255,0.08)',border:'0.5px solid rgba(74,158,255,0.2)',display:'flex',justifyContent:'space-between',alignItems:'center'}}>
+            <span style={{fontSize:12,color:'rgba(255,255,255,0.6)'}}>Calculated daily goal</span>
+            <span style={{fontSize:16,fontWeight:600,color:'#4a9eff'}}>{goal>=1000?`${(goal/1000).toFixed(1)}L`:`${goal}ml`}</span>
+          </div>
+        </GlassCard>
+      )}
+
+      {/* ── Main: ring + log ── */}
+      <div style={{display:'flex',gap:16,marginBottom:14,alignItems:'flex-start'}}>
+        {/* Ring */}
+        <div style={{display:'flex',flexDirection:'column',alignItems:'center',gap:10,flexShrink:0}}>
+          <RingChart value={total} max={goal} size={130} thickness={10} colour={colour}
+            label={fmtWater(total)} sublabel={`of ${fmtWater(goal)}`} labelSize={17}/>
+          <div style={{fontSize:11,color:'var(--text-muted)'}}>{Math.round(pct)}% complete</div>
+          {pct<100&&<div style={{fontSize:10.5,color:colour}}>{fmtWater(goal-total)} remaining</div>}
+        </div>
+
+        {/* Right: quick log + recent */}
+        <div style={{flex:1,minWidth:0}}>
+          {/* Quick log buttons */}
+          <GlassLabel>Quick log</GlassLabel>
+          <div style={{display:'flex',gap:6,flexWrap:'wrap',marginBottom:12}}>
+            {QUICK.map(ml=>(
+              <button key={ml} onClick={()=>log(ml)} style={{
+                ...btnGhost,fontSize:12,padding:'7px 12px',
+                borderColor:colour+'44',
+              }}>
+                {ml<1000?`${ml}ml`:`${ml/1000}L`}
+              </button>
+            ))}
+          </div>
+          <div style={{display:'flex',gap:6,marginBottom:14}}>
+            <input type="number" value={custom} onChange={e=>setCustom(e.target.value)}
+              placeholder="Custom ml…" style={{...inputSx,flex:1}}
+              onKeyDown={e=>e.key==='Enter'&&custom&&(log(parseInt(custom)),setCustom(''))}
+              onFocus={e=>e.target.style.borderColor='var(--accent)'} onBlur={e=>e.target.style.borderColor='var(--input-border)'}
+            />
+            <button onClick={()=>{if(custom){log(parseInt(custom));setCustom('');}}} style={btnPrimary}>Log</button>
+          </div>
+
+          {/* Today's log */}
+          <GlassLabel>Today</GlassLabel>
+          {todayLogs.length===0?(
+            <div style={{fontSize:12,color:'var(--text-muted)',padding:'4px 0'}}>Nothing logged yet.</div>
+          ):(
+            <div style={{display:'flex',flexDirection:'column',gap:4}}>
+              {[...todayLogs].reverse().slice(0,6).map((l,i)=>(
+                <div key={l.id||i} style={{display:'flex',justifyContent:'space-between',padding:'5px 8px',borderRadius:6,background:'rgba(255,255,255,0.02)'}}>
+                  <span style={{fontSize:12,color:'var(--text-secondary)'}}>{fmtWater(l.amount)}</span>
+                  <span style={{fontSize:11,color:'var(--text-muted)',fontFamily:'ui-monospace,monospace'}}>{l.time}</span>
+                </div>
+              ))}
+            </div>
+          )}
+        </div>
       </div>
     </Section>
   );
@@ -895,56 +961,126 @@ function Water({ waterLogs, addWaterLog, settings }) {
 // ═══════════════════════════════════════════════════════════════════════════════
 // 6. BODY
 // ═══════════════════════════════════════════════════════════════════════════════
-function Body({ bodyMetrics, addBodyMetric }) {
-  const [form, setForm]  = useState({ weight: '', bodyFat: '', muscle: '', notes: '' });
-  const [adding, setAdding] = useState(false);
-  const sorted = useMemo(() =>
-    [...(bodyMetrics || [])].sort((a, b) => (b.date ?? '').localeCompare(a.date ?? '')),
-    [bodyMetrics]);
-  const latest = sorted[0];
+const BODY_TABS = [
+  { id:'weight',       label:'Weight',       emoji:'⚖' },
+  { id:'measurements', label:'Measurements', emoji:'📏' },
+  { id:'photos',       label:'Photos',       emoji:'📸' },
+];
 
-  const weightData = useMemo(() =>
-    sorted.slice(0, 14).reverse().map(m => ({
-      value: parseFloat(m.weight) || 0,
-      label: m.date ? m.date.slice(5) : '',
-    })),
-    [sorted]);
+function Body({ bodyMetrics, addBodyMetric }) {
+  const [bodyTab,  setBodyTab]  = useState('weight');
+  const [logForm,  setLogForm]  = useState({ weight:'', bodyFat:'', muscle:'', notes:'' });
+  const [adding,   setAdding]   = useState(false);
+  const [measures, setMeasures] = useState(() => { try { return JSON.parse(localStorage.getItem('valerie_measurements')||'{}'); } catch { return {}; } });
+  const [photos,   setPhotos]   = useState(() => { try { return JSON.parse(localStorage.getItem('valerie_photos')||'[]'); } catch { return []; } });
+  const [compare,  setCompare]  = useState([null,null]);
+  const fileRef = useRef(null);
+
+  const sorted = useMemo(()=>[...(bodyMetrics||[])].sort((a,b)=>(b.date??'').localeCompare(a.date??'')),[bodyMetrics]);
+  const latest = sorted[0];
+  const weightData = useMemo(()=>sorted.slice(0,30).reverse().map(m=>({value:parseFloat(m.weight)||0,label:m.date?m.date.slice(5):''})),[sorted]);
+
+  const saveMeasures = (m) => { setMeasures(m); localStorage.setItem('valerie_measurements',JSON.stringify(m)); };
+  const savePhotos   = (p) => { setPhotos(p);   localStorage.setItem('valerie_photos',JSON.stringify(p)); };
+
+  const addPhoto = (e) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    const reader = new FileReader();
+    reader.onload = (ev) => {
+      const entry = { id: Date.now(), date: todayStr(), src: ev.target.result, note:'' };
+      savePhotos([entry, ...photos]);
+    };
+    reader.readAsDataURL(file);
+  };
+
+  const MEASURE_FIELDS = [
+    { key:'waist',  label:'Waist',  unit:'cm' },
+    { key:'chest',  label:'Chest',  unit:'cm' },
+    { key:'hips',   label:'Hips',   unit:'cm' },
+    { key:'arms',   label:'Arms',   unit:'cm' },
+    { key:'thighs', label:'Thighs', unit:'cm' },
+    { key:'neck',   label:'Neck',   unit:'cm' },
+  ];
 
   return (
-    <Section title="Body" action={<button onClick={() => setAdding(true)} style={btnPrimary}>+ Log metrics</button>}>
-      {/* Latest metrics */}
-      {latest && (
-        <div style={{ display: 'flex', flexWrap: 'wrap', gap: 10, marginBottom: 16 }}>
-          {[
-            { label: 'WEIGHT',   value: latest.weight,   unit: 'kg' },
-            { label: 'BODY FAT', value: latest.bodyFat,  unit: '%' },
-            { label: 'MUSCLE',   value: latest.muscle,   unit: '%' },
-          ].filter(m => m.value).map(m => (
-            <div key={m.label} style={{ ...cardSx, flex: 1, minWidth: 100 }}>
-              <div style={{ fontSize: 9.5, color: 'var(--text-muted)', letterSpacing: '0.07em', marginBottom: 4 }}>{m.label}</div>
-              <div style={{ fontSize: 24, fontWeight: 300, color: 'var(--text-primary)' }}>
-                {m.value}<span style={{ fontSize: 11, color: 'var(--text-muted)', marginLeft: 2 }}>{m.unit}</span>
+    <Section title="Body" action={
+      bodyTab==='weight'?<button onClick={()=>setAdding(v=>!v)} style={btnPrimary}>{adding?'✕ Close':'+ Log'}</button>:
+      bodyTab==='photos'?<button onClick={()=>fileRef.current?.click()} style={btnPrimary}>📸 Add photo</button>:null
+    }>
+      <input ref={fileRef} type="file" accept="image/*" style={{display:'none'}} onChange={addPhoto}/>
+
+      {/* Sub-tab bar */}
+      <div style={{display:'flex',gap:4,marginBottom:14,background:'rgba(255,255,255,0.03)',padding:4,borderRadius:10,border:'0.5px solid rgba(255,255,255,0.07)'}}>
+        {BODY_TABS.map(t=>(
+          <button key={t.id} onClick={()=>setBodyTab(t.id)} style={{
+            flex:1,padding:'6px 0',borderRadius:7,border:'none',cursor:'pointer',
+            background:bodyTab===t.id?'var(--active-bg)':'transparent',
+            color:bodyTab===t.id?'var(--accent)':'var(--text-muted)',
+            fontSize:12,fontWeight:bodyTab===t.id?600:400,transition:'all 0.15s',
+          }}>{t.emoji} {t.label}</button>
+        ))}
+      </div>
+
+      {/* ── Weight tab ── */}
+      {bodyTab==='weight'&&(
+        <>
+          {/* Log form */}
+          {adding&&(
+            <GlassCard style={{marginBottom:12}}>
+              <GlassLabel>Log today's metrics</GlassLabel>
+              <div style={{display:'grid',gridTemplateColumns:'1fr 1fr',gap:8,marginBottom:10}}>
+                {[['weight','Weight','kg'],['bodyFat','Body Fat','%'],['muscle','Muscle','%']].map(([k,l,u])=>(
+                  <div key={k}>
+                    <label style={lblSx}>{l} ({u})</label>
+                    <input type="number" value={logForm[k]} onChange={e=>setLogForm(p=>({...p,[k]:e.target.value}))}
+                      placeholder={`e.g. ${k==='weight'?'80':k==='bodyFat'?'15':'40'}`} style={inputSx}/>
+                  </div>
+                ))}
+                <div style={{gridColumn:'1/-1'}}>
+                  <label style={lblSx}>Notes</label>
+                  <input value={logForm.notes} onChange={e=>setLogForm(p=>({...p,notes:e.target.value}))} placeholder="optional notes" style={inputSx}/>
+                </div>
               </div>
+              <div style={{display:'flex',gap:6}}>
+                <button onClick={()=>setAdding(false)} style={{...btnGhost,flex:1}}>Cancel</button>
+                <button onClick={async()=>{
+                  if(!logForm.weight) return;
+                  await addBodyMetric({date:todayStr(),...logForm});
+                  setLogForm({weight:'',bodyFat:'',muscle:'',notes:''});setAdding(false);
+                }} style={{...btnPrimary,flex:2}}>Save</button>
+              </div>
+            </GlassCard>
+          )}
+
+          {/* Latest stats */}
+          {latest&&(
+            <div style={{display:'flex',gap:8,marginBottom:12}}>
+              {[{label:'WEIGHT',value:latest.weight,unit:'kg'},{label:'BODY FAT',value:latest.bodyFat,unit:'%'},{label:'MUSCLE',value:latest.muscle,unit:'%'}].filter(m=>m.value).map(m=>(
+                <div key={m.label} style={{...cardSx,flex:1,textAlign:'center'}}>
+                  <div style={{fontSize:9,color:'var(--text-muted)',letterSpacing:'0.1em',marginBottom:4}}>{m.label}</div>
+                  <div style={{fontSize:22,fontWeight:300,color:'var(--text-primary)'}}>{m.value}<span style={{fontSize:10,color:'var(--text-muted)',marginLeft:2}}>{m.unit}</span></div>
+                  <div style={{fontSize:9.5,color:'var(--text-muted)',marginTop:2}}>{latest.date===todayStr()?'today':latest.date?.slice(5)}</div>
+                </div>
+              ))}
             </div>
-          ))}
-        </div>
-      )}
+          )}
 
-      {/* Weight trend chart */}
-      {weightData.length > 1 && (
-        <div style={{ ...cardSx, marginBottom: 16 }}>
-          <div style={{ fontSize: 10, color: 'var(--text-muted)', letterSpacing: '0.07em', marginBottom: 12 }}>WEIGHT TREND</div>
-          <BarChart data={weightData} maxHeight={80} />
-        </div>
-      )}
+          {/* Trend chart */}
+          {weightData.length>1?(
+            <GlassCard>
+              <GlassLabel>Weight trend — last {weightData.length} entries</GlassLabel>
+              <BarChart data={weightData} maxHeight={80}/>
+            </GlassCard>
+          ):(
+            <div style={{textAlign:'center',padding:32,opacity:0.35}}>
+              <div style={{fontSize:28}}>⚖</div>
+              <p style={{fontSize:12,color:'var(--text-muted)',marginTop:8}}>Log a few entries to see your trend.</p>
+            </div>
+          )}
 
-      {/* Eufy note */}
-      <div style={{
-        padding: '10px 14px', borderRadius: 8,
-        background: 'rgba(255,255,255,0.02)', border: '0.5px solid var(--card-border)',
-        fontSize: 12, color: 'var(--text-muted)', marginBottom: 14,
-      }}>
-        🔵 Eufy body metrics sync automatically from Apple Health on iOS. Log manually on desktop until iPhone is set up.
+          <div style={{padding:'10px 14px',borderRadius:8,background:'rgba(255,255,255,0.02)',border:'0.5px solid var(--card-border)',fontSize:11.5,color:'var(--text-muted)',marginTop:10}}>
+            🔵 Eufy body metrics sync automatically from Apple Health on iOS. Log manually on desktop until iPhone is set up.
       </div>
 
       {/* Add metrics form */}
@@ -971,119 +1107,316 @@ function Body({ bodyMetrics, addBodyMetric }) {
       )}
 
       {/* History */}
-      {sorted.length > 0 && (
-        <div style={{ ...cardSx }}>
-          <div style={{ fontSize: 10, color: 'var(--text-muted)', letterSpacing: '0.07em', marginBottom: 8 }}>HISTORY</div>
-          {sorted.slice(0, 8).map((m, i) => (
-            <div key={m.id || i} style={{
-              display: 'flex', justifyContent: 'space-between', padding: '6px 0',
-              borderBottom: i < Math.min(sorted.length, 8) - 1 ? '0.5px solid var(--sidebar-divider)' : 'none',
-            }}>
-              <span style={{ fontSize: 11, color: 'var(--text-muted)' }}>{m.date}</span>
-              <span style={{ fontSize: 12, color: 'var(--text-secondary)' }}>
-                {m.weight && `${m.weight}kg`} {m.bodyFat && `· ${m.bodyFat}% fat`}
-              </span>
-            </div>
-          ))}
+          {/* History */}
+          {sorted.length>0&&(
+            <GlassCard style={{marginTop:10}}>
+              <GlassLabel>History</GlassLabel>
+              {sorted.slice(0,8).map((m,i)=>(
+                <div key={m.id||i} style={{display:'flex',justifyContent:'space-between',padding:'5px 0',borderBottom:i<Math.min(sorted.length,8)-1?'0.5px solid rgba(255,255,255,0.05)':'none'}}>
+                  <span style={{fontSize:11,color:'var(--text-muted)',fontFamily:'ui-monospace,monospace'}}>{m.date}</span>
+                  <span style={{fontSize:11.5,color:'var(--text-secondary)'}}>{m.weight&&`${m.weight}kg`}{m.bodyFat&&` · ${m.bodyFat}% fat`}{m.muscle&&` · ${m.muscle}% muscle`}</span>
+                </div>
+              ))}
+            </GlassCard>
+          )}
+        </>
+      )}
+
+      {/* ── Measurements tab ── */}
+      {bodyTab==='measurements'&&(
+        <div style={{display:'flex',flexDirection:'column',gap:10}}>
+          <GlassLabel>Current measurements</GlassLabel>
+          <div style={{display:'grid',gridTemplateColumns:'1fr 1fr',gap:8}}>
+            {MEASURE_FIELDS.map(f=>(
+              <div key={f.key} style={{...cardSx}}>
+                <label style={lblSx}>{f.label} ({f.unit})</label>
+                <input type="number" value={measures[f.key]??''} onChange={e=>saveMeasures({...measures,[f.key]:e.target.value})}
+                  placeholder="—" style={{...inputSx,fontSize:16,fontWeight:300,padding:'6px 8px'}}/>
+              </div>
+            ))}
+          </div>
+          <div style={{fontSize:11,color:'var(--text-muted)',padding:'6px 0'}}>Measurements auto-save as you type.</div>
         </div>
+      )}
+
+      {/* ── Photos tab ── */}
+      {bodyTab==='photos'&&(
+        <>
+          {photos.length===0?(
+            <div style={{textAlign:'center',padding:40,opacity:0.4}}>
+              <div style={{fontSize:36}}>📸</div>
+              <p style={{fontSize:13,color:'var(--text-muted)',marginTop:8}}>No progress photos yet.</p>
+              <button onClick={()=>fileRef.current?.click()} style={{...btnPrimary,marginTop:10}}>Add first photo</button>
+            </div>
+          ):(
+            <>
+              {/* Compare mode: pick 2 */}
+              {photos.length>=2&&(
+                <div style={{marginBottom:12}}>
+                  <GlassLabel>Side-by-side comparison</GlassLabel>
+                  <div style={{display:'flex',gap:8}}>
+                    {[0,1].map(idx=>(
+                      <div key={idx} style={{flex:1}}>
+                        <select value={compare[idx]??''} onChange={e=>{const c=[...compare];c[idx]=e.target.value;setCompare(c);}}
+                          style={{...inputSx,marginBottom:6,fontSize:11}}>
+                          <option value="">— pick photo —</option>
+                          {photos.map(p=><option key={p.id} value={p.id}>{p.date} {p.note&&`· ${p.note}`}</option>)}
+                        </select>
+                        {compare[idx]&&(()=>{
+                          const p=photos.find(ph=>String(ph.id)===String(compare[idx]));
+                          return p?<img src={p.src} alt={p.date} style={{width:'100%',borderRadius:8,border:'0.5px solid var(--card-border)',objectFit:'cover',maxHeight:220}}/>:null;
+                        })()}
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              )}
+
+              {/* Photo grid */}
+              <GlassLabel>All photos ({photos.length})</GlassLabel>
+              <div style={{display:'grid',gridTemplateColumns:'repeat(auto-fill,minmax(140px,1fr))',gap:8}}>
+                {photos.map(p=>(
+                  <div key={p.id} style={{borderRadius:8,overflow:'hidden',border:'0.5px solid var(--card-border)',position:'relative',cursor:'pointer'}}>
+                    <img src={p.src} alt={p.date} style={{width:'100%',aspectRatio:'3/4',objectFit:'cover',display:'block'}}/>
+                    <div style={{padding:'6px 8px',background:'rgba(0,0,0,0.7)',position:'absolute',bottom:0,left:0,right:0,display:'flex',justifyContent:'space-between',alignItems:'center'}}>
+                      <span style={{fontSize:10,color:'rgba(255,255,255,0.7)',fontFamily:'ui-monospace,monospace'}}>{p.date}</span>
+                      <button onClick={()=>savePhotos(photos.filter(ph=>ph.id!==p.id))} style={{background:'none',border:'none',cursor:'pointer',color:'rgba(255,100,100,0.7)',fontSize:12,padding:0}}>✕</button>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </>
+          )}
+        </>
       )}
     </Section>
   );
 }
 
 // ═══════════════════════════════════════════════════════════════════════════════
-// 7. SUPPLEMENTS
+// 7. SUPPLEMENTS — tap-to-take stack
 // ═══════════════════════════════════════════════════════════════════════════════
 const SUPP_COLOURS = ['#4a9eff','#4caf7d','#f4a642','#9b5de5','#e55a5a','#00c9a7','#f7b731'];
+const TIME_SLOTS   = [
+  { id: 'morning', label: 'Morning', emoji: '🌅', range: '7–10 AM' },
+  { id: 'midday',  label: 'Midday',  emoji: '☀️', range: '11 AM–2 PM' },
+  { id: 'evening', label: 'Evening', emoji: '🌙', range: '7–10 PM' },
+  { id: 'anytime', label: 'Anytime', emoji: '⏱',  range: '' },
+];
+const SUPP_SUGGESTIONS = [
+  { name:'Creatine',         dose:'5g',   info:'Post-workout · increases strength' },
+  { name:'Magnesium',        dose:'400mg',info:'Evening · sleep quality + recovery' },
+  { name:'Vitamin D3',       dose:'5000IU',info:'Morning · with fat for absorption' },
+  { name:'Omega-3',          dose:'2g',   info:'Morning · with food' },
+  { name:'Zinc',             dose:'15mg', info:'Evening · immune + testosterone' },
+  { name:'Ashwagandha',      dose:'600mg',info:'Evening · cortisol + stress' },
+  { name:'L-Citrulline',     dose:'6–8g', info:'Morning · ~30 min pre-workout' },
+  { name:'L-Carnitine',      dose:'1–2g', info:'Morning · with carbs' },
+  { name:'Glutamine',        dose:'5g',   info:'Post-workout or bedtime' },
+  { name:'Vitamin C',        dose:'1000mg',info:'Morning · antioxidant' },
+  { name:'B-Complex',        dose:'1 cap',info:'Morning · energy metabolism' },
+  { name:'Probiotics',       dose:'1 cap',info:'Morning · empty stomach' },
+  { name:'Collagen',         dose:'10g',  info:'Morning · with vitamin C' },
+  { name:'Berberine',        dose:'500mg',info:'With meals · blood sugar' },
+  { name:'NMN',              dose:'500mg',info:'Morning · NAD+ precursor' },
+  { name:'Protein Powder',   dose:'30g',  info:'Post-workout or morning' },
+  { name:'Pre-workout',      dose:'1 scoop',info:'30 min before training' },
+];
 
 function Supplements({ supplements, suppLogs, addSupplement, removeSupplement, addSuppLog }) {
-  const today = todayStr();
-  const [adding, setAdding] = useState(false);
-  const [form, setForm]     = useState({ name: '', dose: '', frequency: 'daily', colour: SUPP_COLOURS[0] });
-  const takenToday = new Set((suppLogs || []).filter(l => l.date === today).map(l => l.suppId));
+  const today      = todayStr();
+  const [search,   setSearch]   = useState('');
+  const [showForm, setShowForm] = useState(false);
+  const [form, setForm]         = useState({ name:'', dose:'', timeOfDay:'morning', colour:SUPP_COLOURS[0], notes:'' });
+  const [showSuggestions, setShowSuggestions] = useState(false);
 
-  const toggleTaken = async (supp) => {
-    if (takenToday.has(supp.id)) return; // already taken today
+  const takenToday = new Set((suppLogs||[]).filter(l=>l.date===today).map(l=>l.suppId));
+
+  const tap = async (supp) => {
+    if (takenToday.has(supp.id)) return;
     await addSuppLog({ suppId: supp.id, date: today, time: nowStr() });
   };
 
+  const markAllSlot = async (slotSupps) => {
+    const pending = slotSupps.filter(s => !takenToday.has(s.id));
+    for (const s of pending) await addSuppLog({ suppId: s.id, date: today, time: nowStr() });
+  };
+
+  const addSupp = async () => {
+    if (!form.name.trim()) return;
+    await addSupplement({ name: form.name.trim(), dose: form.dose, timeOfDay: form.timeOfDay, colour: form.colour, notes: form.notes, streak: 0 });
+    setForm({ name:'', dose:'', timeOfDay:'morning', colour:SUPP_COLOURS[0], notes:'' });
+    setShowForm(false); setSearch('');
+  };
+
+  const filteredSuggestions = SUPP_SUGGESTIONS.filter(s =>
+    search.length > 0 && s.name.toLowerCase().includes(search.toLowerCase()) &&
+    !supplements.find(ex => ex.name.toLowerCase() === s.name.toLowerCase())
+  );
+
+  const totalTaken = takenToday.size;
+  const totalSupps = supplements.length;
+
   return (
-    <Section title="Supplements" action={<button onClick={() => setAdding(true)} style={btnPrimary}>+ Add</button>}>
-      {adding && (
-        <div style={{ ...cardSx, marginBottom: 14, display: 'flex', flexDirection: 'column', gap: 10 }}>
-          {[['name','Name','e.g. Creatine'],['dose','Dose','e.g. 5g']].map(([k,l,ph]) => (
-            <div key={k}>
-              <label style={lblSx}>{l}</label>
-              <input value={form[k]} onChange={e => setForm(p => ({ ...p, [k]: e.target.value }))}
-                placeholder={ph} style={inputSx}
-                onFocus={e => e.target.style.borderColor='var(--accent)'} onBlur={e => e.target.style.borderColor='var(--input-border)'}
-              />
+    <Section title="Supplements" action={
+      <div style={{display:'flex',gap:6,alignItems:'center'}}>
+        {totalSupps>0&&<span style={{fontSize:11,color:'var(--text-muted)'}}>{totalTaken}/{totalSupps} taken</span>}
+        <button onClick={()=>{setShowForm(v=>!v);setSearch('');}} style={btnPrimary}>
+          {showForm?'✕ Close':'+ Add'}
+        </button>
+      </div>
+    }>
+
+      {/* ── Add form ── */}
+      {showForm&&(
+        <GlassCard style={{marginBottom:14}}>
+          <GlassLabel>Add to stack</GlassLabel>
+          {/* Search / name */}
+          <div style={{position:'relative',marginBottom:8}}>
+            <input
+              value={search||form.name}
+              onChange={e=>{setSearch(e.target.value);setForm(p=>({...p,name:e.target.value}));setShowSuggestions(true);}}
+              placeholder="Search or type supplement name…"
+              style={{...inputSx}}
+              onFocus={()=>setShowSuggestions(true)}
+            />
+            {showSuggestions&&filteredSuggestions.length>0&&(
+              <div style={{position:'absolute',top:'100%',left:0,right:0,zIndex:20,background:'var(--bg-panel)',border:'0.5px solid var(--card-border)',borderRadius:8,marginTop:3,maxHeight:200,overflowY:'auto',boxShadow:'0 8px 24px rgba(0,0,0,0.4)'}}>
+                {filteredSuggestions.map(s=>(
+                  <div key={s.name} onClick={()=>{setForm(p=>({...p,name:s.name,dose:s.dose}));setSearch('');setShowSuggestions(false);}}
+                    style={{padding:'9px 12px',cursor:'pointer',borderBottom:'0.5px solid var(--card-border)',display:'flex',flexDirection:'column',gap:2}}
+                    onMouseEnter={e=>e.currentTarget.style.background='var(--hover-bg)'}
+                    onMouseLeave={e=>e.currentTarget.style.background='transparent'}
+                  >
+                    <span style={{fontSize:13,color:'var(--text-primary)'}}>{s.name}</span>
+                    <span style={{fontSize:10.5,color:'var(--text-muted)'}}>{s.dose} · {s.info}</span>
+                  </div>
+                ))}
+              </div>
+            )}
+          </div>
+
+          <div style={{display:'flex',gap:8,marginBottom:8}}>
+            <div style={{flex:1}}>
+              <label style={lblSx}>Dose / amount</label>
+              <input value={form.dose} onChange={e=>setForm(p=>({...p,dose:e.target.value}))} placeholder="e.g. 5g" style={inputSx}/>
             </div>
-          ))}
-          <div>
-            <label style={lblSx}>Colour</label>
-            <div style={{ display: 'flex', gap: 6 }}>
-              {SUPP_COLOURS.map(c => (
-                <button key={c} onClick={() => setForm(p => ({ ...p, colour: c }))} style={{
-                  width: 22, height: 22, borderRadius: '50%', background: c, cursor: 'pointer',
-                  border: `2.5px solid ${form.colour === c ? 'white' : 'transparent'}`,
-                }} />
+            <div style={{flex:1}}>
+              <label style={lblSx}>Time of day</label>
+              <select value={form.timeOfDay} onChange={e=>setForm(p=>({...p,timeOfDay:e.target.value}))}
+                style={{...inputSx,cursor:'pointer'}}>
+                {TIME_SLOTS.map(t=><option key={t.id} value={t.id}>{t.emoji} {t.label}</option>)}
+              </select>
+            </div>
+          </div>
+
+          <div style={{marginBottom:10}}>
+            <label style={lblSx}>Colour tag</label>
+            <div style={{display:'flex',gap:6}}>
+              {SUPP_COLOURS.map(c=>(
+                <button key={c} onClick={()=>setForm(p=>({...p,colour:c}))} style={{width:22,height:22,borderRadius:'50%',background:c,cursor:'pointer',border:`2.5px solid ${form.colour===c?'white':'transparent'}`,padding:0}}/>
               ))}
             </div>
           </div>
-          <div style={{ display: 'flex', gap: 6 }}>
-            <button onClick={() => setAdding(false)} style={{ ...btnGhost, flex: 1 }}>Cancel</button>
-            <button onClick={async () => {
-              if (!form.name.trim()) return;
-              await addSupplement({ name: form.name, dose: form.dose, frequency: form.frequency, colour: form.colour, streak: 0 });
-              setForm({ name:'', dose:'', frequency:'daily', colour: SUPP_COLOURS[0] }); setAdding(false);
-            }} style={{ ...btnPrimary, flex: 1 }}>Add</button>
+
+          <div style={{display:'flex',gap:6}}>
+            <button onClick={()=>{setShowForm(false);setSearch('');}} style={{...btnGhost,flex:1}}>Cancel</button>
+            <button onClick={addSupp} style={{...btnPrimary,flex:2}}>Add to stack</button>
           </div>
-        </div>
+        </GlassCard>
       )}
 
-      {supplements.length === 0 && !adding ? (
-        <div style={{ textAlign: 'center', padding: 40, opacity: 0.4 }}>
-          <div style={{ fontSize: 28 }}>💊</div>
-          <p style={{ fontSize: 13, color: 'var(--text-muted)', marginTop: 8 }}>No supplements added yet.</p>
+      {/* ── Stack grouped by time ── */}
+      {supplements.length===0&&!showForm?(
+        <div style={{textAlign:'center',padding:40,opacity:0.4}}>
+          <div style={{fontSize:32}}>💊</div>
+          <p style={{fontSize:13,color:'var(--text-muted)',marginTop:8}}>No supplements in your stack yet.</p>
         </div>
-      ) : (
-        <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
-          {supplements.map(s => {
-            const taken = takenToday.has(s.id);
-            return (
-              <div key={s.id} style={{
-                ...cardSx, display: 'flex', alignItems: 'center', gap: 12,
-                borderLeft: `3px solid ${s.colour ?? 'var(--accent)'}`,
-              }}>
-                <div style={{ flex: 1 }}>
-                  <div style={{ fontSize: 13.5, color: 'var(--text-primary)' }}>{s.name}</div>
-                  <div style={{ fontSize: 11, color: 'var(--text-muted)', marginTop: 2 }}>
-                    {s.dose} · {s.frequency}
-                  </div>
+      ):(
+        TIME_SLOTS.map(slot=>{
+          const slotSupps = supplements.filter(s=>(s.timeOfDay??'anytime')===slot.id);
+          if (slotSupps.length===0) return null;
+          const allTaken  = slotSupps.every(s=>takenToday.has(s.id));
+
+          return(
+            <div key={slot.id} style={{marginBottom:16}}>
+              {/* Slot header */}
+              <div style={{display:'flex',alignItems:'center',justifyContent:'space-between',marginBottom:8}}>
+                <div style={{display:'flex',alignItems:'center',gap:8}}>
+                  <span style={{fontSize:16}}>{slot.emoji}</span>
+                  <span style={{fontSize:13,fontWeight:600,color:'var(--text-primary)'}}>{slot.label}</span>
+                  {slot.range&&<span style={{fontSize:10.5,color:'var(--text-muted)'}}>{slot.range}</span>}
                 </div>
-                <button onClick={() => toggleTaken(s)} style={{
-                  padding: '5px 12px', borderRadius: 7, cursor: taken ? 'default' : 'pointer',
-                  border: `0.5px solid ${taken ? 'var(--accent)' : 'var(--card-border)'}`,
-                  background: taken ? 'var(--active-bg)' : 'transparent',
-                  color: taken ? 'var(--accent)' : 'var(--text-secondary)',
-                  fontSize: 11.5, transition: 'all 0.15s ease',
-                }}>{taken ? '✓ Taken' : 'Mark taken'}</button>
-                <button onClick={() => removeSupplement(s.id)} style={{ background:'none', border:'none', cursor:'pointer', color:'var(--text-muted)', padding:4, borderRadius:4, display:'flex' }}>
-                  <TrashIcon />
-                </button>
+                {!allTaken&&slotSupps.length>1&&(
+                  <button onClick={()=>markAllSlot(slotSupps)} style={{...btnGhost,fontSize:10.5,padding:'4px 10px'}}>
+                    Mark all taken
+                  </button>
+                )}
+                {allTaken&&<span style={{fontSize:10.5,color:'#4caf7d'}}>✓ All taken</span>}
               </div>
-            );
-          })}
-          {supplements.length > 0 && (
-            <div style={{ ...cardSx, background: 'var(--hover-bg)', border: '0.5px dashed var(--card-border)', textAlign: 'center', fontSize: 12, color: 'var(--text-muted)', cursor: 'pointer', padding: '10px' }}
-              onClick={async () => {
-                const pending = supplements.filter(s => !takenToday.has(s.id));
-                for (const s of pending) await addSuppLog({ suppId: s.id, date: today, time: nowStr() });
-              }}>
-              ✓ Mark all as taken
+
+              {/* Supplement rows */}
+              <div style={{display:'flex',flexDirection:'column',gap:6}}>
+                {slotSupps.map(s=>{
+                  const taken = takenToday.has(s.id);
+                  return(
+                    <div key={s.id} style={{
+                      display:'flex',alignItems:'center',gap:12,
+                      padding:'10px 14px',borderRadius:10,
+                      background:taken?'rgba(76,175,125,0.06)':'rgba(255,255,255,0.03)',
+                      border:`0.5px solid ${taken?'rgba(76,175,125,0.25)':'rgba(255,255,255,0.07)'}`,
+                      transition:'all 0.2s',cursor:'pointer',
+                    }} onClick={()=>tap(s)}>
+                      {/* Circle checkbox */}
+                      <div style={{
+                        width:28,height:28,borderRadius:'50%',flexShrink:0,
+                        border:`2px solid ${taken?'#4caf7d':(s.colour??'var(--accent)')+'66'}`,
+                        background:taken?'#4caf7d':'transparent',
+                        display:'flex',alignItems:'center',justifyContent:'center',
+                        transition:'all 0.2s',
+                      }}>
+                        {taken&&<span style={{fontSize:13,color:'#fff',lineHeight:1}}>✓</span>}
+                      </div>
+
+                      {/* Colour dot */}
+                      <div style={{width:8,height:8,borderRadius:'50%',background:s.colour??'var(--accent)',flexShrink:0,opacity:taken?0.4:1}}/>
+
+                      {/* Info */}
+                      <div style={{flex:1,minWidth:0}}>
+                        <div style={{fontSize:13,color:taken?'var(--text-muted)':'var(--text-primary)',textDecoration:taken?'line-through':'none',transition:'all 0.2s'}}>{s.name}</div>
+                        {s.dose&&<div style={{fontSize:10.5,color:'var(--text-muted)',marginTop:1}}>{s.dose}{s.notes?` · ${s.notes}`:''}</div>}
+                      </div>
+
+                      {/* Running low badge — if quantity tracked */}
+                      {s.runningLow&&(
+                        <span style={{fontSize:9.5,fontWeight:700,padding:'2px 7px',borderRadius:4,background:'rgba(244,166,66,0.15)',color:'#f4a642',letterSpacing:'0.04em',flexShrink:0}}>
+                          ⚠ Running low
+                        </span>
+                      )}
+
+                      {/* Delete */}
+                      <button onClick={e=>{e.stopPropagation();removeSupplement(s.id);}} style={{background:'none',border:'none',cursor:'pointer',color:'rgba(255,255,255,0.2)',padding:4,borderRadius:4,display:'flex',flexShrink:0}}
+                        onMouseEnter={e=>e.currentTarget.style.color='var(--text-muted)'}
+                        onMouseLeave={e=>e.currentTarget.style.color='rgba(255,255,255,0.2)'}
+                      >
+                        <TrashIcon/>
+                      </button>
+                    </div>
+                  );
+                })}
+              </div>
             </div>
-          )}
+          );
+        })
+      )}
+
+      {/* Progress footer */}
+      {supplements.length>0&&(
+        <div style={{marginTop:8,padding:'10px 14px',borderRadius:10,background:'rgba(255,255,255,0.02)',border:'0.5px solid rgba(255,255,255,0.06)',display:'flex',alignItems:'center',justifyContent:'space-between'}}>
+          <span style={{fontSize:11.5,color:'var(--text-muted)'}}>{totalTaken} of {totalSupps} taken today</span>
+          <div style={{width:120,height:4,borderRadius:2,background:'rgba(255,255,255,0.08)',overflow:'hidden'}}>
+            <div style={{height:'100%',width:`${totalSupps>0?(totalTaken/totalSupps)*100:0}%`,background:'#4caf7d',borderRadius:2,transition:'width 0.4s ease'}}/>
+          </div>
         </div>
       )}
     </Section>
@@ -1415,7 +1748,7 @@ export default function Health({ settings }) {
   const renderSection = () => {
     const p = { settings: settings_ };
     switch (active) {
-      case 'overview':    return <Overview     {...p} habits={habits} waterLogs={waterLogs} nutritionLogs={nutritionLogs} sleepData={sleepData} supplements={supplements} suppLogs={suppLogs} stimLogs={stimLogs} workoutLogs={workoutLogs} bodyMetrics={bodyMetrics} />;
+      case 'overview':    return <Overview     {...p} habits={habits} waterLogs={waterLogs} nutritionLogs={nutritionLogs} sleepData={sleepData} supplements={supplements} suppLogs={suppLogs} stimLogs={stimLogs} workoutLogs={workoutLogs} bodyMetrics={bodyMetrics} onNav={setActive} />;
       case 'habits':      return <Habits       habits={habits} addHabit={addHabit} updateHabit={updateHabit} removeHabit={removeHabit} />;
       case 'nutrition':   return <Nutrition    {...p} nutritionLogs={nutritionLogs} addNutritionLog={addNutritionLog} updateNutritionLog={updateNutritionLog} />;
       case 'workout':     return <Workout      workoutLogs={workoutLogs} addWorkoutLog={addWorkoutLog} settings={settings_} />;
