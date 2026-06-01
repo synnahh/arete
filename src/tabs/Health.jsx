@@ -1540,13 +1540,31 @@ function Supplements({ supplements, suppLogs, addSupplement, removeSupplement, a
 // ═══════════════════════════════════════════════════════════════════════════════
 // 8. SLEEP
 // ═══════════════════════════════════════════════════════════════════════════════
-function Sleep({ sleepData }) {
+function Sleep({ sleepData, settings }) {
   const sorted = useMemo(() =>
     [...(sleepData || [])].sort((a, b) => (b.date ?? '').localeCompare(a.date ?? '')),
     [sleepData]);
   const last14 = sorted.slice(0, 14).reverse();
   const latest = sorted[0];
   const effColour = (eff) => eff >= 85 ? '#4caf7d' : eff >= 75 ? '#f4a642' : '#e55a5a';
+
+  // ── Sleep Scheduler state ────────────────────────────────────────────────
+  const { data: schedule, save: saveSchedule } = useDocument('sleep_schedule', 'valerie_sleep_schedule', null);
+  const [bedtime,   setBedtime]   = useState('');
+  const [wakeTime,  setWakeTime]  = useState('');
+  const [schedSaved, setSchedSaved] = useState(false);
+
+  // Sync inputs when schedule loads from Firestore
+  useEffect(() => {
+    if (schedule?.bedtime  && !bedtime)  setBedtime(schedule.bedtime);
+    if (schedule?.wakeTime && !wakeTime) setWakeTime(schedule.wakeTime);
+  }, [schedule]); // eslint-disable-line react-hooks/exhaustive-deps
+
+  const handleScheduleSave = async () => {
+    await saveSchedule({ bedtime, wakeTime });
+    setSchedSaved(true);
+    setTimeout(() => setSchedSaved(false), 2000);
+  };
 
   const DEMO = !latest && [
     { date:'2026-05-29', duration:402, efficiency:82, stages:{ deep:62, rem:88, core:198, awake:54 }, bedTime:'22:45', wakeTime:'06:12' },
@@ -1632,6 +1650,53 @@ function Sleep({ sleepData }) {
           <BarChart data={chartData} maxHeight={100} goalLine={8} />
         </div>
       )}
+
+      {/* Sleep Scheduler */}
+      <div style={{ ...cardSx, marginTop: 16 }}>
+        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 14 }}>
+          <div style={{ fontSize: 10, color: 'var(--text-muted)', letterSpacing: '0.07em' }}>SLEEP SCHEDULER</div>
+          {schedule?.bedtime && (
+            <span style={{ fontSize: 10.5, color: '#4a9eff', background: 'rgba(74,158,255,0.1)', borderRadius: 6, padding: '2px 8px' }}>
+              {schedule.bedtime} → {schedule.wakeTime || '—'}
+            </span>
+          )}
+        </div>
+        <div style={{ display: 'flex', gap: 12, flexWrap: 'wrap', marginBottom: 14 }}>
+          <div style={{ flex: 1, minWidth: 120 }}>
+            <div style={{ fontSize: 10.5, color: 'var(--text-muted)', marginBottom: 5 }}>Bedtime</div>
+            <input
+              type="time"
+              value={bedtime}
+              onChange={e => setBedtime(e.target.value)}
+              style={{ ...inputSx }}
+            />
+          </div>
+          <div style={{ flex: 1, minWidth: 120 }}>
+            <div style={{ fontSize: 10.5, color: 'var(--text-muted)', marginBottom: 5 }}>Wake time</div>
+            <input
+              type="time"
+              value={wakeTime}
+              onChange={e => setWakeTime(e.target.value)}
+              style={{ ...inputSx }}
+            />
+          </div>
+        </div>
+        <div style={{ fontSize: 11, color: 'var(--text-muted)', marginBottom: 12, lineHeight: 1.5 }}>
+          VALERIE will remind you 30 minutes before bedtime and gradually dim the interface.
+        </div>
+        <button
+          onClick={handleScheduleSave}
+          disabled={!bedtime || !wakeTime}
+          style={{
+            padding: '7px 18px', borderRadius: 7, border: 'none', cursor: bedtime && wakeTime ? 'pointer' : 'not-allowed',
+            background: bedtime && wakeTime ? 'var(--accent)' : 'var(--hover-bg)',
+            color: bedtime && wakeTime ? 'var(--bg-base)' : 'var(--text-muted)',
+            fontSize: 12, fontWeight: 700, transition: 'all 0.15s',
+          }}
+        >
+          {schedSaved ? 'Saved ✓' : 'Save Schedule'}
+        </button>
+      </div>
     </Section>
   );
 }
@@ -2140,7 +2205,7 @@ export default function Health({ settings, onTabChange }) {
       case 'water':       return <Water        {...p} waterLogs={waterLogs} addWaterLog={addWaterLog} />;
       case 'body':        return <Body         bodyMetrics={bodyMetrics} addBodyMetric={addBodyMetric} />;
       case 'supplements': return <Supplements  supplements={supplements} suppLogs={suppLogs} addSupplement={addSupplement} removeSupplement={removeSupplement} addSuppLog={addSuppLog} />;
-      case 'sleep':       return <Sleep        sleepData={sleepData} />;
+      case 'sleep':       return <Sleep        sleepData={sleepData} settings={p.settings} />;
       case 'stimulant':   return <Stimulant    {...p} stimLogs={stimLogs} addStimLog={addStimLog} removeStimLog={removeStimLog} />;
       case 'mealplan':   return <MealPlanner {...p} savedMeals={savedMeals} addSavedMeal={addSavedMeal} bodyMetrics={bodyMetrics} supplements={supplements} />;
       default:            return null;

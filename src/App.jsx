@@ -6,6 +6,7 @@ import { getTimeOfDay }          from './utils/time.js';
 import { useAI }                 from './ai/useAI.js';
 import { useFirebaseStatus }    from './firebase/useFirebaseStatus.js';
 import { usePeakState }         from './hooks/usePeakState.js';
+import { useSleepSchedule }    from './hooks/useSleepSchedule.js';
 import Onboarding                from './onboarding/Onboarding.jsx';
 import Sidebar                   from './components/Sidebar.jsx';
 import QuickCapture              from './components/QuickCapture.jsx';
@@ -63,6 +64,20 @@ export default function App() {
 
   // ── Peak State — computed once at app level, shared to Sidebar + Dashboard ─
   const peakState = usePeakState(settings);
+
+  // ── Sleep Schedule — dims interface + fires reminders as bedtime approaches ─
+  const { dimLevel, isSleepTime } = useSleepSchedule(settings);
+
+  // ── Sleep toast ───────────────────────────────────────────────────────────
+  const [sleepToast, setSleepToast] = useState(null);
+  useEffect(() => {
+    const handler = (e) => {
+      setSleepToast(e.detail?.message || null);
+      setTimeout(() => setSleepToast(null), 5000);
+    };
+    window.addEventListener('valerie:toast', handler);
+    return () => window.removeEventListener('valerie:toast', handler);
+  }, []);
 
   // ── Wire VALERIE's navigate action to the real tab-change function ─────────
   useEffect(() => {
@@ -220,6 +235,32 @@ export default function App() {
 
       {/* Daily Brief — once-per-day greeting overlay */}
       <DailyBrief ai={ai} settings={settings} />
+
+      {/* Sleep dim overlay — fades in as bedtime approaches */}
+      {dimLevel > 0 && (
+        <div style={{
+          position: 'fixed', inset: 0, zIndex: 9990,
+          background: `rgba(0,0,0,${dimLevel * 0.72})`,
+          pointerEvents: isSleepTime ? 'none' : 'none',
+          transition: 'background 60s linear',
+        }} />
+      )}
+
+      {/* Sleep toast */}
+      {sleepToast && (
+        <div style={{
+          position: 'fixed', bottom: 28, left: '50%', transform: 'translateX(-50%)',
+          background: 'rgba(8,12,20,0.96)', border: '0.5px solid rgba(74,158,255,0.3)',
+          borderRadius: 12, padding: '11px 20px', zIndex: 10000,
+          fontSize: 13, color: 'var(--text-primary)', whiteSpace: 'nowrap',
+          boxShadow: '0 4px 24px rgba(0,0,0,0.55)',
+          display: 'flex', alignItems: 'center', gap: 9,
+          animation: 'fadeIn 0.25s ease',
+        }}>
+          <span style={{ fontSize: 16 }}>🌙</span>
+          {sleepToast}
+        </div>
+      )}
     </div>
   );
 }

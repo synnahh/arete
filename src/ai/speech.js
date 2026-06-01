@@ -4,6 +4,7 @@
 //           voice session stop-intent detection.
 
 import { fetch as tauriFetch } from '@tauri-apps/plugin-http';
+import { invoke }              from '@tauri-apps/api/core';
 import { rateLimitElevenLabs } from '../utils/rateLimit.js';
 
 // ─── VALERIE's voice identity ──────────────────────────────────────────────────
@@ -225,8 +226,12 @@ export async function speakText(text, voiceSettings = {}, { onStart, onEnd, onEr
     return;
   }
 
-  // Resolve credentials — Settings override takes priority over .env defaults
-  const apiKey = voiceSettings.elevenlabsKey || DEFAULT_API_KEY;
+  // Resolve credentials — voiceSettings → keyring → empty
+  let apiKey = voiceSettings.elevenlabsKey || DEFAULT_API_KEY;
+  if (!apiKey) {
+    try { apiKey = await invoke('get_secret', { service: 'valerie', key: 'elevenlabs_api_key' }) || ''; }
+    catch { /* keyring unavailable — fall through to browser TTS */ }
+  }
   const voiceId = voiceSettings.elevenlabsVoiceId || DEFAULT_VOICE_ID;
 
   // Cancel anything currently speaking

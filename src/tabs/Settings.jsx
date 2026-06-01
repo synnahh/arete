@@ -3,7 +3,8 @@
 // Split view: left nav (130px) + right scrollable content.
 
 import { useState, useEffect, useCallback, useRef, Component } from 'react';
-import { fetch } from '@tauri-apps/plugin-http';
+import { fetch }   from '@tauri-apps/plugin-http';
+import { invoke }  from '@tauri-apps/api/core';
 
 // Local error boundary — catches crashes inside any settings section
 class SectionErrorBoundary extends Component {
@@ -487,7 +488,8 @@ function AppearanceSection({ settings, onSave }) {
 function VoiceSection({ settings, onSave }) {
 
   // ── ElevenLabs state ──────────────────────────────────────────────────────
-  const [el11Key,     setEl11Key]     = useState(settings.voice?.elevenlabsKey     || settings.elevenlabsKey     || import.meta.env.VITE_ELEVENLABS_API_KEY  || '');
+  // Key is stored in the OS keychain — never in settings/Firebase
+  const [el11Key,     setEl11Key]     = useState('');
   const [el11VoiceId, setEl11VoiceId] = useState(settings.voice?.elevenlabsVoiceId || settings.elevenlabsVoiceId || import.meta.env.VITE_ELEVENLABS_VOICE_ID || 'yj30vwTGJxSHezdAGsv9');
   const [el11Voices,  setEl11Voices]  = useState([]);
   const [el11Loading, setEl11Loading] = useState(false);
@@ -538,9 +540,29 @@ function VoiceSection({ settings, onSave }) {
     return () => window.speechSynthesis?.removeEventListener('voiceschanged', load);
   }, []);
 
-  // Auto-fetch ElevenLabs voices on mount if key is already set
+  // Load ElevenLabs API key from OS keychain on mount
+  // Falls back to any legacy value still in settings, then migrates it to keyring
   useEffect(() => {
-    if (el11Key) fetchEl11Voices(el11Key).catch(() => {});
+    invoke('get_secret', { service: 'valerie', key: 'elevenlabs_api_key' })
+      .then(stored => {
+        if (stored) {
+          setEl11Key(stored);
+          fetchEl11Voices(stored).catch(() => {});
+        } else {
+          // Migrate legacy key from settings into keyring
+          const legacy = settings.voice?.elevenlabsKey || settings.elevenlabsKey || import.meta.env.VITE_ELEVENLABS_API_KEY || '';
+          if (legacy) {
+            setEl11Key(legacy);
+            invoke('store_secret', { service: 'valerie', key: 'elevenlabs_api_key', value: legacy }).catch(() => {});
+            fetchEl11Voices(legacy).catch(() => {});
+          }
+        }
+      })
+      .catch(() => {
+        // Keyring unavailable — fall back to settings value
+        const fallback = settings.voice?.elevenlabsKey || settings.elevenlabsKey || '';
+        if (fallback) { setEl11Key(fallback); fetchEl11Voices(fallback).catch(() => {}); }
+      });
   }, []); // eslint-disable-line react-hooks/exhaustive-deps
 
   // el11Status: null | 'plan_required' | 'bad_key' | 'no_voice' | 'ok'
@@ -649,21 +671,21 @@ function VoiceSection({ settings, onSave }) {
   };
 
   const handleSave = () => {
+    // ElevenLabs API key → OS keychain only, never in settings/Firebase
+    if (el11Key.trim()) {
+      invoke('store_secret', { service: 'valerie', key: 'elevenlabs_api_key', value: el11Key.trim() }).catch(() => {});
+    }
     onSave({
       voice: {
         voiceURI, rate, pitch, volume: 1.0, lang: 'en-AU',
-        elevenlabsKey:     el11Key,
         elevenlabsVoiceId: el11VoiceId,
-        // Azure credentials go inside voice so speakText() can read them
         azureKey:          azureKey.trim(),
         azureRegion,
         azureVoiceName,
       },
-      // Also kept at top level for backwards compat / Settings display
-      azureKey:      azureKey.trim(),
+      azureKey:          azureKey.trim(),
       azureRegion,
       azureVoiceName,
-      elevenlabsKey:     el11Key,
       elevenlabsVoiceId: el11VoiceId,
       wakeWordEnabled,
     });
@@ -1278,14 +1300,18 @@ function NotificationsSection({ settings, onSave }) {
   const [habitRemind,   setHabitRemind]   = useState(settings.notifications?.habitReminders  ?? true);
   const [waterRemind,   setWaterRemind]   = useState(settings.notifications?.waterReminders  ?? false);
   const [weeklyFinance, setWeeklyFinance] = useState(settings.notifications?.weeklyFinance   ?? true);
-  const [twilioNumber,  setTwilioNumber]  = useState(settings.twilioNumber  || '');
-  const [phoneNumber,   setPhoneNumber]   = useState(settings.phoneNumber   || '');
-  const [saved,         setSaved]         = useState(false);
+  const [twilioNumber,    setTwilioNumber]    = useState(settings.twilioNumber    || '');
+  const [twilioDevNumber, setTwilioDevNumber] = useState(settings.twilioDevNumber || '');
+  const [activeProfile,   setActiveProfile]   = useState(settings.activeTwilioProfile || 'valerie');
+  const [phoneNumber,     setPhoneNumber]     = useState(settings.phoneNumber     || '');
+  const [saved,           setSaved]           = useState(false);
 
   const handleSave = () => {
     onSave({
       notifications: { enabled, proactiveNudges: nudges, taskReminders, habitReminders: habitRemind, waterReminders: waterRemind, weeklyFinance },
       twilioNumber,
+      twilioDevNumber,
+      activeTwilioProfile: activeProfile,
       phoneNumber,
     });
     setSaved(true);
@@ -1315,9 +1341,36 @@ function NotificationsSection({ settings, onSave }) {
             </div>
           </div>
 
-          <Row label="Twilio SMS number (sender)" hint="Your Twilio phone number for SMS alerts — optional">
-            <Input value={twilioNumber} onChange={setTwilioNumber} placeholder="+614XXXXXXXX" />
-          </Row>
+          <div style={{ marginBottom: 20, padding: '14px 16px', background: 'var(--hover-bg)', borderRadius: 10 }}>
+            <div style={{ fontSize: 12, fontWeight: 600, color: 'var(--text-secondary)', marginBottom: 12, letterSpacing: '0.04em' }}>
+              TWILIO SMS NUMBERS
+            </div>
+            <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
+              <Row label="VALERIE (primary)" hint="Your main Twilio number for production alerts">
+                <Input value={twilioNumber} onChange={setTwilioNumber} placeholder="+614XXXXXXXX" />
+              </Row>
+              <Row label="VALERIE Dev" hint="Secondary number for development and testing">
+                <Input value={twilioDevNumber} onChange={setTwilioDevNumber} placeholder="+614XXXXXXXX" />
+              </Row>
+              <Row label="Active profile" hint="Which Twilio number sends SMS alerts">
+                <div style={{ display: 'flex', gap: 8 }}>
+                  {[{ id: 'valerie', label: 'VALERIE' }, { id: 'dev', label: 'VALERIE Dev' }].map(opt => (
+                    <button
+                      key={opt.id}
+                      onClick={() => setActiveProfile(opt.id)}
+                      style={{
+                        padding: '6px 16px', borderRadius: 7, fontSize: 12, fontWeight: 600, cursor: 'pointer',
+                        border: activeProfile === opt.id ? '1.5px solid var(--accent)' : '0.5px solid var(--border)',
+                        background: activeProfile === opt.id ? 'rgba(var(--accent-rgb),0.12)' : 'transparent',
+                        color: activeProfile === opt.id ? 'var(--accent)' : 'var(--text-secondary)',
+                        transition: 'all 0.15s',
+                      }}
+                    >{opt.label}</button>
+                  ))}
+                </div>
+              </Row>
+            </div>
+          </div>
           <Row label="Your phone number (recipient)">
             <Input value={phoneNumber} onChange={setPhoneNumber} placeholder="+614XXXXXXXX" />
           </Row>

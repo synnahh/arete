@@ -8,6 +8,7 @@ use tauri::{
 };
 use serde::{Deserialize, Serialize};
 use serde_json::Value;
+use keyring::Entry;
 
 const OLLAMA_BASE: &str = "http://127.0.0.1:11434";
 
@@ -79,6 +80,26 @@ fn launch_ollama() {
     }
 }
 
+// Store a secret in the OS keychain (Windows Credential Manager / macOS Keychain)
+#[tauri::command]
+fn store_secret(service: String, key: String, value: String) -> Result<(), String> {
+    Entry::new(&service, &key)
+        .map_err(|e| e.to_string())?
+        .set_password(&value)
+        .map_err(|e| e.to_string())
+}
+
+// Retrieve a secret from the OS keychain; returns null if not found
+#[tauri::command]
+fn get_secret(service: String, key: String) -> Result<Option<String>, String> {
+    let entry = Entry::new(&service, &key).map_err(|e| e.to_string())?;
+    match entry.get_password() {
+        Ok(pw) => Ok(Some(pw)),
+        Err(keyring::Error::NoEntry) => Ok(None),
+        Err(e) => Err(e.to_string()),
+    }
+}
+
 #[cfg_attr(mobile, tauri::mobile_entry_point)]
 pub fn run() {
     tauri::Builder::default()
@@ -140,7 +161,7 @@ pub fn run() {
             Ok(())
         })
 
-        .invoke_handler(tauri::generate_handler![launch_ollama, ping_ollama, ask_ollama])
+        .invoke_handler(tauri::generate_handler![launch_ollama, ping_ollama, ask_ollama, store_secret, get_secret])
         .run(tauri::generate_context!())
         .expect("error while running VALERIE");
 }
