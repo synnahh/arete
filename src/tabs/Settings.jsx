@@ -1780,6 +1780,7 @@ function PlatformsSection({ settings, onSave }) {
   const [tabLayouts,  setTabLayouts]  = useState(() => settings.tabLayouts  || {});
   const [autostart,   setAutostart]   = useState(false);
   const [autostartOk, setAutostartOk] = useState(false);
+  const [isFullscreen, setIsFullscreen] = useState(false);
 
   // Check current autostart state on mount
   useEffect(() => {
@@ -1787,7 +1788,24 @@ function PlatformsSection({ settings, onSave }) {
       .then(({ isEnabled }) => isEnabled())
       .then(enabled => { setAutostart(enabled); setAutostartOk(true); })
       .catch(() => setAutostartOk(false));
+
+    // Check current fullscreen state
+    import('@tauri-apps/api/window')
+      .then(({ getCurrentWindow }) => getCurrentWindow().isFullscreen())
+      .then(setIsFullscreen)
+      .catch(() => {});
   }, []);
+
+  const handleFullscreenToggle = async (val) => {
+    setIsFullscreen(val);
+    try {
+      const { getCurrentWindow } = await import('@tauri-apps/api/window');
+      await getCurrentWindow().setFullscreen(val);
+      onSave({ startFullscreen: val });
+    } catch (err) {
+      console.warn('[Settings] Fullscreen toggle unavailable:', err.message);
+    }
+  };
 
   const handleAutostartToggle = async (val) => {
     setAutostart(val);
@@ -1840,6 +1858,20 @@ function PlatformsSection({ settings, onSave }) {
             ? <Toggle value={autostart} onChange={handleAutostartToggle} />
             : <span style={{ fontSize: 11, color: 'var(--text-muted)' }}>Desktop app only</span>
           }
+        </div>
+
+        <div style={{
+          display: 'flex', alignItems: 'center', justifyContent: 'space-between',
+          padding: '14px 16px', borderRadius: 10, marginTop: 8,
+          background: 'var(--hover-bg)', border: '0.5px solid var(--card-border)',
+        }}>
+          <div>
+            <div style={{ fontSize: 13, fontWeight: 600, color: 'var(--text-primary)' }}>Fullscreen mode</div>
+            <div style={{ fontSize: 11, color: 'var(--text-muted)', marginTop: 2 }}>
+              Toggle true fullscreen — borderless windowed by default
+            </div>
+          </div>
+          <Toggle value={isFullscreen} onChange={handleFullscreenToggle} />
         </div>
       </div>
 
