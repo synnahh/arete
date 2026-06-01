@@ -34,6 +34,8 @@ import { THEMES, applyTheme }    from '../styles/themes.js';
 import { testClaudeKey }         from '../ai/claude.js';
 import { TIER_CONFIG, TIER_THRESHOLDS, XP_SOURCES } from '../utils/xp.js';
 import { ALL_TABS }              from '../components/Sidebar.jsx';
+import { doc, setDoc, onSnapshot } from 'firebase/firestore';
+import { db, getDeviceId }       from '../firebase/firebase.js';
 
 // ─── Sections ────────────────────────────────────────────────────────────────
 const SECTIONS = [
@@ -2073,16 +2075,21 @@ function SidebarSection({ settings, onSave }) {
   }
   function handleDragEnd() { setDragIdx(null); }
 
-  function saveOrder() {
-    storage.set(STORAGE_KEYS.SIDEBAR_ORDER_DESKTOP, order);
+  function syncSidebarOrder(o) {
+    storage.set(STORAGE_KEYS.SIDEBAR_ORDER_DESKTOP, o);
+    const userId = getDeviceId();
+    setDoc(doc(db, 'users', userId, 'meta', 'sidebar_order_desktop'), { order: o })
+      .catch(err => console.warn('[Sidebar order sync]', err.message));
     window.dispatchEvent(new Event('valerie:sidebar-order-changed'));
+  }
+  function saveOrder() {
+    syncSidebarOrder(order);
     setSaved(true);
     setTimeout(() => setSaved(false), 2000);
   }
   function resetOrder() {
     setOrder(defaultOrder);
-    storage.set(STORAGE_KEYS.SIDEBAR_ORDER_DESKTOP, defaultOrder);
-    window.dispatchEvent(new Event('valerie:sidebar-order-changed'));
+    syncSidebarOrder(defaultOrder);
   }
 
   return (
@@ -2229,7 +2236,25 @@ export default function SettingsTab({ settings: settingsProp }) {
   // Load settings from localStorage — source of truth
   const [settings, setSettings] = useState(() => storage.get(STORAGE_KEYS.SETTINGS, {}));
 
-  // Persist partial updates to localStorage and notify App in real time
+  // Cross-device sync — apply Firestore settings changes from other platforms
+  useEffect(() => {
+    const userId = getDeviceId();
+    const unsub = onSnapshot(
+      doc(db, 'users', userId, 'meta', 'settings'),
+      snap => {
+        if (!snap.exists()) return;
+        const d = snap.data();
+        storage.set(STORAGE_KEYS.SETTINGS, d);
+        setSettings(d);
+        if (d.theme) applyTheme(d.theme);
+        window.dispatchEvent(new CustomEvent('valerie:settings-changed', { detail: d }));
+      },
+      err => console.warn('[Settings Firestore]', err.message),
+    );
+    return () => unsub();
+  }, []); // eslint-disable-line react-hooks/exhaustive-deps
+
+  // Persist partial updates to localStorage + Firestore and notify App in real time
   const handleSave = useCallback((updates) => {
     try {
       // Strip any non-serialisable data before merging (prevents localStorage QuotaExceededError)
@@ -2237,6 +2262,10 @@ export default function SettingsTab({ settings: settingsProp }) {
       const merged = { ...settings, ...safeUpdates };
       setSettings(merged);
       try { storage.set(STORAGE_KEYS.SETTINGS, merged); } catch {}
+
+      const userId = getDeviceId();
+      setDoc(doc(db, 'users', userId, 'meta', 'settings'), merged)
+        .catch(err => console.warn('[Settings sync]', err.message));
 
       if (updates.theme) applyTheme(updates.theme);
 

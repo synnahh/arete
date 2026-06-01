@@ -1,5 +1,7 @@
 import { useState, useEffect, useRef, useMemo } from 'react';
 import { storage, STORAGE_KEYS } from '../utils/storage.js';
+import { doc, onSnapshot } from 'firebase/firestore';
+import { db, getDeviceId } from '../firebase/firebase.js';
 
 // ─── Icons (inline SVG — no external dep needed for now) ──────────────────────
 const Icon = ({ d, size = 20 }) => (
@@ -296,7 +298,7 @@ export default function Sidebar({ activeTab, onTabClick, claudeOnline, ollamaOnl
     return ALL_TABS;
   });
 
-  // Sync when storage changes (Settings tab reorders)
+  // Sync when storage changes (Settings tab reorders — same device)
   useEffect(() => {
     const handler = () => {
       const saved = storage.get(STORAGE_KEYS.SIDEBAR_ORDER_DESKTOP, null);
@@ -309,6 +311,25 @@ export default function Sidebar({ activeTab, onTabClick, claudeOnline, ollamaOnl
     window.addEventListener('valerie:sidebar-order-changed', handler);
     return () => window.removeEventListener('valerie:sidebar-order-changed', handler);
   }, []);
+
+  // Sync sidebar order from Firestore (cross-device)
+  useEffect(() => {
+    const userId = getDeviceId();
+    const unsub = onSnapshot(
+      doc(db, 'users', userId, 'meta', 'sidebar_order_desktop'),
+      snap => {
+        if (!snap.exists()) return;
+        const saved = snap.data().order;
+        if (!saved?.length) return;
+        storage.set(STORAGE_KEYS.SIDEBAR_ORDER_DESKTOP, saved);
+        const known = new Set(saved);
+        const extra = ALL_TABS.filter(t => !known.has(t.id));
+        setOrderedTabs([...saved.map(id => ALL_TABS.find(t => t.id === id)).filter(Boolean), ...extra]);
+      },
+      err => console.warn('[Sidebar order Firestore]', err.message),
+    );
+    return () => unsub();
+  }, []); // eslint-disable-line react-hooks/exhaustive-deps
 
   const visible = (tabs) => tabs.filter(t => !hiddenTabs.includes(t.id));
   const visibleMain = visible(orderedTabs);

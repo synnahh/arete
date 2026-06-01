@@ -3,6 +3,7 @@
 
 import { useState, useEffect, useCallback, useMemo, useRef } from 'react';
 import { useCollection }                  from '../firebase/useCollection.js';
+import { useDocument }                    from '../firebase/useDocument.js';
 import { storage, STORAGE_KEYS }          from '../utils/storage.js';
 import { RingChart, ProgressBar, StageBar, BarChart } from '../components/Charts.jsx';
 
@@ -821,21 +822,7 @@ const DEFAULT_OVERLOAD_EXERCISES = [
   { id:'crf', name:'Calf Raises',         gym:'both',       day:'legs', bodyweight:false, startingWeight:20, repsMin:12,repsMax:15, increment:5   },
 ];
 
-const OL_KEY         = 'valerie_overload_exercises';
-const SPLIT_NAMES_KEY = 'valerie_split_names';
-const DEFAULT_SPLITS  = { push: 'Push', pull: 'Pull', legs: 'Legs' };
-
-function getSplitNames() {
-  try { const d = JSON.parse(localStorage.getItem(SPLIT_NAMES_KEY)); if (d && d.push) return d; } catch {}
-  return { ...DEFAULT_SPLITS };
-}
-function saveSplitNames(n) { localStorage.setItem(SPLIT_NAMES_KEY, JSON.stringify(n)); }
-
-function getOLExercises() {
-  try { const d = JSON.parse(localStorage.getItem(OL_KEY)); if (Array.isArray(d) && d.length) return d; } catch {}
-  return DEFAULT_OVERLOAD_EXERCISES;
-}
-function saveOLExercises(list) { localStorage.setItem(OL_KEY, JSON.stringify(list)); }
+const DEFAULT_SPLITS = { push: 'Push', pull: 'Pull', legs: 'Legs' };
 
 function computeProgression(ex, workoutLogs) {
   const logs = (workoutLogs || [])
@@ -962,10 +949,28 @@ function AddExerciseModal({ onClose, onSave }) {
 }
 
 function Workout({ workoutLogs, addWorkoutLog }) {
-  const [exercises, setExercises]   = useState(getOLExercises);
-  const [splitNames, setSplitNames] = useState(getSplitNames);
+  const { data: storedExercises,  save: saveExercisesDoc  } = useDocument('overload_exercises', 'overload_exercises', null);
+  const { data: storedSplitNames, save: saveSplitNamesDoc } = useDocument('split_names', 'split_names', DEFAULT_SPLITS);
+
+  const [exercises, setExercises]   = useState(() => {
+    const d = storedExercises;
+    return (Array.isArray(d) && d.length) ? d : DEFAULT_OVERLOAD_EXERCISES;
+  });
+  const [splitNames, setSplitNames] = useState(() =>
+    storedSplitNames?.push ? storedSplitNames : { ...DEFAULT_SPLITS }
+  );
   const [editingSplits, setEditingSplits] = useState(false);
-  const [draftNames, setDraftNames] = useState(getSplitNames);
+  const [draftNames, setDraftNames] = useState(() =>
+    storedSplitNames?.push ? storedSplitNames : { ...DEFAULT_SPLITS }
+  );
+
+  // Sync from Firestore when cross-device changes arrive
+  useEffect(() => {
+    if (Array.isArray(storedExercises) && storedExercises.length) setExercises(storedExercises);
+  }, [storedExercises]);
+  useEffect(() => {
+    if (storedSplitNames?.push) { setSplitNames(storedSplitNames); setDraftNames(storedSplitNames); }
+  }, [storedSplitNames]);
   const [gym, setGym]               = useState('home');
   const [day, setDay]               = useState('push');
   const [selectedId, setSelectedId] = useState(null);
@@ -978,7 +983,7 @@ function Workout({ workoutLogs, addWorkoutLog }) {
   const saveSplits = () => {
     const trimmed = { push: draftNames.push.trim() || 'Push', pull: draftNames.pull.trim() || 'Pull', legs: draftNames.legs.trim() || 'Legs' };
     setSplitNames(trimmed);
-    saveSplitNames(trimmed);
+    saveSplitNamesDoc(trimmed);
     setEditingSplits(false);
   };
 
@@ -1027,7 +1032,7 @@ function Workout({ workoutLogs, addWorkoutLog }) {
   const addExercise = ex => {
     const updated = [...exercises, ex];
     setExercises(updated);
-    saveOLExercises(updated);
+    saveExercisesDoc(updated);
     setSelectedId(ex.id);
     setShowAdd(false);
   };
@@ -1174,21 +1179,17 @@ function calcWaterGoal(profile) {
   return Math.round((base + activityBonus + caffBonus) / 50) * 50; // round to 50ml
 }
 
-const WATER_PROFILE_KEY = 'valerie_water_profile';
+
+const DEFAULT_WATER_PROFILE = { weight:75, age:25, sex:'male', activityHours:5, caffeineMg:200, unit:'ml' };
 
 function Water({ waterLogs, addWaterLog, settings }) {
   const today     = todayStr();
   const [showSettings, setShowSettings] = useState(false);
-  const [profile, setProfile] = useState(() => {
-    try { return JSON.parse(localStorage.getItem(WATER_PROFILE_KEY)) || { weight:75, age:25, sex:'male', activityHours:5, caffeineMg:200, unit:'ml' }; }
-    catch { return { weight:75, age:25, sex:'male', activityHours:5, caffeineMg:200, unit:'ml' }; }
-  });
+  const { data: profileDoc, save: saveProfileDoc } = useDocument('water_profile', 'water_profile', DEFAULT_WATER_PROFILE);
+  const profile = profileDoc || DEFAULT_WATER_PROFILE;
   const [custom, setCustom] = useState('');
 
-  const saveProfile = (p) => {
-    setProfile(p);
-    localStorage.setItem(WATER_PROFILE_KEY, JSON.stringify(p));
-  };
+  const saveProfile = (p) => { saveProfileDoc(p); };
 
   const goal = calcWaterGoal(profile);
 
@@ -1340,8 +1341,12 @@ function Body({ bodyMetrics, addBodyMetric }) {
   const [bodyTab,  setBodyTab]  = useState('weight');
   const [logForm,  setLogForm]  = useState({ weight:'', bodyFat:'', muscle:'', notes:'' });
   const [adding,   setAdding]   = useState(false);
-  const [measures, setMeasures] = useState(() => { try { return JSON.parse(localStorage.getItem('valerie_measurements')||'{}'); } catch { return {}; } });
+  const { data: measuresDoc, save: saveMeasuresDoc } = useDocument('measurements', 'measurements', {});
+  const [measures, setMeasures] = useState(() => measuresDoc || {});
   const [photos,   setPhotos]   = useState(() => { try { return JSON.parse(localStorage.getItem('valerie_photos')||'[]'); } catch { return []; } });
+
+  // Sync measurements from Firestore cross-device
+  useEffect(() => { if (measuresDoc) setMeasures(measuresDoc); }, [measuresDoc]);
   const [compare,  setCompare]  = useState([null,null]);
   const fileRef = useRef(null);
 
@@ -1349,7 +1354,7 @@ function Body({ bodyMetrics, addBodyMetric }) {
   const latest = sorted[0];
   const weightData = useMemo(()=>sorted.slice(0,30).reverse().map(m=>({value:parseFloat(m.weight)||0,label:m.date?m.date.slice(5):''})),[sorted]);
 
-  const saveMeasures = (m) => { setMeasures(m); localStorage.setItem('valerie_measurements',JSON.stringify(m)); };
+  const saveMeasures = (m) => { setMeasures(m); saveMeasuresDoc(m); };
   const savePhotos   = (p) => { setPhotos(p);   localStorage.setItem('valerie_photos',JSON.stringify(p)); };
 
   const addPhoto = (e) => {

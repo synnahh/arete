@@ -1,6 +1,37 @@
 // ─── VALERIE XP & Rank System ─────────────────────────────────────────────────
 
+import { useState, useEffect } from 'react';
+import { doc, setDoc, onSnapshot } from 'firebase/firestore';
+import { db, getDeviceId } from '../firebase/firebase.js';
+
 const XP_KEY = 'valerie_xp';
+
+function syncXPToFirestore(xpData) {
+  const userId = getDeviceId();
+  setDoc(doc(db, 'users', userId, 'meta', 'xp'), xpData)
+    .catch(err => console.warn('[XP sync]', err.message));
+}
+
+// Hook for components that need real-time XP (cross-device sync)
+export function useXP() {
+  const [xp, setXp] = useState(() => getXP());
+  useEffect(() => {
+    const userId = getDeviceId();
+    const unsub = onSnapshot(
+      doc(db, 'users', userId, 'meta', 'xp'),
+      snap => {
+        if (snap.exists()) {
+          const d = snap.data();
+          localStorage.setItem(XP_KEY, JSON.stringify(d));
+          setXp(d);
+        }
+      },
+      err => console.warn('[XP onSnapshot]', err.message),
+    );
+    return () => unsub();
+  }, []);
+  return xp;
+}
 
 // ─── Tier thresholds (total XP to enter each tier) ───────────────────────────
 export const TIER_THRESHOLDS = [0, 600, 1800, 4000, 8000, 14000, 22000, 38000];
@@ -53,6 +84,7 @@ export function addXP(sourceKey, overrideLabel) {
     date:   new Date().toISOString(),
   }, ...(xp.log || [])].slice(0, 300);
   localStorage.setItem(XP_KEY, JSON.stringify(xp));
+  syncXPToFirestore(xp);
   return xp.total;
 }
 
