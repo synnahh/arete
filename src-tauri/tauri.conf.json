@@ -30,12 +30,28 @@
   "bundle": {
     "active": true,
     "targets": "all",
+    "publisher": "Rob",
+    "copyright": "© 2026 VALERIE",
+    "category": "Productivity",
+    "shortDescription": "Personal AI assistant dashboard",
+    "longDescription": "VALERIE is a premium personal AI assistant — your daily operating layer for health, finance, tasks, and life.",
     "icon": [
       "icons/32x32.png",
       "icons/128x128.png",
       "icons/128x128@2x.png",
       "icons/icon.icns",
       "icons/icon.ico"
-    ]
+    ],
+    "windows": {
+      "allowDowngrades": false,
+      "nsis": {
+        "headerImage": "icons/nsis-header.bmp",
+        "sidebarImage": "icons/nsis-sidebar.bmp",
+        "installMode": "currentUser",
+        "languages": ["English"],
+        "startMenuFolder": "VALERIE",
+        "compression": "lzma"
+      }
+    }
   }
 }
