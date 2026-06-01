@@ -3,6 +3,7 @@
 // Includes: speech cleaning pipeline, ElevenLabs fetch, audio playback management,
 //           voice session stop-intent detection.
 
+import { fetch as tauriFetch } from '@tauri-apps/plugin-http';
 import { rateLimitElevenLabs } from '../utils/rateLimit.js';
 
 // ─── VALERIE's voice identity ──────────────────────────────────────────────────
@@ -144,7 +145,7 @@ export function isStopIntent(transcript) {
 
 async function _fetchElevenLabsAudio(text, apiKey, voiceId) {
   rateLimitElevenLabs();
-  const response = await fetch(`${ELEVENLABS_ENDPOINT}/${voiceId}`, {
+  const response = await tauriFetch(`${ELEVENLABS_ENDPOINT}/${voiceId}`, {
     method:  'POST',
     headers: {
       'xi-api-key':   apiKey,
@@ -156,7 +157,6 @@ async function _fetchElevenLabsAudio(text, apiKey, voiceId) {
       model_id:       ELEVENLABS_MODEL,
       voice_settings: VALERIE_VOICE_SETTINGS,
     }),
-    signal: AbortSignal.timeout(20000), // 20s max — handles slow connections
   });
 
   if (!response.ok) {
@@ -164,7 +164,9 @@ async function _fetchElevenLabsAudio(text, apiKey, voiceId) {
     throw new Error(`ElevenLabs ${response.status}${detail ? ': ' + detail : ''}`);
   }
 
-  return response.blob();
+  // tauriFetch returns ArrayBuffer via .arrayBuffer(), not a Blob
+  const buffer = await response.arrayBuffer();
+  return new Blob([buffer], { type: 'audio/mpeg' });
 }
 
 // ─── Azure TTS fetch ──────────────────────────────────────────────────────────
@@ -189,7 +191,7 @@ async function _fetchAzureAudio(text, apiKey, region, voiceName = 'en-AU-Natasha
   const ssml = `<speak version='1.0' xmlns='http://www.w3.org/2001/10/synthesis' xml:lang='${lang}'>`
     + `<voice name='${voiceName}'>${_escapeXml(text)}</voice></speak>`;
 
-  const response = await fetch(
+  const response = await tauriFetch(
     `https://${region}.tts.speech.microsoft.com/cognitiveservices/v1`,
     {
       method:  'POST',
@@ -198,8 +200,7 @@ async function _fetchAzureAudio(text, apiKey, region, voiceName = 'en-AU-Natasha
         'Content-Type':              'application/ssml+xml',
         'X-Microsoft-OutputFormat':  'audio-16khz-128kbitrate-mono-mp3',
       },
-      body:   ssml,
-      signal: AbortSignal.timeout(20000),
+      body: ssml,
     }
   );
 
@@ -207,7 +208,8 @@ async function _fetchAzureAudio(text, apiKey, region, voiceName = 'en-AU-Natasha
     throw new Error(`Azure TTS ${response.status}`);
   }
 
-  return response.blob();
+  const buffer = await response.arrayBuffer();
+  return new Blob([buffer], { type: 'audio/mpeg' });
 }
 
 // ─── speakText ─────────────────────────────────────────────────────────────────
