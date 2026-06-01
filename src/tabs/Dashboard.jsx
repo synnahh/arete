@@ -5,6 +5,7 @@ import { storage, STORAGE_KEYS } from '../utils/storage.js';
 import { askClaude } from '../ai/claude.js';
 import { askOllama } from '../ai/ollama.js';
 import { getXP, getRank, TIER_CONFIG, TIER_THRESHOLDS } from '../utils/xp.js';
+import DayRing from '../components/DayRing.jsx';
 
 // ── Badge SVG (mirrored from Progress.jsx) ────────────────────────────────────
 const toRad = d => d * Math.PI / 180;
@@ -930,7 +931,9 @@ export default function Dashboard({ settings, onTabChange, ai, density = 'standa
         <div style={{ flex: '0.9 1 0', minWidth: 0, display: 'flex', flexDirection: 'column', gap }}>
           <DailyBriefCard ai={ai} />
           <SpotifyCard />
-          <ProgressHeroCard onTabChange={onTabChange} />
+          <Card style={{ justifyContent: 'center' }}>
+            <DayRing />
+          </Card>
         </div>
       </div>
 

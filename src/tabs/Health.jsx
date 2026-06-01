@@ -675,120 +675,324 @@ async function fetchExercisesFromDB(apiKey) {
   }));
 }
 
-function Workout({ workoutLogs, addWorkoutLog, settings }) {
-  const apiKey = settings?.exercisedbKey ?? '';
-  const [exercises, setExercises] = useState(LOCAL_EXERCISES);
-  const [muscle, setMuscle]       = useState('all');
-  const [apiLoaded, setApiLoaded] = useState(false);
-  const [logging, setLogging]     = useState(null); // exercise being logged
+// ── Default exercise library (Push/Pull/Legs, Home + Commercial) ───────────────
+const DEFAULT_OVERLOAD_EXERCISES = [
+  // Push
+  { id:'bp',  name:'Bench Press',         gym:'both',       day:'push', bodyweight:false, startingWeight:40, repsMin:6, repsMax:8,  increment:2.5 },
+  { id:'ohp', name:'Overhead Press',      gym:'both',       day:'push', bodyweight:false, startingWeight:30, repsMin:6, repsMax:8,  increment:2.5 },
+  { id:'dip', name:'Dips',                gym:'both',       day:'push', bodyweight:true,  startingWeight:0,  repsMin:6, repsMax:10, increment:0   },
+  { id:'ppe', name:'Push Press',          gym:'commercial', day:'push', bodyweight:false, startingWeight:35, repsMin:5, repsMax:8,  increment:2.5 },
+  { id:'dbp', name:'DB Shoulder Press',   gym:'both',       day:'push', bodyweight:false, startingWeight:16, repsMin:8, repsMax:12, increment:2   },
+  // Pull
+  { id:'dl',  name:'Deadlift',            gym:'both',       day:'pull', bodyweight:false, startingWeight:60, repsMin:4, repsMax:6,  increment:5   },
+  { id:'pu',  name:'Pull-ups',            gym:'both',       day:'pull', bodyweight:true,  startingWeight:0,  repsMin:5, repsMax:8,  increment:0   },
+  { id:'br',  name:'Barbell Row',         gym:'both',       day:'pull', bodyweight:false, startingWeight:40, repsMin:6, repsMax:8,  increment:2.5 },
+  { id:'lr',  name:'Lat Pulldown',        gym:'commercial', day:'pull', bodyweight:false, startingWeight:50, repsMin:8, repsMax:12, increment:5   },
+  { id:'fc',  name:'Face Pulls',          gym:'commercial', day:'pull', bodyweight:false, startingWeight:20, repsMin:12,repsMax:15, increment:2.5 },
+  // Legs
+  { id:'sq',  name:'Barbell Squat',       gym:'both',       day:'legs', bodyweight:false, startingWeight:60, repsMin:5, repsMax:8,  increment:2.5 },
+  { id:'rdl', name:'Romanian Deadlift',   gym:'both',       day:'legs', bodyweight:false, startingWeight:50, repsMin:8, repsMax:10, increment:2.5 },
+  { id:'lp',  name:'Leg Press',           gym:'commercial', day:'legs', bodyweight:false, startingWeight:80, repsMin:8, repsMax:12, increment:10  },
+  { id:'lg',  name:'Leg Curl',            gym:'commercial', day:'legs', bodyweight:false, startingWeight:40, repsMin:8, repsMax:12, increment:5   },
+  { id:'lu',  name:'Walking Lunges',      gym:'both',       day:'legs', bodyweight:true,  startingWeight:0,  repsMin:10,repsMax:14, increment:0   },
+  { id:'crf', name:'Calf Raises',         gym:'both',       day:'legs', bodyweight:false, startingWeight:20, repsMin:12,repsMax:15, increment:5   },
+];
 
-  useEffect(() => {
-    if (!apiKey || apiLoaded) return;
-    fetchExercisesFromDB(apiKey)
-      .then(data => { setExercises(data); setApiLoaded(true); })
-      .catch(err => console.warn('[ExerciseDB]', err.message));
-  }, [apiKey]);
+const OL_KEY = 'valerie_overload_exercises';
 
-  const filtered = useMemo(() =>
-    muscle === 'all' ? exercises : exercises.filter(e => e.muscle === muscle),
-    [exercises, muscle]);
+function getOLExercises() {
+  try { const d = JSON.parse(localStorage.getItem(OL_KEY)); if (Array.isArray(d) && d.length) return d; } catch {}
+  return DEFAULT_OVERLOAD_EXERCISES;
+}
+function saveOLExercises(list) { localStorage.setItem(OL_KEY, JSON.stringify(list)); }
 
+function computeProgression(ex, workoutLogs) {
+  const logs = (workoutLogs || [])
+    .filter(l => l.exerciseName === ex.name && l.topSet)
+    .sort((a, b) => b.date.localeCompare(a.date));
+  const last = logs[0] ?? null;
+
+  const currentWeight = last?.topSet?.weight ?? ex.startingWeight;
+  const lastReps      = last?.topSet?.reps   ?? null;
+
+  let nextWeight = currentWeight;
+  let action = 'FIRST SET';
+  let hint   = `Start at ${ex.bodyweight ? 'bodyweight' : `${currentWeight}kg`}. Target ${ex.repsMin}–${ex.repsMax} reps.`;
+
+  if (lastReps !== null) {
+    if (lastReps >= ex.repsMax) {
+      nextWeight = parseFloat((currentWeight + ex.increment).toFixed(2));
+      action = 'ADD WEIGHT';
+      hint = `You hit ${lastReps} reps — time to add ${ex.increment}kg. Expect ${ex.repsMin}–${ex.repsMin + 1} next session.`;
+    } else if (lastReps >= ex.repsMin) {
+      action = 'HOLD';
+      hint = `You hit ${lastReps} reps — stay at ${currentWeight}kg and push for ${ex.repsMax}.`;
+    } else {
+      nextWeight = Math.max(0, parseFloat((currentWeight - ex.increment).toFixed(2)));
+      action = 'DROP WEIGHT';
+      hint = `Only ${lastReps} reps — drop to ${nextWeight}kg and rebuild.`;
+    }
+  }
+
+  return { last, currentWeight, nextWeight, action, hint };
+}
+
+// ── Stepper ─────────────────────────────────────────────────────────────────────
+function Stepper({ value, onChange, min = 0, step = 1, label }) {
   return (
-    <Section title="Workout">
-      {!apiKey && (
-        <div style={{
-          padding: '8px 14px', borderRadius: 8, marginBottom: 14,
-          background: 'rgba(244,166,66,0.08)', border: '0.5px solid rgba(244,166,66,0.25)',
-          fontSize: 11.5, color: 'rgba(244,166,66,0.9)',
-        }}>
-          ⚡ Add your ExerciseDB API key in Settings → AI to unlock animated GIFs and full exercise library.
+    <div style={{ display: 'flex', flexDirection: 'column', gap: 4 }}>
+      {label && <span style={{ ...lblSx }}>{label}</span>}
+      <div style={{ display: 'flex', alignItems: 'center', gap: 0 }}>
+        <button onClick={() => onChange(Math.max(min, parseFloat((value - step).toFixed(2))))}
+          style={{ width: 40, height: 42, borderRadius: '8px 0 0 8px', border: '0.5px solid var(--card-border)', background: 'var(--card-fill)', color: 'var(--text-primary)', fontSize: 18, cursor: 'pointer' }}>−</button>
+        <div style={{ flex: 1, height: 42, display: 'flex', alignItems: 'center', justifyContent: 'center', border: '0.5px solid var(--card-border)', borderLeft: 'none', borderRight: 'none', background: 'var(--input-bg)', fontSize: 18, fontWeight: 700, color: 'var(--text-primary)', minWidth: 70 }}>
+          {value}
         </div>
-      )}
-
-      {/* Muscle filter */}
-      <div style={{ display: 'flex', gap: 6, flexWrap: 'wrap', marginBottom: 14 }}>
-        {MUSCLES.map(m => (
-          <button key={m} onClick={() => setMuscle(m)} style={{
-            padding: '4px 11px', borderRadius: 16, fontSize: 11, cursor: 'pointer',
-            border: `0.5px solid ${muscle === m ? 'var(--accent)' : 'var(--card-border)'}`,
-            background: muscle === m ? 'var(--active-bg)' : 'transparent',
-            color: muscle === m ? 'var(--accent)' : 'var(--text-secondary)',
-            textTransform: 'capitalize', transition: 'all 0.15s ease',
-          }}>{m}</button>
-        ))}
+        <button onClick={() => onChange(parseFloat((value + step).toFixed(2)))}
+          style={{ width: 40, height: 42, borderRadius: '0 8px 8px 0', border: '0.5px solid var(--card-border)', background: 'var(--card-fill)', color: 'var(--text-primary)', fontSize: 18, cursor: 'pointer' }}>+</button>
       </div>
-
-      {/* Exercise grid */}
-      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(200px, 1fr))', gap: 10 }}>
-        {filtered.map(ex => (
-          <div key={ex.id} style={{ ...cardSx, display: 'flex', flexDirection: 'column', gap: 8 }}>
-            {/* GIF placeholder */}
-            {ex.gifUrl ? (
-              <img src={ex.gifUrl} alt={ex.name}
-                style={{ width: '100%', height: 120, objectFit: 'cover', borderRadius: 8, background: 'rgba(255,255,255,0.03)' }} />
-            ) : (
-              <div style={{ height: 80, borderRadius: 8, background: 'rgba(255,255,255,0.03)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-                <span style={{ fontSize: 28, opacity: 0.3 }}>💪</span>
-              </div>
-            )}
-            <div style={{ fontSize: 12.5, fontWeight: 500, color: 'var(--text-primary)' }}>{ex.name}</div>
-            <div style={{ display: 'flex', gap: 5, flexWrap: 'wrap' }}>
-              <span style={{ fontSize: 9.5, padding: '2px 7px', borderRadius: 10, background: 'var(--active-bg)', color: 'var(--accent)', textTransform: 'capitalize' }}>{ex.muscle}</span>
-              <span style={{ fontSize: 9.5, padding: '2px 7px', borderRadius: 10, background: 'rgba(255,255,255,0.05)', color: 'var(--text-muted)', textTransform: 'capitalize' }}>{ex.equipment}</span>
-            </div>
-            <button onClick={() => setLogging(ex)} style={{ ...btnGhost, fontSize: 11, padding: '5px 0', width: '100%' }}>
-              + Log set
-            </button>
-          </div>
-        ))}
-      </div>
-
-      {/* Log modal */}
-      {logging && (
-        <LogSetModal exercise={logging} onClose={() => setLogging(null)}
-          onSave={async (sets) => {
-            await addWorkoutLog({ date: todayStr(), exerciseName: logging.name, muscle: logging.muscle, sets });
-            setLogging(null);
-          }}
-        />
-      )}
-    </Section>
+    </div>
   );
 }
 
-function LogSetModal({ exercise, onClose, onSave }) {
-  const [sets, setSets] = useState([{ weight: '', reps: '' }]);
-  const addSet = () => setSets(p => [...p, { weight: '', reps: '' }]);
-  const upd = (i, k, v) => setSets(p => p.map((s, idx) => idx === i ? { ...s, [k]: v } : s));
+// ── Toggle group ─────────────────────────────────────────────────────────────────
+function ToggleGroup({ label, options, value, onChange }) {
+  return (
+    <div style={{ display: 'flex', gap: 8, alignItems: 'center' }}>
+      <span style={{ fontSize: 10, fontWeight: 700, letterSpacing: '0.1em', color: 'var(--text-muted)', minWidth: 36, textTransform: 'uppercase' }}>{label}</span>
+      <div style={{ display: 'flex', flex: 1, borderRadius: 8, overflow: 'hidden', border: '0.5px solid var(--card-border)' }}>
+        {options.map(o => (
+          <button key={o.value} onClick={() => onChange(o.value)} style={{
+            flex: 1, padding: '8px 0', border: 'none',
+            background: value === o.value ? 'rgba(255,255,255,0.92)' : 'var(--card-fill)',
+            color: value === o.value ? '#111' : 'var(--text-secondary)',
+            fontWeight: value === o.value ? 600 : 400,
+            fontSize: 12.5, cursor: 'pointer', transition: 'all 0.15s',
+          }}>{o.label}</button>
+        ))}
+      </div>
+    </div>
+  );
+}
+
+function AddExerciseModal({ onClose, onSave }) {
+  const [name, setName]           = useState('');
+  const [gym, setGym]             = useState('both');
+  const [day, setDay]             = useState('push');
+  const [bodyweight, setBodyweight] = useState(false);
+  const [startWeight, setStartWeight] = useState(20);
+  const [repsMin, setRepsMin]     = useState(6);
+  const [repsMax, setRepsMax]     = useState(10);
+  const [increment, setIncrement] = useState(2.5);
+
+  const save = () => {
+    if (!name.trim()) return;
+    onSave({ id: Date.now().toString(), name: name.trim(), gym, day, bodyweight, startingWeight: startWeight, repsMin, repsMax, increment });
+  };
 
   return (
-    <div style={{
-      position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.6)',
-      display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 300,
-    }} onClick={onClose}>
+    <div style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.7)', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 400 }}
+      onClick={onClose}>
       <div onClick={e => e.stopPropagation()} style={{
         background: 'var(--bg-panel)', border: '0.5px solid var(--card-border)',
-        borderRadius: 14, padding: '20px 22px', width: 320,
-        display: 'flex', flexDirection: 'column', gap: 12,
+        borderRadius: 16, padding: '24px 22px', width: 340, maxHeight: '90vh', overflowY: 'auto',
+        display: 'flex', flexDirection: 'column', gap: 14,
       }}>
-        <div style={{ fontSize: 13.5, fontWeight: 500, color: 'var(--text-primary)' }}>{exercise.name}</div>
-        {sets.map((s, i) => (
-          <div key={i} style={{ display: 'flex', gap: 8, alignItems: 'center' }}>
-            <span style={{ fontSize: 11, color: 'var(--text-muted)', minWidth: 40 }}>Set {i+1}</span>
-            <input type="number" placeholder="kg" value={s.weight} onChange={e => upd(i,'weight',e.target.value)}
-              style={{ ...inputSx, width: 80 }} onFocus={e => e.target.style.borderColor='var(--accent)'} onBlur={e => e.target.style.borderColor='var(--input-border)'} />
-            <span style={{ fontSize: 11, color: 'var(--text-muted)' }}>×</span>
-            <input type="number" placeholder="reps" value={s.reps} onChange={e => upd(i,'reps',e.target.value)}
-              style={{ ...inputSx, width: 80 }} onFocus={e => e.target.style.borderColor='var(--accent)'} onBlur={e => e.target.style.borderColor='var(--input-border)'} />
-          </div>
-        ))}
-        <button onClick={addSet} style={{ ...btnGhost, fontSize: 11 }}>+ Add set</button>
-        <div style={{ display: 'flex', gap: 8 }}>
+        <div style={{ fontSize: 14, fontWeight: 600, color: 'var(--text-primary)', letterSpacing: '0.04em', textTransform: 'uppercase' }}>Add exercise</div>
+
+        <div>
+          <span style={lblSx}>NAME</span>
+          <input value={name} onChange={e => setName(e.target.value)} placeholder="e.g. Incline DB Press"
+            style={{ ...inputSx }} onFocus={e => e.target.style.borderColor = 'var(--accent)'} onBlur={e => e.target.style.borderColor = 'var(--input-border)'} />
+        </div>
+
+        <ToggleGroup label="GYM" options={[{value:'home',label:'Home Gym'},{value:'commercial',label:'Commercial Gym'},{value:'both',label:'Both'}]} value={gym} onChange={setGym} />
+        <ToggleGroup label="DAY" options={[{value:'push',label:'Push'},{value:'pull',label:'Pull'},{value:'legs',label:'Legs'}]} value={day} onChange={setDay} />
+
+        <label style={{ display: 'flex', alignItems: 'center', gap: 8, cursor: 'pointer', fontSize: 12, color: 'var(--text-secondary)' }}>
+          <input type="checkbox" checked={bodyweight} onChange={e => setBodyweight(e.target.checked)} style={{ width: 14, height: 14, accentColor: 'var(--accent)' }} />
+          Bodyweight (track reps only, no weight)
+        </label>
+
+        {!bodyweight && <Stepper label="STARTING WEIGHT" value={startWeight} onChange={setStartWeight} step={2.5} />}
+        <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 10 }}>
+          <Stepper label="REPS MIN" value={repsMin} onChange={setRepsMin} min={1} step={1} />
+          <Stepper label="REPS MAX" value={repsMax} onChange={v => setRepsMax(Math.max(repsMin, v))} min={1} step={1} />
+        </div>
+        {!bodyweight && <Stepper label="INCREMENT (KG)" value={increment} onChange={setIncrement} step={0.5} />}
+
+        <div style={{ display: 'flex', gap: 8, marginTop: 4 }}>
           <button onClick={onClose} style={{ ...btnGhost, flex: 1 }}>Cancel</button>
-          <button onClick={() => onSave(sets)} style={{ ...btnPrimary, flex: 1 }}>Save</button>
+          <button onClick={save} style={{ ...btnPrimary, flex: 1 }}>Save</button>
         </div>
       </div>
     </div>
+  );
+}
+
+function Workout({ workoutLogs, addWorkoutLog }) {
+  const [exercises, setExercises] = useState(getOLExercises);
+  const [gym, setGym]             = useState('home');
+  const [day, setDay]             = useState('push');
+  const [selectedId, setSelectedId] = useState(null);
+  const [weight, setWeight]       = useState(20);
+  const [selectedReps, setSelectedReps] = useState(null);
+  const [saving, setSaving]       = useState(false);
+  const [saved, setSaved]         = useState(false);
+  const [showAdd, setShowAdd]     = useState(false);
+
+  const filtered = useMemo(() =>
+    exercises.filter(e => (e.gym === gym || e.gym === 'both') && e.day === day),
+    [exercises, gym, day]);
+
+  const selected = useMemo(() => filtered.find(e => e.id === selectedId) ?? filtered[0] ?? null, [filtered, selectedId]);
+
+  useEffect(() => {
+    if (filtered.length && (!selectedId || !filtered.find(e => e.id === selectedId))) {
+      setSelectedId(filtered[0]?.id ?? null);
+    }
+  }, [filtered]);
+
+  const prog = useMemo(() => selected ? computeProgression(selected, workoutLogs) : null, [selected, workoutLogs]);
+
+  useEffect(() => {
+    if (prog) {
+      setWeight(prog.currentWeight);
+      setSelectedReps(null);
+    }
+  }, [selected?.id]);
+
+  const repRange = useMemo(() => {
+    if (!selected) return [];
+    const min = Math.max(1, selected.repsMin - 2);
+    const max = selected.repsMax + 2;
+    return Array.from({ length: max - min + 1 }, (_, i) => min + i);
+  }, [selected]);
+
+  const handleLog = async () => {
+    if (!selected || selectedReps === null || saving) return;
+    setSaving(true);
+    await addWorkoutLog({
+      date: todayStr(),
+      exerciseName: selected.name,
+      muscle: selected.day,
+      topSet: { weight: selected.bodyweight ? 0 : weight, reps: selectedReps },
+    });
+    setSaving(false);
+    setSaved(true);
+    setTimeout(() => setSaved(false), 2000);
+  };
+
+  const addExercise = ex => {
+    const updated = [...exercises, ex];
+    setExercises(updated);
+    saveOLExercises(updated);
+    setSelectedId(ex.id);
+    setShowAdd(false);
+  };
+
+  const actionColour = { 'ADD WEIGHT': '#4caf7d', 'HOLD': 'rgba(255,255,255,0.5)', 'DROP WEIGHT': '#e25d7a', 'FIRST SET': 'var(--accent)' };
+
+  return (
+    <Section title="Progressive Overload">
+      <div style={{ display: 'flex', flexDirection: 'column', gap: 16, maxWidth: 520 }}>
+
+        {/* Gym / Day toggles */}
+        <GlassCard>
+          <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
+            <ToggleGroup label="GYM" options={[{value:'home',label:'Home Gym'},{value:'commercial',label:'Commercial Gym'}]} value={gym} onChange={setGym} />
+            <ToggleGroup label="DAY" options={[{value:'push',label:'Push'},{value:'pull',label:'Pull'},{value:'legs',label:'Legs'}]} value={day} onChange={setDay} />
+          </div>
+        </GlassCard>
+
+        {/* Exercise selector */}
+        <div>
+          <GlassLabel>Exercise</GlassLabel>
+          <div style={{ display: 'flex', gap: 8 }}>
+            <select value={selected?.id ?? ''} onChange={e => setSelectedId(e.target.value)}
+              style={{ ...inputSx, flex: 1, appearance: 'none', backgroundImage: 'url("data:image/svg+xml,%3Csvg xmlns=\'http://www.w3.org/2000/svg\' width=\'12\' height=\'8\' viewBox=\'0 0 12 8\'%3E%3Cpath d=\'M1 1l5 5 5-5\' stroke=\'rgba(255,255,255,0.4)\' stroke-width=\'1.5\' fill=\'none\'/%3E%3C/svg%3E")', backgroundRepeat: 'no-repeat', backgroundPosition: 'right 12px center', paddingRight: 32, fontSize: 14, fontWeight: 500 }}>
+              {filtered.map(e => <option key={e.id} value={e.id}>{e.name}{prog && e.id === selected?.id ? ` · ${prog.currentWeight}kg` : ''}</option>)}
+              {filtered.length === 0 && <option disabled>No exercises for this selection</option>}
+            </select>
+            <button onClick={() => setShowAdd(true)} style={{ ...btnGhost, padding: '0 14px', fontSize: 18, borderRadius: 8 }} title="Add exercise">+</button>
+          </div>
+        </div>
+
+        {/* Log top set */}
+        {selected && prog && (
+          <>
+            <div>
+              <GlassLabel>Log Today's Top Set</GlassLabel>
+              {prog.last && (
+                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 14, padding: '8px 12px', borderRadius: 8, background: 'rgba(255,255,255,0.03)', border: '0.5px solid var(--card-border)' }}>
+                  <span style={{ fontSize: 11, color: 'var(--text-muted)', letterSpacing: '0.06em' }}>LAST TIME</span>
+                  <span style={{ fontSize: 13, fontWeight: 600, color: 'var(--text-primary)' }}>
+                    {selected.bodyweight ? `BW` : `${prog.last.topSet?.weight}kg`} × {prog.last.topSet?.reps}
+                  </span>
+                  <span style={{ fontSize: 10.5, color: 'var(--text-muted)' }}>{prog.last.date === todayStr() ? 'today' : prog.last.date?.slice(5)}</span>
+                </div>
+              )}
+
+              {!selected.bodyweight && (
+                <div style={{ marginBottom: 16 }}>
+                  <Stepper label="WEIGHT (KG)" value={weight} onChange={setWeight} step={selected.increment || 2.5} />
+                </div>
+              )}
+
+              <div>
+                <span style={lblSx}>REPS</span>
+                <div style={{ display: 'flex', gap: 6, flexWrap: 'wrap' }}>
+                  {repRange.map(r => (
+                    <button key={r} onClick={() => setSelectedReps(r)} style={{
+                      width: 38, height: 38, borderRadius: 8, border: `0.5px solid ${selectedReps === r ? 'rgba(255,255,255,0.8)' : 'var(--card-border)'}`,
+                      background: selectedReps === r ? 'rgba(255,255,255,0.9)' : 'var(--card-fill)',
+                      color: selectedReps === r ? '#111' : 'var(--text-secondary)',
+                      fontSize: 13, fontWeight: selectedReps === r ? 700 : 400, cursor: 'pointer', transition: 'all 0.12s',
+                    }}>{r}</button>
+                  ))}
+                </div>
+              </div>
+            </div>
+
+            <button onClick={handleLog} disabled={selectedReps === null || saving} style={{
+              width: '100%', padding: '14px 0', borderRadius: 10,
+              border: '0.5px solid rgba(255,255,255,0.25)',
+              background: saved ? 'rgba(76,175,125,0.15)' : 'rgba(255,255,255,0.08)',
+              color: saved ? '#4caf7d' : 'var(--text-primary)',
+              fontSize: 14, fontWeight: 600, cursor: selectedReps === null ? 'not-allowed' : 'pointer',
+              opacity: selectedReps === null ? 0.4 : 1, transition: 'all 0.15s',
+              letterSpacing: '0.03em',
+            }}>
+              {saved ? '✓ Logged' : saving ? 'Saving…' : 'Log set'}
+            </button>
+
+            {/* Next session */}
+            <GlassCard style={{ background: 'rgba(30,50,30,0.55)', border: '0.5px solid rgba(76,175,125,0.2)' }}>
+              <GlassLabel>Next Session</GlassLabel>
+              <div style={{ fontSize: 10, letterSpacing: '0.1em', color: 'rgba(255,255,255,0.35)', marginBottom: 6, textTransform: 'uppercase' }}>{selected.name}</div>
+              <div style={{ fontSize: 26, fontWeight: 700, color: 'var(--text-primary)', marginBottom: 8 }}>
+                {selected.bodyweight ? 'Bodyweight' : `${prog.nextWeight}kg`} × {selected.repsMin} reps
+              </div>
+              <span style={{
+                display: 'inline-block', padding: '2px 9px', borderRadius: 12, fontSize: 10, fontWeight: 700,
+                background: `${actionColour[prog.action]}22`, color: actionColour[prog.action],
+                border: `0.5px solid ${actionColour[prog.action]}55`, letterSpacing: '0.08em', marginBottom: 10,
+              }}>{prog.action}</span>
+              <div style={{ fontSize: 12, color: 'rgba(255,255,255,0.45)', lineHeight: 1.5 }}>{prog.hint}</div>
+            </GlassCard>
+          </>
+        )}
+
+        {filtered.length === 0 && (
+          <div style={{ textAlign: 'center', padding: '40px 0', color: 'var(--text-muted)', fontSize: 13 }}>
+            No exercises for {gym} / {day}.<br />
+            <button onClick={() => setShowAdd(true)} style={{ ...btnPrimary, marginTop: 12 }}>Add one</button>
+          </div>
+        )}
+      </div>
+
+      {showAdd && <AddExerciseModal onClose={() => setShowAdd(false)} onSave={addExercise} />}
+    </Section>
   );
 }
 
