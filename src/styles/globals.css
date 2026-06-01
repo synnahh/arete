@@ -329,4 +329,34 @@ main[data-layout="spacious"] {
 }
 .orb-idle      { animation: orb-breathe  3.2s ease-in-out infinite; }
 .orb-listening { animation: orb-breathe  0.8s ease-in-out infinite; }
+
+/* ─── Global select / dropdown fix ─────────────────────────────────────────
+   Browser default <select> renders with OS-native colours (white bg, black
+   text) which clashes with every dark theme. Override universally so no tab
+   needs to handle this individually.
+──────────────────────────────────────────────────────────────────────────── */
+select {
+  background-color: var(--input-bg);
+  color:            var(--text-primary);
+  border:           0.5px solid var(--input-border);
+  border-radius:    7px;
+  padding:          7px 32px 7px 10px;
+  font-size:        12.5px;
+  outline:          none;
+  appearance:       none;
+  -webkit-appearance: none;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='8' viewBox='0 0 12 8'%3E%3Cpath d='M1 1l5 5 5-5' stroke='rgba(255,255,255,0.35)' stroke-width='1.5' fill='none'/%3E%3C/svg%3E");
+  background-repeat: no-repeat;
+  background-position: right 10px center;
+  cursor: pointer;
+  transition: border-color 0.15s ease;
+  box-sizing: border-box;
+}
+select:focus {
+  border-color: var(--accent);
+}
+select option {
+  background-color: var(--bg-panel);
+  color:            var(--text-primary);
+}
 .orb-thinking  { animation: orb-thinking 1.4s linear infinite; }

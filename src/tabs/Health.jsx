@@ -698,7 +698,15 @@ const DEFAULT_OVERLOAD_EXERCISES = [
   { id:'crf', name:'Calf Raises',         gym:'both',       day:'legs', bodyweight:false, startingWeight:20, repsMin:12,repsMax:15, increment:5   },
 ];
 
-const OL_KEY = 'valerie_overload_exercises';
+const OL_KEY         = 'valerie_overload_exercises';
+const SPLIT_NAMES_KEY = 'valerie_split_names';
+const DEFAULT_SPLITS  = { push: 'Push', pull: 'Pull', legs: 'Legs' };
+
+function getSplitNames() {
+  try { const d = JSON.parse(localStorage.getItem(SPLIT_NAMES_KEY)); if (d && d.push) return d; } catch {}
+  return { ...DEFAULT_SPLITS };
+}
+function saveSplitNames(n) { localStorage.setItem(SPLIT_NAMES_KEY, JSON.stringify(n)); }
 
 function getOLExercises() {
   try { const d = JSON.parse(localStorage.getItem(OL_KEY)); if (Array.isArray(d) && d.length) return d; } catch {}
@@ -831,15 +839,25 @@ function AddExerciseModal({ onClose, onSave }) {
 }
 
 function Workout({ workoutLogs, addWorkoutLog }) {
-  const [exercises, setExercises] = useState(getOLExercises);
-  const [gym, setGym]             = useState('home');
-  const [day, setDay]             = useState('push');
+  const [exercises, setExercises]   = useState(getOLExercises);
+  const [splitNames, setSplitNames] = useState(getSplitNames);
+  const [editingSplits, setEditingSplits] = useState(false);
+  const [draftNames, setDraftNames] = useState(getSplitNames);
+  const [gym, setGym]               = useState('home');
+  const [day, setDay]               = useState('push');
   const [selectedId, setSelectedId] = useState(null);
-  const [weight, setWeight]       = useState(20);
+  const [weight, setWeight]         = useState(20);
   const [selectedReps, setSelectedReps] = useState(null);
-  const [saving, setSaving]       = useState(false);
-  const [saved, setSaved]         = useState(false);
-  const [showAdd, setShowAdd]     = useState(false);
+  const [saving, setSaving]         = useState(false);
+  const [saved, setSaved]           = useState(false);
+  const [showAdd, setShowAdd]       = useState(false);
+
+  const saveSplits = () => {
+    const trimmed = { push: draftNames.push.trim() || 'Push', pull: draftNames.pull.trim() || 'Pull', legs: draftNames.legs.trim() || 'Legs' };
+    setSplitNames(trimmed);
+    saveSplitNames(trimmed);
+    setEditingSplits(false);
+  };
 
   const filtered = useMemo(() =>
     exercises.filter(e => (e.gym === gym || e.gym === 'both') && e.day === day),
@@ -895,13 +913,37 @@ function Workout({ workoutLogs, addWorkoutLog }) {
 
   return (
     <Section title="Progressive Overload">
-      <div style={{ display: 'flex', flexDirection: 'column', gap: 16, maxWidth: 520 }}>
+      <div style={{ display: 'flex', flexDirection: 'column', gap: 16, maxWidth: 560 }}>
 
         {/* Gym / Day toggles */}
         <GlassCard>
           <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
             <ToggleGroup label="GYM" options={[{value:'home',label:'Home Gym'},{value:'commercial',label:'Commercial Gym'}]} value={gym} onChange={setGym} />
-            <ToggleGroup label="DAY" options={[{value:'push',label:'Push'},{value:'pull',label:'Pull'},{value:'legs',label:'Legs'}]} value={day} onChange={setDay} />
+
+            {/* DAY row with editable split names */}
+            {editingSplits ? (
+              <div style={{ display: 'flex', gap: 8, alignItems: 'center' }}>
+                <span style={{ fontSize: 10, fontWeight: 700, letterSpacing: '0.1em', color: 'var(--text-muted)', minWidth: 36, textTransform: 'uppercase' }}>DAY</span>
+                {['push','pull','legs'].map(k => (
+                  <input key={k} value={draftNames[k]} onChange={e => setDraftNames(p => ({ ...p, [k]: e.target.value }))}
+                    style={{ ...inputSx, flex: 1, padding: '6px 8px', fontSize: 12, textAlign: 'center' }}
+                    onFocus={e => e.target.style.borderColor = 'var(--accent)'}
+                    onBlur={e => e.target.style.borderColor = 'var(--input-border)'}
+                  />
+                ))}
+                <button onClick={saveSplits} style={{ ...btnPrimary, padding: '6px 12px', fontSize: 11, whiteSpace: 'nowrap' }}>Save</button>
+                <button onClick={() => { setDraftNames(splitNames); setEditingSplits(false); }} style={{ ...btnGhost, padding: '6px 10px', fontSize: 11 }}>✕</button>
+              </div>
+            ) : (
+              <div style={{ display: 'flex', gap: 8, alignItems: 'center' }}>
+                <ToggleGroup label="DAY"
+                  options={[{value:'push',label:splitNames.push},{value:'pull',label:splitNames.pull},{value:'legs',label:splitNames.legs}]}
+                  value={day} onChange={setDay} />
+                <button onClick={() => { setDraftNames(splitNames); setEditingSplits(true); }}
+                  style={{ flexShrink: 0, background: 'none', border: '0.5px solid var(--card-border)', borderRadius: 6, padding: '6px 8px', cursor: 'pointer', color: 'var(--text-muted)', fontSize: 11, lineHeight: 1 }}
+                  title="Rename splits">✏</button>
+              </div>
+            )}
           </div>
         </GlassCard>
 
@@ -910,7 +952,7 @@ function Workout({ workoutLogs, addWorkoutLog }) {
           <GlassLabel>Exercise</GlassLabel>
           <div style={{ display: 'flex', gap: 8 }}>
             <select value={selected?.id ?? ''} onChange={e => setSelectedId(e.target.value)}
-              style={{ ...inputSx, flex: 1, appearance: 'none', backgroundImage: 'url("data:image/svg+xml,%3Csvg xmlns=\'http://www.w3.org/2000/svg\' width=\'12\' height=\'8\' viewBox=\'0 0 12 8\'%3E%3Cpath d=\'M1 1l5 5 5-5\' stroke=\'rgba(255,255,255,0.4)\' stroke-width=\'1.5\' fill=\'none\'/%3E%3C/svg%3E")', backgroundRepeat: 'no-repeat', backgroundPosition: 'right 12px center', paddingRight: 32, fontSize: 14, fontWeight: 500 }}>
+              style={{ ...inputSx, flex: 1, fontSize: 14, fontWeight: 500 }}>
               {filtered.map(e => <option key={e.id} value={e.id}>{e.name}{prog && e.id === selected?.id ? ` · ${prog.currentWeight}kg` : ''}</option>)}
               {filtered.length === 0 && <option disabled>No exercises for this selection</option>}
             </select>
@@ -985,7 +1027,7 @@ function Workout({ workoutLogs, addWorkoutLog }) {
 
         {filtered.length === 0 && (
           <div style={{ textAlign: 'center', padding: '40px 0', color: 'var(--text-muted)', fontSize: 13 }}>
-            No exercises for {gym} / {day}.<br />
+            No exercises for {gym === 'home' ? 'Home Gym' : 'Commercial Gym'} / {splitNames[day]}.<br />
             <button onClick={() => setShowAdd(true)} style={{ ...btnPrimary, marginTop: 12 }}>Add one</button>
           </div>
         )}
