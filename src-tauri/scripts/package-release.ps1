@@ -7,7 +7,7 @@
 #       VALERIE-Setup.exe
 #       README.txt
 #
-# Usage:  powershell -ExecutionPolicy Bypass -File scripts/package-release.ps1
+# Usage:  powershell -ExecutionPolicy Bypass -File src-tauri/scripts/package-release.ps1
 
 $ErrorActionPreference = 'Stop'
 
@@ -82,9 +82,15 @@ Write-Host "  [OK] ZIP created -> $zipName" -ForegroundColor Green
 # ── Clean up staging ───────────────────────────────────────────────────────────
 Remove-Item $stagingDir -Recurse -Force
 
+# ── Drop installer EXE at project root for easy access ────────────────────────
+$rootExe = "VALERIE-Setup.exe"
+Copy-Item $installer $rootExe -Force
+Write-Host "  [OK] Root EXE   -> $rootExe" -ForegroundColor Green
+
 # ── Summary ───────────────────────────────────────────────────────────────────
 $zipSizeMB = [math]::Round((Get-Item $zipPath).Length / 1MB, 2)
 Write-Host ""
 Write-Host "  Done." -ForegroundColor Cyan
 Write-Host "  $releaseDir\$zipName  ($zipSizeMB MB)" -ForegroundColor White
+Write-Host "  VALERIE-Setup.exe at project root" -ForegroundColor White
 Write-Host ""
