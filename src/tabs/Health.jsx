@@ -115,27 +115,57 @@ function StatCard({ label, value, unit, colour = 'var(--accent)', ring, children
 }
 
 // ═══════════════════════════════════════════════════════════════════════════════
+// ── Demo data shown when nothing is logged ────────────────────────────────────
+const DEMO_SLEEP = { date:'demo', efficiency:82, duration:445, bedTime:'22:45', wakeTime:'07:00',
+  stages:{ deep:62, rem:88, core:228, awake:67 } };
+const DEMO_NUTRITION = { calories:1650, protein:95, carbs:182, fat:54, meals:[
+  { id:'d1', name:'Oats + banana', calories:380, protein:12, carbs:68, fat:6,  time:'07:30' },
+  { id:'d2', name:'Chicken & rice', calories:620, protein:52, carbs:72, fat:11, time:'12:45' },
+  { id:'d3', name:'Protein shake',  calories:220, protein:28, carbs:14, fat:5,  time:'15:00' },
+  { id:'d4', name:'Greek yoghurt',  calories:130, protein:13, carbs:9,  fat:4,  time:'16:30' },
+  { id:'d5', name:'Steak & veg',    calories:300, protein:38, carbs:19, fat:8,  time:'19:00' },
+]};
+const DEMO_BODY = { weight:82.4, bodyFat:14.8, muscle:68.2 };
+const DEMO_WATER = 1850;
+
 // 1. OVERVIEW — dense command centre
 // ═══════════════════════════════════════════════════════════════════════════════
 function Overview({ habits, waterLogs, nutritionLogs, sleepData, settings, supplements, suppLogs, stimLogs, workoutLogs, bodyMetrics, onNav }) {
   const today = todayStr();
 
-  const waterGoal      = settings?.waterGoal ?? 2500;
-  const macroGoal      = settings?.macroGoal ?? 2500;
-  const caffLimit      = settings?.caffeineLimitMg ?? 400;
-  const nicLimit       = settings?.nicotineLimitMg ?? 20;
-  const proteinGoal    = settings?.proteinGoal ?? 160;
+  const waterGoal   = settings?.waterGoal ?? 2500;
+  const calGoal     = settings?.macroGoal ?? 2500;
+  const protGoal    = settings?.proteinGoal ?? 160;
+  const carbGoal    = settings?.macros?.carbs ?? 250;
+  const fatGoal     = settings?.macros?.fat ?? 80;
+  const caffLimit   = settings?.caffeineLimitMg ?? 400;
+  const nicLimit    = settings?.nicotineLimitMg ?? 20;
 
-  const todayWater     = useMemo(() => (waterLogs||[]).filter(l=>l.date===today).reduce((s,l)=>s+(l.amount||0),0),[waterLogs,today]);
-  const todayNutrition = useMemo(() => (nutritionLogs||[]).find(l=>l.date===today),[nutritionLogs,today]);
-  const todayCal       = todayNutrition?.totalCalories ?? 0;
-  const todayProtein   = todayNutrition?.protein ?? 0;
-  const lastSleep      = useMemo(() => [...(sleepData||[])].sort((a,b)=>(b.date??'').localeCompare(a.date??''))[0],[sleepData]);
-  const todayHabits    = useMemo(()=>{ const t=(habits||[]).length; const d=(habits||[]).filter(h=>h.lastCompleted===today).length; return{done:d,total:t};},[habits,today]);
-  const todaySupps     = useMemo(()=>{ const t=(supplements||[]).length; const d=new Set((suppLogs||[]).filter(l=>l.date===today).map(l=>l.suppId)).size; return{done:d,total:t};},[supplements,suppLogs,today]);
-  const todayStims     = useMemo(()=>{ const logs=(stimLogs||[]).filter(l=>l.date===today); return{ caffeine:logs.filter(l=>l.type==='caffeine').reduce((s,l)=>s+(l.amount||0),0), nicotine:logs.filter(l=>l.type==='nicotine').reduce((s,l)=>s+(l.amount||0),0) };},[stimLogs,today]);
-  const workedOutToday = useMemo(()=>(workoutLogs||[]).some(l=>l.date===today),[workoutLogs,today]);
-  const latestBody     = useMemo(()=>[...(bodyMetrics||[])].sort((a,b)=>(b.date??'').localeCompare(a.date??''))[0],[bodyMetrics]);
+  const rawWater    = useMemo(() => (waterLogs||[]).filter(l=>l.date===today).reduce((s,l)=>s+(l.amount||0),0),[waterLogs,today]);
+  const todayNut    = useMemo(() => (nutritionLogs||[]).find(l=>l.date===today),[nutritionLogs,today]);
+  const todayCal    = todayNut?.calories ?? todayNut?.totalCalories ?? 0;
+  const todayProtein = todayNut?.protein ?? 0;
+  const rawCarbs    = todayNut?.carbs ?? 0;
+  const rawFat      = todayNut?.fat ?? 0;
+  const rawLastSleep = useMemo(() => [...(sleepData||[])].sort((a,b)=>(b.date??'').localeCompare(a.date??''))[0],[sleepData]);
+  const todayHabitsRaw  = useMemo(()=>{ const t=(habits||[]).length; const d=(habits||[]).filter(h=>h.lastCompleted===today).length; return{done:d,total:t};},[habits,today]);
+  const todaySuppsRaw   = useMemo(()=>{ const t=(supplements||[]).length; const d=new Set((suppLogs||[]).filter(l=>l.date===today).map(l=>l.suppId)).size; return{done:d,total:t};},[supplements,suppLogs,today]);
+  const todayStims      = useMemo(()=>{ const logs=(stimLogs||[]).filter(l=>l.date===today); return{ caffeine:logs.filter(l=>l.type==='caffeine').reduce((s,l)=>s+(l.amount||0),0), nicotine:logs.filter(l=>l.type==='nicotine').reduce((s,l)=>s+(l.amount||0),0) };},[stimLogs,today]);
+  const workedOutToday  = useMemo(()=>(workoutLogs||[]).some(l=>l.date===today),[workoutLogs,today]);
+  const latestBodyRaw   = useMemo(()=>[...(bodyMetrics||[])].sort((a,b)=>(b.date??'').localeCompare(a.date??''))[0],[bodyMetrics]);
+
+  // Demo fallbacks — used when nothing logged so the UI looks populated
+  const useDemo       = !rawLastSleep && rawWater === 0 && todayCal === 0;
+  const lastSleep     = rawLastSleep ?? (useDemo ? DEMO_SLEEP : null);
+  const todayWater    = rawWater   > 0 ? rawWater    : useDemo ? DEMO_WATER    : 0;
+  const todayCal2     = todayCal   > 0 ? todayCal    : useDemo ? DEMO_NUTRITION.calories : 0;
+  const todayProt     = todayProtein > 0 ? todayProtein : useDemo ? DEMO_NUTRITION.protein  : 0;
+  const todayCarbs    = rawCarbs   > 0 ? rawCarbs    : useDemo ? DEMO_NUTRITION.carbs    : 0;
+  const todayFat      = rawFat     > 0 ? rawFat      : useDemo ? DEMO_NUTRITION.fat      : 0;
+  const todayMeals    = todayNut?.meals?.length ? todayNut.meals : useDemo ? DEMO_NUTRITION.meals : [];
+  const todayHabits   = todayHabitsRaw.total > 0 ? todayHabitsRaw : useDemo ? {done:3,total:5}  : todayHabitsRaw;
+  const todaySupps    = todaySuppsRaw.total  > 0 ? todaySuppsRaw  : useDemo ? {done:4,total:6}  : todaySuppsRaw;
+  const latestBody    = latestBodyRaw ?? (useDemo ? DEMO_BODY : null);
 
   const sleepH = Math.floor((lastSleep?.duration??0)/60);
   const sleepM = (lastSleep?.duration??0)%60;
@@ -190,6 +220,11 @@ function Overview({ habits, waterLogs, nutritionLogs, sleepData, settings, suppl
 
   return (
     <Section title="Overview">
+      {useDemo && (
+        <div style={{padding:'6px 12px',borderRadius:8,marginBottom:10,background:'rgba(74,158,255,0.07)',border:'0.5px solid rgba(74,158,255,0.2)',fontSize:10.5,color:'rgba(74,158,255,0.7)'}}>
+          📊 Showing demo data — log your first entry to see real stats
+        </div>
+      )}
 
       {/* ── SLEEP QUALITY — prominent block ── */}
       <GlassLabel>Sleep Quality</GlassLabel>
@@ -255,30 +290,30 @@ function Overview({ habits, waterLogs, nutritionLogs, sleepData, settings, suppl
         )}
       </GlassCard>
 
-      {/* ── VITALS — macros row ── */}
+      {/* ── VITALS — 5 macro cards ── */}
       <GlassLabel>Vitals</GlassLabel>
       <div style={{display:'flex',gap:8,marginBottom:10}}>
-        <MacroCard label="Water" value={todayWater} display={todayWater>=1000?`${(todayWater/1000).toFixed(1)}L`:`${todayWater}ml`} goal={waterGoal} goalDisplay={waterGoal>=1000?`${(waterGoal/1000).toFixed(1)}L`:`${waterGoal}ml`} colour="#4a9eff" onClick={()=>onNav('water')} />
-        <MacroCard label="Calories" value={todayCal} display={`${todayCal}`} goal={macroGoal} goalDisplay={`${macroGoal} kcal`} colour="#f4a642" onClick={()=>onNav('nutrition')} />
-        <MacroCard label="Protein" value={todayProtein} display={`${todayProtein}g`} goal={proteinGoal} goalDisplay={`${proteinGoal}g`} colour="#f97316" onClick={()=>onNav('nutrition')} />
+        <MacroCard label="Water"    value={todayWater} display={todayWater>=1000?`${(todayWater/1000).toFixed(1)}L`:`${todayWater}ml`}  goal={waterGoal} goalDisplay={waterGoal>=1000?`${(waterGoal/1000).toFixed(1)}L`:`${waterGoal}ml`} colour="#4a9eff" onClick={()=>onNav('water')} />
+        <MacroCard label="Calories" value={todayCal2}  display={`${todayCal2}`}  goal={calGoal}  goalDisplay={`${calGoal} kcal`}  colour="#f4a642" onClick={()=>onNav('nutrition')} />
+        <MacroCard label="Protein"  value={todayProt}  display={`${todayProt}g`} goal={protGoal} goalDisplay={`${protGoal}g`}      colour="#f97316" onClick={()=>onNav('nutrition')} />
+        <MacroCard label="Carbs"    value={todayCarbs} display={`${todayCarbs}g`} goal={carbGoal} goalDisplay={`${carbGoal}g`}     colour="#4caf7d" onClick={()=>onNav('nutrition')} />
+        <MacroCard label="Fat"      value={todayFat}   display={`${todayFat}g`}  goal={fatGoal}  goalDisplay={`${fatGoal}g`}       colour="#9b5de5" onClick={()=>onNav('nutrition')} />
       </div>
 
-      {/* ── Status chips row ── */}
-      <div style={{display:'flex',gap:6,marginBottom:10}}>
+      {/* ── STATUS chips: habits / supps / workout / stimulants ── */}
+      <div style={{display:'flex',gap:6,marginBottom:10,flexWrap:'wrap'}}>
         <Stat label="Habits"      value={`${todayHabits.done}/${todayHabits.total}`} sub={todayHabits.done===todayHabits.total&&todayHabits.total>0?'✓ all done':`${todayHabits.total-todayHabits.done} left`} colour="#4caf7d" nav={()=>onNav('habits')} />
         <Stat label="Supplements" value={`${todaySupps.done}/${todaySupps.total}`}   sub={todaySupps.done===todaySupps.total&&todaySupps.total>0?'✓ all taken':'remaining'} colour="#9b5de5" nav={()=>onNav('supplements')} />
-        <Stat label="Workout"     value={workedOutToday?'Done ✓':'Not yet'} colour={workedOutToday?'#4caf7d':'rgba(255,255,255,0.3)'} sub={workedOutToday?'logged today':'no session'} nav={()=>onNav('workout')} />
-        {latestBody?.weight&&<Stat label="Weight" value={`${latestBody.weight}kg`} sub={latestBody.date===today?'today':`${latestBody.date?.slice(5)??'—'}`} colour="rgba(255,255,255,0.65)" nav={()=>onNav('body')} />}
-        {/* Caffeine inline */}
+        <Stat label="Workout"     value={workedOutToday?'Done ✓':'Not yet'} colour={workedOutToday?'#4caf7d':'rgba(255,255,255,0.35)'} sub={workedOutToday?'logged today':'no session'} nav={()=>onNav('workout')} />
         <div style={{flex:'1 1 0',minWidth:0,padding:'10px 12px',background:'rgba(255,255,255,0.03)',borderRadius:10,border:`0.5px solid ${todayStims.caffeine>caffLimit*0.9?'rgba(244,166,66,0.4)':'rgba(255,255,255,0.07)'}`}}>
           <div style={{fontSize:8.5,fontWeight:700,letterSpacing:'0.16em',textTransform:'uppercase',color:'rgba(255,255,255,0.28)',fontFamily:'ui-monospace,monospace',marginBottom:4}}>Caffeine</div>
           <div style={{display:'flex',alignItems:'baseline',gap:4}}>
-            <span style={{fontSize:16,fontWeight:600,color:todayStims.caffeine>caffLimit*0.9?'#f4a642':'rgba(255,255,255,0.85)',fontVariantNumeric:'tabular-nums'}}>{todayStims.caffeine}</span>
+            <span style={{fontSize:16,fontWeight:600,color:todayStims.caffeine>caffLimit*0.9?'#f4a642':'rgba(255,255,255,0.85)',fontVariantNumeric:'tabular-nums'}}>{useDemo?180:todayStims.caffeine}</span>
             <span style={{fontSize:9.5,color:'rgba(255,255,255,0.3)'}}>/{caffLimit}mg</span>
           </div>
-          <Bar value={todayStims.caffeine} max={caffLimit} colour={todayStims.caffeine>caffLimit*0.9?'#f4a642':'#4a9eff'}/>
+          <Bar value={useDemo?180:todayStims.caffeine} max={caffLimit} colour={todayStims.caffeine>caffLimit*0.9?'#f4a642':'#4a9eff'}/>
         </div>
-        {todayStims.nicotine>0&&(
+        {(todayStims.nicotine>0)&&(
           <div style={{flex:'1 1 0',minWidth:0,padding:'10px 12px',background:'rgba(255,255,255,0.03)',borderRadius:10,border:'0.5px solid rgba(255,255,255,0.07)'}}>
             <div style={{fontSize:8.5,fontWeight:700,letterSpacing:'0.16em',textTransform:'uppercase',color:'rgba(255,255,255,0.28)',fontFamily:'ui-monospace,monospace',marginBottom:4}}>Nicotine</div>
             <div style={{display:'flex',alignItems:'baseline',gap:4}}>
@@ -289,6 +324,67 @@ function Overview({ habits, waterLogs, nutritionLogs, sleepData, settings, suppl
           </div>
         )}
       </div>
+
+      {/* ── BODY metrics ── */}
+      {latestBody && (
+        <>
+          <GlassLabel>Body</GlassLabel>
+          <div style={{display:'flex',gap:8,marginBottom:10}}>
+            <div onClick={()=>onNav('body')} style={{flex:1,padding:'14px 16px',background:'rgba(255,255,255,0.03)',borderRadius:12,border:'0.5px solid rgba(255,255,255,0.07)',cursor:'pointer'}}
+              onMouseEnter={e=>e.currentTarget.style.background='rgba(255,255,255,0.06)'}
+              onMouseLeave={e=>e.currentTarget.style.background='rgba(255,255,255,0.03)'}>
+              <div style={{fontSize:8.5,fontWeight:700,letterSpacing:'0.16em',textTransform:'uppercase',color:'rgba(255,255,255,0.28)',fontFamily:'ui-monospace,monospace',marginBottom:8}}>Weight</div>
+              <div style={{fontSize:28,fontWeight:200,color:'rgba(255,255,255,0.9)',lineHeight:1}}>{latestBody.weight}<span style={{fontSize:13,color:'rgba(255,255,255,0.3)',marginLeft:3}}>kg</span></div>
+              {latestBody.date&&<div style={{fontSize:9.5,color:'rgba(255,255,255,0.25)',marginTop:4,fontFamily:'ui-monospace,monospace'}}>{latestBody.date===today?'logged today':latestBody.date?.slice(5)??'—'}</div>}
+            </div>
+            {latestBody.bodyFat!=null&&(
+              <div onClick={()=>onNav('body')} style={{flex:1,padding:'14px 16px',background:'rgba(255,255,255,0.03)',borderRadius:12,border:'0.5px solid rgba(255,255,255,0.07)',cursor:'pointer'}}
+                onMouseEnter={e=>e.currentTarget.style.background='rgba(255,255,255,0.06)'}
+                onMouseLeave={e=>e.currentTarget.style.background='rgba(255,255,255,0.03)'}>
+                <div style={{fontSize:8.5,fontWeight:700,letterSpacing:'0.16em',textTransform:'uppercase',color:'rgba(255,255,255,0.28)',fontFamily:'ui-monospace,monospace',marginBottom:8}}>Body Fat</div>
+                <div style={{fontSize:28,fontWeight:200,color:'#f4a642',lineHeight:1}}>{latestBody.bodyFat}<span style={{fontSize:13,color:'rgba(255,255,255,0.3)',marginLeft:2}}>%</span></div>
+              </div>
+            )}
+            {latestBody.muscle!=null&&(
+              <div onClick={()=>onNav('body')} style={{flex:1,padding:'14px 16px',background:'rgba(255,255,255,0.03)',borderRadius:12,border:'0.5px solid rgba(255,255,255,0.07)',cursor:'pointer'}}
+                onMouseEnter={e=>e.currentTarget.style.background='rgba(255,255,255,0.06)'}
+                onMouseLeave={e=>e.currentTarget.style.background='rgba(255,255,255,0.03)'}>
+                <div style={{fontSize:8.5,fontWeight:700,letterSpacing:'0.16em',textTransform:'uppercase',color:'rgba(255,255,255,0.28)',fontFamily:'ui-monospace,monospace',marginBottom:8}}>Muscle</div>
+                <div style={{fontSize:28,fontWeight:200,color:'#4caf7d',lineHeight:1}}>{latestBody.muscle}<span style={{fontSize:13,color:'rgba(255,255,255,0.3)',marginLeft:3}}>kg</span></div>
+              </div>
+            )}
+            <div style={{flex:2}}/>
+          </div>
+        </>
+      )}
+
+      {/* ── TODAY'S MEALS ── */}
+      <GlassLabel>Today's meals</GlassLabel>
+      <GlassCard style={{marginBottom:0}}>
+        {todayMeals.length > 0 ? (
+          <div style={{display:'flex',flexDirection:'column',gap:0}}>
+            {todayMeals.map((m,i)=>(
+              <div key={m.id||i} style={{display:'flex',alignItems:'center',gap:12,padding:'9px 0',borderBottom:i<todayMeals.length-1?'0.5px solid rgba(255,255,255,0.05)':'none'}}>
+                <span style={{fontSize:10,color:'rgba(255,255,255,0.25)',fontFamily:'ui-monospace,monospace',minWidth:36}}>{m.time??'—'}</span>
+                <span style={{flex:1,fontSize:12,color:'rgba(255,255,255,0.75)',overflow:'hidden',textOverflow:'ellipsis',whiteSpace:'nowrap'}}>{m.name}</span>
+                <div style={{display:'flex',gap:10,flexShrink:0}}>
+                  {[{v:m.calories,u:'kcal',c:'#f4a642'},{v:m.protein,u:'p',c:'#4a9eff'},{v:m.carbs,u:'c',c:'#4caf7d'},{v:m.fat,u:'f',c:'#9b5de5'}].map(({v,u,c})=>(
+                    <span key={u} style={{fontSize:10,color:c,fontFamily:'ui-monospace,monospace'}}>{v}<span style={{opacity:0.45}}>{u}</span></span>
+                  ))}
+                </div>
+              </div>
+            ))}
+          </div>
+        ) : (
+          <div style={{display:'flex',alignItems:'center',justifyContent:'space-between'}}>
+            <span style={{fontSize:12,color:'rgba(255,255,255,0.25)'}}>No meals logged today</span>
+            <button onClick={()=>onNav('nutrition')} style={{...btnGhost,fontSize:11,padding:'5px 12px'}}>+ Log food</button>
+          </div>
+        )}
+        <div style={{display:'flex',justifyContent:'flex-end',marginTop:8}}>
+          <button onClick={()=>onNav('nutrition')} style={{fontSize:10.5,color:'var(--accent)',background:'none',border:'none',cursor:'pointer',padding:0}}>View nutrition →</button>
+        </div>
+      </GlassCard>
 
     </Section>
   );
