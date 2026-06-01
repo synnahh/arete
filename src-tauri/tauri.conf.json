@@ -50,7 +50,8 @@
         "installMode": "currentUser",
         "languages": ["English"],
         "startMenuFolder": "VALERIE",
-        "compression": "lzma"
+        "compression": "lzma",
+        "installerHooks": "nsis-hooks.nsi"
       }
     }
   }
