@@ -533,7 +533,7 @@ async function lookupBarcode(code) {
   };
 }
 
-function Nutrition({ nutritionLogs, addNutritionLog, updateNutritionLog, settings }) {
+function Nutrition({ nutritionLogs, addNutritionLog, updateNutritionLog, settings, savedMeals = [], addSavedMeal, removeSavedMeal }) {
   const today     = todayStr();
   const goals     = settings?.macros ?? { calories: 2500, protein: 180, carbs: 250, fat: 80 };
   const todayLog  = useMemo(() =>
@@ -547,7 +547,10 @@ function Nutrition({ nutritionLogs, addNutritionLog, updateNutritionLog, setting
     fat:      s.fat      + (m.fat      || 0),
   }), { calories: 0, protein: 0, carbs: 0, fat: 0 }), [meals]);
 
-  const [showAdd, setShowAdd] = useState(false);
+  const [showAdd, setShowAdd]   = useState(false);
+  const [addMode, setAddMode]   = useState('my');   // 'my' | 'search'
+  const [showSaveMeal, setShowSaveMeal] = useState(false);
+  const [saveMealForm, setSaveMealForm] = useState({ name: '', calories: '', protein: '', carbs: '', fat: '' });
   const [search, setSearch]   = useState('');
   const [results, setResults] = useState([]);
   const [searching, setSearching] = useState(false);
@@ -557,6 +560,41 @@ function Nutrition({ nutritionLogs, addNutritionLog, updateNutritionLog, setting
   const [scanning, setScanning]   = useState(false);
   const videoRef  = useRef(null);
   const streamRef = useRef(null);
+
+  const logSavedMeal = async (meal) => {
+    const entry = {
+      id: `m_${Date.now()}`,
+      name: meal.name,
+      calories: meal.calories,
+      protein:  meal.protein,
+      carbs:    meal.carbs,
+      fat:      meal.fat,
+      qty: null, unit: null,
+      time: nowStr(),
+      savedMealId: meal.id,
+    };
+    const newMeals = [...meals, entry];
+    const newTotals = newMeals.reduce((s, m) => ({
+      calories: s.calories + (m.calories||0), protein: s.protein + (m.protein||0),
+      carbs: s.carbs + (m.carbs||0), fat: s.fat + (m.fat||0),
+    }), { calories:0, protein:0, carbs:0, fat:0 });
+    if (todayLog?.id) await updateNutritionLog(todayLog.id, { meals: newMeals, ...newTotals });
+    else await addNutritionLog({ date: today, meals: newMeals, ...newTotals });
+  };
+
+  const handleSaveMeal = async () => {
+    const { name, calories, protein, carbs, fat } = saveMealForm;
+    if (!name.trim() || !calories) return;
+    await addSavedMeal({
+      name: name.trim(),
+      calories: parseFloat(calories)||0,
+      protein:  parseFloat(protein)||0,
+      carbs:    parseFloat(carbs)||0,
+      fat:      parseFloat(fat)||0,
+    });
+    setSaveMealForm({ name:'', calories:'', protein:'', carbs:'', fat:'' });
+    setShowSaveMeal(false);
+  };
 
   const doSearch = async () => {
     if (!search.trim()) return;
@@ -631,7 +669,12 @@ function Nutrition({ nutritionLogs, addNutritionLog, updateNutritionLog, setting
 
   return (
     <Section title="Nutrition" action={
-      <button onClick={() => setShowAdd(true)} style={btnPrimary}>+ Log food</button>
+      <div style={{ display: 'flex', gap: 6 }}>
+        <button onClick={() => { setShowAdd(true); setAddMode('my'); }} style={btnPrimary}>+ Log food</button>
+        <button onClick={() => setShowSaveMeal(v => !v)} style={{ ...btnGhost, fontSize: 11 }}>
+          {showSaveMeal ? '✕' : '⊕ Save meal'}
+        </button>
+      </div>
     }>
       {/* Macro bars */}
       <div style={{ ...cardSx, marginBottom: 16, display: 'flex', flexDirection: 'column', gap: 12 }}>
@@ -649,19 +692,87 @@ function Nutrition({ nutritionLogs, addNutritionLog, updateNutritionLog, setting
         ))}
       </div>
 
+      {/* Save meal form */}
+      {showSaveMeal && (
+        <div style={{ ...cardSx, marginBottom: 16, display: 'flex', flexDirection: 'column', gap: 10 }}>
+          <div style={{ fontSize: 12, fontWeight: 500, color: 'var(--text-primary)' }}>Save a meal</div>
+          <input value={saveMealForm.name} onChange={e => setSaveMealForm(p => ({ ...p, name: e.target.value }))}
+            placeholder="Meal name (e.g. Protein shake)" style={inputSx}
+            onFocus={e => e.target.style.borderColor='var(--accent)'} onBlur={e => e.target.style.borderColor='var(--input-border)'} />
+          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr 1fr', gap: 8 }}>
+            {[['calories','Kcal'],['protein','Protein'],['carbs','Carbs'],['fat','Fat']].map(([k,l]) => (
+              <div key={k}>
+                <label style={lblSx}>{l}</label>
+                <input type="number" value={saveMealForm[k]} onChange={e => setSaveMealForm(p => ({ ...p, [k]: e.target.value }))}
+                  placeholder="0" style={inputSx} min="0"
+                  onFocus={e => e.target.style.borderColor='var(--accent)'} onBlur={e => e.target.style.borderColor='var(--input-border)'} />
+              </div>
+            ))}
+          </div>
+          <div style={{ display: 'flex', gap: 8 }}>
+            <button onClick={() => setShowSaveMeal(false)} style={{ ...btnGhost, flex: 1 }}>Cancel</button>
+            <button onClick={handleSaveMeal} style={{ ...btnPrimary, flex: 1 }}>Save meal</button>
+          </div>
+        </div>
+      )}
+
       {/* Add food modal */}
       {showAdd && (
         <div style={{ ...cardSx, marginBottom: 16, display: 'flex', flexDirection: 'column', gap: 10 }}>
           <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
-            <span style={{ fontSize: 12, fontWeight: 500, color: 'var(--text-primary)' }}>Add food</span>
+            <div style={{ display: 'flex', gap: 0, borderRadius: 7, overflow: 'hidden', border: '0.5px solid var(--card-border)' }}>
+              {[['my','📌 My Meals'],['search','🔍 Search']].map(([id, label]) => (
+                <button key={id} onClick={() => setAddMode(id)} style={{
+                  padding: '5px 14px', border: 'none', cursor: 'pointer', fontSize: 11.5, fontWeight: 500,
+                  background: addMode === id ? 'rgba(255,255,255,0.9)' : 'var(--card-fill)',
+                  color: addMode === id ? '#111' : 'var(--text-secondary)', transition: 'all 0.12s',
+                }}>{label}</button>
+              ))}
+            </div>
             <div style={{ display: 'flex', gap: 6 }}>
-              <button onClick={scanning ? stopScan : startScan} title="Scan barcode"
-                style={{ ...btnGhost, padding: '5px 8px', display: 'flex', alignItems: 'center', gap: 5 }}>
-                <ScanIcon /> {scanning ? 'Stop scan' : 'Scan'}
-              </button>
+              {addMode === 'search' && (
+                <button onClick={scanning ? stopScan : startScan} title="Scan barcode"
+                  style={{ ...btnGhost, padding: '5px 8px', display: 'flex', alignItems: 'center', gap: 5 }}>
+                  <ScanIcon /> {scanning ? 'Stop scan' : 'Scan'}
+                </button>
+              )}
               <button onClick={() => { setShowAdd(false); stopScan(); }} style={btnGhost}>Cancel</button>
             </div>
           </div>
+
+          {/* My Meals quick-pick */}
+          {addMode === 'my' && (
+            <div>
+              {savedMeals.length === 0 ? (
+                <div style={{ padding: '20px 0', textAlign: 'center', color: 'var(--text-muted)', fontSize: 12 }}>
+                  No saved meals yet — save a meal above for quick logging.
+                </div>
+              ) : (
+                <div style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
+                  {savedMeals.map(m => (
+                    <div key={m.id} style={{
+                      display: 'flex', alignItems: 'center', gap: 10, padding: '9px 12px',
+                      borderRadius: 8, background: 'var(--hover-bg)', border: '0.5px solid var(--card-border)',
+                    }}>
+                      <div style={{ flex: 1, minWidth: 0 }}>
+                        <div style={{ fontSize: 12.5, color: 'var(--text-primary)', fontWeight: 500 }}>{m.name}</div>
+                        <div style={{ fontSize: 10.5, color: 'var(--text-muted)', marginTop: 2 }}>
+                          {m.calories} kcal · P{m.protein}g · C{m.carbs}g · F{m.fat}g
+                        </div>
+                      </div>
+                      <button onClick={() => { logSavedMeal(m); setShowAdd(false); }} style={{ ...btnPrimary, padding: '5px 12px', fontSize: 11 }}>
+                        + Log
+                      </button>
+                      <button onClick={() => removeSavedMeal(m.id)} style={{ ...btnGhost, padding: '5px 8px', fontSize: 11, color: 'var(--text-muted)' }}>✕</button>
+                    </div>
+                  ))}
+                </div>
+              )}
+            </div>
+          )}
+
+          {/* Search mode */}
+          {addMode === 'search' && <>
 
           {/* Video preview for barcode scan */}
           {scanning && (
@@ -716,6 +827,7 @@ function Nutrition({ nutritionLogs, addNutritionLog, updateNutritionLog, setting
               <button onClick={addMeal} style={btnPrimary}>Add</button>
             </div>
           )}
+          </>}
         </div>
       )}
 
@@ -1750,7 +1862,7 @@ export default function Health({ settings, onTabChange }) {
     switch (active) {
       case 'overview':    return <Overview {...p} onTabChange={onTabChange} habits={habits} waterLogs={waterLogs} nutritionLogs={nutritionLogs} sleepData={sleepData} supplements={supplements} suppLogs={suppLogs} stimLogs={stimLogs} workoutLogs={workoutLogs} bodyMetrics={bodyMetrics} onNav={setActive} />;
       case 'habits':      return <Habits       habits={habits} addHabit={addHabit} updateHabit={updateHabit} removeHabit={removeHabit} />;
-      case 'nutrition':   return <Nutrition    {...p} nutritionLogs={nutritionLogs} addNutritionLog={addNutritionLog} updateNutritionLog={updateNutritionLog} />;
+      case 'nutrition':   return <Nutrition    {...p} nutritionLogs={nutritionLogs} addNutritionLog={addNutritionLog} updateNutritionLog={updateNutritionLog} savedMeals={savedMeals} addSavedMeal={addSavedMeal} removeSavedMeal={removeSavedMeal} />;
       case 'water':       return <Water        {...p} waterLogs={waterLogs} addWaterLog={addWaterLog} />;
       case 'body':        return <Body         bodyMetrics={bodyMetrics} addBodyMetric={addBodyMetric} />;
       case 'supplements': return <Supplements  supplements={supplements} suppLogs={suppLogs} addSupplement={addSupplement} removeSupplement={removeSupplement} addSuppLog={addSuppLog} />;
