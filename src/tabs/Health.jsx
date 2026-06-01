@@ -155,241 +155,236 @@ function Overview({ habits, waterLogs, nutritionLogs, sleepData, settings, suppl
   const workedOutToday  = useMemo(()=>(workoutLogs||[]).some(l=>l.date===today),[workoutLogs,today]);
   const latestBodyRaw   = useMemo(()=>[...(bodyMetrics||[])].sort((a,b)=>(b.date??'').localeCompare(a.date??''))[0],[bodyMetrics]);
 
-  // Demo fallbacks — used when nothing logged so the UI looks populated
-  const useDemo       = !rawLastSleep && rawWater === 0 && todayCal === 0;
-  const lastSleep     = rawLastSleep ?? (useDemo ? DEMO_SLEEP : null);
-  const todayWater    = rawWater   > 0 ? rawWater    : useDemo ? DEMO_WATER    : 0;
-  const todayCal2     = todayCal   > 0 ? todayCal    : useDemo ? DEMO_NUTRITION.calories : 0;
-  const todayProt     = todayProtein > 0 ? todayProtein : useDemo ? DEMO_NUTRITION.protein  : 0;
-  const todayCarbs    = rawCarbs   > 0 ? rawCarbs    : useDemo ? DEMO_NUTRITION.carbs    : 0;
-  const todayFat      = rawFat     > 0 ? rawFat      : useDemo ? DEMO_NUTRITION.fat      : 0;
-  const todayMeals    = todayNut?.meals?.length ? todayNut.meals : useDemo ? DEMO_NUTRITION.meals : [];
-  const todayHabits   = todayHabitsRaw.total > 0 ? todayHabitsRaw : useDemo ? {done:3,total:5}  : todayHabitsRaw;
-  const todaySupps    = todaySuppsRaw.total  > 0 ? todaySuppsRaw  : useDemo ? {done:4,total:6}  : todaySuppsRaw;
-  const latestBody    = latestBodyRaw ?? (useDemo ? DEMO_BODY : null);
+  const useDemo    = !rawLastSleep && rawWater === 0 && todayCal === 0;
+  const lastSleep  = rawLastSleep ?? (useDemo ? DEMO_SLEEP : null);
+  const todayWater = rawWater   > 0 ? rawWater    : useDemo ? DEMO_WATER    : 0;
+  const todayCal2  = todayCal   > 0 ? todayCal    : useDemo ? DEMO_NUTRITION.calories : 0;
+  const todayProt  = todayProtein > 0 ? todayProtein : useDemo ? DEMO_NUTRITION.protein  : 0;
+  const todayCarbs = rawCarbs   > 0 ? rawCarbs    : useDemo ? DEMO_NUTRITION.carbs    : 0;
+  const todayFat   = rawFat     > 0 ? rawFat      : useDemo ? DEMO_NUTRITION.fat      : 0;
+  const todayMeals = todayNut?.meals?.length ? todayNut.meals : useDemo ? DEMO_NUTRITION.meals : [];
+  const todayHabits = todayHabitsRaw.total > 0 ? todayHabitsRaw : useDemo ? {done:3,total:5} : todayHabitsRaw;
+  const todaySupps  = todaySuppsRaw.total  > 0 ? todaySuppsRaw  : useDemo ? {done:4,total:6} : todaySuppsRaw;
+  const latestBody  = latestBodyRaw ?? (useDemo ? DEMO_BODY : null);
 
   const sleepH = Math.floor((lastSleep?.duration??0)/60);
   const sleepM = (lastSleep?.duration??0)%60;
 
-  // Inline stat row item
-  const Stat = ({ label, value, sub, colour='rgba(255,255,255,0.85)', warn, nav }) => (
-    <div onClick={nav} style={{
-      flex:'1 1 0', minWidth:0, padding:'10px 12px', cursor:nav?'pointer':'default',
-      background:'rgba(255,255,255,0.03)', borderRadius:10,
-      border:`0.5px solid ${warn?'rgba(229,90,90,0.4)':'rgba(255,255,255,0.07)'}`,
-      transition:'background 0.15s',
-    }}
-      onMouseEnter={e=>nav&&(e.currentTarget.style.background='rgba(255,255,255,0.06)')}
-      onMouseLeave={e=>nav&&(e.currentTarget.style.background='rgba(255,255,255,0.03)')}
-    >
-      <div style={{fontSize:8.5,fontWeight:700,letterSpacing:'0.16em',textTransform:'uppercase',color:'rgba(255,255,255,0.28)',fontFamily:'ui-monospace,monospace',marginBottom:5}}>{label}</div>
-      <div style={{fontSize:16,fontWeight:600,color:warn?'#e55a5a':colour,lineHeight:1,fontVariantNumeric:'tabular-nums'}}>{value}</div>
-      {sub&&<div style={{fontSize:9.5,color:'rgba(255,255,255,0.28)',marginTop:3,fontFamily:'ui-monospace,monospace'}}>{sub}</div>}
-    </div>
-  );
+  const effColour = e => e>=85?'#4caf7d':e>=70?'#f4a642':'#e55a5a';
+  const C44 = 2*Math.PI*44;
 
-  // Mini progress bar
-  const Bar = ({value,max,colour})=>{
-    const pct=Math.min((value/Math.max(max,1))*100,100);
-    return(
-      <div style={{height:3,borderRadius:2,background:'rgba(255,255,255,0.08)',overflow:'hidden',marginTop:5}}>
-        <div style={{height:'100%',width:`${pct}%`,background:colour,borderRadius:2,transition:'width 0.5s ease'}}/>
+  const MacroCard = ({ label, value, display, goal, goalDisplay, colour, onClick }) => {
+    const pct = Math.min((value/Math.max(goal,1))*100,100);
+    return (
+      <div onClick={onClick} style={{flex:'1 1 0',minWidth:0,padding:'20px 18px',background:'rgba(255,255,255,0.03)',borderRadius:14,border:'0.5px solid rgba(255,255,255,0.07)',cursor:'pointer',transition:'background 0.15s'}}
+        onMouseEnter={e=>e.currentTarget.style.background='rgba(255,255,255,0.06)'}
+        onMouseLeave={e=>e.currentTarget.style.background='rgba(255,255,255,0.03)'}>
+        <div style={{fontSize:9,fontWeight:700,letterSpacing:'0.16em',textTransform:'uppercase',color:'rgba(255,255,255,0.28)',fontFamily:'ui-monospace,monospace',marginBottom:10}}>{label}</div>
+        <div style={{fontSize:32,fontWeight:300,color:colour,lineHeight:1,fontVariantNumeric:'tabular-nums',marginBottom:5}}>{display}</div>
+        <div style={{fontSize:10.5,color:'rgba(255,255,255,0.25)',marginBottom:10}}>of {goalDisplay}</div>
+        <div style={{height:5,borderRadius:3,background:'rgba(255,255,255,0.08)',overflow:'hidden'}}>
+          <div style={{height:'100%',width:`${pct}%`,background:colour,borderRadius:3,transition:'width 0.5s ease'}}/>
+        </div>
       </div>
     );
   };
 
-  const effColour = e => e>=85?'#4caf7d':e>=70?'#f4a642':'#e55a5a';
-  const C28 = 2*Math.PI*28; // ring circumference for r=28
+  const Stat = ({ label, value, sub, colour='rgba(255,255,255,0.85)', warn, nav }) => (
+    <div onClick={nav} style={{flex:'1 1 0',minWidth:0,padding:'14px 16px',cursor:nav?'pointer':'default',background:'rgba(255,255,255,0.03)',borderRadius:12,border:`0.5px solid ${warn?'rgba(229,90,90,0.4)':'rgba(255,255,255,0.07)'}`,transition:'background 0.15s'}}
+      onMouseEnter={e=>nav&&(e.currentTarget.style.background='rgba(255,255,255,0.06)')}
+      onMouseLeave={e=>nav&&(e.currentTarget.style.background='rgba(255,255,255,0.03)')}>
+      <div style={{fontSize:9,fontWeight:700,letterSpacing:'0.16em',textTransform:'uppercase',color:'rgba(255,255,255,0.28)',fontFamily:'ui-monospace,monospace',marginBottom:7}}>{label}</div>
+      <div style={{fontSize:20,fontWeight:600,color:warn?'#e55a5a':colour,lineHeight:1,fontVariantNumeric:'tabular-nums'}}>{value}</div>
+      {sub&&<div style={{fontSize:10,color:'rgba(255,255,255,0.28)',marginTop:4,fontFamily:'ui-monospace,monospace'}}>{sub}</div>}
+    </div>
+  );
 
-  // Large macro card
-  const MacroCard = ({ label, value, display, goal, goalDisplay, colour, onClick }) => {
-    const pct = Math.min((value/Math.max(goal,1))*100,100);
-    return (
-      <div onClick={onClick} style={{flex:'1 1 0',minWidth:0,padding:'14px 16px',background:'rgba(255,255,255,0.03)',borderRadius:12,border:'0.5px solid rgba(255,255,255,0.07)',cursor:'pointer',transition:'background 0.15s'}}
-        onMouseEnter={e=>e.currentTarget.style.background='rgba(255,255,255,0.06)'}
-        onMouseLeave={e=>e.currentTarget.style.background='rgba(255,255,255,0.03)'}
-      >
-        <div style={{fontSize:8.5,fontWeight:700,letterSpacing:'0.16em',textTransform:'uppercase',color:'rgba(255,255,255,0.28)',fontFamily:'ui-monospace,monospace',marginBottom:8}}>{label}</div>
-        <div style={{fontSize:26,fontWeight:300,color:colour,lineHeight:1,fontVariantNumeric:'tabular-nums',marginBottom:4}}>{display}</div>
-        <div style={{fontSize:10,color:'rgba(255,255,255,0.25)',marginBottom:8}}>of {goalDisplay}</div>
-        <div style={{height:4,borderRadius:2,background:'rgba(255,255,255,0.08)',overflow:'hidden'}}>
-          <div style={{height:'100%',width:`${pct}%`,background:colour,borderRadius:2,transition:'width 0.5s ease'}}/>
-        </div>
+  const Bar = ({value,max,colour})=>{
+    const pct=Math.min((value/Math.max(max,1))*100,100);
+    return(
+      <div style={{height:5,borderRadius:3,background:'rgba(255,255,255,0.08)',overflow:'hidden',marginTop:6}}>
+        <div style={{height:'100%',width:`${pct}%`,background:colour,borderRadius:3,transition:'width 0.5s ease'}}/>
       </div>
     );
   };
 
   return (
     <Section title="Overview">
-      {useDemo && (
-        <div style={{padding:'6px 12px',borderRadius:8,marginBottom:10,background:'rgba(74,158,255,0.07)',border:'0.5px solid rgba(74,158,255,0.2)',fontSize:10.5,color:'rgba(74,158,255,0.7)'}}>
-          📊 Showing demo data — log your first entry to see real stats
-        </div>
-      )}
+      <div style={{display:'flex',flexDirection:'column',gap:22}}>
 
-      {/* ── SLEEP QUALITY — prominent block ── */}
-      <GlassLabel>Sleep Quality</GlassLabel>
-      <GlassCard style={{marginBottom:10,cursor:'pointer'}} onClick={()=>onNav('sleep')}>
-        {lastSleep ? (
-          <div style={{display:'flex',gap:20,alignItems:'flex-start'}}>
-            {/* Efficiency ring */}
-            <div style={{position:'relative',width:90,height:90,flexShrink:0}}>
-              <svg viewBox="0 0 72 72" width="90" height="90">
-                <circle cx="36" cy="36" r="28" fill="none" stroke="rgba(255,255,255,0.06)" strokeWidth="6"/>
-                <circle cx="36" cy="36" r="28" fill="none"
-                  stroke={effColour(lastSleep.efficiency??0)} strokeWidth="6" strokeLinecap="round"
-                  strokeDasharray={C28}
-                  strokeDashoffset={C28*(1-(lastSleep.efficiency??0)/100)}
-                  style={{transform:'rotate(-90deg)',transformOrigin:'center',transition:'stroke-dashoffset 0.8s'}}
-                />
-              </svg>
-              <div style={{position:'absolute',inset:0,display:'flex',flexDirection:'column',alignItems:'center',justifyContent:'center',pointerEvents:'none'}}>
-                <div style={{fontSize:16,fontWeight:700,color:effColour(lastSleep.efficiency??0),lineHeight:1}}>{lastSleep.efficiency??'—'}%</div>
-                <div style={{fontSize:7.5,color:'rgba(255,255,255,0.3)',letterSpacing:'0.08em',marginTop:2}}>EFF</div>
-              </div>
-            </div>
+        {useDemo && (
+          <div style={{padding:'8px 14px',borderRadius:10,background:'rgba(74,158,255,0.07)',border:'0.5px solid rgba(74,158,255,0.2)',fontSize:11,color:'rgba(74,158,255,0.7)'}}>
+            \U0001f4ca Showing demo data — log your first entry to see real stats
+          </div>
+        )}
 
-            {/* Duration + times + stages */}
-            <div style={{flex:1,minWidth:0}}>
-              <div style={{display:'flex',alignItems:'baseline',gap:12,marginBottom:2}}>
-                <span style={{fontSize:30,fontWeight:200,color:'rgba(255,255,255,0.92)',lineHeight:1}}>{sleepH}h <span style={{fontSize:20}}>{sleepM}m</span></span>
-                <span style={{fontSize:12,color:'rgba(255,255,255,0.35)',fontFamily:'ui-monospace,monospace'}}>{lastSleep.bedTime??'—'} → {lastSleep.wakeTime??'—'}</span>
-              </div>
-
-              {lastSleep.stages ? (
-                <>
-                  <StageBar height={7} stages={[
-                    {label:'Deep', value:lastSleep.stages.deep??0,  colour:'#4a9eff'},
-                    {label:'REM',  value:lastSleep.stages.rem??0,   colour:'#9b5de5'},
-                    {label:'Core', value:lastSleep.stages.core??0,  colour:'#4caf7d'},
-                    {label:'Awake',value:lastSleep.stages.awake??0, colour:'rgba(255,255,255,0.15)'},
-                  ]}/>
-                  <div style={{display:'flex',gap:14,marginTop:6,flexWrap:'wrap'}}>
-                    {[{l:'Deep',c:'#4a9eff',v:lastSleep.stages.deep},{l:'REM',c:'#9b5de5',v:lastSleep.stages.rem},{l:'Core',c:'#4caf7d',v:lastSleep.stages.core},{l:'Awake',c:'rgba(255,255,255,0.25)',v:lastSleep.stages.awake}].map(s=>(
-                      <div key={s.l} style={{display:'flex',alignItems:'center',gap:4}}>
-                        <div style={{width:5,height:5,borderRadius:'50%',background:s.c,flexShrink:0}}/>
-                        <span style={{fontSize:9.5,color:'rgba(255,255,255,0.35)',fontFamily:'ui-monospace,monospace'}}>{s.l}: {Math.floor((s.v??0)/60)}h{String((s.v??0)%60).padStart(2,'0')}m</span>
-                      </div>
-                    ))}
+        {/* ── SLEEP QUALITY ── */}
+        <div>
+          <GlassLabel>Sleep Quality</GlassLabel>
+          <GlassCard style={{cursor:'pointer'}} onClick={()=>onNav('sleep')}>
+            {lastSleep ? (
+              <div style={{display:'flex',gap:24,alignItems:'flex-start'}}>
+                <div style={{position:'relative',width:110,height:110,flexShrink:0}}>
+                  <svg viewBox="0 0 100 100" width="110" height="110">
+                    <circle cx="50" cy="50" r="44" fill="none" stroke="rgba(255,255,255,0.06)" strokeWidth="7"/>
+                    <circle cx="50" cy="50" r="44" fill="none"
+                      stroke={effColour(lastSleep.efficiency??0)} strokeWidth="7" strokeLinecap="round"
+                      strokeDasharray={C44}
+                      strokeDashoffset={C44*(1-(lastSleep.efficiency??0)/100)}
+                      style={{transform:'rotate(-90deg)',transformOrigin:'center',transition:'stroke-dashoffset 0.8s'}}
+                    />
+                  </svg>
+                  <div style={{position:'absolute',inset:0,display:'flex',flexDirection:'column',alignItems:'center',justifyContent:'center',pointerEvents:'none'}}>
+                    <div style={{fontSize:20,fontWeight:700,color:effColour(lastSleep.efficiency??0),lineHeight:1}}>{lastSleep.efficiency??'—'}%</div>
+                    <div style={{fontSize:8,color:'rgba(255,255,255,0.3)',letterSpacing:'0.08em',marginTop:3}}>EFF</div>
                   </div>
-                </>
-              ) : (
-                <div style={{fontSize:11,color:'rgba(255,255,255,0.25)',marginTop:6}}>No stage data</div>
-              )}
-            </div>
-          </div>
-        ) : (
-          <div style={{display:'flex',alignItems:'center',gap:14,padding:'4px 0'}}>
-            <div style={{width:90,height:90,borderRadius:'50%',border:'0.5px solid rgba(255,255,255,0.08)',display:'flex',alignItems:'center',justifyContent:'center',flexShrink:0}}>
-              <span style={{fontSize:22,opacity:0.15}}>🌙</span>
-            </div>
-            <div>
-              <div style={{fontSize:14,color:'rgba(255,255,255,0.3)',marginBottom:4}}>No sleep logged yet</div>
-              <div style={{fontSize:11,color:'rgba(255,255,255,0.18)'}}>Log via Sleep tab or sync Apple Health on iOS →</div>
-            </div>
-          </div>
-        )}
-      </GlassCard>
-
-      {/* ── VITALS — 5 macro cards ── */}
-      <GlassLabel>Vitals</GlassLabel>
-      <div style={{display:'flex',gap:8,marginBottom:10}}>
-        <MacroCard label="Water"    value={todayWater} display={todayWater>=1000?`${(todayWater/1000).toFixed(1)}L`:`${todayWater}ml`}  goal={waterGoal} goalDisplay={waterGoal>=1000?`${(waterGoal/1000).toFixed(1)}L`:`${waterGoal}ml`} colour="#4a9eff" onClick={()=>onNav('water')} />
-        <MacroCard label="Calories" value={todayCal2}  display={`${todayCal2}`}  goal={calGoal}  goalDisplay={`${calGoal} kcal`}  colour="#f4a642" onClick={()=>onNav('nutrition')} />
-        <MacroCard label="Protein"  value={todayProt}  display={`${todayProt}g`} goal={protGoal} goalDisplay={`${protGoal}g`}      colour="#f97316" onClick={()=>onNav('nutrition')} />
-        <MacroCard label="Carbs"    value={todayCarbs} display={`${todayCarbs}g`} goal={carbGoal} goalDisplay={`${carbGoal}g`}     colour="#4caf7d" onClick={()=>onNav('nutrition')} />
-        <MacroCard label="Fat"      value={todayFat}   display={`${todayFat}g`}  goal={fatGoal}  goalDisplay={`${fatGoal}g`}       colour="#9b5de5" onClick={()=>onNav('nutrition')} />
-      </div>
-
-      {/* ── STATUS chips: habits / supps / workout / stimulants ── */}
-      <div style={{display:'flex',gap:6,marginBottom:10,flexWrap:'wrap'}}>
-        <Stat label="Habits"      value={`${todayHabits.done}/${todayHabits.total}`} sub={todayHabits.done===todayHabits.total&&todayHabits.total>0?'✓ all done':`${todayHabits.total-todayHabits.done} left`} colour="#4caf7d" nav={()=>onNav('habits')} />
-        <Stat label="Supplements" value={`${todaySupps.done}/${todaySupps.total}`}   sub={todaySupps.done===todaySupps.total&&todaySupps.total>0?'✓ all taken':'remaining'} colour="#9b5de5" nav={()=>onNav('supplements')} />
-        <Stat label="Workout"     value={workedOutToday?'Done ✓':'Not yet'} colour={workedOutToday?'#4caf7d':'rgba(255,255,255,0.35)'} sub={workedOutToday?'logged today':'no session'} nav={()=>onTabChange?.('workout')} />
-        <div style={{flex:'1 1 0',minWidth:0,padding:'10px 12px',background:'rgba(255,255,255,0.03)',borderRadius:10,border:`0.5px solid ${todayStims.caffeine>caffLimit*0.9?'rgba(244,166,66,0.4)':'rgba(255,255,255,0.07)'}`}}>
-          <div style={{fontSize:8.5,fontWeight:700,letterSpacing:'0.16em',textTransform:'uppercase',color:'rgba(255,255,255,0.28)',fontFamily:'ui-monospace,monospace',marginBottom:4}}>Caffeine</div>
-          <div style={{display:'flex',alignItems:'baseline',gap:4}}>
-            <span style={{fontSize:16,fontWeight:600,color:todayStims.caffeine>caffLimit*0.9?'#f4a642':'rgba(255,255,255,0.85)',fontVariantNumeric:'tabular-nums'}}>{useDemo?180:todayStims.caffeine}</span>
-            <span style={{fontSize:9.5,color:'rgba(255,255,255,0.3)'}}>/{caffLimit}mg</span>
-          </div>
-          <Bar value={useDemo?180:todayStims.caffeine} max={caffLimit} colour={todayStims.caffeine>caffLimit*0.9?'#f4a642':'#4a9eff'}/>
-        </div>
-        {(todayStims.nicotine>0)&&(
-          <div style={{flex:'1 1 0',minWidth:0,padding:'10px 12px',background:'rgba(255,255,255,0.03)',borderRadius:10,border:'0.5px solid rgba(255,255,255,0.07)'}}>
-            <div style={{fontSize:8.5,fontWeight:700,letterSpacing:'0.16em',textTransform:'uppercase',color:'rgba(255,255,255,0.28)',fontFamily:'ui-monospace,monospace',marginBottom:4}}>Nicotine</div>
-            <div style={{display:'flex',alignItems:'baseline',gap:4}}>
-              <span style={{fontSize:16,fontWeight:600,color:'#f4a642',fontVariantNumeric:'tabular-nums'}}>{todayStims.nicotine}</span>
-              <span style={{fontSize:9.5,color:'rgba(255,255,255,0.3)'}}>/{nicLimit}mg</span>
-            </div>
-            <Bar value={todayStims.nicotine} max={nicLimit} colour="#f4a642"/>
-          </div>
-        )}
-      </div>
-
-      {/* ── BODY metrics ── */}
-      {latestBody && (
-        <>
-          <GlassLabel>Body</GlassLabel>
-          <div style={{display:'flex',gap:8,marginBottom:10}}>
-            <div onClick={()=>onNav('body')} style={{flex:1,padding:'14px 16px',background:'rgba(255,255,255,0.03)',borderRadius:12,border:'0.5px solid rgba(255,255,255,0.07)',cursor:'pointer'}}
-              onMouseEnter={e=>e.currentTarget.style.background='rgba(255,255,255,0.06)'}
-              onMouseLeave={e=>e.currentTarget.style.background='rgba(255,255,255,0.03)'}>
-              <div style={{fontSize:8.5,fontWeight:700,letterSpacing:'0.16em',textTransform:'uppercase',color:'rgba(255,255,255,0.28)',fontFamily:'ui-monospace,monospace',marginBottom:8}}>Weight</div>
-              <div style={{fontSize:28,fontWeight:200,color:'rgba(255,255,255,0.9)',lineHeight:1}}>{latestBody.weight}<span style={{fontSize:13,color:'rgba(255,255,255,0.3)',marginLeft:3}}>kg</span></div>
-              {latestBody.date&&<div style={{fontSize:9.5,color:'rgba(255,255,255,0.25)',marginTop:4,fontFamily:'ui-monospace,monospace'}}>{latestBody.date===today?'logged today':latestBody.date?.slice(5)??'—'}</div>}
-            </div>
-            {latestBody.bodyFat!=null&&(
-              <div onClick={()=>onNav('body')} style={{flex:1,padding:'14px 16px',background:'rgba(255,255,255,0.03)',borderRadius:12,border:'0.5px solid rgba(255,255,255,0.07)',cursor:'pointer'}}
-                onMouseEnter={e=>e.currentTarget.style.background='rgba(255,255,255,0.06)'}
-                onMouseLeave={e=>e.currentTarget.style.background='rgba(255,255,255,0.03)'}>
-                <div style={{fontSize:8.5,fontWeight:700,letterSpacing:'0.16em',textTransform:'uppercase',color:'rgba(255,255,255,0.28)',fontFamily:'ui-monospace,monospace',marginBottom:8}}>Body Fat</div>
-                <div style={{fontSize:28,fontWeight:200,color:'#f4a642',lineHeight:1}}>{latestBody.bodyFat}<span style={{fontSize:13,color:'rgba(255,255,255,0.3)',marginLeft:2}}>%</span></div>
-              </div>
-            )}
-            {latestBody.muscle!=null&&(
-              <div onClick={()=>onNav('body')} style={{flex:1,padding:'14px 16px',background:'rgba(255,255,255,0.03)',borderRadius:12,border:'0.5px solid rgba(255,255,255,0.07)',cursor:'pointer'}}
-                onMouseEnter={e=>e.currentTarget.style.background='rgba(255,255,255,0.06)'}
-                onMouseLeave={e=>e.currentTarget.style.background='rgba(255,255,255,0.03)'}>
-                <div style={{fontSize:8.5,fontWeight:700,letterSpacing:'0.16em',textTransform:'uppercase',color:'rgba(255,255,255,0.28)',fontFamily:'ui-monospace,monospace',marginBottom:8}}>Muscle</div>
-                <div style={{fontSize:28,fontWeight:200,color:'#4caf7d',lineHeight:1}}>{latestBody.muscle}<span style={{fontSize:13,color:'rgba(255,255,255,0.3)',marginLeft:3}}>kg</span></div>
-              </div>
-            )}
-            <div style={{flex:2}}/>
-          </div>
-        </>
-      )}
-
-      {/* ── TODAY'S MEALS ── */}
-      <GlassLabel>Today's meals</GlassLabel>
-      <GlassCard style={{marginBottom:0}}>
-        {todayMeals.length > 0 ? (
-          <div style={{display:'flex',flexDirection:'column',gap:0}}>
-            {todayMeals.map((m,i)=>(
-              <div key={m.id||i} style={{display:'flex',alignItems:'center',gap:12,padding:'9px 0',borderBottom:i<todayMeals.length-1?'0.5px solid rgba(255,255,255,0.05)':'none'}}>
-                <span style={{fontSize:10,color:'rgba(255,255,255,0.25)',fontFamily:'ui-monospace,monospace',minWidth:36}}>{m.time??'—'}</span>
-                <span style={{flex:1,fontSize:12,color:'rgba(255,255,255,0.75)',overflow:'hidden',textOverflow:'ellipsis',whiteSpace:'nowrap'}}>{m.name}</span>
-                <div style={{display:'flex',gap:10,flexShrink:0}}>
-                  {[{v:m.calories,u:'kcal',c:'#f4a642'},{v:m.protein,u:'p',c:'#4a9eff'},{v:m.carbs,u:'c',c:'#4caf7d'},{v:m.fat,u:'f',c:'#9b5de5'}].map(({v,u,c})=>(
-                    <span key={u} style={{fontSize:10,color:c,fontFamily:'ui-monospace,monospace'}}>{v}<span style={{opacity:0.45}}>{u}</span></span>
-                  ))}
+                </div>
+                <div style={{flex:1,minWidth:0}}>
+                  <div style={{display:'flex',alignItems:'baseline',gap:12,marginBottom:4}}>
+                    <span style={{fontSize:38,fontWeight:200,color:'rgba(255,255,255,0.92)',lineHeight:1}}>{sleepH}h <span style={{fontSize:26}}>{sleepM}m</span></span>
+                    <span style={{fontSize:12,color:'rgba(255,255,255,0.35)',fontFamily:'ui-monospace,monospace'}}>{lastSleep.bedTime??'—'} → {lastSleep.wakeTime??'—'}</span>
+                  </div>
+                  {lastSleep.stages ? (
+                    <>
+                      <StageBar height={8} stages={[
+                        {label:'Deep', value:lastSleep.stages.deep??0,  colour:'#4a9eff'},
+                        {label:'REM',  value:lastSleep.stages.rem??0,   colour:'#9b5de5'},
+                        {label:'Core', value:lastSleep.stages.core??0,  colour:'#4caf7d'},
+                        {label:'Awake',value:lastSleep.stages.awake??0, colour:'rgba(255,255,255,0.15)'},
+                      ]}/>
+                      <div style={{display:'flex',gap:16,marginTop:8,flexWrap:'wrap'}}>
+                        {[{l:'Deep',c:'#4a9eff',v:lastSleep.stages.deep},{l:'REM',c:'#9b5de5',v:lastSleep.stages.rem},{l:'Core',c:'#4caf7d',v:lastSleep.stages.core},{l:'Awake',c:'rgba(255,255,255,0.25)',v:lastSleep.stages.awake}].map(s=>(
+                          <div key={s.l} style={{display:'flex',alignItems:'center',gap:5}}>
+                            <div style={{width:6,height:6,borderRadius:'50%',background:s.c,flexShrink:0}}/>
+                            <span style={{fontSize:10,color:'rgba(255,255,255,0.35)',fontFamily:'ui-monospace,monospace'}}>{s.l}: {Math.floor((s.v??0)/60)}h{String((s.v??0)%60).padStart(2,'0')}m</span>
+                          </div>
+                        ))}
+                      </div>
+                    </>
+                  ) : (
+                    <div style={{fontSize:12,color:'rgba(255,255,255,0.25)',marginTop:8}}>No stage data</div>
+                  )}
                 </div>
               </div>
-            ))}
+            ) : (
+              <div style={{display:'flex',alignItems:'center',gap:18,padding:'8px 0'}}>
+                <div style={{width:110,height:110,borderRadius:'50%',border:'0.5px solid rgba(255,255,255,0.08)',display:'flex',alignItems:'center',justifyContent:'center',flexShrink:0}}>
+                  <span style={{fontSize:28,opacity:0.15}}>\U0001f319</span>
+                </div>
+                <div>
+                  <div style={{fontSize:15,color:'rgba(255,255,255,0.3)',marginBottom:6}}>No sleep logged yet</div>
+                  <div style={{fontSize:12,color:'rgba(255,255,255,0.18)'}}>Log via Sleep tab or sync Apple Health on iOS →</div>
+                </div>
+              </div>
+            )}
+          </GlassCard>
+        </div>
+
+        {/* ── VITALS ── */}
+        <div>
+          <GlassLabel>Vitals</GlassLabel>
+          <div style={{display:'flex',gap:10}}>
+            <MacroCard label="Water"    value={todayWater} display={todayWater>=1000?`${(todayWater/1000).toFixed(1)}L`:`${todayWater}ml`}  goal={waterGoal} goalDisplay={waterGoal>=1000?`${(waterGoal/1000).toFixed(1)}L`:`${waterGoal}ml`} colour="#4a9eff" onClick={()=>onNav('water')} />
+            <MacroCard label="Calories" value={todayCal2}  display={`${todayCal2}`}  goal={calGoal}  goalDisplay={`${calGoal} kcal`}  colour="#f4a642" onClick={()=>onNav('nutrition')} />
+            <MacroCard label="Protein"  value={todayProt}  display={`${todayProt}g`} goal={protGoal} goalDisplay={`${protGoal}g`}      colour="#f97316" onClick={()=>onNav('nutrition')} />
+            <MacroCard label="Carbs"    value={todayCarbs} display={`${todayCarbs}g`} goal={carbGoal} goalDisplay={`${carbGoal}g`}     colour="#4caf7d" onClick={()=>onNav('nutrition')} />
+            <MacroCard label="Fat"      value={todayFat}   display={`${todayFat}g`}  goal={fatGoal}  goalDisplay={`${fatGoal}g`}       colour="#9b5de5" onClick={()=>onNav('nutrition')} />
           </div>
-        ) : (
-          <div style={{display:'flex',alignItems:'center',justifyContent:'space-between'}}>
-            <span style={{fontSize:12,color:'rgba(255,255,255,0.25)'}}>No meals logged today</span>
-            <button onClick={()=>onNav('nutrition')} style={{...btnGhost,fontSize:11,padding:'5px 12px'}}>+ Log food</button>
+        </div>
+
+        {/* ── STATUS chips ── */}
+        <div style={{display:'flex',gap:8,flexWrap:'wrap'}}>
+          <Stat label="Habits"      value={`${todayHabits.done}/${todayHabits.total}`} sub={todayHabits.done===todayHabits.total&&todayHabits.total>0?'✓ all done':`${todayHabits.total-todayHabits.done} left`} colour="#4caf7d" nav={()=>onNav('habits')} />
+          <Stat label="Supplements" value={`${todaySupps.done}/${todaySupps.total}`}   sub={todaySupps.done===todaySupps.total&&todaySupps.total>0?'✓ all taken':'remaining'} colour="#9b5de5" nav={()=>onNav('supplements')} />
+          <Stat label="Workout"     value={workedOutToday?'Done ✓':'Not yet'} colour={workedOutToday?'#4caf7d':'rgba(255,255,255,0.35)'} sub={workedOutToday?'logged today':'no session'} nav={()=>onTabChange?.('workout')} />
+          <div style={{flex:'1 1 0',minWidth:0,padding:'14px 16px',background:'rgba(255,255,255,0.03)',borderRadius:12,border:`0.5px solid ${todayStims.caffeine>caffLimit*0.9?'rgba(244,166,66,0.4)':'rgba(255,255,255,0.07)'}`}}>
+            <div style={{fontSize:9,fontWeight:700,letterSpacing:'0.16em',textTransform:'uppercase',color:'rgba(255,255,255,0.28)',fontFamily:'ui-monospace,monospace',marginBottom:7}}>Caffeine</div>
+            <div style={{display:'flex',alignItems:'baseline',gap:4}}>
+              <span style={{fontSize:20,fontWeight:600,color:todayStims.caffeine>caffLimit*0.9?'#f4a642':'rgba(255,255,255,0.85)',fontVariantNumeric:'tabular-nums'}}>{useDemo?180:todayStims.caffeine}</span>
+              <span style={{fontSize:10.5,color:'rgba(255,255,255,0.3)'}}>/{caffLimit}mg</span>
+            </div>
+            <Bar value={useDemo?180:todayStims.caffeine} max={caffLimit} colour={todayStims.caffeine>caffLimit*0.9?'#f4a642':'#4a9eff'}/>
+          </div>
+          {(todayStims.nicotine>0)&&(
+            <div style={{flex:'1 1 0',minWidth:0,padding:'14px 16px',background:'rgba(255,255,255,0.03)',borderRadius:12,border:'0.5px solid rgba(255,255,255,0.07)'}}>
+              <div style={{fontSize:9,fontWeight:700,letterSpacing:'0.16em',textTransform:'uppercase',color:'rgba(255,255,255,0.28)',fontFamily:'ui-monospace,monospace',marginBottom:7}}>Nicotine</div>
+              <div style={{display:'flex',alignItems:'baseline',gap:4}}>
+                <span style={{fontSize:20,fontWeight:600,color:'#f4a642',fontVariantNumeric:'tabular-nums'}}>{todayStims.nicotine}</span>
+                <span style={{fontSize:10.5,color:'rgba(255,255,255,0.3)'}}>/{nicLimit}mg</span>
+              </div>
+              <Bar value={todayStims.nicotine} max={nicLimit} colour="#f4a642"/>
+            </div>
+          )}
+        </div>
+
+        {/* ── BODY metrics ── */}
+        {latestBody && (
+          <div>
+            <GlassLabel>Body</GlassLabel>
+            <div style={{display:'flex',gap:10}}>
+              <div onClick={()=>onNav('body')} style={{flex:1,padding:'20px 18px',background:'rgba(255,255,255,0.03)',borderRadius:14,border:'0.5px solid rgba(255,255,255,0.07)',cursor:'pointer'}}
+                onMouseEnter={e=>e.currentTarget.style.background='rgba(255,255,255,0.06)'}
+                onMouseLeave={e=>e.currentTarget.style.background='rgba(255,255,255,0.03)'}>
+                <div style={{fontSize:9,fontWeight:700,letterSpacing:'0.16em',textTransform:'uppercase',color:'rgba(255,255,255,0.28)',fontFamily:'ui-monospace,monospace',marginBottom:10}}>Weight</div>
+                <div style={{fontSize:34,fontWeight:200,color:'rgba(255,255,255,0.9)',lineHeight:1}}>{latestBody.weight}<span style={{fontSize:15,color:'rgba(255,255,255,0.3)',marginLeft:4}}>kg</span></div>
+                {latestBody.date&&<div style={{fontSize:10.5,color:'rgba(255,255,255,0.25)',marginTop:6,fontFamily:'ui-monospace,monospace'}}>{latestBody.date===today?'logged today':latestBody.date?.slice(5)??'—'}</div>}
+              </div>
+              {latestBody.bodyFat!=null&&(
+                <div onClick={()=>onNav('body')} style={{flex:1,padding:'20px 18px',background:'rgba(255,255,255,0.03)',borderRadius:14,border:'0.5px solid rgba(255,255,255,0.07)',cursor:'pointer'}}
+                  onMouseEnter={e=>e.currentTarget.style.background='rgba(255,255,255,0.06)'}
+                  onMouseLeave={e=>e.currentTarget.style.background='rgba(255,255,255,0.03)'}>
+                  <div style={{fontSize:9,fontWeight:700,letterSpacing:'0.16em',textTransform:'uppercase',color:'rgba(255,255,255,0.28)',fontFamily:'ui-monospace,monospace',marginBottom:10}}>Body Fat</div>
+                  <div style={{fontSize:34,fontWeight:200,color:'#f4a642',lineHeight:1}}>{latestBody.bodyFat}<span style={{fontSize:15,color:'rgba(255,255,255,0.3)',marginLeft:3}}>%</span></div>
+                </div>
+              )}
+              {latestBody.muscle!=null&&(
+                <div onClick={()=>onNav('body')} style={{flex:1,padding:'20px 18px',background:'rgba(255,255,255,0.03)',borderRadius:14,border:'0.5px solid rgba(255,255,255,0.07)',cursor:'pointer'}}
+                  onMouseEnter={e=>e.currentTarget.style.background='rgba(255,255,255,0.06)'}
+                  onMouseLeave={e=>e.currentTarget.style.background='rgba(255,255,255,0.03)'}>
+                  <div style={{fontSize:9,fontWeight:700,letterSpacing:'0.16em',textTransform:'uppercase',color:'rgba(255,255,255,0.28)',fontFamily:'ui-monospace,monospace',marginBottom:10}}>Muscle</div>
+                  <div style={{fontSize:34,fontWeight:200,color:'#4caf7d',lineHeight:1}}>{latestBody.muscle}<span style={{fontSize:15,color:'rgba(255,255,255,0.3)',marginLeft:4}}>kg</span></div>
+                </div>
+              )}
+              <div style={{flex:2}}/>
+            </div>
           </div>
         )}
-        <div style={{display:'flex',justifyContent:'flex-end',marginTop:8}}>
-          <button onClick={()=>onNav('nutrition')} style={{fontSize:10.5,color:'var(--accent)',background:'none',border:'none',cursor:'pointer',padding:0}}>View nutrition →</button>
-        </div>
-      </GlassCard>
 
+        {/* ── TODAY'S MEALS ── */}
+        <div>
+          <GlassLabel>Today's meals</GlassLabel>
+          <GlassCard>
+            {todayMeals.length > 0 ? (
+              <div style={{display:'flex',flexDirection:'column',gap:0}}>
+                {todayMeals.map((m,i)=>(
+                  <div key={m.id||i} style={{display:'flex',alignItems:'center',gap:14,padding:'11px 0',borderBottom:i<todayMeals.length-1?'0.5px solid rgba(255,255,255,0.05)':'none'}}>
+                    <span style={{fontSize:10.5,color:'rgba(255,255,255,0.25)',fontFamily:'ui-monospace,monospace',minWidth:40}}>{m.time??'—'}</span>
+                    <span style={{flex:1,fontSize:13,color:'rgba(255,255,255,0.75)',overflow:'hidden',textOverflow:'ellipsis',whiteSpace:'nowrap'}}>{m.name}</span>
+                    <div style={{display:'flex',gap:12,flexShrink:0}}>
+                      {[{v:m.calories,u:'kcal',c:'#f4a642'},{v:m.protein,u:'p',c:'#4a9eff'},{v:m.carbs,u:'c',c:'#4caf7d'},{v:m.fat,u:'f',c:'#9b5de5'}].map(({v,u,c})=>(
+                        <span key={u} style={{fontSize:11,color:c,fontFamily:'ui-monospace,monospace'}}>{v}<span style={{opacity:0.45}}>{u}</span></span>
+                      ))}
+                    </div>
+                  </div>
+                ))}
+              </div>
+            ) : (
+              <div style={{display:'flex',alignItems:'center',justifyContent:'space-between',padding:'4px 0'}}>
+                <span style={{fontSize:13,color:'rgba(255,255,255,0.25)'}}>No meals logged today</span>
+                <button onClick={()=>onNav('nutrition')} style={{...btnGhost,fontSize:11,padding:'5px 12px'}}>+ Log food</button>
+              </div>
+            )}
+            <div style={{display:'flex',justifyContent:'flex-end',marginTop:10}}>
+              <button onClick={()=>onNav('nutrition')} style={{fontSize:11,color:'var(--accent)',background:'none',border:'none',cursor:'pointer',padding:0}}>View nutrition →</button>
+            </div>
+          </GlassCard>
+        </div>
+
+      </div>
     </Section>
   );
 }
+
 
 // ═══════════════════════════════════════════════════════════════════════════════
 // 2. HABITS
