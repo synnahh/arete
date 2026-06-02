@@ -66,4 +66,13 @@ export const STORAGE_KEYS = {
   DAILY_BRIEF_DATE:     'daily_brief_date',
   SAVED_MEALS:          'saved_meals',
   SLEEP_SCHEDULE:       'sleep_schedule',
+  // Finance — separate key from Lists
+  PLANNED_PURCHASES:    'planned_purchases',
+  // Workout / Dashboard
+  PROGRAMS:             'programs',
+  OVERLOAD_EXERCISES:   'overload_exercises',
+  SPLIT_NAMES:          'split_names',
+  // Health sub-docs
+  WATER_PROFILE:        'water_profile',
+  MEASUREMENTS:         'measurements',
 };

@@ -877,8 +877,8 @@ const DAY_KEYS_W = ['sun','mon','tue','wed','thu','fri','sat'];
 const SPLIT_COLOURS_W = { push:'#e25d7a', pull:'#4a9eff', legs:'#f4a642', rest:'rgba(255,255,255,0.2)', custom:'#9b5de5' };
 
 function TodayWorkoutCard({ onTabChange }) {
-  const { items: programs } = useCollection('programs', 'programs');
-  const { data: storedExercises } = useDocument('overload_exercises', 'overload_exercises', null);
+  const { items: programs } = useCollection('programs', STORAGE_KEYS.PROGRAMS);
+  const { data: storedExercises } = useDocument('overload_exercises', STORAGE_KEYS.OVERLOAD_EXERCISES, null);
   const exercises = (Array.isArray(storedExercises) && storedExercises.length) ? storedExercises : DEFAULT_OVERLOAD_EXERCISES;
 
   const todayKey     = DAY_KEYS_W[new Date().getDay()];

@@ -137,18 +137,23 @@ export function usePeakState(settings) {
   const userId = getDeviceId();
 
   const [state, setState] = useState(() => {
-    // Instant hydrate from localStorage — zero flicker
-    const collections = {
-      sleepData:     storage.get(STORAGE_KEYS.SLEEP, []),
-      waterLogs:     storage.get(STORAGE_KEYS.WATER, []),
-      suppLogs:      storage.get(STORAGE_KEYS.SUPP_LOGS, []),
-      supplements:   storage.get(STORAGE_KEYS.SUPPLEMENTS, []),
-      nutritionLogs: storage.get(STORAGE_KEYS.MACROS, []),
-      workoutLogs:   storage.get(STORAGE_KEYS.WORKOUT_LOGS, []),
-      stimLogs:      storage.get(STORAGE_KEYS.STIMULANTS, []),
-      moodLogs:      storage.get(STORAGE_KEYS.MOOD_LOGS, []),
-    };
-    return computeScore(collections, settings);
+    try {
+      // Instant hydrate from localStorage — zero flicker
+      const collections = {
+        sleepData:     storage.get(STORAGE_KEYS.SLEEP, [])         || [],
+        waterLogs:     storage.get(STORAGE_KEYS.WATER, [])         || [],
+        suppLogs:      storage.get(STORAGE_KEYS.SUPP_LOGS, [])     || [],
+        supplements:   storage.get(STORAGE_KEYS.SUPPLEMENTS, [])   || [],
+        nutritionLogs: storage.get(STORAGE_KEYS.MACROS, [])        || [],
+        workoutLogs:   storage.get(STORAGE_KEYS.WORKOUT_LOGS, [])  || [],
+        stimLogs:      storage.get(STORAGE_KEYS.STIMULANTS, [])    || [],
+        moodLogs:      storage.get(STORAGE_KEYS.MOOD_LOGS, [])     || [],
+      };
+      return computeScore(collections, settings);
+    } catch (e) {
+      console.warn('[usePeakState] init error:', e);
+      return { score: 0, factors: {}, suggestion: '', color: '#e25d7a' };
+    }
   });
 
   const collectionsRef = useRef({
@@ -164,7 +169,10 @@ export function usePeakState(settings) {
   const settingsRef = useRef(settings);
   useEffect(() => { settingsRef.current = settings; }, [settings]);
 
-  const recompute = () => setState(computeScore(collectionsRef.current, settingsRef.current));
+  const recompute = () => {
+    try { setState(computeScore(collectionsRef.current, settingsRef.current)); }
+    catch (e) { console.warn('[usePeakState] recompute error:', e); }
+  };
 
   useEffect(() => {
     const subs = [

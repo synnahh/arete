@@ -925,7 +925,7 @@ const DEFAULT_WATER_PROFILE = { weight:75, age:25, sex:'male', activityHours:5, 
 function Water({ waterLogs, addWaterLog, settings }) {
   const today     = todayStr();
   const [showSettings, setShowSettings] = useState(false);
-  const { data: profileDoc, save: saveProfileDoc } = useDocument('water_profile', 'water_profile', DEFAULT_WATER_PROFILE);
+  const { data: profileDoc, save: saveProfileDoc } = useDocument('water_profile', STORAGE_KEYS.WATER_PROFILE, DEFAULT_WATER_PROFILE);
   const profile = profileDoc || DEFAULT_WATER_PROFILE;
   const [custom, setCustom] = useState('');
 
@@ -1081,7 +1081,7 @@ function Body({ bodyMetrics, addBodyMetric }) {
   const [bodyTab,  setBodyTab]  = useState('weight');
   const [logForm,  setLogForm]  = useState({ weight:'', bodyFat:'', muscle:'', notes:'' });
   const [adding,   setAdding]   = useState(false);
-  const { data: measuresDoc, save: saveMeasuresDoc } = useDocument('measurements', 'measurements', {});
+  const { data: measuresDoc, save: saveMeasuresDoc } = useDocument('measurements', STORAGE_KEYS.MEASUREMENTS, {});
   const [measures, setMeasures] = useState(() => measuresDoc || {});
   const [photos,   setPhotos]   = useState(() => { try { return JSON.parse(localStorage.getItem('valerie_photos')||'[]'); } catch { return []; } });
 

@@ -32,7 +32,8 @@ export function useSleepSchedule(settings) {
       return;
     }
 
-    const tick = () => {
+    const tick = () => { try { _tick(); } catch (e) { console.warn('[useSleepSchedule] tick error:', e); } };
+    const _tick = () => {
       const now = new Date();
       const nowMins  = now.getHours() * 60 + now.getMinutes();
       const bedMins  = timeToMins(bedtime);
@@ -79,7 +80,7 @@ export function useSleepSchedule(settings) {
           window.dispatchEvent(new CustomEvent('valerie:toast', {
             detail: { message: 'Bedtime. Wind down and rest, Sir.', type: 'sleep' },
           }));
-          speakText('Bedtime, Sir. Time to rest.', settings?.voice || {});
+          speakText('Bedtime, Sir. Time to rest.', settings?.voice || {}).catch(() => {});
         }
       } else if (minsUntilBed <= 30) {
         // Fade from 0 → 0.75 over the 30-minute window
@@ -90,7 +91,7 @@ export function useSleepSchedule(settings) {
           window.dispatchEvent(new CustomEvent('valerie:toast', {
             detail: { message: `Bedtime in ${mins} minute${mins !== 1 ? 's' : ''}.`, type: 'sleep' },
           }));
-          speakText(`Heads up, Sir — bedtime in ${mins} minutes.`, settings?.voice || {});
+          speakText(`Heads up, Sir — bedtime in ${mins} minutes.`, settings?.voice || {}).catch(() => {});
         }
       } else {
         setDimLevel(0);

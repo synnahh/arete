@@ -1009,7 +1009,7 @@ export default function Finance({ settings = {} }) {
   const txn   = useCollection('transactions',  STORAGE_KEYS.TRANSACTIONS);
   const goals = useCollection('savings_goals', STORAGE_KEYS.SAVINGS);
   const subs      = useCollection('subscriptions',      STORAGE_KEYS.SUBSCRIPTIONS);
-  const purchases = useCollection('planned_purchases',   STORAGE_KEYS.LISTS);
+  const purchases = useCollection('planned_purchases',   STORAGE_KEYS.PLANNED_PURCHASES);
 
   const currencyCode   = settings?.currency || 'GBP';
   const currencySymbol = getCurrencySymbol(currencyCode);

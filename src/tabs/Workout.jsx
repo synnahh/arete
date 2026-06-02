@@ -666,9 +666,9 @@ export default function WorkoutTab({ settings }) {
 
   // Shared data
   const { items: workoutLogs, add: addWorkoutLog } = useCollection('workout_logs', STORAGE_KEYS.WORKOUT_LOGS);
-  const { data: storedExercises,  save: saveExercisesDoc  } = useDocument('overload_exercises', 'overload_exercises', null);
-  const { data: storedSplitNames, save: saveSplitNamesDoc } = useDocument('split_names', 'split_names', DEFAULT_SPLITS);
-  const { items: programs, add: addProgram, update: updateProgram, remove: removeProgram } = useCollection('programs', 'programs');
+  const { data: storedExercises,  save: saveExercisesDoc  } = useDocument('overload_exercises', STORAGE_KEYS.OVERLOAD_EXERCISES, null);
+  const { data: storedSplitNames, save: saveSplitNamesDoc } = useDocument('split_names',        STORAGE_KEYS.SPLIT_NAMES,        DEFAULT_SPLITS);
+  const { items: programs, add: addProgram, update: updateProgram, remove: removeProgram } = useCollection('programs', STORAGE_KEYS.PROGRAMS);
 
   const exercises  = (Array.isArray(storedExercises) && storedExercises.length) ? storedExercises : DEFAULT_OVERLOAD_EXERCISES;
   const splitNames = storedSplitNames?.push ? storedSplitNames : { ...DEFAULT_SPLITS };
