@@ -1197,29 +1197,6 @@ function Body({ bodyMetrics, addBodyMetric }) {
             🔵 Eufy body metrics sync automatically from Apple Health on iOS. Log manually on desktop until iPhone is set up.
       </div>
 
-      {/* Add metrics form */}
-      {adding && (
-        <div style={{ ...cardSx, display: 'flex', flexDirection: 'column', gap: 10 }}>
-          <div style={{ fontSize: 12, fontWeight: 500, color: 'var(--text-primary)' }}>Log body metrics</div>
-          {[['weight','Weight (kg)'],['bodyFat','Body fat (%)'],['muscle','Muscle mass (%)']].map(([k,l]) => (
-            <div key={k}>
-              <label style={lblSx}>{l}</label>
-              <input type="number" value={form[k]} onChange={e => setForm(p => ({ ...p, [k]: e.target.value }))}
-                placeholder="—" style={inputSx}
-                onFocus={e => e.target.style.borderColor='var(--accent)'} onBlur={e => e.target.style.borderColor='var(--input-border)'}
-              />
-            </div>
-          ))}
-          <div style={{ display: 'flex', gap: 6 }}>
-            <button onClick={() => setAdding(false)} style={{ ...btnGhost, flex: 1 }}>Cancel</button>
-            <button onClick={async () => {
-              await addBodyMetric({ date: todayStr(), ...form });
-              setForm({ weight:'', bodyFat:'', muscle:'', notes:'' }); setAdding(false);
-            }} style={{ ...btnPrimary, flex: 1 }}>Save</button>
-          </div>
-        </div>
-      )}
-
       {/* History */}
           {/* History */}
           {sorted.length>0&&(
@@ -1549,7 +1526,7 @@ function Sleep({ sleepData, settings }) {
   const effColour = (eff) => eff >= 85 ? '#4caf7d' : eff >= 75 ? '#f4a642' : '#e55a5a';
 
   // ── Sleep Scheduler state ────────────────────────────────────────────────
-  const { data: schedule, save: saveSchedule } = useDocument('sleep_schedule', 'valerie_sleep_schedule', null);
+  const { data: schedule, save: saveSchedule } = useDocument('sleep_schedule', 'sleep_schedule', null);
   const [bedtime,   setBedtime]   = useState('');
   const [wakeTime,  setWakeTime]  = useState('');
   const [schedSaved, setSchedSaved] = useState(false);

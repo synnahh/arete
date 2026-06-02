@@ -12,7 +12,7 @@ function timeToMins(hhmm) {
 }
 
 export function useSleepSchedule(settings) {
-  const { data: schedule, save } = useDocument('sleep_schedule', 'valerie_sleep_schedule', null);
+  const { data: schedule, save } = useDocument('sleep_schedule', 'sleep_schedule', null);
 
   const [dimLevel,    setDimLevel]    = useState(0);   // 0–1
   const [isSleepTime, setIsSleepTime] = useState(false);
