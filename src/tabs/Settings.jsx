@@ -2114,12 +2114,16 @@ function DailyBriefSection({ settings, onSave }) {
 function SidebarSection({ settings, onSave }) {
   const defaultOrder = ALL_TABS.map(t => t.id);
   const [order, setOrder] = useState(() => {
-    const saved = storage.get(STORAGE_KEYS.SIDEBAR_ORDER_DESKTOP, null);
-    if (saved?.length) {
-      const known = new Set(saved);
-      const extra = defaultOrder.filter(id => !known.has(id));
-      return [...saved.filter(id => defaultOrder.includes(id)), ...extra];
-    }
+    try {
+      let saved = storage.get(STORAGE_KEYS.SIDEBAR_ORDER_DESKTOP, null);
+      // Firestore may have stored { order: [...] } — unwrap if needed
+      if (saved && !Array.isArray(saved) && Array.isArray(saved.order)) saved = saved.order;
+      if (Array.isArray(saved) && saved.length) {
+        const known = new Set(saved);
+        const extra = defaultOrder.filter(id => !known.has(id));
+        return [...saved.filter(id => defaultOrder.includes(id)), ...extra];
+      }
+    } catch { /* fall through to default */ }
     return defaultOrder;
   });
   const [dragIdx, setDragIdx] = useState(null);

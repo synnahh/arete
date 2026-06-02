@@ -2195,6 +2195,7 @@ export default function Health({ settings, onTabChange }) {
   const { items: suppLogs,   add: addSuppLog }                                                      = useCollection('supplement_logs', STORAGE_KEYS.SUPP_LOGS);
   const { items: sleepData }                                                                         = useCollection('sleep_data',      STORAGE_KEYS.SLEEP);
   const { items: stimLogs,   add: addStimLog,   remove: removeStimLog }                             = useCollection('stimulant_logs',  STORAGE_KEYS.STIMULANTS);
+  const { items: savedMeals, add: addSavedMeal, remove: removeSavedMeal }                           = useCollection('saved_meals',      STORAGE_KEYS.SAVED_MEALS);
 
   const renderSection = () => {
     const p = { settings: settings_ };
