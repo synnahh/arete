@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect, useCallback, Component } from 'react';
 import { invoke }                from '@tauri-apps/api/core';
 import { storage, STORAGE_KEYS } from './utils/storage.js';
 import { applyTheme }            from './styles/themes.js';
@@ -49,6 +49,48 @@ const TAB_MAP = {
   settings:   Settings,
   routines:   Routines,
 };
+
+// ─── Tab-level error boundary ─────────────────────────────────────────────────
+// Catches any crash inside an active tab and shows a recovery UI instead of
+// taking down the entire app with a white screen.
+class TabErrorBoundary extends Component {
+  constructor(props) {
+    super(props);
+    this.state = { error: null };
+  }
+  static getDerivedStateFromError(err) { return { error: err }; }
+  componentDidCatch(err) { console.error('[VALERIE] Tab crash:', err); }
+  render() {
+    if (this.state.error) {
+      return (
+        <div style={{
+          flex: 1, display: 'flex', flexDirection: 'column',
+          alignItems: 'center', justifyContent: 'center', gap: 16,
+          color: 'var(--text-secondary)', padding: 40,
+        }}>
+          <div style={{ fontSize: 28 }}>⚠</div>
+          <div style={{ fontSize: 14, fontWeight: 600, color: 'var(--text-primary)' }}>
+            Something crashed in this tab.
+          </div>
+          <div style={{ fontSize: 12, color: 'var(--text-muted)', maxWidth: 340, textAlign: 'center', lineHeight: 1.6 }}>
+            {String(this.state.error?.message || this.state.error)}
+          </div>
+          <button
+            onClick={() => this.setState({ error: null })}
+            style={{
+              padding: '8px 20px', borderRadius: 8, border: 'none',
+              background: 'var(--accent)', color: 'var(--bg-base)',
+              fontSize: 13, fontWeight: 700, cursor: 'pointer',
+            }}
+          >
+            Reload tab
+          </button>
+        </div>
+      );
+    }
+    return this.props.children;
+  }
+}
 
 export default function App() {
   const [onboarded,     setOnboarded]     = useState(null); // null = loading
@@ -213,13 +255,15 @@ export default function App() {
           position: 'relative',
         }}
       >
-        <ActiveTab
-          settings={settings}
-          onTabChange={setActiveTab}
-          ai={ai}
-          density={layoutDensity}
-          peakState={peakState}
-        />
+        <TabErrorBoundary key={activeTab}>
+          <ActiveTab
+            settings={settings}
+            onTabChange={setActiveTab}
+            ai={ai}
+            density={layoutDensity}
+            peakState={peakState}
+          />
+        </TabErrorBoundary>
 
         {/* Quick Capture — floats above all content */}
         <QuickCapture ai={ai} />
