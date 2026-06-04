@@ -136,12 +136,19 @@ function computeScore(collections, settings) {
 export function usePeakState(settings) {
   const userId = getDeviceId();
 
+  // Water is stored as a flat array by useCollection — normalise on read so
+  // legacy {daily:[]} format (written by old actions.js) still works.
+  const _readWater = () => {
+    const raw = storage.get(STORAGE_KEYS.WATER, []);
+    return Array.isArray(raw) ? raw : (raw?.daily || []);
+  };
+
   const [state, setState] = useState(() => {
     try {
       // Instant hydrate from localStorage — zero flicker
       const collections = {
         sleepData:     storage.get(STORAGE_KEYS.SLEEP, [])         || [],
-        waterLogs:     storage.get(STORAGE_KEYS.WATER, [])         || [],
+        waterLogs:     _readWater(),
         suppLogs:      storage.get(STORAGE_KEYS.SUPP_LOGS, [])     || [],
         supplements:   storage.get(STORAGE_KEYS.SUPPLEMENTS, [])   || [],
         nutritionLogs: storage.get(STORAGE_KEYS.MACROS, [])        || [],
@@ -158,7 +165,7 @@ export function usePeakState(settings) {
 
   const collectionsRef = useRef({
     sleepData:     storage.get(STORAGE_KEYS.SLEEP, []),
-    waterLogs:     storage.get(STORAGE_KEYS.WATER, []),
+    waterLogs:     _readWater(),
     suppLogs:      storage.get(STORAGE_KEYS.SUPP_LOGS, []),
     supplements:   storage.get(STORAGE_KEYS.SUPPLEMENTS, []),
     nutritionLogs: storage.get(STORAGE_KEYS.MACROS, []),
@@ -200,14 +207,18 @@ export function usePeakState(settings) {
   // Recompute when settings change (macro goals etc.)
   useEffect(() => { recompute(); }, [settings?.macroGoal, settings?.proteinGoal]); // eslint-disable-line react-hooks/exhaustive-deps
 
-  // Midnight reset
+  // Midnight reset — reschedules itself so it fires every night, not just the first
   useEffect(() => {
     const msUntilMidnight = () => {
       const now = new Date();
       const midnight = new Date(now); midnight.setHours(24, 0, 0, 0);
       return midnight - now;
     };
-    const id = setTimeout(() => { recompute(); }, msUntilMidnight());
+    let id;
+    const schedule = () => {
+      id = setTimeout(() => { recompute(); schedule(); }, msUntilMidnight());
+    };
+    schedule();
     return () => clearTimeout(id);
   }, []); // eslint-disable-line react-hooks/exhaustive-deps
 

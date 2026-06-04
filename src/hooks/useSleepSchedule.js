@@ -32,12 +32,33 @@ export function useSleepSchedule(settings) {
       return;
     }
 
+    // Delay first tick by 5s after schedule loads to avoid jarring black flash on startup
+    let firstTickDone = false;
     const tick = () => { try { _tick(); } catch (e) { console.warn('[useSleepSchedule] tick error:', e); } };
     const _tick = () => {
       const now = new Date();
       const nowMins  = now.getHours() * 60 + now.getMinutes();
       const bedMins  = timeToMins(bedtime);
       const wakeMins = timeToMins(wakeTime || '07:00');
+
+      // Sanity guard — bedtime must be in a reasonable evening/night window (18:00–03:00).
+      // Prevents garbage Firebase data or testing artifacts from blacking out the screen at noon.
+      const bedH = Math.floor(bedMins / 60);
+      if (bedH >= 3 && bedH < 18) {
+        setDimLevel(0);
+        setIsSleepTime(false);
+        window.__valerieSleepMode = false;
+        return;
+      }
+
+      // Guard against bedtime === wakeTime (would create a 24h sleep window and
+      // cause an infinite reminder loop draining ElevenLabs quota every 30s).
+      if (bedMins === wakeMins) {
+        setDimLevel(0);
+        setIsSleepTime(false);
+        window.__valerieSleepMode = false;
+        return;
+      }
 
       // Sleep window spans midnight when bedtime > wake (e.g. 23:00 → 07:00)
       const inSleepWindow = bedMins > wakeMins
@@ -103,9 +124,11 @@ export function useSleepSchedule(settings) {
       }
     };
 
-    tick();
+    // Delay first evaluation by 5s so Firebase-loaded schedule doesn't black-flash on startup
+    const initTimer = setTimeout(tick, 5000);
     const id = setInterval(tick, 30_000);
     return () => {
+      clearTimeout(initTimer);
       clearInterval(id);
       window.__valerieSleepMode = false;
     };

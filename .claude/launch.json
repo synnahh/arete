@@ -1,1 +1,11 @@
-{"version":"0.0.1","configurations":[{"name":"VALERIE","runtimeExecutable":"npm","runtimeArgs":["run","dev"],"port":1420}]}
+{
+  "version": "0.0.1",
+  "configurations": [
+    {
+      "name": "VALERIE dev",
+      "runtimeExecutable": "npm",
+      "runtimeArgs": ["run", "dev"],
+      "port": 1420
+    }
+  ]
+}

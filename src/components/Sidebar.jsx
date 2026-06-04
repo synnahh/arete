@@ -1,4 +1,5 @@
-import { useState, useEffect, useRef, useMemo } from 'react';
+import { useState, useEffect, useRef, useMemo, useCallback } from 'react';
+import { createPortal } from 'react-dom';
 import { storage, STORAGE_KEYS } from '../utils/storage.js';
 import { doc, onSnapshot } from 'firebase/firestore';
 import { db, getDeviceId } from '../firebase/firebase.js';
@@ -33,38 +34,49 @@ const ICONS = {
 
 // ─── All reorderable tabs in default order ────────────────────────────────────
 export const ALL_TABS = [
-  { id: 'dashboard',  label: 'Dashboard'  },
-  { id: 'assistant',  label: 'Assistant'  },
-  { id: 'tasks',      label: 'Tasks'      },
-  { id: 'calendar',   label: 'Calendar'   },
-  { id: 'notes',      label: 'Notes'      },
-  { id: 'health',     label: 'Health'     },
-  { id: 'workout',    label: 'Workout'    },
-  { id: 'finance',    label: 'Finance'    },
-  { id: 'progress',   label: 'Progress'   },
-  { id: 'style',      label: 'Style'      },
-  { id: 'essentials', label: 'Essentials' },
-  { id: 'lists',      label: 'Lists'      },
-  { id: 'focus',      label: 'Focus'      },
-  { id: 'routines',   label: 'Routines'   },
+  { id: 'dashboard',  label: 'Dashboard',  desc: 'Your daily command centre'           },
+  { id: 'assistant',  label: 'Assistant',  desc: 'Chat with VALERIE'                   },
+  { id: 'tasks',      label: 'Tasks',      desc: 'To-dos, priorities & projects'       },
+  { id: 'calendar',   label: 'Calendar',   desc: 'Schedule & upcoming events'          },
+  { id: 'notes',      label: 'Notes',      desc: 'Markdown notes & quick capture'      },
+  { id: 'health',     label: 'Health',     desc: 'Sleep · Nutrition · Water · Body'    },
+  { id: 'workout',    label: 'Workout',    desc: 'Overload coach · Splits · Exercises' },
+  { id: 'finance',    label: 'Finance',    desc: 'Budget · Transactions · Goals'       },
+  { id: 'progress',   label: 'Progress',   desc: 'XP · Rank · Streaks · Goals'        },
+  { id: 'style',      label: 'Style',      desc: 'Wardrobe & outfit planning'          },
+  { id: 'essentials', label: 'Essentials', desc: 'Subscriptions & recurring items'     },
+  { id: 'lists',      label: 'Lists',      desc: 'Shopping, reading & custom lists'    },
+  { id: 'focus',      label: 'Focus',      desc: 'Pomodoro & deep work sessions'       },
+  { id: 'routines',   label: 'Routines',   desc: 'Morning, evening & custom routines'  },
 ];
 
 // Always pinned at bottom, not reorderable
 const BOTTOM = [
-  { id: 'vault',    label: 'Vault'    },
-  { id: 'settings', label: 'Settings' },
+  { id: 'vault',    label: 'Vault',    desc: 'Private encrypted storage'    },
+  { id: 'settings', label: 'Settings', desc: 'App preferences & integrations' },
 ];
 
 // ─── Single tab button ────────────────────────────────────────────────────────
 function TabButton({ tab, active, onClick }) {
-  const [hovered, setHovered] = useState(false);
+  const [tooltipPos, setTooltipPos] = useState(null);
+  const btnRef = useRef(null);
+
+  const handleEnter = useCallback(() => {
+    if (btnRef.current) {
+      const r = btnRef.current.getBoundingClientRect();
+      setTooltipPos({ top: r.top + r.height / 2, left: r.right + 10 });
+    }
+  }, []);
+
+  const handleLeave = useCallback(() => setTooltipPos(null), []);
 
   return (
-    <div className="relative group">
+    <div style={{ position: 'relative' }}>
       <button
+        ref={btnRef}
         onClick={() => onClick(tab.id)}
-        onMouseEnter={() => setHovered(true)}
-        onMouseLeave={() => setHovered(false)}
+        onMouseEnter={handleEnter}
+        onMouseLeave={handleLeave}
         style={{
           width: 40,
           height: 40,
@@ -75,36 +87,64 @@ function TabButton({ tab, active, onClick }) {
           border: 'none',
           cursor: 'pointer',
           transition: 'all 0.18s cubic-bezier(0.4, 0, 0.2, 1)',
-          background: active ? 'var(--active-bg)' : hovered ? 'var(--hover-bg)' : 'transparent',
-          color: active ? 'var(--accent)' : hovered ? 'var(--accent)' : 'var(--text-secondary)',
-          opacity: active ? 1 : hovered ? 0.9 : 0.65,
+          background: active ? 'var(--active-bg)' : tooltipPos ? 'var(--hover-bg)' : 'transparent',
+          color: active ? 'var(--accent)' : tooltipPos ? 'var(--accent)' : 'var(--text-secondary)',
+          opacity: active ? 1 : tooltipPos ? 0.9 : 0.65,
         }}
         aria-label={tab.label}
       >
         <Icon d={ICONS[tab.id]} size={18} />
       </button>
 
-      {/* Tooltip */}
-      {hovered && (
-        <div style={{
-          position: 'absolute',
-          left: 48,
-          top: '50%',
-          transform: 'translateY(-50%)',
-          background: 'var(--bg-panel)',
-          border: '0.5px solid var(--card-border)',
-          borderRadius: 6,
-          padding: '4px 10px',
-          fontSize: 12,
-          color: 'var(--text-primary)',
-          whiteSpace: 'nowrap',
-          pointerEvents: 'none',
-          zIndex: 100,
-          backdropFilter: 'blur(12px)',
-          boxShadow: '0 4px 16px rgba(0,0,0,0.4)',
-        }}>
-          {tab.label}
-        </div>
+      {/* Tooltip rendered via portal — escapes sidebar overflow */}
+      {tooltipPos && createPortal(
+        <div
+          onMouseEnter={handleEnter}
+          onMouseLeave={handleLeave}
+          style={{
+            position: 'fixed',
+            left: tooltipPos.left,
+            top: tooltipPos.top,
+            transform: 'translateY(-50%)',
+            pointerEvents: 'none',
+            zIndex: 9999,
+            display: 'flex',
+            alignItems: 'center',
+            gap: 0,
+            animation: 'tooltipIn 0.12s ease',
+          }}
+        >
+          {/* Arrow */}
+          <div style={{
+            width: 0, height: 0,
+            borderTop: '5px solid transparent',
+            borderBottom: '5px solid transparent',
+            borderRight: '6px solid var(--card-border)',
+            flexShrink: 0,
+            marginRight: -1,
+          }} />
+          {/* Label card */}
+          <div style={{
+            background: 'var(--bg-panel)',
+            border: '0.5px solid var(--card-border)',
+            borderLeft: '2px solid var(--accent)',
+            borderRadius: '0 8px 8px 0',
+            padding: '7px 14px 7px 12px',
+            whiteSpace: 'nowrap',
+            backdropFilter: 'blur(20px)',
+            boxShadow: '0 4px 20px rgba(0,0,0,0.45)',
+          }}>
+            <div style={{ fontSize: 12, fontWeight: 600, color: 'var(--text-primary)', letterSpacing: '0.01em', lineHeight: 1 }}>
+              {tab.label}
+            </div>
+            {tab.desc && (
+              <div style={{ fontSize: 10.5, color: 'var(--text-muted)', marginTop: 3, letterSpacing: '0.01em' }}>
+                {tab.desc}
+              </div>
+            )}
+          </div>
+        </div>,
+        document.body
       )}
     </div>
   );

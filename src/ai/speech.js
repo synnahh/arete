@@ -3,15 +3,15 @@
 // Includes: speech cleaning pipeline, ElevenLabs fetch, audio playback management,
 //           voice session stop-intent detection.
 
-import { fetch as tauriFetch } from '@tauri-apps/plugin-http';
-import { invoke }              from '@tauri-apps/api/core';
+import { platformFetch, platformInvoke } from '../utils/platform.js';
 import { rateLimitElevenLabs } from '../utils/rateLimit.js';
 
 // ─── VALERIE's voice identity ──────────────────────────────────────────────────
 // Default voice ID — locked in as VALERIE's voice. Overridable in Settings.
 const DEFAULT_VOICE_ID = import.meta.env.VITE_ELEVENLABS_VOICE_ID || 'yj30vwTGJxSHezdAGsv9';
 // API key is NOT read from env — enter it in Settings → Voice so it stays out of the bundle
-const DEFAULT_API_KEY  = '';
+// Hardlocked via VITE_ELEVENLABS_API_KEY env var — no need to enter in Settings on web
+const DEFAULT_API_KEY  = import.meta.env.VITE_ELEVENLABS_API_KEY || '';
 const ELEVENLABS_MODEL    = 'eleven_monolingual_v1'; // compatible with free ElevenLabs plans
 
 // Session-level disables — set to true on first auth/plan rejection to avoid
@@ -146,7 +146,7 @@ export function isStopIntent(transcript) {
 
 async function _fetchElevenLabsAudio(text, apiKey, voiceId) {
   rateLimitElevenLabs();
-  const response = await tauriFetch(`${ELEVENLABS_ENDPOINT}/${voiceId}`, {
+  const response = await platformFetch(`${ELEVENLABS_ENDPOINT}/${voiceId}`, {
     method:  'POST',
     headers: {
       'xi-api-key':   apiKey,
@@ -192,7 +192,7 @@ async function _fetchAzureAudio(text, apiKey, region, voiceName = 'en-AU-Natasha
   const ssml = `<speak version='1.0' xmlns='http://www.w3.org/2001/10/synthesis' xml:lang='${lang}'>`
     + `<voice name='${voiceName}'>${_escapeXml(text)}</voice></speak>`;
 
-  const response = await tauriFetch(
+  const response = await platformFetch(
     `https://${region}.tts.speech.microsoft.com/cognitiveservices/v1`,
     {
       method:  'POST',
@@ -229,8 +229,8 @@ export async function speakText(text, voiceSettings = {}, { onStart, onEnd, onEr
   // Resolve credentials — voiceSettings → keyring → empty
   let apiKey = voiceSettings.elevenlabsKey || DEFAULT_API_KEY;
   if (!apiKey) {
-    try { apiKey = await invoke('get_secret', { service: 'valerie', key: 'elevenlabs_api_key' }) || ''; }
-    catch { /* keyring unavailable — fall through to browser TTS */ }
+    try { apiKey = await platformInvoke('get_secret', { service: 'valerie', key: 'elevenlabs_api_key' }) || ''; }
+    catch { /* keyring unavailable — fall through */ }
   }
   const voiceId = voiceSettings.elevenlabsVoiceId || DEFAULT_VOICE_ID;
 
@@ -318,39 +318,9 @@ export async function speakText(text, voiceSettings = {}, { onStart, onEnd, onEr
     }
   }
 
-  // ── Priority 3: Browser SpeechSynthesis ─────────────────────────────────────
-  _speakWithBrowser(text, voiceSettings, { onStart, onEnd, onError });
-}
-
-function _speakWithBrowser(text, voiceSettings = {}, { onStart, onEnd, onError } = {}) {
-  if (!window.speechSynthesis) {
-    onEnd?.();
-    return;
-  }
-
-  const utt = new SpeechSynthesisUtterance(text);
-
-  const voices = window.speechSynthesis.getVoices();
-  if (voiceSettings.voiceURI) {
-    const found = voices.find(v => v.voiceURI === voiceSettings.voiceURI);
-    if (found) utt.voice = found;
-  }
-
-  utt.rate   = voiceSettings.rate   ?? 0.95;
-  utt.pitch  = voiceSettings.pitch  ?? 1.0;
-  utt.volume = voiceSettings.volume ?? 1.0;
-  utt.lang   = voiceSettings.lang   ?? 'en-AU';
-
-  utt.onstart = () => onStart?.();
-  utt.onend   = () => onEnd?.();
-  utt.onerror = (e) => {
-    if (e.error !== 'interrupted') onError?.(e);
-    onEnd?.();
-  };
-
-  try {
-    window.speechSynthesis.speak(utt);
-  } catch {
-    onEnd?.();
-  }
+  // ── All TTS providers failed — notify user so they know voice isn't working ──
+  window.dispatchEvent(new CustomEvent('valerie:toast', {
+    detail: { message: 'Voice unavailable — check ElevenLabs key in Settings → Voice.', type: 'error' },
+  }));
+  onEnd?.();
 }

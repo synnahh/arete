@@ -74,7 +74,9 @@ function fmtDate(str) {
 }
 function daysUntil(dateStr) {
   if (!dateStr) return null;
-  return Math.ceil((new Date(dateStr) - new Date()) / 86400000);
+  const d = new Date(dateStr);
+  if (isNaN(d.getTime())) return null;
+  return Math.ceil((d - new Date()) / 86400000);
 }
 function toMonthly(amount, cycle) {
   if (cycle === 'weekly') return (amount || 0) * 4.33;

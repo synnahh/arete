@@ -54,5 +54,13 @@
         "installerHooks": "nsis-hooks.nsi"
       }
     }
+  },
+  "plugins": {
+    "updater": {
+      "pubkey": "",
+      "endpoints": [
+        "https://raw.githubusercontent.com/YOUR_GITHUB_USERNAME/YOUR_REPO/main/releases/latest.json"
+      ]
+    }
   }
 }

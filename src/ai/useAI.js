@@ -11,6 +11,25 @@ import { buildContext }              from './context.js';
 import { parseResponse, executeActions, registerActionHandler } from './actions.js';
 import { cleanForSpeech, speakText, cancelCurrentSpeech, isStopIntent } from './speech.js';
 import { storage, STORAGE_KEYS }     from '../utils/storage.js';
+import { isTauri }                   from '../utils/platform.js';
+
+// ── Tauri invoke — resolved once at module level, reused everywhere ────────────
+// Dynamic import is cached by the module system but the async overhead adds up
+// across pingAll (every 60s) and sendMessage. Resolve once, store the reference.
+let _invoke = null;
+async function getTauriInvoke() {
+  if (_invoke) return _invoke;
+  if (!isTauri()) return null;
+  try {
+    const mod  = await import('@tauri-apps/api/core');
+    _invoke    = mod.invoke;
+    return _invoke;
+  } catch {
+    return null;
+  }
+}
+// Kick off resolution immediately on module load so it's ready before first use
+getTauriInvoke().catch(() => {});
 
 // Silence before ending a voice session (ms)
 const VOICE_SILENCE_TIMEOUT = 9000;
@@ -81,19 +100,31 @@ export function useAI() {
 
   // ── Ping Claude + Ollama (on mount and every 30s) ───────────────────────────
   const pingAll = useCallback(async () => {
-    const settings = storage.get(STORAGE_KEYS.SETTINGS, {});
-    settingsRef.current = settings;
-    const apiKey = settings.apiKey ?? '';
-
-    const [claude, ollama] = await Promise.all([pingClaude(apiKey), pingOllama()]);
-    setClaudeOnline(claude);
-    setOllamaOnline(ollama);
-    setLastPinged(new Date());
+    try {
+      const settings = storage.get(STORAGE_KEYS.SETTINGS, {});
+      settingsRef.current = settings;
+      // Priority: env var (hardlocked) → keychain (desktop) → settings (PWA fallback)
+      let apiKey = import.meta.env.VITE_ANTHROPIC_API_KEY || settings.apiKey || '';
+      if (!apiKey) {
+        try {
+          const inv = await getTauriInvoke();
+          if (inv) {
+            apiKey = await inv('get_secret', { service: 'valerie', key: 'claude_api_key' }) ?? '';
+            if (apiKey) settingsRef.current = { ...settings, apiKey };
+          }
+        } catch {}
+      }
+      const [claude, ollama] = await Promise.all([pingClaude(apiKey), pingOllama()]);
+      setClaudeOnline(claude);
+      setOllamaOnline(ollama);
+      setLastPinged(new Date());
+    } catch { /* swallow — network errors during alt-tab should never crash the app */ }
   }, []);
 
   useEffect(() => {
     pingAll();
-    const id = setInterval(pingAll, 30_000);
+    // 60s interval (was 30s) — skip when tab is hidden to avoid burning API quota
+    const id = setInterval(() => { if (!document.hidden) pingAll(); }, 60_000);
     return () => clearInterval(id);
   }, [pingAll]);
 
@@ -115,7 +146,14 @@ export function useAI() {
     setOrbState('thinking');
 
     const settings = storage.get(STORAGE_KEYS.SETTINGS, {});
-    const apiKey   = settings.apiKey ?? '';
+    // Priority: env var (hardlocked) → keychain (desktop) → settings (PWA fallback)
+    let apiKey = import.meta.env.VITE_ANTHROPIC_API_KEY || settings.apiKey || '';
+    if (!apiKey) {
+      try {
+        const inv = await getTauriInvoke();
+        if (inv) apiKey = await inv('get_secret', { service: 'valerie', key: 'claude_api_key' }) ?? '';
+      } catch {}
+    }
 
     // Build context snapshot from live app state
     const context = buildContext({ activeTab: activeTabRef.current });
@@ -298,6 +336,7 @@ export function useAI() {
   // ── Wake word detection — continuous background listener ───────────────────
   const wakeRecRef    = useRef(null);
   const micGrantedRef = useRef(false); // true once getUserMedia succeeds
+  const isStartingRef = useRef(false); // mutex — prevents race-condition double-starts
 
   // Pre-request mic permission via getUserMedia so WebView2 shows the OS prompt.
   // SpeechRecognition alone doesn't trigger the permission dialog in Tauri/WebView2.
@@ -320,7 +359,12 @@ export function useAI() {
 
     const s = storage.get(STORAGE_KEYS.SETTINGS, {});
     if (s.wakeWordEnabled === false) return;
+    // Guard: don't start if already running, session active, window hidden, or mid-start
     if (wakeRecRef.current || voiceSessionRef.current) return;
+    if (isStartingRef.current) return;
+    if (document.hidden) return;
+
+    isStartingRef.current = true;
 
     const rec = new SR();
     rec.continuous     = false;
@@ -369,9 +413,13 @@ export function useAI() {
     };
 
     wakeRecRef.current = rec;
-    try { rec.start(); } catch (err) {
+    try {
+      rec.start();
+    } catch (err) {
       console.warn('[VALERIE wake word] rec.start() threw:', err);
       wakeRecRef.current = null;
+    } finally {
+      isStartingRef.current = false;
     }
   }, [startVoiceSession, _requestMicPermission]); // eslint-disable-line react-hooks/exhaustive-deps
 
@@ -409,6 +457,30 @@ export function useAI() {
       }
     }
   }, [voiceSessionActive, _startWakeWordListener, _stopWakeWordListener]);
+
+  // Stop wake word when window loses focus (alt-tab crash fix) — restart on return
+  useEffect(() => {
+    const onHide = () => {
+      _stopWakeWordListener();
+      isStartingRef.current = false;
+    };
+    const onShow = () => {
+      const s = storage.get(STORAGE_KEYS.SETTINGS, {});
+      if (s.wakeWordEnabled !== false && !voiceSessionRef.current && micGrantedRef.current) {
+        setTimeout(_startWakeWordListener, 600);
+      }
+    };
+    // Named reference required — anonymous functions can't be removed
+    const handleVisibility = () => document.hidden ? onHide() : onShow();
+    document.addEventListener('visibilitychange', handleVisibility);
+    window.addEventListener('blur', onHide);
+    window.addEventListener('focus', onShow);
+    return () => {
+      document.removeEventListener('visibilitychange', handleVisibility);
+      window.removeEventListener('blur', onHide);
+      window.removeEventListener('focus', onShow);
+    };
+  }, [_startWakeWordListener, _stopWakeWordListener]);
 
   // ── Single-shot voice input (non-session, original behaviour) ───────────────
   const startListening = useCallback((onResult) => {

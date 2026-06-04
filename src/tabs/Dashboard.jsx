@@ -4,6 +4,7 @@ import { getGreeting, formatTime, formatDate } from '../utils/time.js';
 import { storage, STORAGE_KEYS } from '../utils/storage.js';
 import { askClaude } from '../ai/claude.js';
 import { askOllama } from '../ai/ollama.js';
+import { rateLimitClaude } from '../utils/rateLimit.js';
 import { getXP, getRank, TIER_CONFIG, TIER_THRESHOLDS } from '../utils/xp.js';
 import DayRing from '../components/DayRing.jsx';
 import { useCollection } from '../firebase/useCollection.js';
@@ -502,6 +503,7 @@ function DailyBriefCard({ ai }) {
       const settings = storage.get(STORAGE_KEYS.SETTINGS, {});
       let text = '';
       if (ai.claudeOnline && settings.apiKey) {
+        rateLimitClaude();
         text = await askClaude(prompt, [], settings.apiKey);
       } else if (ai.ollamaOnline) {
         text = await askOllama(prompt, []);
@@ -774,12 +776,12 @@ function ProductivityWidget({ onTabChange }) {
         >View tasks →</button>
       </div>
 
-      <div style={{ display: 'flex', gap: 32 }}>
+      <div style={{ display: 'flex', gap: 16 }}>
 
         {/* ── Donut A: Tasks by tag ──────────────────────────────────── */}
-        <div style={{ display: 'flex', alignItems: 'center', gap: 20, flex: 1, minWidth: 0 }}>
+        <div style={{ display: 'flex', alignItems: 'center', gap: 12, flex: 1, minWidth: 0 }}>
           <div style={{ position: 'relative', flexShrink: 0 }}>
-            <DonutChart segments={taskSegments} size={110} thickness={18} />
+            <DonutChart segments={taskSegments} size={88} thickness={15} />
             {/* Centre label */}
             <div style={{
               position: 'absolute', inset: 0,
@@ -818,9 +820,9 @@ function ProductivityWidget({ onTabChange }) {
         <div style={{ width: '0.5px', background: 'var(--card-border)', alignSelf: 'stretch' }} />
 
         {/* ── Donut B: Focus time ────────────────────────────────────── */}
-        <div style={{ display: 'flex', alignItems: 'center', gap: 20, flex: 1, minWidth: 0 }}>
+        <div style={{ display: 'flex', alignItems: 'center', gap: 12, flex: 1, minWidth: 0 }}>
           <div style={{ position: 'relative', flexShrink: 0 }}>
-            <DonutChart segments={focusSegments} size={110} thickness={18} />
+            <DonutChart segments={focusSegments} size={88} thickness={15} />
             <div style={{
               position: 'absolute', inset: 0,
               display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center',
@@ -975,35 +977,11 @@ function PeakStateCard({ peakState, onTabChange }) {
 }
 
 export default function Dashboard({ settings, onTabChange, ai, density = 'standard', peakState }) {
-  const [hasGreeted, setHasGreeted] = useState(false);
 
   const userName = storage.get(STORAGE_KEYS.USER, {})?.name
     ?? storage.get(STORAGE_KEYS.SETTINGS, {})?.userName
     ?? 'there';
 
-  // VALERIE launch greeting — spoken once per session
-  useEffect(() => {
-    if (hasGreeted || !ai) return;
-    const sessionKey = `valerie_greeted_${new Date().toDateString()}`;
-    if (sessionStorage.getItem(sessionKey)) return;
-
-    const delay = setTimeout(() => {
-      const text = `${getGreeting()}, ${userName}. Ready when you are.`;
-      if (window.speechSynthesis) {
-        const savedSettings = storage.get(STORAGE_KEYS.SETTINGS, {});
-        const utt = new SpeechSynthesisUtterance(text);
-        if (savedSettings.voice?.voiceURI) {
-          const v = window.speechSynthesis.getVoices().find(v => v.voiceURI === savedSettings.voice.voiceURI);
-          if (v) utt.voice = v;
-        }
-        window.speechSynthesis.speak(utt);
-      }
-      setHasGreeted(true);
-      sessionStorage.setItem(sessionKey, '1');
-    }, 900);
-
-    return () => clearTimeout(delay);
-  }, [ai, hasGreeted, userName]);
 
   const pad  = density === 'compact' ? '14px 18px' : density === 'spacious' ? '32px 36px' : '22px 28px';
   const gap  = density === 'compact' ? 10 : density === 'spacious' ? 24 : 14;

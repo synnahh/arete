@@ -33,6 +33,9 @@ class SectionErrorBoundary extends Component {
 import { storage, STORAGE_KEYS } from '../utils/storage.js';
 import { THEMES, applyTheme }    from '../styles/themes.js';
 import { testClaudeKey }         from '../ai/claude.js';
+import { sendTestSMS }           from '../utils/twilio.js';
+import { requestPushPermission, pushPermissionStatus } from '../utils/pushNotifications.js';
+import { isMobile }              from '../utils/platform.js';
 import { TIER_CONFIG, TIER_THRESHOLDS, XP_SOURCES } from '../utils/xp.js';
 import { ALL_TABS }              from '../components/Sidebar.jsx';
 import { doc, setDoc } from 'firebase/firestore';
@@ -1079,6 +1082,28 @@ function AISection({ settings, onSave }) {
   const [testResult,    setTestResult]    = useState(null); // { ok, reason }
   const [testing,       setTesting]       = useState(false);
 
+  // Load Claude API key from OS keychain on mount — survives force-kills and localStorage clears.
+  // Falls back to settings object (localStorage) then migrates legacy key into keychain.
+  useEffect(() => {
+    invoke('get_secret', { service: 'valerie', key: 'claude_api_key' })
+      .then(stored => {
+        if (stored) {
+          setApiKey(stored);
+        } else {
+          // Migrate legacy key from localStorage/settings into keychain
+          const legacy = settings.apiKey || '';
+          if (legacy) {
+            setApiKey(legacy);
+            invoke('store_secret', { service: 'valerie', key: 'claude_api_key', value: legacy }).catch(() => {});
+          }
+        }
+      })
+      .catch(() => {
+        // Keychain unavailable (PWA build) — fall back to settings value
+        if (settings.apiKey) setApiKey(settings.apiKey);
+      });
+  }, []); // eslint-disable-line react-hooks/exhaustive-deps
+
   useEffect(() => {
     fetch('http://localhost:11434/api/tags', { signal: AbortSignal.timeout(2000) })
       .then(r => r.json())
@@ -1087,10 +1112,13 @@ function AISection({ settings, onSave }) {
   }, []);
 
   const handleSave = () => {
-    onSave({ apiKey: apiKey.trim(), ollamaModel, preferOffline, dailyTokenBudget: tokenBudget, smartRouting });
+    const key = apiKey.trim();
+    // Save to keychain so key survives force-kills — also keep in settings for PWA fallback
+    invoke('store_secret', { service: 'valerie', key: 'claude_api_key', value: key }).catch(() => {});
+    onSave({ apiKey: key, ollamaModel, preferOffline, dailyTokenBudget: tokenBudget, smartRouting });
     setSaved(true);
     setTimeout(() => setSaved(false), 2000);
-    setTestResult(null); // clear old test result after save
+    setTestResult(null);
   };
 
   const handleTest = async () => {
@@ -1100,9 +1128,10 @@ function AISection({ settings, onSave }) {
     const result = await testClaudeKey(apiKey.trim());
     setTestResult(result);
     setTesting(false);
-    // If test passed, also save the key immediately
     if (result.ok) {
-      onSave({ apiKey: apiKey.trim() });
+      const key = apiKey.trim();
+      invoke('store_secret', { service: 'valerie', key: 'claude_api_key', value: key }).catch(() => {});
+      onSave({ apiKey: key });
     }
   };
 
@@ -1294,26 +1323,82 @@ function UnitsSection({ settings, onSave }) {
 
 // ─── Section: Notifications ───────────────────────────────────────────────────
 function NotificationsSection({ settings, onSave }) {
-  const [enabled,       setEnabled]       = useState(settings.notifications?.enabled       ?? true);
-  const [nudges,        setNudges]        = useState(settings.notifications?.proactiveNudges ?? true);
-  const [taskReminders, setTaskReminders] = useState(settings.notifications?.taskReminders  ?? true);
-  const [habitRemind,   setHabitRemind]   = useState(settings.notifications?.habitReminders  ?? true);
-  const [waterRemind,   setWaterRemind]   = useState(settings.notifications?.waterReminders  ?? false);
-  const [weeklyFinance, setWeeklyFinance] = useState(settings.notifications?.weeklyFinance   ?? true);
+  const [enabled,       setEnabled]       = useState(settings.notifications?.enabled         ?? true);
+  const [nudges,        setNudges]        = useState(settings.notifications?.proactiveNudges  ?? true);
+  const [taskReminders, setTaskReminders] = useState(settings.notifications?.taskReminders    ?? true);
+  const [habitRemind,   setHabitRemind]   = useState(settings.notifications?.habitReminders   ?? true);
+  const [waterRemind,   setWaterRemind]   = useState(settings.notifications?.waterReminders   ?? false);
+  const [weeklyFinance, setWeeklyFinance] = useState(settings.notifications?.weeklyFinance    ?? true);
+
+  // Twilio numbers
   const [twilioReminders, setTwilioReminders] = useState(settings.twilioReminders || settings.twilioNumber    || '');
   const [twilioSentry,    setTwilioSentry]    = useState(settings.twilioSentry    || settings.twilioDevNumber || '');
-  const [phoneNumber,     setPhoneNumber]     = useState(settings.phoneNumber     || '');
-  const [saved,           setSaved]           = useState(false);
+  // Twilio credentials
+  const [twilioAccountSid, setTwilioAccountSid] = useState(settings.twilioAccountSid || '');
+  const [twilioAuthToken,  setTwilioAuthToken]  = useState(settings.twilioAuthToken  || '');
+  // Recipient
+  const [phoneNumber, setPhoneNumber] = useState(settings.phoneNumber || '');
+  // Custom message templates
+  const [msgReminder, setMsgReminder] = useState(settings.smsMessages?.reminder || 'VALERIE: {message}');
+  const [msgAlert,    setMsgAlert]    = useState(settings.smsMessages?.alert    || 'VALERIE ALERT: {message}');
+
+  // Push permission state
+  const [pushStatus,   setPushStatus]   = useState(() => pushPermissionStatus());
+  const [pushLoading,  setPushLoading]  = useState(false);
+  const [smsTestStatus, setSmsTestStatus] = useState(null);
+  const [saved, setSaved] = useState(false);
 
   const handleSave = () => {
     onSave({
       notifications: { enabled, proactiveNudges: nudges, taskReminders, habitReminders: habitRemind, waterReminders: waterRemind, weeklyFinance },
       twilioReminders,
       twilioSentry,
+      twilioAccountSid,
+      twilioAuthToken,
       phoneNumber,
+      smsMessages: { reminder: msgReminder, alert: msgAlert },
     });
     setSaved(true);
     setTimeout(() => setSaved(false), 2000);
+  };
+
+  const handleRequestPush = async () => {
+    setPushLoading(true);
+    const result = await requestPushPermission();
+    setPushStatus(pushPermissionStatus());
+    setPushLoading(false);
+    if (result === 'no-vapid-key') {
+      window.dispatchEvent(new CustomEvent('valerie:toast', { detail: { message: 'Add VITE_FIREBASE_VAPID_KEY to .env to enable push notifications.', type: 'error' } }));
+    }
+  };
+
+  const handleTestSMS = async () => {
+    setSmsTestStatus('sending');
+    const result = await sendTestSMS({ twilioAccountSid, twilioAuthToken, twilioReminders, phoneNumber });
+    setSmsTestStatus(result.ok ? 'ok' : result.error || 'error');
+    setTimeout(() => setSmsTestStatus(null), 4000);
+  };
+
+  const pushStatusLabel = {
+    granted:      '✓ Enabled',
+    denied:       '✗ Blocked — allow in browser settings',
+    default:      'Not yet enabled',
+    unavailable:  'Not supported on this device',
+    'no-vapid-key': 'VAPID key missing',
+  }[pushStatus] || pushStatus;
+
+  const Block = ({ label, children }) => (
+    <div style={{ marginBottom: 20, padding: '14px 16px', background: 'var(--hover-bg)', borderRadius: 10 }}>
+      <div style={{ fontSize: 11, fontWeight: 700, color: 'var(--text-secondary)', marginBottom: 12, letterSpacing: '0.08em', textTransform: 'uppercase' }}>{label}</div>
+      {children}
+    </div>
+  );
+
+  const textareaSx = {
+    width: '100%', background: 'var(--input-bg)', border: '0.5px solid var(--input-border)',
+    borderRadius: 7, padding: '7px 10px', fontSize: 12, color: 'var(--text-primary)',
+    outline: 'none', resize: 'vertical', minHeight: 52, fontFamily: 'inherit',
+    boxSizing: 'border-box',
   };
 
   return (
@@ -1326,45 +1411,101 @@ function NotificationsSection({ settings, onSave }) {
 
       {enabled && (
         <>
-          <div style={{ marginBottom: 20, padding: '14px 16px', background: 'var(--hover-bg)', borderRadius: 10 }}>
-            <div style={{ fontSize: 12, fontWeight: 600, color: 'var(--text-secondary)', marginBottom: 12, letterSpacing: '0.04em' }}>
-              VALERIE NUDGES
-            </div>
+          {/* ── Nudge toggles ── */}
+          <Block label="VALERIE Nudges">
             <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
               <Toggle label="Proactive nudges (max 3/day)" value={nudges}        onChange={setNudges} />
               <Toggle label="Task due reminders"            value={taskReminders} onChange={setTaskReminders} />
-              <Toggle label="Habit reminders"              value={habitRemind}    onChange={setHabitRemind} />
-              <Toggle label="Water intake reminders"       value={waterRemind}    onChange={setWaterRemind} />
-              <Toggle label="Weekly finance summary"       value={weeklyFinance}  onChange={setWeeklyFinance} />
+              <Toggle label="Habit reminders"               value={habitRemind}   onChange={setHabitRemind} />
+              <Toggle label="Water intake reminders"        value={waterRemind}   onChange={setWaterRemind} />
+              <Toggle label="Weekly finance summary"        value={weeklyFinance} onChange={setWeeklyFinance} />
             </div>
-          </div>
+          </Block>
 
-          <div style={{ marginBottom: 20, padding: '14px 16px', background: 'var(--hover-bg)', borderRadius: 10 }}>
-            <div style={{ fontSize: 12, fontWeight: 600, color: 'var(--text-secondary)', marginBottom: 12, letterSpacing: '0.04em' }}>
-              TWILIO SMS NUMBERS
-            </div>
+          {/* ── iOS Push Notifications ── */}
+          {isMobile() && (
+            <Block label="iOS Push Notifications">
+              <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 12 }}>
+                <div>
+                  <div style={{ fontSize: 12.5, color: 'var(--text-primary)', marginBottom: 3 }}>Push Notifications</div>
+                  <div style={{ fontSize: 11, color: pushStatus === 'granted' ? 'var(--accent)' : 'var(--text-muted)' }}>{pushStatusLabel}</div>
+                </div>
+                {pushStatus !== 'granted' && pushStatus !== 'unavailable' && (
+                  <button
+                    onClick={handleRequestPush}
+                    disabled={pushLoading}
+                    style={{ padding: '7px 16px', borderRadius: 8, border: '0.5px solid var(--card-border)', background: 'var(--active-bg)', color: 'var(--accent)', fontSize: 12, fontWeight: 600, cursor: 'pointer', whiteSpace: 'nowrap' }}
+                  >
+                    {pushLoading ? 'Requesting…' : 'Enable Push'}
+                  </button>
+                )}
+              </div>
+            </Block>
+          )}
+
+          {/* ── Twilio credentials ── */}
+          <Block label="Twilio Credentials">
             <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
-              <Row label="Reminders" hint="Twilio number used for regular reminders — habits, water, tasks, finance">
-                <Input value={twilioReminders} onChange={setTwilioReminders} placeholder="+614XXXXXXXX" />
+              <Row label="Account SID" hint="From twilio.com/console">
+                <Input value={twilioAccountSid} onChange={setTwilioAccountSid} placeholder="ACxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx" masked />
               </Row>
-              <Row label="Sentry alerts" hint="Twilio number used for sentry and critical system notifications">
-                <Input value={twilioSentry} onChange={setTwilioSentry} placeholder="+614XXXXXXXX" />
+              <Row label="Auth Token" hint="From twilio.com/console">
+                <Input value={twilioAuthToken} onChange={setTwilioAuthToken} placeholder="your auth token" masked />
+              </Row>
+              <Row label="Your phone (recipient)">
+                <Input value={phoneNumber} onChange={setPhoneNumber} placeholder="+61412345678" />
               </Row>
             </div>
+          </Block>
+
+          {/* ── Twilio numbers ── */}
+          <Block label="Twilio SMS Numbers">
+            <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
+              <Row label="Reminders number" hint="Used for habits, water, tasks, finance">
+                <Input value={twilioReminders} onChange={setTwilioReminders} placeholder="+61400000001" />
+              </Row>
+              <Row label="Alerts number" hint="Used for critical system alerts and storage warnings">
+                <Input value={twilioSentry} onChange={setTwilioSentry} placeholder="+61400000002" />
+              </Row>
+            </div>
+          </Block>
+
+          {/* ── Custom message templates ── */}
+          <Block label="SMS Message Templates">
+            <div style={{ fontSize: 11, color: 'var(--text-muted)', marginBottom: 10 }}>Use <code style={{ background: 'var(--hover-bg)', padding: '1px 4px', borderRadius: 3 }}>{'{message}'}</code> as a placeholder for the notification content.</div>
+            <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
+              <div>
+                <label style={{ display: 'block', fontSize: 11, color: 'var(--text-muted)', marginBottom: 4 }}>Reminder tone (habits, water, tasks)</label>
+                <textarea style={textareaSx} value={msgReminder} onChange={e => setMsgReminder(e.target.value)} />
+              </div>
+              <div>
+                <label style={{ display: 'block', fontSize: 11, color: 'var(--text-muted)', marginBottom: 4 }}>Alert tone (system warnings, critical)</label>
+                <textarea style={textareaSx} value={msgAlert} onChange={e => setMsgAlert(e.target.value)} />
+              </div>
+            </div>
+          </Block>
+
+          {/* ── Test SMS button ── */}
+          <div style={{ marginBottom: 20, display: 'flex', alignItems: 'center', gap: 12 }}>
+            <button
+              onClick={handleTestSMS}
+              disabled={!twilioAccountSid || !twilioAuthToken || !twilioReminders || !phoneNumber}
+              style={{ padding: '7px 18px', borderRadius: 8, border: '0.5px solid var(--card-border)', background: 'var(--hover-bg)', color: 'var(--text-primary)', fontSize: 12, fontWeight: 500, cursor: 'pointer', opacity: (!twilioAccountSid || !twilioAuthToken || !twilioReminders || !phoneNumber) ? 0.4 : 1 }}
+            >
+              {smsTestStatus === 'sending' ? 'Sending…' : 'Send test SMS'}
+            </button>
+            {smsTestStatus && smsTestStatus !== 'sending' && (
+              <span style={{ fontSize: 12, color: smsTestStatus === 'ok' ? 'var(--accent)' : '#e55a5a' }}>
+                {smsTestStatus === 'ok' ? '✓ Sent successfully' : smsTestStatus}
+              </span>
+            )}
           </div>
-          <Row label="Your phone number (recipient)">
-            <Input value={phoneNumber} onChange={setPhoneNumber} placeholder="+614XXXXXXXX" />
-          </Row>
         </>
       )}
 
       <button
         onClick={handleSave}
-        style={{
-          padding: '9px 24px', borderRadius: 8, border: 'none',
-          background: 'var(--accent)', color: 'var(--bg-base)',
-          fontSize: 13, fontWeight: 700, cursor: 'pointer',
-        }}
+        style={{ padding: '9px 24px', borderRadius: 8, border: 'none', background: 'var(--accent)', color: 'var(--bg-base)', fontSize: 13, fontWeight: 700, cursor: 'pointer' }}
       >
         Save Notifications
       </button>
@@ -1808,13 +1949,45 @@ const LAYOUT_OPTIONS = [
 ];
 
 function PlatformsSection({ settings, onSave }) {
-  // hiddenTabs: array of tab IDs that are currently hidden
   const [hiddenTabs,  setHiddenTabs]  = useState(() => settings.hiddenTabs  || []);
-  // tabLayouts: { [tabId]: 'standard' | 'compact' | 'spacious' }
   const [tabLayouts,  setTabLayouts]  = useState(() => settings.tabLayouts  || {});
   const [autostart,   setAutostart]   = useState(false);
   const [autostartOk, setAutostartOk] = useState(false);
   const [isFullscreen, setIsFullscreen] = useState(false);
+
+  // ── Updater state ──────────────────────────────────────────────────────────
+  const [updateState,   setUpdateState]   = useState('idle'); // idle | checking | available | installing | uptodate | error
+  const [updateInfo,    setUpdateInfo]    = useState(null);   // { version, notes }
+  const [updateError,   setUpdateError]   = useState('');
+
+  const handleCheckUpdate = async () => {
+    setUpdateState('checking');
+    setUpdateError('');
+    try {
+      const result = await invoke('check_for_update');
+      if (result.available) {
+        setUpdateInfo(result);
+        setUpdateState('available');
+      } else {
+        setUpdateState('uptodate');
+        setTimeout(() => setUpdateState('idle'), 3000);
+      }
+    } catch (err) {
+      setUpdateError(err?.message || String(err));
+      setUpdateState('error');
+    }
+  };
+
+  const handleInstallUpdate = async () => {
+    setUpdateState('installing');
+    try {
+      await invoke('install_update');
+      // App will restart automatically after install
+    } catch (err) {
+      setUpdateError(err?.message || String(err));
+      setUpdateState('error');
+    }
+  };
 
   // Check current autostart state on mount
   useEffect(() => {
@@ -1906,6 +2079,50 @@ function PlatformsSection({ settings, onSave }) {
             </div>
           </div>
           <Toggle value={isFullscreen} onChange={handleFullscreenToggle} />
+        </div>
+      </div>
+
+      {/* Auto-updater */}
+      <div style={{ marginBottom: 24 }}>
+        <div style={{ fontSize: 12, fontWeight: 600, color: 'var(--text-secondary)', marginBottom: 12, letterSpacing: '0.04em' }}>
+          UPDATES
+        </div>
+        <div style={{
+          display: 'flex', alignItems: 'center', justifyContent: 'space-between',
+          padding: '14px 16px', borderRadius: 10,
+          background: 'var(--hover-bg)', border: '0.5px solid var(--card-border)',
+        }}>
+          <div>
+            <div style={{ fontSize: 13, fontWeight: 600, color: 'var(--text-primary)' }}>
+              VALERIE {updateState === 'available' ? `→ v${updateInfo?.version} available` : 'v0.1.0'}
+            </div>
+            <div style={{ fontSize: 11, color: 'var(--text-muted)', marginTop: 2 }}>
+              {updateState === 'idle'       && 'Check for a newer version'}
+              {updateState === 'checking'   && 'Checking…'}
+              {updateState === 'uptodate'   && '✓ You\'re on the latest version'}
+              {updateState === 'available'  && (updateInfo?.notes || 'A new version is ready to install')}
+              {updateState === 'installing' && 'Downloading and installing… VALERIE will restart'}
+              {updateState === 'error'      && `Error: ${updateError}`}
+            </div>
+          </div>
+          <div style={{ display: 'flex', gap: 8, flexShrink: 0 }}>
+            {updateState === 'available' ? (
+              <button
+                onClick={handleInstallUpdate}
+                style={{ padding: '7px 16px', borderRadius: 8, border: 'none', background: 'var(--accent)', color: 'var(--bg-base)', fontSize: 12, fontWeight: 700, cursor: 'pointer', whiteSpace: 'nowrap' }}
+              >
+                Install & Restart
+              </button>
+            ) : (
+              <button
+                onClick={handleCheckUpdate}
+                disabled={updateState === 'checking' || updateState === 'installing'}
+                style={{ padding: '7px 16px', borderRadius: 8, border: '0.5px solid var(--card-border)', background: 'transparent', color: 'var(--text-primary)', fontSize: 12, fontWeight: 500, cursor: 'pointer', opacity: updateState === 'checking' ? 0.5 : 1, whiteSpace: 'nowrap' }}
+              >
+                {updateState === 'checking' ? 'Checking…' : 'Check for updates'}
+              </button>
+            )}
+          </div>
         </div>
       </div>
 
@@ -2315,8 +2532,19 @@ export default function SettingsTab({ settings: settingsProp }) {
       setSettings(merged);
       try { storage.set(STORAGE_KEYS.SETTINGS, merged); } catch {}
 
+      // Strip all secret keys before syncing to Firestore — they live in
+      // localStorage + OS keychain only, never in the cloud database.
+      const {
+        apiKey:     _apiKey,
+        finnhubKey: _finnhubKey,
+        voice:      voiceRaw,
+        ...restMerged
+      } = merged;
+      const { elevenlabsKey: _el, azureKey: _az, ...safeVoice } = voiceRaw || {};
+      const safeSettings = { ...restMerged, voice: safeVoice };
+
       const userId = getDeviceId();
-      setDoc(doc(db, 'users', userId, 'meta', 'settings'), merged)
+      setDoc(doc(db, 'users', userId, 'meta', 'settings'), safeSettings)
         .catch(err => console.warn('[Settings sync]', err.message));
 
       if (updates.theme) applyTheme(updates.theme);

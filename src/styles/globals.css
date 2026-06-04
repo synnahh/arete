@@ -15,10 +15,10 @@
 /* OBSIDIAN — default: deep black, silver/white accent */
 :root,
 [data-theme="obsidian"] {
-  --bg-base:          #080c14;
-  --bg-sidebar:       #0d0f14;
-  --bg-panel:         #0f1219;
-  --bg-secondary:     #111520;  /* used by tabs/cards built in sessions 5-6 */
+  --bg-base:          #080808;
+  --bg-sidebar:       #0c0c0c;
+  --bg-panel:         #101010;
+  --bg-secondary:     #141414;  /* used by tabs/cards built in sessions 5-6 */
   --accent:           rgba(210, 210, 210, 0.85);
   --accent-solid:     #d2d2d2;
   --card-fill:        rgba(255, 255, 255, 0.03);
@@ -175,6 +175,12 @@
   --priority-low:     #4caf7d;
 }
 
+/* ─── Sidebar tooltip entrance animation ────────────────── */
+@keyframes tooltipIn {
+  from { opacity: 0; transform: translateY(-50%) translateX(-6px); }
+  to   { opacity: 1; transform: translateY(-50%) translateX(0); }
+}
+
 /* ─── Base Reset & Defaults ──────────────────────────── */
 *, *::before, *::after {
   box-sizing: border-box;
@@ -236,18 +242,10 @@ html, body, #root {
 .bg-panel       { background: var(--bg-panel); }
 
 /* ─── Time-of-Day Background ────────────────────────── */
-.bg-dawn {
-  background: linear-gradient(135deg, #1a0e06 0%, #2d1408 40%, #0e0a14 100%);
-}
-.bg-day {
-  background: var(--bg-base);
-}
-.bg-dusk {
-  background: linear-gradient(135deg, #0e0614 0%, #1a0820 40%, #0a0608 100%);
-}
-.bg-night {
-  background: radial-gradient(ellipse at top, #0a0c18 0%, #050608 100%);
-}
+.bg-dawn  { background: var(--bg-base); }
+.bg-day   { background: var(--bg-base); }
+.bg-dusk  { background: var(--bg-base); }
+.bg-night { background: var(--bg-base); }
 
 /* ─── Transition Defaults ───────────────────────────── */
 .transition-premium {

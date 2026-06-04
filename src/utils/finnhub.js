@@ -2,7 +2,7 @@
 // Sign up at finnhub.io for a free API key (no credit card required).
 // Free tier: 60 calls/minute, real-time US stock quotes.
 
-import { fetch } from '@tauri-apps/plugin-http';
+import { platformFetch as fetch } from './platform.js';
 import { rateLimitFinnhub } from './rateLimit.js';
 
 const BASE = 'https://finnhub.io/api/v1';
@@ -14,9 +14,9 @@ const BASE = 'https://finnhub.io/api/v1';
 export async function fetchQuote(symbol, apiKey) {
   if (!apiKey || !symbol) return null;
   rateLimitFinnhub();
-  const res = await fetch(`${BASE}/quote?symbol=${encodeURIComponent(symbol.toUpperCase())}&token=${apiKey}`, {
+  const res = await fetch(`${BASE}/quote?symbol=${encodeURIComponent(symbol.toUpperCase())}`, {
     method: 'GET',
-    headers: { 'Content-Type': 'application/json' },
+    headers: { 'Content-Type': 'application/json', 'X-Finnhub-Token': apiKey },
   });
   if (!res.ok) throw new Error(`Finnhub quote error ${res.status}`);
   const data = await res.json();
@@ -30,9 +30,9 @@ export async function fetchQuote(symbol, apiKey) {
 export async function searchSymbol(query, apiKey) {
   if (!apiKey || !query) return [];
   rateLimitFinnhub();
-  const res = await fetch(`${BASE}/search?q=${encodeURIComponent(query)}&token=${apiKey}`, {
+  const res = await fetch(`${BASE}/search?q=${encodeURIComponent(query)}`, {
     method: 'GET',
-    headers: { 'Content-Type': 'application/json' },
+    headers: { 'Content-Type': 'application/json', 'X-Finnhub-Token': apiKey },
   });
   if (!res.ok) return [];
   const data = await res.json();

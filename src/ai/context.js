@@ -74,14 +74,31 @@ export function buildContext({ activeTab = 'dashboard' } = {}) {
   } catch {}
 
   // ── Health / water ────────────────────────────────────────────────────────
+  // Water is stored as a flat array of {date, amount, ...} objects by useCollection
   try {
-    const water  = storage.get(STORAGE_KEYS.WATER, { daily: [] });
-    const today  = now.toISOString().split('T')[0];
-    const todayML = (water.daily || [])
+    const waterLogs = storage.get(STORAGE_KEYS.WATER, []);
+    const today     = now.toISOString().split('T')[0];
+    // Handle both flat-array format (current) and legacy {daily:[]} object format
+    const logs = Array.isArray(waterLogs) ? waterLogs : (waterLogs?.daily || []);
+    const todayML = logs
       .filter(e => e.date === today)
       .reduce((sum, e) => sum + (e.amount || 0), 0);
     if (todayML > 0) {
-      lines.push(`Water today: ${todayML}ml`);
+      lines.push(`Water today: ${todayML >= 1000 ? (todayML / 1000).toFixed(1) + 'L' : todayML + 'ml'}`);
+    }
+  } catch {}
+
+  // ── Sleep ─────────────────────────────────────────────────────────────────
+  try {
+    const sleepLogs = storage.get(STORAGE_KEYS.SLEEP, []);
+    const logs = Array.isArray(sleepLogs) ? sleepLogs : [];
+    const last = [...logs].sort((a, b) => (b.date ?? '').localeCompare(a.date ?? ''))[0];
+    if (last) {
+      const h = Math.floor((last.duration || (last.hours || 0) * 60) / 60);
+      const m = (last.duration || (last.hours || 0) * 60) % 60;
+      const dur = last.duration ? `${h}h ${m}m` : last.hours ? `${last.hours}h` : null;
+      const eff = last.efficiency ? ` (${last.efficiency}% efficiency)` : '';
+      if (dur) lines.push(`Last sleep: ${dur}${eff} on ${last.date}`);
     }
   } catch {}
 

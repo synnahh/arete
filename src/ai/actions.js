@@ -3,7 +3,7 @@
 // This is how VALERIE actually controls the app — not just talks about it.
 
 import { db, getDeviceId } from '../firebase/firebase.js';
-import { collection, addDoc } from 'firebase/firestore';
+import { collection, addDoc, doc, setDoc } from 'firebase/firestore';
 import { storage, STORAGE_KEYS } from '../utils/storage.js';
 import { sanitizePayload } from '../utils/sanitize.js';
 
@@ -136,9 +136,10 @@ async function _executeOne(action) {
     case 'logWater': {
       const amount = Math.min(2000, Math.max(50, Number(action.amount) || 250));
       const today  = new Date().toISOString().split('T')[0];
-      const water  = storage.get(STORAGE_KEYS.WATER, { daily: [] });
-      water.daily  = [...(water.daily || []), { date: today, amount, ts: Date.now() }].slice(-200);
-      storage.set(STORAGE_KEYS.WATER, water);
+      // Water is stored as a flat array by useCollection — keep that format consistent
+      const existing = storage.get(STORAGE_KEYS.WATER, []);
+      const logs = Array.isArray(existing) ? existing : (existing?.daily || []);
+      storage.set(STORAGE_KEYS.WATER, [...logs, { date: today, amount, ts: Date.now(), createdAt: Date.now() }].slice(-200));
       break;
     }
 
@@ -213,9 +214,12 @@ async function _executeOne(action) {
       const key = action.key;
       if (!key) break;
       const s = storage.get(STORAGE_KEYS.SETTINGS, {});
-      const newVal = !s[key];
-      storage.set(STORAGE_KEYS.SETTINGS, { ...s, [key]: newVal });
-      window.dispatchEvent(new CustomEvent('valerie:settings-changed', { detail: { ...s, [key]: newVal } }));
+      const merged = { ...s, [key]: !s[key] };
+      storage.set(STORAGE_KEYS.SETTINGS, merged);
+      window.dispatchEvent(new CustomEvent('valerie:settings-changed', { detail: merged }));
+      // Strip sensitive keys before syncing to Firestore
+      const { apiKey: _a, finnhubKey: _f, ...safeSettings } = merged;
+      setDoc(doc(db, 'users', getDeviceId(), 'meta', 'settings'), safeSettings).catch(() => {});
       break;
     }
 
@@ -227,6 +231,9 @@ async function _executeOne(action) {
       const updated = { ...s2, [sKey]: sVal };
       storage.set(STORAGE_KEYS.SETTINGS, updated);
       window.dispatchEvent(new CustomEvent('valerie:settings-changed', { detail: updated }));
+      // Strip sensitive keys before syncing to Firestore
+      const { apiKey: _a2, finnhubKey: _f2, ...safeUpdated } = updated;
+      setDoc(doc(db, 'users', getDeviceId(), 'meta', 'settings'), safeUpdated).catch(() => {});
       break;
     }
 

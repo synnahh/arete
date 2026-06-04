@@ -3,9 +3,10 @@
 // his brief. Accepting builds a context-rich message and sends it through the
 // normal AI pipeline (she speaks it via TTS as usual).
 
-import { useState, useEffect } from 'react';
-import { fetch } from '@tauri-apps/plugin-http';
+import { useState, useEffect, useRef } from 'react';
+import { platformFetch as fetch } from '../utils/platform.js';
 import { storage, STORAGE_KEYS } from '../utils/storage.js';
+import { speakText, cancelCurrentSpeech } from '../ai/speech.js';
 
 // Fetch current weather from Open-Meteo (free, no API key, uses coordinates)
 async function fetchWeather(lat, lon) {
@@ -46,14 +47,55 @@ function todayISO() { return new Date().toISOString().split('T')[0]; }
 export default function DailyBrief({ ai, settings, onClose }) {
   const [visible,  setVisible]  = useState(false);
   const [building, setBuilding] = useState(false);
+  const recRef = useRef(null);
 
-  // Show only once per day
+  // Show only once per day — delay slightly to let network/ElevenLabs settle
   useEffect(() => {
     const lastShown = storage.get(STORAGE_KEYS.DAILY_BRIEF_DATE, null);
     if (lastShown === todayISO()) return;
-    const t = setTimeout(() => setVisible(true), 1800);
+    const t = setTimeout(() => setVisible(true), 4500);
     return () => clearTimeout(t);
   }, []);
+
+  // Speak the greeting + ask for brief when modal appears; then listen for voice response
+  useEffect(() => {
+    if (!visible) return;
+    const name     = settings?.userName || 'Rob';
+    const greeting = greetingByTime();
+    const question = `${greeting}, ${name}. Would you like your daily brief?`;
+
+    const voiceSettings = settings?.voice ?? {};
+    speakText(question, voiceSettings, {
+      onEnd: () => {
+        // After speaking, start voice recognition for yes/no response
+        const SR = window.SpeechRecognition || window.webkitSpeechRecognition;
+        if (!SR) return;
+        const rec = new SR();
+        rec.continuous     = false;
+        rec.interimResults = false;
+        rec.lang           = 'en-AU';
+        recRef.current     = rec;
+
+        rec.onresult = (e) => {
+          const transcript = (e.results[0]?.[0]?.transcript ?? '').toLowerCase().trim();
+          recRef.current = null;
+          if (transcript.includes('yes') || transcript.includes('yeah') || transcript.includes('sure') || transcript.includes('brief')) {
+            startBrief();
+          } else if (transcript.includes('no') || transcript.includes('later') || transcript.includes('dismiss')) {
+            dismiss();
+          }
+        };
+
+        rec.onerror = () => { recRef.current = null; };
+        try { rec.start(); } catch {}
+      },
+    });
+
+    return () => {
+      cancelCurrentSpeech();
+      if (recRef.current) { try { recRef.current.stop(); } catch {} recRef.current = null; }
+    };
+  }, [visible]); // eslint-disable-line react-hooks/exhaustive-deps
 
   function dismiss() {
     storage.set(STORAGE_KEYS.DAILY_BRIEF_DATE, todayISO());
@@ -169,8 +211,12 @@ export default function DailyBrief({ ai, settings, onClose }) {
         <div style={{ fontSize: 22, fontWeight: 300, color: 'var(--text-primary)', marginBottom: 8, textAlign: 'center' }}>
           {greeting}, {name}.
         </div>
-        <div style={{ fontSize: 14, color: 'var(--text-secondary)', marginBottom: 28, textAlign: 'center', lineHeight: 1.6 }}>
-          Would you like your daily brief? I can cover the weather, your schedule, tasks, vitamins, and morning routine.
+        <div style={{ fontSize: 14, color: 'var(--text-secondary)', marginBottom: 8, textAlign: 'center', lineHeight: 1.6 }}>
+          Covering weather, schedule, tasks, vitamins, and morning routine.
+        </div>
+
+        <div style={{ fontSize: 12, color: 'rgba(74,158,255,0.7)', marginBottom: 22, textAlign: 'center' }}>
+          🎙 Listening for "yes" or "no"…
         </div>
 
         <div style={{ display: 'flex', gap: 10, width: '100%' }}>

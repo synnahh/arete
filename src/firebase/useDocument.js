@@ -2,27 +2,32 @@
 // Pattern: localStorage for instant load → Firestore for real-time sync
 // Stores docs under users/{deviceId}/meta/{metaKey}
 
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect, useCallback, useRef } from 'react';
 import { doc, setDoc, onSnapshot } from 'firebase/firestore';
 import { db, getDeviceId } from './firebase.js';
 import { storage } from '../utils/storage.js';
 
 /**
  * @param {string} metaKey    — Firestore doc name under users/{uid}/meta/
- * @param {string} storageKey — STORAGE_KEYS value (without valerie_ prefix) for localStorage cache
+ * @param {string} storageKey — STORAGE_KEYS value for localStorage cache
  * @param {*}      defaultValue
  * @returns {{ data, save, synced }}
  */
 export function useDocument(metaKey, storageKey, defaultValue = null) {
   const userId = getDeviceId();
-  const docRef = doc(db, 'users', userId, 'meta', metaKey);
+
+  // Stable docRef — rebuilt only if userId/metaKey change (they don't in practice)
+  const docRefRef = useRef(doc(db, 'users', userId, 'meta', metaKey));
+  useEffect(() => {
+    docRefRef.current = doc(db, 'users', userId, 'meta', metaKey);
+  }, [userId, metaKey]);
 
   const [data, setData]     = useState(() => storage.get(storageKey, defaultValue));
   const [synced, setSynced] = useState(false);
 
   useEffect(() => {
     const unsub = onSnapshot(
-      docRef,
+      docRefRef.current,
       snap => {
         if (snap.exists()) {
           const d = snap.data();
@@ -37,17 +42,17 @@ export function useDocument(metaKey, storageKey, defaultValue = null) {
       },
     );
     return () => unsub();
-  }, []); // eslint-disable-line react-hooks/exhaustive-deps
+  }, [userId, metaKey, storageKey]); // eslint-disable-line react-hooks/exhaustive-deps
 
   const save = useCallback(async (newData) => {
     setData(newData);
     storage.set(storageKey, newData);
     try {
-      await setDoc(docRef, newData);
+      await setDoc(docRefRef.current, newData);
     } catch (err) {
       console.warn(`[Firestore/meta/${metaKey}/save]`, err.message);
     }
-  }, []); // eslint-disable-line react-hooks/exhaustive-deps
+  }, [metaKey, storageKey]);
 
   return { data, save, synced };
 }

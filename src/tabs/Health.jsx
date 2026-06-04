@@ -215,7 +215,7 @@ function Overview({ habits, waterLogs, nutritionLogs, sleepData, settings, suppl
 
         {useDemo && (
           <div style={{padding:'8px 14px',borderRadius:10,background:'rgba(74,158,255,0.07)',border:'0.5px solid rgba(74,158,255,0.2)',fontSize:11,color:'rgba(74,158,255,0.7)'}}>
-            \U0001f4ca Showing demo data — log your first entry to see real stats
+            📊 Showing demo data — log your first entry to see real stats
           </div>
         )}
 
@@ -270,7 +270,7 @@ function Overview({ habits, waterLogs, nutritionLogs, sleepData, settings, suppl
             ) : (
               <div style={{display:'flex',alignItems:'center',gap:18,padding:'8px 0'}}>
                 <div style={{width:110,height:110,borderRadius:'50%',border:'0.5px solid rgba(255,255,255,0.08)',display:'flex',alignItems:'center',justifyContent:'center',flexShrink:0}}>
-                  <span style={{fontSize:28,opacity:0.15}}>\U0001f319</span>
+                  <span style={{fontSize:28,opacity:0.15}}>🌙</span>
                 </div>
                 <div>
                   <div style={{fontSize:15,color:'rgba(255,255,255,0.3)',marginBottom:6}}>No sleep logged yet</div>
@@ -1015,55 +1015,62 @@ function Water({ waterLogs, addWaterLog, settings }) {
         </GlassCard>
       )}
 
-      {/* ── Main: ring + log ── */}
-      <div style={{display:'flex',gap:16,marginBottom:14,alignItems:'flex-start'}}>
-        {/* Ring */}
-        <div style={{display:'flex',flexDirection:'column',alignItems:'center',gap:10,flexShrink:0}}>
-          <RingChart value={total} max={goal} size={130} thickness={10} colour={colour}
-            label={fmtWater(total)} sublabel={`of ${fmtWater(goal)}`} labelSize={17}/>
-          <div style={{fontSize:11,color:'var(--text-muted)'}}>{Math.round(pct)}% complete</div>
-          {pct<100&&<div style={{fontSize:10.5,color:colour}}>{fmtWater(goal-total)} remaining</div>}
+      {/* ── Main hero: ring centred ── */}
+      <div style={{display:'flex',flexDirection:'column',alignItems:'center',gap:6,marginBottom:22,padding:'20px 0'}}>
+        <div style={{position:'relative'}}>
+          <RingChart value={total} max={goal} size={200} thickness={14} colour={colour}
+            label={fmtWater(total)} sublabel={`of ${fmtWater(goal)}`} labelSize={24}/>
+          <div style={{position:'absolute',inset:0,borderRadius:'50%',background:`radial-gradient(circle,${colour}08 0%,transparent 70%)`,pointerEvents:'none'}}/>
         </div>
+        <div style={{fontSize:14,color:colour,fontWeight:500}}>{Math.round(pct)}% complete</div>
+        {pct<100&&<div style={{fontSize:11.5,color:'rgba(255,255,255,0.35)'}}>{fmtWater(goal-total)} remaining</div>}
+      </div>
 
-        {/* Right: quick log + recent */}
-        <div style={{flex:1,minWidth:0}}>
-          {/* Quick log buttons */}
-          <GlassLabel>Quick log</GlassLabel>
-          <div style={{display:'flex',gap:6,flexWrap:'wrap',marginBottom:12}}>
-            {QUICK.map(ml=>(
-              <button key={ml} onClick={()=>log(ml)} style={{
-                ...btnGhost,fontSize:12,padding:'7px 12px',
-                borderColor:colour+'44',
-              }}>
-                {ml<1000?`${ml}ml`:`${ml/1000}L`}
-              </button>
+      {/* ── Quick log + entry ── */}
+      <GlassCard style={{marginBottom:14}}>
+        <GlassLabel>Quick log</GlassLabel>
+        <div style={{display:'flex',gap:8,flexWrap:'wrap',marginBottom:12}}>
+          {QUICK.map(ml=>(
+            <button key={ml} onClick={()=>log(ml)} style={{
+              flex:'1 1 0',padding:'10px 8px',borderRadius:10,fontSize:13,cursor:'pointer',
+              border:`0.5px solid ${colour}44`,background:'rgba(255,255,255,0.03)',
+              color:'var(--text-secondary)',transition:'all 0.15s',
+            }}
+            onMouseEnter={e=>{e.currentTarget.style.background=`${colour}14`;e.currentTarget.style.color=colour;}}
+            onMouseLeave={e=>{e.currentTarget.style.background='rgba(255,255,255,0.03)';e.currentTarget.style.color='var(--text-secondary)';}}>
+              {ml<1000?`${ml}ml`:`${ml/1000}L`}
+            </button>
+          ))}
+        </div>
+        <div style={{display:'flex',gap:8}}>
+          <input type="number" value={custom} onChange={e=>setCustom(e.target.value)}
+            placeholder="Custom amount in ml…" style={{...inputSx,flex:1,fontSize:13}}
+            onKeyDown={e=>e.key==='Enter'&&custom&&(log(parseInt(custom)),setCustom(''))}
+            onFocus={e=>e.target.style.borderColor=colour} onBlur={e=>e.target.style.borderColor='var(--input-border)'}
+          />
+          <button onClick={()=>{if(custom){log(parseInt(custom));setCustom('');}}} style={{...btnPrimary,padding:'8px 20px',fontSize:13}}>Log</button>
+        </div>
+      </GlassCard>
+
+      {/* ── Today's log ── */}
+      <GlassCard>
+        <GlassLabel>Today's intake</GlassLabel>
+        {todayLogs.length===0?(
+          <div style={{fontSize:12,color:'var(--text-muted)',padding:'4px 0'}}>Nothing logged yet.</div>
+        ):(
+          <div style={{display:'flex',flexDirection:'column',gap:4}}>
+            {[...todayLogs].reverse().slice(0,8).map((l,i)=>(
+              <div key={l.id||i} style={{display:'flex',justifyContent:'space-between',alignItems:'center',padding:'7px 10px',borderRadius:8,background:'rgba(255,255,255,0.025)'}}>
+                <div style={{display:'flex',alignItems:'center',gap:8}}>
+                  <div style={{width:6,height:6,borderRadius:'50%',background:colour,flexShrink:0}}/>
+                  <span style={{fontSize:13,color:'var(--text-secondary)'}}>{fmtWater(l.amount)}</span>
+                </div>
+                <span style={{fontSize:11,color:'var(--text-muted)',fontFamily:'ui-monospace,monospace'}}>{l.time}</span>
+              </div>
             ))}
           </div>
-          <div style={{display:'flex',gap:6,marginBottom:14}}>
-            <input type="number" value={custom} onChange={e=>setCustom(e.target.value)}
-              placeholder="Custom ml…" style={{...inputSx,flex:1}}
-              onKeyDown={e=>e.key==='Enter'&&custom&&(log(parseInt(custom)),setCustom(''))}
-              onFocus={e=>e.target.style.borderColor='var(--accent)'} onBlur={e=>e.target.style.borderColor='var(--input-border)'}
-            />
-            <button onClick={()=>{if(custom){log(parseInt(custom));setCustom('');}}} style={btnPrimary}>Log</button>
-          </div>
-
-          {/* Today's log */}
-          <GlassLabel>Today</GlassLabel>
-          {todayLogs.length===0?(
-            <div style={{fontSize:12,color:'var(--text-muted)',padding:'4px 0'}}>Nothing logged yet.</div>
-          ):(
-            <div style={{display:'flex',flexDirection:'column',gap:4}}>
-              {[...todayLogs].reverse().slice(0,6).map((l,i)=>(
-                <div key={l.id||i} style={{display:'flex',justifyContent:'space-between',padding:'5px 8px',borderRadius:6,background:'rgba(255,255,255,0.02)'}}>
-                  <span style={{fontSize:12,color:'var(--text-secondary)'}}>{fmtWater(l.amount)}</span>
-                  <span style={{fontSize:11,color:'var(--text-muted)',fontFamily:'ui-monospace,monospace'}}>{l.time}</span>
-                </div>
-              ))}
-            </div>
-          )}
-        </div>
-      </div>
+        )}
+      </GlassCard>
     </Section>
   );
 }
@@ -1090,7 +1097,19 @@ function Body({ bodyMetrics, addBodyMetric }) {
   const [compare,  setCompare]  = useState([null,null]);
   const fileRef = useRef(null);
 
-  const sorted = useMemo(()=>[...(bodyMetrics||[])].sort((a,b)=>(b.date??'').localeCompare(a.date??'')),[bodyMetrics]);
+  const rawSorted = useMemo(()=>[...(bodyMetrics||[])].sort((a,b)=>(b.date??'').localeCompare(a.date??'')),[bodyMetrics]);
+  const useBodyDemo = rawSorted.length === 0;
+
+  const DEMO_BODY_METRICS = useMemo(() => [
+    { date:'2026-06-02', weight:82.4, bodyFat:14.8, muscle:68.2, notes:'Demo data' },
+    { date:'2026-05-26', weight:82.8, bodyFat:15.1, muscle:67.9 },
+    { date:'2026-05-19', weight:83.2, bodyFat:15.4, muscle:67.6 },
+    { date:'2026-05-12', weight:83.6, bodyFat:15.7, muscle:67.3 },
+    { date:'2026-05-05', weight:84.0, bodyFat:16.0, muscle:67.0 },
+    { date:'2026-04-28', weight:84.5, bodyFat:16.3, muscle:66.8 },
+  ], []);
+
+  const sorted = useBodyDemo ? DEMO_BODY_METRICS : rawSorted;
   const latest = sorted[0];
   const weightData = useMemo(()=>sorted.slice(0,30).reverse().map(m=>({value:parseFloat(m.weight)||0,label:m.date?m.date.slice(5):''})),[sorted]);
 
@@ -1139,6 +1158,11 @@ function Body({ bodyMetrics, addBodyMetric }) {
       {/* ── Weight tab ── */}
       {bodyTab==='weight'&&(
         <>
+          {useBodyDemo && (
+            <div style={{padding:'8px 14px',borderRadius:10,background:'rgba(74,158,255,0.07)',border:'0.5px solid rgba(74,158,255,0.2)',fontSize:11,color:'rgba(74,158,255,0.7)',marginBottom:12}}>
+              📊 Showing demo data — tap + Log to start tracking your real metrics
+            </div>
+          )}
           {/* Log form */}
           {adding&&(
             <GlassCard style={{marginBottom:12}}>
@@ -1728,29 +1752,99 @@ function Stimulant({ stimLogs, addStimLog, removeStimLog, settings }) {
     await addStimLog({ ...preset, date: today, time: nowStr() });
   };
 
+  // Build caffeine timeline: running total through the day
+  const caffTimeline = useMemo(() => {
+    const events = todayLogs.filter(l => l.type === 'caffeine').map(l => {
+      const [hh, mm] = (l.time || '00:00').split(':').map(Number);
+      return { h: hh + mm / 60, mg: l.amount || 0, name: l.name };
+    }).sort((a, b) => a.h - b.h);
+    let running = 0;
+    return events.map(e => { running += e.mg; return { ...e, running }; });
+  }, [todayLogs]);
+
+  const caffLineW = 560, caffLineH = 80;
+  const caffLinePath = useMemo(() => {
+    if (caffTimeline.length === 0) return '';
+    const maxMg = Math.max(caffLimit, ...caffTimeline.map(e => e.running));
+    const pts = [{ x: 0, y: caffLineH }]; // start at 0
+    caffTimeline.forEach(e => {
+      const x = (e.h / 24) * caffLineW;
+      const y = caffLineH - (e.running / maxMg) * caffLineH;
+      pts.push({ x, y });
+    });
+    // extend to now
+    const nowX = (new Date().getHours() / 24) * caffLineW;
+    if (caffTimeline.length > 0) pts.push({ x: Math.max(nowX, pts[pts.length - 1].x), y: pts[pts.length - 1].y });
+    const linePath = pts.map((p, i) => `${i === 0 ? 'M' : 'L'}${p.x.toFixed(1)},${p.y.toFixed(1)}`).join(' ');
+    const areaPath = linePath + ` L${pts[pts.length - 1].x.toFixed(1)},${caffLineH} L0,${caffLineH} Z`;
+    return areaPath;
+  }, [caffTimeline, caffLimit]); // eslint-disable-line react-hooks/exhaustive-deps
+
+  const caffColour = caffTotal > caffLimit * 0.9 ? '#f4a642' : caffTotal > caffLimit * 0.6 ? '#4a9eff' : '#4caf7d';
+
   return (
     <Section title="Stimulants">
-      {/* Summary rings */}
-      <div style={{ display: 'flex', gap: 16, marginBottom: 20 }}>
-        <div style={{ display:'flex', alignItems:'center', gap:12, ...cardSx, flex:1 }}>
-          <RingChart value={caffTotal} max={caffLimit} size={72} thickness={6}
-            colour={caffTotal > caffLimit * 0.8 ? '#f4a642' : 'var(--accent)'}
-            label={`${caffTotal}`} sublabel="mg" labelSize={14} />
-          <div>
-            <div style={{ fontSize: 10, color:'var(--text-muted)', letterSpacing:'0.06em', marginBottom:2 }}>CAFFEINE</div>
-            <div style={{ fontSize: 12, color:'var(--text-secondary)' }}>/ {caffLimit}mg limit</div>
+      {/* Summary — two large stat cards */}
+      <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 14, marginBottom: 20 }}>
+        {/* Caffeine */}
+        <GlassCard style={{ marginBottom: 0 }}>
+          <div style={{ fontSize: 9, fontWeight: 700, letterSpacing: '0.16em', textTransform: 'uppercase', color: 'rgba(255,255,255,0.3)', marginBottom: 8 }}>Caffeine</div>
+          <div style={{ display: 'flex', alignItems: 'baseline', gap: 6, marginBottom: 8 }}>
+            <span style={{ fontSize: 48, fontWeight: 200, color: caffColour, lineHeight: 1, fontVariantNumeric: 'tabular-nums' }}>{caffTotal}</span>
+            <span style={{ fontSize: 14, color: 'rgba(255,255,255,0.3)' }}>/ {caffLimit}mg</span>
           </div>
-        </div>
-        <div style={{ display:'flex', alignItems:'center', gap:12, ...cardSx, flex:1 }}>
-          <RingChart value={nicTotal} max={nicLimit} size={72} thickness={6}
-            colour={nicTotal > nicLimit * 0.8 ? '#e55a5a' : '#f4a642'}
-            label={`${nicTotal}`} sublabel="mg" labelSize={14} />
-          <div>
-            <div style={{ fontSize: 10, color:'var(--text-muted)', letterSpacing:'0.06em', marginBottom:2 }}>NICOTINE</div>
-            <div style={{ fontSize: 12, color:'var(--text-secondary)' }}>/ {nicLimit}mg limit</div>
+          <div style={{ height: 5, borderRadius: 3, background: 'rgba(255,255,255,0.07)', overflow: 'hidden' }}>
+            <div style={{ height: '100%', width: `${Math.min((caffTotal/caffLimit)*100,100)}%`, background: caffColour, borderRadius: 3, transition: 'width 0.5s' }}/>
           </div>
-        </div>
+          {caffTotal > caffLimit * 0.9 && <div style={{ fontSize: 10.5, color: '#f4a642', marginTop: 6 }}>⚠ Near limit — consider stopping</div>}
+        </GlassCard>
+
+        {/* Nicotine */}
+        <GlassCard style={{ marginBottom: 0 }}>
+          <div style={{ fontSize: 9, fontWeight: 700, letterSpacing: '0.16em', textTransform: 'uppercase', color: 'rgba(255,255,255,0.3)', marginBottom: 8 }}>Nicotine</div>
+          <div style={{ display: 'flex', alignItems: 'baseline', gap: 6, marginBottom: 8 }}>
+            <span style={{ fontSize: 48, fontWeight: 200, color: nicTotal > nicLimit * 0.8 ? '#e55a5a' : '#f4a642', lineHeight: 1, fontVariantNumeric: 'tabular-nums' }}>{nicTotal}</span>
+            <span style={{ fontSize: 14, color: 'rgba(255,255,255,0.3)' }}>/ {nicLimit}mg</span>
+          </div>
+          <div style={{ height: 5, borderRadius: 3, background: 'rgba(255,255,255,0.07)', overflow: 'hidden' }}>
+            <div style={{ height: '100%', width: `${Math.min((nicTotal/nicLimit)*100,100)}%`, background: nicTotal > nicLimit * 0.8 ? '#e55a5a' : '#f4a642', borderRadius: 3, transition: 'width 0.5s' }}/>
+          </div>
+        </GlassCard>
       </div>
+
+      {/* Caffeine timeline graph */}
+      {caffTimeline.length > 0 && (
+        <GlassCard style={{ marginBottom: 20 }}>
+          <GlassLabel>Caffeine intake timeline</GlassLabel>
+          <svg viewBox={`0 0 ${caffLineW} ${caffLineH + 20}`} style={{ width: '100%', display: 'block' }}>
+            <defs>
+              <linearGradient id="caffGrad" x1="0" y1="0" x2="0" y2="1">
+                <stop offset="0%" stopColor={caffColour} stopOpacity="0.4" />
+                <stop offset="100%" stopColor={caffColour} stopOpacity="0.03" />
+              </linearGradient>
+            </defs>
+            {/* Limit line */}
+            {(() => {
+              const maxMg = Math.max(caffLimit, ...caffTimeline.map(e => e.running));
+              const limitY = caffLineH - (caffLimit / maxMg) * caffLineH;
+              return <line x1={0} y1={limitY} x2={caffLineW} y2={limitY} stroke="rgba(244,166,66,0.3)" strokeWidth="1" strokeDasharray="4,3" />;
+            })()}
+            <path d={caffLinePath} fill="url(#caffGrad)" />
+            {/* Event dots */}
+            {caffTimeline.map((e, i) => {
+              const maxMg = Math.max(caffLimit, ...caffTimeline.map(ev => ev.running));
+              const x = (e.h / 24) * caffLineW;
+              const y = caffLineH - (e.running / maxMg) * caffLineH;
+              return <circle key={i} cx={x} cy={y} r="4" fill={caffColour} opacity="0.9" />;
+            })}
+            {/* X labels */}
+            {['12am','6am','12pm','6pm'].map((l,i) => (
+              <text key={l} x={(i/4)*caffLineW} y={caffLineH+15} fontSize="9" fill="rgba(255,255,255,0.25)" textAnchor="middle" fontFamily="ui-monospace,monospace">{l}</text>
+            ))}
+          </svg>
+          <div style={{ fontSize: 10, color: 'rgba(244,166,66,0.5)', marginTop: 2 }}>— dashed = daily limit ({caffLimit}mg)</div>
+        </GlassCard>
+      )}
 
       {/* Quick-log presets */}
       <div style={{ display:'flex', gap:7, flexWrap:'wrap', marginBottom:6, alignItems:'center' }}>
@@ -1994,7 +2088,7 @@ function MealPlanner({ settings, savedMeals = [], addSavedMeal, bodyMetrics = []
 
   return (
     <Section title="AI Meal Plan">
-      <div style={{ maxWidth: 740 }}>
+      <div style={{ maxWidth: '100%' }}>
 
         {/* Config panel */}
         <GlassCard style={{ marginBottom: 18 }}>
@@ -2147,8 +2241,190 @@ function MealPlanner({ settings, savedMeals = [], addSavedMeal, bodyMetrics = []
   );
 }
 
+// ═══════════════════════════════════════════════════════════════════════════════
+// PEAK STATE — 24h performance graph + factor breakdown
+// ═══════════════════════════════════════════════════════════════════════════════
+
+// Compute circadian performance 0–100 for a given hour (0–24)
+// Two-peak model: primary peak ~10am, secondary ~5pm, low at ~4am and ~2pm
+function circadianScore(hour, sleepEfficiency = 75) {
+  const norm = (sleepEfficiency - 50) / 50; // -1 to 1
+  const base  = 48
+    + 28 * Math.cos(Math.PI * (hour - 10) / 12)   // main wave, peaks 10am
+    + 10 * Math.cos(Math.PI * (hour - 17) / 7);    // secondary, peaks 5pm
+  const bonus = norm * 15; // sleep quality lifts/dampens the curve
+  return Math.max(5, Math.min(100, base + bonus));
+}
+
+function PeakStateSection({ stimLogs, sleepData, peakState }) {
+  const today = new Date().toISOString().slice(0, 10);
+
+  const lastSleep = useMemo(() =>
+    [...(sleepData || [])].sort((a,b)=>(b.date??'').localeCompare(a.date??''))[0],
+    [sleepData]);
+  const sleepEff = lastSleep?.efficiency ?? 75;
+
+  const todayStims = useMemo(() =>
+    (stimLogs || []).filter(l => l.date === today && l.type === 'caffeine'),
+    [stimLogs, today]);
+
+  const nowH = new Date().getHours() + new Date().getMinutes() / 60;
+
+  // Build SVG curve data (48 points = every 30 min)
+  const W = 600, H = 140;
+  const POINTS = Array.from({ length: 49 }, (_, i) => {
+    const h = i * 0.5;
+    const y = circadianScore(h, sleepEff);
+    return { h, y, x: (h / 24) * W, sy: H - (y / 100) * H };
+  });
+
+  const pathD = POINTS.map((p, i) => `${i === 0 ? 'M' : 'L'}${p.x.toFixed(1)},${p.sy.toFixed(1)}`).join(' ');
+  const areaD = pathD + ` L${W},${H} L0,${H} Z`;
+
+  // NOW position
+  const nowX = (nowH / 24) * W;
+  const nowScore = Math.round(circadianScore(nowH, sleepEff));
+
+  const score       = peakState?.score ?? 0;
+  const scoreColour = score >= 75 ? '#4caf7d' : score >= 50 ? '#f4a642' : '#e55a5a';
+  const scoreLabel  = score >= 80 ? 'PEAK' : score >= 60 ? 'GOOD' : score >= 40 ? 'AVERAGE' : 'LOW';
+
+  const FACTOR_COLOURS = {
+    sleepQuality: '#9b5de5', sleepDuration: '#4a9eff', hydration: '#4a9eff',
+    supplements: '#4caf7d', macros: '#f4a642', workout: '#e25d7a',
+    stimulants: '#f97316', mood: '#ffd700',
+  };
+
+  const X_LABELS = ['12am', '6am', '12pm', '6pm', '12am'];
+
+  return (
+    <Section title="Peak State">
+      <div style={{ display: 'flex', flexDirection: 'column', gap: 20 }}>
+
+        {/* Score header */}
+        <GlassCard>
+          <div style={{ display: 'flex', alignItems: 'center', gap: 24 }}>
+            <div style={{ textAlign: 'center', flexShrink: 0 }}>
+              <div style={{ fontSize: 56, fontWeight: 200, color: scoreColour, lineHeight: 1, fontVariantNumeric: 'tabular-nums' }}>
+                {score}
+              </div>
+              <div style={{ fontSize: 10, fontWeight: 700, letterSpacing: '0.16em', color: 'rgba(255,255,255,0.3)', textTransform: 'uppercase', marginTop: 4 }}>
+                {scoreLabel}
+              </div>
+            </div>
+            <div style={{ flex: 1, minWidth: 0 }}>
+              <div style={{ fontSize: 13, color: 'rgba(255,255,255,0.6)', marginBottom: 10, lineHeight: 1.55 }}>
+                {peakState?.suggestion ?? ''}
+              </div>
+              <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>
+                {[
+                  { l: 'Recovery', v: sleepEff, c: '#9b5de5' },
+                  { l: 'Circadian', v: nowScore, c: '#4a9eff' },
+                  { l: 'Peak State', v: peakState.score, c: scoreColour },
+                ].map(s => (
+                  <div key={s.l} style={{ padding: '6px 12px', borderRadius: 8, background: `${s.c}14`, border: `0.5px solid ${s.c}30` }}>
+                    <div style={{ fontSize: 9, fontWeight: 700, letterSpacing: '0.1em', color: s.c, marginBottom: 3 }}>{s.l.toUpperCase()}</div>
+                    <div style={{ fontSize: 18, fontWeight: 600, color: s.c }}>{s.v}</div>
+                  </div>
+                ))}
+              </div>
+            </div>
+          </div>
+        </GlassCard>
+
+        {/* 24h Performance Graph */}
+        <GlassCard>
+          <GlassLabel>24-Hour Performance Curve</GlassLabel>
+          <div style={{ position: 'relative', overflow: 'visible' }}>
+            <svg viewBox={`0 0 ${W} ${H + 28}`} style={{ width: '100%', display: 'block' }}>
+              <defs>
+                <linearGradient id="peakGrad" x1="0" y1="0" x2="0" y2="1">
+                  <stop offset="0%" stopColor={scoreColour} stopOpacity="0.35" />
+                  <stop offset="100%" stopColor={scoreColour} stopOpacity="0.03" />
+                </linearGradient>
+                {/* Future section gradient (dimmer) */}
+                <linearGradient id="peakFutureGrad" x1="0" y1="0" x2="0" y2="1">
+                  <stop offset="0%" stopColor="rgba(255,255,255,0.12)" stopOpacity="1" />
+                  <stop offset="100%" stopColor="rgba(255,255,255,0.12)" stopOpacity="0.1" />
+                </linearGradient>
+              </defs>
+
+              {/* Horizontal grid lines */}
+              {[25, 50, 75].map(v => (
+                <line key={v} x1={0} y1={H - (v/100)*H} x2={W} y2={H - (v/100)*H}
+                  stroke="rgba(255,255,255,0.05)" strokeWidth="1" />
+              ))}
+
+              {/* Area fill — past */}
+              <path d={areaD} fill="url(#peakGrad)" />
+
+              {/* Line */}
+              <path d={pathD} fill="none" stroke={scoreColour} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
+
+              {/* NOW vertical line */}
+              <line x1={nowX} y1={0} x2={nowX} y2={H} stroke="rgba(255,255,255,0.4)" strokeWidth="1" strokeDasharray="4,3" />
+              <circle cx={nowX} cy={H - (nowScore/100)*H} r="5" fill={scoreColour} />
+              <text x={nowX + 6} y={H - (nowScore/100)*H - 6} fontSize="9" fill="rgba(255,255,255,0.55)" fontFamily="ui-monospace,monospace">
+                NOW
+              </text>
+
+              {/* X-axis labels */}
+              {X_LABELS.map((l, i) => (
+                <text key={l+i} x={(i/4)*W} y={H + 18} fontSize="9" fill="rgba(255,255,255,0.3)" textAnchor="middle" fontFamily="ui-monospace,monospace">{l}</text>
+              ))}
+
+              {/* Stimulant event markers */}
+              {todayStims.map((s, i) => {
+                if (!s.time) return null;
+                const [hh, mm] = s.time.split(':').map(Number);
+                const sx = ((hh + mm/60) / 24) * W;
+                return (
+                  <g key={s.id || i}>
+                    <line x1={sx} y1={H - 20} x2={sx} y2={H} stroke="rgba(249,115,22,0.5)" strokeWidth="1.5" />
+                    <circle cx={sx} cy={H - 22} r="4" fill="#f97316" opacity="0.85" />
+                  </g>
+                );
+              })}
+            </svg>
+            {todayStims.length > 0 && (
+              <div style={{ fontSize: 10, color: 'rgba(255,255,255,0.3)', marginTop: 4 }}>
+                ● Orange dots = caffeine intake
+              </div>
+            )}
+          </div>
+        </GlassCard>
+
+        {/* Factor breakdown */}
+        <GlassCard>
+          <GlassLabel>Factor Breakdown</GlassLabel>
+          <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
+            {Object.entries(peakState?.factors || {}).map(([key, factor]) => {
+              const colour = FACTOR_COLOURS[key] || 'var(--accent)';
+              const pct    = factor?.pct ?? 0;
+              return (
+                <div key={key}>
+                  <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 4 }}>
+                    <span style={{ fontSize: 11.5, color: 'rgba(255,255,255,0.6)' }}>{factor?.label ?? key}</span>
+                    <span style={{ fontSize: 11, color: 'rgba(255,255,255,0.35)', fontVariantNumeric: 'tabular-nums' }}>{factor?.value}</span>
+                    <span style={{ fontSize: 11, color: colour, fontVariantNumeric: 'tabular-nums', marginLeft: 8 }}>+{factor?.pts ?? 0}/{factor?.max ?? 0}</span>
+                  </div>
+                  <div style={{ height: 5, borderRadius: 3, background: 'rgba(255,255,255,0.07)', overflow: 'hidden' }}>
+                    <div style={{ height: '100%', width: `${pct}%`, background: colour, borderRadius: 3, transition: 'width 0.6s ease' }} />
+                  </div>
+                </div>
+              );
+            })}
+          </div>
+        </GlassCard>
+
+      </div>
+    </Section>
+  );
+}
+
 const SUB_SECTIONS = [
   { id:'overview',    label:'Overview',    icon:'⬡' },
+  { id:'peakstate',   label:'Peak State',  icon:'⚡' },
   { id:'habits',      label:'Habits',      icon:'🔥' },
   { id:'nutrition',   label:'Nutrition',   icon:'🥗' },
   { id:'water',       label:'Water',       icon:'💧' },
@@ -2159,7 +2435,7 @@ const SUB_SECTIONS = [
   { id:'mealplan',    label:'Meal Plan',   icon:'📝' },
 ];
 
-export default function Health({ settings, onTabChange }) {
+export default function Health({ settings, onTabChange, peakState }) {
   const [active, setActive] = useState('overview');
   const settings_ = settings ?? storage.get(STORAGE_KEYS.SETTINGS, {});
 
@@ -2178,6 +2454,7 @@ export default function Health({ settings, onTabChange }) {
     const p = { settings: settings_ };
     switch (active) {
       case 'overview':    return <Overview {...p} onTabChange={onTabChange} habits={habits} waterLogs={waterLogs} nutritionLogs={nutritionLogs} sleepData={sleepData} supplements={supplements} suppLogs={suppLogs} stimLogs={stimLogs} workoutLogs={workoutLogs} bodyMetrics={bodyMetrics} onNav={setActive} />;
+      case 'peakstate':   return <PeakStateSection stimLogs={stimLogs} sleepData={sleepData} peakState={peakState} />;
       case 'habits':      return <Habits       habits={habits} addHabit={addHabit} updateHabit={updateHabit} removeHabit={removeHabit} />;
       case 'nutrition':   return <Nutrition    {...p} nutritionLogs={nutritionLogs} addNutritionLog={addNutritionLog} updateNutritionLog={updateNutritionLog} savedMeals={savedMeals} addSavedMeal={addSavedMeal} removeSavedMeal={removeSavedMeal} />;
       case 'water':       return <Water        {...p} waterLogs={waterLogs} addWaterLog={addWaterLog} />;

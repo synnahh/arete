@@ -1,16 +1,30 @@
 <!doctype html>
-<html lang="en">
+<html lang="en" style="height:100%;overflow:hidden;">
   <head>
     <meta charset="UTF-8" />
-    <link rel="icon" type="image/png" href="/assets/valerie-logo.png" />
-    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
     <title>VALERIE</title>
+
+    <!-- PWA / iOS home screen -->
+    <meta name="apple-mobile-web-app-capable" content="yes" />
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
+    <meta name="apple-mobile-web-app-title" content="VALERIE" />
+    <meta name="mobile-web-app-capable" content="yes" />
+    <meta name="theme-color" content="#080808" />
+    <meta name="description" content="Your personal AI assistant — health, tasks, finance & focus" />
+
+    <!-- Icons -->
+    <link rel="icon" type="image/png" href="/assets/valerie-logo.png" />
+    <link rel="apple-touch-icon" href="/assets/icon-192.png" />
+    <link rel="apple-touch-icon" sizes="192x192" href="/assets/icon-192.png" />
+    <link rel="apple-touch-icon" sizes="512x512" href="/assets/icon-512.png" />
+
     <!-- Google Identity Services — for Google Calendar OAuth -->
     <script src="https://accounts.google.com/gsi/client" async defer></script>
   </head>
 
-  <body style="margin:0;background:#080c14;">
-    <div id="root" style="background:#080c14;min-height:100vh;"></div>
+  <body style="margin:0;background:#080808;height:100%;overflow:hidden;">
+    <div id="root" style="background:#080808;height:100vh;width:100%;overflow:hidden;"></div>
     <script type="module" src="/src/main.jsx"></script>
   </body>
 </html>

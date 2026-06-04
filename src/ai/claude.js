@@ -1,4 +1,4 @@
-import { fetch } from '@tauri-apps/plugin-http';
+import { platformFetch } from '../utils/platform.js';
 import { rateLimitClaude } from '../utils/rateLimit.js';
 
 // ─── Claude API (Anthropic) ────────────────────────────────────────────────────
@@ -101,7 +101,8 @@ function buildSystemPrompt(context = '', memory = []) {
  * Returns raw response text (JSON string — parsed by actions.js parseResponse).
  */
 export async function askClaude(message, history = [], apiKey, { context = '', memory = [] } = {}) {
-  const key = (apiKey || '').trim();
+  // Use passed key → env var hardlock → empty (will throw below)
+  const key = (apiKey || import.meta.env.VITE_CLAUDE_API_KEY || '').trim();
   if (!key) throw new Error('No Claude API key');
 
   rateLimitClaude();
@@ -111,7 +112,7 @@ export async function askClaude(message, history = [], apiKey, { context = '', m
     { role: 'user', content: message },
   ];
 
-  const res = await fetch(CLAUDE_ENDPOINT, {
+  const res = await platformFetch(CLAUDE_ENDPOINT, {
     method: 'POST',
     headers: {
       'Content-Type': 'application/json',
@@ -139,10 +140,10 @@ export async function askClaude(message, history = [], apiKey, { context = '', m
 // ─── pingClaude ───────────────────────────────────────────────────────────────
 // Uses the models list endpoint — no token cost, pure connectivity check.
 export async function pingClaude(apiKey) {
-  const key = (apiKey || '').trim();
+  const key = (apiKey || import.meta.env.VITE_CLAUDE_API_KEY || '').trim();
   if (!key) return false;
   try {
-    const res = await fetch('https://api.anthropic.com/v1/models', {
+    const res = await platformFetch('https://api.anthropic.com/v1/models', {
       method: 'GET',
       headers: {
         'x-api-key':           key,
@@ -163,7 +164,7 @@ export async function testClaudeKey(apiKey) {
   const key = (apiKey || '').trim();
   if (!key) return { ok: false, reason: 'No API key entered' };
   try {
-    const res = await fetch('https://api.anthropic.com/v1/models', {
+    const res = await platformFetch('https://api.anthropic.com/v1/models', {
       method: 'GET',
       headers: {
         'x-api-key': key,

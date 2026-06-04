@@ -1,0 +1,11 @@
+{
+  "version": "0.1.0",
+  "notes": "Initial release",
+  "pub_date": "2026-06-04T00:00:00Z",
+  "platforms": {
+    "windows-x86_64": {
+      "signature": "",
+      "url": "https://github.com/YOUR_GITHUB_USERNAME/YOUR_REPO/releases/download/v0.1.0/VALERIE-Setup.exe"
+    }
+  }
+}

@@ -6,7 +6,7 @@ import { useState, useEffect, useCallback, useRef } from 'react';
 import {
   collection, doc,
   addDoc, updateDoc, deleteDoc, onSnapshot,
-  serverTimestamp, query, orderBy,
+  query, orderBy,
 } from 'firebase/firestore';
 import { db, getDeviceId } from './firebase.js';
 import { storage } from '../utils/storage.js';
@@ -30,6 +30,8 @@ export function useCollection(collectionName, storageKey) {
   useEffect(() => { itemsRef.current = items; }, [items]);
 
   // ── Real-time Firestore subscription ──────────────────────────────────────
+  // userId and collectionName are stable for the life of the app (single user,
+  // fixed collection names), so [] is intentional — but listed here for clarity.
   useEffect(() => {
     const q = query(colRef, orderBy('createdAt', 'desc'));
     const unsub = onSnapshot(
@@ -49,7 +51,7 @@ export function useCollection(collectionName, storageKey) {
       },
     );
     return () => unsub();
-  }, []); // eslint-disable-line react-hooks/exhaustive-deps
+  }, [userId, collectionName]); // eslint-disable-line react-hooks/exhaustive-deps
 
   // ── CRUD ──────────────────────────────────────────────────────────────────
   const add = useCallback(async (data) => {
@@ -66,7 +68,7 @@ export function useCollection(collectionName, storageKey) {
       storage.set(storageKey, next);
       return tempId;
     }
-  }, []); // eslint-disable-line react-hooks/exhaustive-deps
+  }, [collectionName, storageKey]); // eslint-disable-line react-hooks/exhaustive-deps
 
   const update = useCallback(async (id, updates) => {
     const payload = { ...updates, updatedAt: Date.now() };
@@ -80,7 +82,7 @@ export function useCollection(collectionName, storageKey) {
       console.warn(`[Firestore/${collectionName}/update]`, err.message);
       // Already updated locally — will sync when back online
     }
-  }, [userId, collectionName, storageKey]); // eslint-disable-line react-hooks/exhaustive-deps
+  }, [userId, collectionName, storageKey]);
 
   const remove = useCallback(async (id) => {
     // Optimistic remove

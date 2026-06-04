@@ -5,8 +5,16 @@ import { storage, STORAGE_KEYS } from '../utils/storage.js';
 import { ProgressBar, MilestoneLine } from '../components/Charts.jsx';
 import { getXP, addXP, getRank, TIER_CONFIG, TIER_THRESHOLDS, XP_SOURCES } from '../utils/xp.js';
 
-// ─── Sub-tabs ─────────────────────────────────────────────────────────────────
-const TABS = ['Overview', 'Streaks', 'Goals', 'Stats', 'Rank'];
+// ─── Glass label ─────────────────────────────────────────────────────────────
+function GlassLabel({ children }) {
+  return (
+    <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: 14 }}>
+      <div style={{ width: 18, height: 1, background: 'rgba(255,255,255,0.25)', flexShrink: 0 }} />
+      <span style={{ fontSize: 10, fontWeight: 700, letterSpacing: '0.18em', textTransform: 'uppercase', color: 'rgba(255,255,255,0.35)', fontFamily: 'ui-monospace,monospace', whiteSpace: 'nowrap' }}>{children}</span>
+      <div style={{ flex: 1, height: 1, background: 'linear-gradient(90deg,rgba(255,255,255,0.1),transparent)' }} />
+    </div>
+  );
+}
 
 // ─── SVG Badge System ─────────────────────────────────────────────────────────
 // All badges use a 100x100 viewBox centred at (50, 50)
@@ -725,18 +733,16 @@ function RankView({ xp, rank }) {
   );
 }
 
-// ─── Main Progress Tab ────────────────────────────────────────────────────────
+// ─── Main Progress Tab — single scrollable page ───────────────────────────────
 export default function Progress() {
-  const [activeTab, setActiveTab] = useState('Overview');
-  const [xp,        setXp]        = useState(() => getXP());
+  const [xp, setXp] = useState(() => getXP());
 
   const habits   = useCollection('habits',         STORAGE_KEYS.HABITS);
   const goals    = useCollection('goals',           STORAGE_KEYS.GOALS);
   const moodLogs = useCollection('mood_logs',       STORAGE_KEYS.MOOD_LOGS);
   const sessions = useCollection('focus_sessions',  STORAGE_KEYS.FOCUS_SESSIONS);
 
-  // Refresh XP on tab focus
-  useEffect(() => { setXp(getXP()); }, [activeTab]);
+  useEffect(() => { setXp(getXP()); }, []);
 
   const rank = getRank(xp.total || 0);
 
@@ -745,55 +751,52 @@ export default function Progress() {
     setTimeout(() => setXp(getXP()), 100);
   }
 
-  const panels = {
-    Overview: (
-      <Overview
-        xp={xp} rank={rank}
-        habits={habits.items}
-        moodLogs={moodLogs.items}
-        onLogMood={handleLogMood}
-        focusSessions={sessions.items}
-      />
-    ),
-    Streaks: <Streaks habits={habits.items} />,
-    Goals: (
-      <Goals
-        goals={goals.items}
-        onAdd={data => goals.add({ ...data, createdAt: new Date().toISOString() })}
-        onUpdate={goals.update}
-        onRemove={goals.remove}
-      />
-    ),
-    Stats: <Stats focusSessions={sessions.items} habits={habits.items} />,
-    Rank:  <RankView xp={xp} rank={rank} />,
-  };
-
   return (
-    <div style={{ display: 'flex', flexDirection: 'column', height: '100%', overflow: 'hidden' }}>
-      {/* Sub-tab bar */}
-      <div style={{
-        display: 'flex', gap: 0,
-        borderBottom: '0.5px solid var(--card-border)',
-        padding: '0 20px',
-        flexShrink: 0,
-      }}>
-        {TABS.map(t => (
-          <button key={t} onClick={() => setActiveTab(t)} style={{
-            padding: '12px 18px', border: 'none', cursor: 'pointer', fontSize: 13,
-            background: 'transparent',
-            color: activeTab === t ? 'var(--accent)' : 'var(--text-secondary)',
-            borderBottom: activeTab === t ? '2px solid var(--accent)' : '2px solid transparent',
-            transition: 'all 0.15s ease',
-            marginBottom: -1,
-          }}>
-            {t}
-          </button>
-        ))}
-      </div>
+    <div style={{ display: 'flex', height: '100%', overflow: 'hidden' }}>
+      {/* Main scroll area */}
+      <div style={{ flex: 1, overflowY: 'auto', padding: '24px 28px', display: 'flex', flexDirection: 'column', gap: 32 }}>
 
-      {/* Content */}
-      <div style={{ flex: 1, overflowY: 'auto', padding: '20px 24px' }}>
-        {panels[activeTab]}
+        {/* ── RANK ── */}
+        <section>
+          <GlassLabel>Rank</GlassLabel>
+          <RankView xp={xp} rank={rank} />
+        </section>
+
+        {/* ── OVERVIEW — mood + today's stats ── */}
+        <section>
+          <GlassLabel>Today</GlassLabel>
+          <Overview
+            xp={xp} rank={rank}
+            habits={habits.items}
+            moodLogs={moodLogs.items}
+            onLogMood={handleLogMood}
+            focusSessions={sessions.items}
+          />
+        </section>
+
+        {/* ── STREAKS ── */}
+        <section>
+          <GlassLabel>Streaks</GlassLabel>
+          <Streaks habits={habits.items} />
+        </section>
+
+        {/* ── GOALS ── */}
+        <section>
+          <GlassLabel>Goals</GlassLabel>
+          <Goals
+            goals={goals.items}
+            onAdd={data => goals.add({ ...data, createdAt: new Date().toISOString() })}
+            onUpdate={goals.update}
+            onRemove={goals.remove}
+          />
+        </section>
+
+        {/* ── STATS ── */}
+        <section>
+          <GlassLabel>Stats</GlassLabel>
+          <Stats focusSessions={sessions.items} habits={habits.items} />
+        </section>
+
       </div>
     </div>
   );

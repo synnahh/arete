@@ -289,7 +289,7 @@ function OverloadCoach({ workoutLogs, addWorkoutLog, exercises, saveExercises, s
 
   return (
     <Section title="Progressive Overload">
-      <div style={{ display: 'flex', flexDirection: 'column', gap: 16, maxWidth: 560 }}>
+      <div style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
         <GlassCard>
           <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
             <ToggleGroup label="GYM" options={[{value:'home',label:'Home Gym'},{value:'commercial',label:'Commercial Gym'}]} value={gym} onChange={setGym} />
@@ -437,7 +437,7 @@ function ExercisesLibrary({ exercises, saveExercises }) {
         ))}
       </div>
 
-      <div style={{ display: 'flex', flexDirection: 'column', gap: 6, maxWidth: 620 }}>
+      <div style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
         {filtered.map(ex => (
           <div key={ex.id} style={{
             display: 'flex', alignItems: 'center', gap: 12, padding: '10px 14px', borderRadius: 10,
@@ -508,7 +508,7 @@ function SplitPlanner({ programs, addProgram, updateProgram, removeProgram, exer
 
   return (
     <Section title="Split Planner">
-      <div style={{ maxWidth: 680 }}>
+      <div style={{ maxWidth: '100%' }}>
 
         {/* Program selector */}
         <GlassCard style={{ marginBottom: 20 }}>

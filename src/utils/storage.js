@@ -10,8 +10,19 @@ export const storage = {
     } catch { return fallback; }
   },
   set(key, value) {
-    try { localStorage.setItem(PREFIX + key, JSON.stringify(value)); }
-    catch (e) { console.error('storage.set failed:', e); }
+    try {
+      localStorage.setItem(PREFIX + key, JSON.stringify(value));
+    } catch (e) {
+      // Notify user when storage is full so they know data isn't being saved
+      if (e?.name === 'QuotaExceededError' || e?.code === 22) {
+        console.error('[VALERIE] localStorage full — data not saved:', key);
+        window.dispatchEvent(new CustomEvent('valerie:toast', {
+          detail: { message: 'Storage full — some data could not be saved. Clear old data in Settings.', type: 'error' },
+        }));
+      } else {
+        console.error('storage.set failed:', e);
+      }
+    }
   },
   remove(key) {
     localStorage.removeItem(PREFIX + key);
@@ -38,7 +49,6 @@ export const STORAGE_KEYS = {
   HEALTH:       'health',
   ESSENTIALS:   'essentials',
   LISTS:        'lists',
-  VAULT:        'vault_meta',       // vault metadata only — never store plaintext passwords
   PROGRESS:     'progress',
   MOOD:         'mood',
   // Session 4 additions

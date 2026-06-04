@@ -1,0 +1,39 @@
+# ─── Netlify Build Configuration — VALERIE PWA ───────────────────────────────
+
+[build]
+  command = "npm run build:pwa"
+  publish = "dist"
+
+[build.environment]
+  NODE_VERSION = "20"
+  BUILD_TARGET = "pwa"
+
+# ─── Redirect all routes to index.html (SPA) ─────────────────────────────────
+[[redirects]]
+  from   = "/*"
+  to     = "/index.html"
+  status = 200
+
+# ─── Security headers ─────────────────────────────────────────────────────────
+[[headers]]
+  for = "/*"
+  [headers.values]
+    X-Frame-Options           = "DENY"
+    X-Content-Type-Options    = "nosniff"
+    Referrer-Policy           = "strict-origin-when-cross-origin"
+    Permissions-Policy        = "microphone=(self), geolocation=(self), camera=()"
+    Strict-Transport-Security = "max-age=31536000; includeSubDomains"
+    Content-Security-Policy   = "default-src 'self'; script-src 'self' 'unsafe-inline' https://accounts.google.com; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src 'self' https://fonts.gstatic.com; connect-src 'self' https://api.anthropic.com https://api.elevenlabs.io https://finnhub.io https://*.firebaseio.com https://*.googleapis.com https://api.open-meteo.com https://o4511466574577664.ingest.us.sentry.io wss://*.firebaseio.com; img-src 'self' data: blob: https://*; media-src 'self' blob:; frame-ancestors 'none';"
+
+# ─── Cache static assets forever (Vite content-hashes all filenames) ─────────
+[[headers]]
+  for = "/assets/*"
+  [headers.values]
+    Cache-Control = "public, max-age=31536000, immutable"
+
+# ─── Service worker — never cache so updates propagate instantly ──────────────
+[[headers]]
+  for = "/sw.js"
+  [headers.values]
+    Cache-Control          = "no-cache"
+    Service-Worker-Allowed = "/"

@@ -1,24 +1,22 @@
 // ─── Firestore Security Rules — VALERIE ───────────────────────────────────────
 //
-// Deploy with:  firebase deploy --only firestore:rules
+// Deploy with:  firebase deploy --only firestore:rules --project jarvis-14052
 //
-// Strategy: all data lives under users/{deviceId}/* — only documents whose
-// path matches the caller's stored device ID are readable/writable.
-//
-// Since VALERIE does not use Firebase Auth, we use the device ID approach.
-// This is sufficient for a single-user personal app with no public access.
-//
-// To harden further in future: enable Firebase Anonymous Auth and lock rules
-// to request.auth.uid instead of the path-based device ID.
+// Auth strategy: Firebase Anonymous Authentication required.
+// The device ID is the Firestore path key (NOT the Firebase UID) — this keeps
+// all existing user data intact across upgrades. Firebase Auth just provides
+// the request.auth token so unauthenticated public access is blocked.
 
 rules_version = '2';
 service cloud.firestore {
   match /databases/{database}/documents {
 
-    // ── All user data: only accessible via the correct device ID path ──────────
     match /users/{userId}/{document=**} {
       allow read, write: if
-        // Request must supply the device ID that matches the document path
+        // Must be signed in via Anonymous Auth — blocks all public access
+        request.auth != null &&
+
+        // Path key must be a non-trivial string
         userId != null &&
         userId.size() > 8 &&
 
@@ -26,13 +24,16 @@ service cloud.firestore {
         (request.method == 'get' || request.method == 'list' ||
          request.resource.data.size() < 51200) &&
 
-        // Block suspiciously large string fields (XSS / injection guard)
+        // Block large string fields (XSS / injection guard)
         (!('title'       in request.resource.data) || request.resource.data.title.size()       < 2000) &&
         (!('content'     in request.resource.data) || request.resource.data.content.size()     < 10000) &&
-        (!('description' in request.resource.data) || request.resource.data.description.size() < 2000);
+        (!('description' in request.resource.data) || request.resource.data.description.size() < 2000) &&
+
+        // Belt-and-suspenders: block secret key fields at DB level
+        (!('apiKey'      in request.resource.data)) &&
+        (!('finnhubKey'  in request.resource.data));
     }
 
-    // ── Deny everything else ───────────────────────────────────────────────────
     match /{document=**} {
       allow read, write: if false;
     }
