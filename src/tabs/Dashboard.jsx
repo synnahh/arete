@@ -25,6 +25,7 @@ import { useCollection } from '../supabase/useCollection.js';
 import { useDocument }   from '../supabase/useDocument.js';
 import { getNowPlaying, pausePlayback, resumePlayback, skipNext, skipPrev, isSpotifyConnected } from '../utils/spotify.js';
 import { DEFAULT_OVERLOAD_EXERCISES } from './Workout.jsx';
+import { toLocalDateKey } from '../utils/localDate.js';
 
 // ── Shared card (used only for the secondary, below-the-fold section) ──────
 function Card({ children, style = {}, className = '' }) {
@@ -678,7 +679,7 @@ function DonutChart({ segments, size = 110, thickness = 18, emptyColor = 'var(--
 }
 
 function ProductivityWidget({ onTabChange }) {
-  const today = new Date().toISOString().split('T')[0];
+  const today = toLocalDateKey(new Date());
 
   const tasks    = storage.get(STORAGE_KEYS.TASKS, []);
   const todayTasks = tasks;

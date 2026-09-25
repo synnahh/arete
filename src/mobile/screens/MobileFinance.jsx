@@ -3,6 +3,7 @@ import { useState, useMemo } from 'react';
 import { useCollection } from '../../supabase/useCollection.js';
 import { STORAGE_KEYS }  from '../../utils/storage.js';
 import { currencySymbol as currencySym, DEFAULT_CURRENCY } from '../../utils/currency.js';
+import { toLocalDateKey } from '../../utils/localDate.js';
 
 const CATEGORIES = [
   { id: 'food',          label: 'Food & Drink',   colour: '#f4a642', icon: '🍔' },
@@ -41,13 +42,13 @@ const SUB_CATS = [
 
 const SUB_TABS = ['Overview', 'Spending', 'Subscriptions', 'Purchases'];
 
-function todayISO() { return new Date().toISOString().split('T')[0]; }
+function todayISO() { return toLocalDateKey(new Date()); }
 
 function fmtDate(str) {
   if (!str) return '';
-  const today = new Date().toISOString().split('T')[0];
+  const today = toLocalDateKey(new Date());
   const yesterday = new Date(); yesterday.setDate(yesterday.getDate() - 1);
-  const yStr = yesterday.toISOString().split('T')[0];
+  const yStr = toLocalDateKey(yesterday);
   if (str === today) return 'Today';
   if (str === yStr)  return 'Yesterday';
   return new Date(str).toLocaleDateString('en-GB', { day: 'numeric', month: 'short' });
@@ -125,7 +126,7 @@ function OverviewTab({ transactions, subscriptions, purchases, settings }) {
   const sym = currencySym(currency);
   const fmt = n => `${sym}${Math.abs(n || 0).toFixed(2)}`;
 
-  const thisMonth = new Date().toISOString().slice(0, 7);
+  const thisMonth = toLocalDateKey(new Date()).slice(0, 7);
   const monthTx   = transactions.filter(t => (t.date || '').startsWith(thisMonth));
   const income    = monthTx.filter(t => t.category === 'income').reduce((s, t) => s + (t.amount || 0), 0);
   const expenses  = monthTx.filter(t => t.category !== 'income').reduce((s, t) => s + (t.amount || 0), 0);
@@ -316,7 +317,7 @@ function SpendingTab({ transactions, settings, onAdd }) {
   const now   = new Date();
   const filt  = transactions.filter(t => {
     if (!t.date) return false;
-    if (period === 'month') return t.date.startsWith(now.toISOString().slice(0, 7));
+    if (period === 'month') return t.date.startsWith(toLocalDateKey(now).slice(0, 7));
     if (period === 'week') {
       const d = new Date(t.date);
       const diff = Math.floor((now - d) / 86400000);

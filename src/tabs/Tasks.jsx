@@ -5,6 +5,7 @@
 import { useState, useCallback, useMemo } from 'react';
 import { useCollection } from '../supabase/useCollection.js';
 import { STORAGE_KEYS }  from '../utils/storage.js';
+import { toLocalDateKey } from '../utils/localDate.js';
 
 //  Helpers 
 const PRIORITY = {
@@ -22,7 +23,7 @@ const REPEATS = {
 };
 
 function todayStr() {
-  return new Date().toISOString().slice(0, 10);
+  return toLocalDateKey(new Date());
 }
 
 // Advance a YYYY-MM-DD date by a repeat cycle using UTC math (no timezone drift).

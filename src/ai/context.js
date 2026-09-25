@@ -4,6 +4,8 @@
 // current knowledge  never generically.
 
 import { storage, STORAGE_KEYS } from '../utils/storage.js';
+import { toLocalDateKey, isOnLocalDay } from '../utils/localDate.js';
+import { normalizeTasks } from '../domain/tasks.js';
 
 //  buildContext 
 /**
@@ -26,18 +28,21 @@ export function buildContext({ activeTab = 'dashboard' } = {}) {
 
   //  Tasks 
   try {
-    const tasks = storage.get(STORAGE_KEYS.TASKS, []);
-    const open  = tasks.filter(t => !t.completed);
+    // normalizeTasks reads both the UI shape {text, done} and the legacy
+    // assistant shape {title, completed}. Previously this read only the legacy
+    // shape, so done UI tasks counted as pending and were named "undefined".
+    const tasks = normalizeTasks(storage.get(STORAGE_KEYS.TASKS, []));
+    const open  = tasks.filter(t => !t.done);
     const high  = open.filter(t => t.priority === 'high');
     lines.push(`Pending tasks: ${open.length} total${high.length ? `, ${high.length} high priority` : ''}`);
-    const preview = open.slice(0, 4).map(t => `"${t.title}"${t.priority === 'high' ? ' [HIGH]' : ''}`).join(', ');
+    const preview = open.slice(0, 4).map(t => `"${t.text}"${t.priority === 'high' ? ' [HIGH]' : ''}`).join(', ');
     if (preview) lines.push(`   ${preview}`);
   } catch {}
 
   //  Calendar events 
   try {
     const events   = storage.get(STORAGE_KEYS.EVENTS, []);
-    const today    = now.toISOString().split('T')[0];
+    const today    = toLocalDateKey(now);
     const upcoming = events
       .filter(e => e.date >= today)
       .sort((a, b) => a.date.localeCompare(b.date))
@@ -66,8 +71,8 @@ export function buildContext({ activeTab = 'dashboard' } = {}) {
   //  Focus session 
   try {
     const sessions = storage.get(STORAGE_KEYS.FOCUS_SESSIONS, []);
-    const todayStr = now.toISOString().split('T')[0];
-    const todaySessions = sessions.filter(s => s.completedAt && s.completedAt.startsWith(todayStr));
+    const todayStr = toLocalDateKey(now);
+    const todaySessions = sessions.filter(s => isOnLocalDay(s.date || s.completedAt, todayStr));
     if (todaySessions.length) {
       lines.push(`Focus sessions today: ${todaySessions.length} completed`);
     }
@@ -77,7 +82,7 @@ export function buildContext({ activeTab = 'dashboard' } = {}) {
   // Water is stored as a flat array of {date, amount, ...} objects by useCollection
   try {
     const waterLogs = storage.get(STORAGE_KEYS.WATER, []);
-    const today     = now.toISOString().split('T')[0];
+    const today     = toLocalDateKey(now);
     // Handle both flat-array format (current) and legacy {daily:[]} object format
     const logs = Array.isArray(waterLogs) ? waterLogs : (waterLogs?.daily || []);
     const todayML = logs
@@ -105,7 +110,7 @@ export function buildContext({ activeTab = 'dashboard' } = {}) {
   //  Mood 
   try {
     const moodLogs = storage.get(STORAGE_KEYS.MOOD_LOGS, []);
-    const todayStr = now.toISOString().split('T')[0];
+    const todayStr = toLocalDateKey(now);
     const todayMood = moodLogs.find(m => m.date === todayStr);
     if (todayMood) {
       lines.push(`Mood today: ${todayMood.emoji || ''} (${todayMood.value || ''}/10)`);

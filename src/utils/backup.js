@@ -1,3 +1,4 @@
+import { toLocalDateKey } from './localDate.js';
 // backup.js — one-tap full backup & restore of all VALERIE data.
 // Exports every localStorage key (the local mirror of all Supabase collections +
 // settings) to a JSON file, and restores from one. A safety net for a daily-driver
@@ -20,7 +21,7 @@ export function exportBackup() {
   const url  = URL.createObjectURL(blob);
   const a    = document.createElement('a');
   a.href = url;
-  a.download = `valerie-backup-${new Date().toISOString().slice(0, 10)}.json`;
+  a.download = `valerie-backup-${toLocalDateKey(new Date())}.json`;
   document.body.appendChild(a);
   a.click();
   a.remove();

@@ -6,6 +6,7 @@ import { AnimatedNumber, Stagger } from '../components/Motion.jsx';
 import { fetchWatchlist }    from '../utils/finnhub.js';
 import { isGmailConnected, fetchEmailsSince, applyRulesToEmails, DEFAULT_EMAIL_RULES } from '../utils/gmail.js';
 import { currencySymbol, DEFAULT_CURRENCY } from '../utils/currency.js';
+import { toLocalDateKey } from '../utils/localDate.js';
 
 //  Categories 
 const CATEGORIES = [
@@ -53,7 +54,7 @@ const TABS = [
 ];
 
 //  Utilities 
-const todayISO = () => new Date().toISOString().split('T')[0];
+const todayISO = () => toLocalDateKey(new Date());
 
 function getCurrencySymbol(code) {
   return currencySymbol(code);
@@ -68,7 +69,7 @@ function fmtDate(str) {
   const today = new Date();
   if (str === todayISO()) return 'Today';
   const yesterday = new Date(today); yesterday.setDate(yesterday.getDate() - 1);
-  if (str === yesterday.toISOString().split('T')[0]) return 'Yesterday';
+  if (str === toLocalDateKey(yesterday)) return 'Yesterday';
   return d.toLocaleDateString('en-GB', { day: 'numeric', month: 'short' });
 }
 function daysUntil(dateStr) {
@@ -301,8 +302,8 @@ function StockTicker({ watchlist, finnhubKey }) {
 //  Overview panel 
 function Overview({ transactions, goals, subscriptions, purchases = [], fmt, currencySymbol }) {
   const now        = new Date();
-  const monthStart = new Date(now.getFullYear(), now.getMonth(), 1).toISOString().split('T')[0];
-  const yearStart  = new Date(now.getFullYear(), 0, 1).toISOString().split('T')[0];
+  const monthStart = toLocalDateKey(new Date(now.getFullYear(), now.getMonth(), 1));
+  const yearStart  = toLocalDateKey(new Date(now.getFullYear(), 0, 1));
   const thisMonth  = transactions.filter(t => t.date >= monthStart);
 
   const income   = thisMonth.filter(t => t.type === 'income').reduce((s, t) => s + (t.amount || 0), 0);
@@ -324,7 +325,7 @@ function Overview({ transactions, goals, subscriptions, purchases = [], fmt, cur
     let running = 0;
     return Array.from({ length: 30 }, (_, i) => {
       const d = new Date(now); d.setDate(d.getDate() - (29 - i));
-      const key = d.toISOString().split('T')[0];
+      const key = toLocalDateKey(d);
       const dayNet = transactions
         .filter(t => t.date === key)
         .reduce((s, t) => s + (t.type === 'income' ? t.amount : -t.amount), 0);
@@ -518,11 +519,11 @@ function Spending({ transactions, onAdd, fmt }) {
   let periodStart;
   if (period === 'week') {
     const d = new Date(now); d.setDate(d.getDate() - 6);
-    periodStart = d.toISOString().split('T')[0];
+    periodStart = toLocalDateKey(d);
   } else if (period === 'month') {
-    periodStart = new Date(now.getFullYear(), now.getMonth(), 1).toISOString().split('T')[0];
+    periodStart = toLocalDateKey(new Date(now.getFullYear(), now.getMonth(), 1));
   } else {
-    periodStart = new Date(now.getFullYear(), 0, 1).toISOString().split('T')[0];
+    periodStart = toLocalDateKey(new Date(now.getFullYear(), 0, 1));
   }
 
   const filtered    = transactions.filter(t => (t.date || '') >= periodStart);
@@ -1142,9 +1143,9 @@ function Budgets({ transactions, fmt }) {
   }
 
   const now = new Date();
-  const monthStart     = new Date(now.getFullYear(), now.getMonth(), 1).toISOString().split('T')[0];
-  const lastMonthStart = new Date(now.getFullYear(), now.getMonth() - 1, 1).toISOString().split('T')[0];
-  const lastMonthEnd   = new Date(now.getFullYear(), now.getMonth(), 0).toISOString().split('T')[0];
+  const monthStart     = toLocalDateKey(new Date(now.getFullYear(), now.getMonth(), 1));
+  const lastMonthStart = toLocalDateKey(new Date(now.getFullYear(), now.getMonth() - 1, 1));
+  const lastMonthEnd   = toLocalDateKey(new Date(now.getFullYear(), now.getMonth(), 0));
 
   // Per-category spend, this month + last month
   const spend = useMemo(() => {

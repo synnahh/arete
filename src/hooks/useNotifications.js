@@ -8,8 +8,9 @@ import { storage, STORAGE_KEYS } from '../utils/storage.js';
 import { isTauri } from '../utils/platform.js';
 import { sendSMS } from '../utils/twilio.js';
 import { currencySymbol as currencySym } from '../utils/currency.js';
+import { toLocalDateKey } from '../utils/localDate.js';
 
-const todayStr    = () => new Date().toISOString().slice(0, 10);
+const todayStr    = () => toLocalDateKey(new Date());
 const currentHour = () => new Date().getHours();
 const FLAG_KEY    = 'valerie_notif_flags';
 
@@ -174,7 +175,7 @@ export function useNotifications(settings) {
         const sleep = tabCfg(s, 'sleep');
         if (sleep.enabled !== false && !fired('sleep') && hour >= (sleep.hour ?? 8)) {
           const sleepData = storage.get(STORAGE_KEYS.SLEEP, []);
-          const logged    = sleepData.some(l => l.date === today || l.date === new Date(Date.now() - 86400000).toISOString().slice(0, 10));
+          const logged    = sleepData.some(l => l.date === today || l.date === toLocalDateKey(new Date(Date.now() - 86400000)));
           if (!logged) {
             setFlag('sleep');
             const msg = sleep.message || 'VALERIE: Log last night\'s sleep to track your recovery.';
@@ -222,7 +223,7 @@ export function useNotifications(settings) {
         const finance = tabCfg(s, 'finance');
         if (finance.enabled !== false && !fired('finance_week') && hour === (finance.hour ?? 9) && new Date().getDay() === 1) {
           const transactions = storage.get(STORAGE_KEYS.TRANSACTIONS, []);
-          const cutoff       = new Date(Date.now() - 7 * 86400000).toISOString().slice(0, 10);
+          const cutoff       = toLocalDateKey(new Date(Date.now() - 7 * 86400000));
           const weekSpend    = transactions
             .filter(t => t.type === 'expense' && t.date >= cutoff)
             .reduce((a, t) => a + (t.amount || 0), 0);

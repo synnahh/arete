@@ -3,12 +3,13 @@
 // the same localStorage collections TodayView.jsx already gathers from.
 
 import { storage, STORAGE_KEYS } from './storage.js';
+import { toLocalDateKey } from './localDate.js';
 
 const arr = (k) => { const v = storage.get(k, []); return Array.isArray(v) ? v : (v?.daily || []); };
 const dateStr = (offsetDays) => {
   const d = new Date();
   d.setDate(d.getDate() + offsetDays);
-  return d.toISOString().slice(0, 10);
+  return toLocalDateKey(d);
 };
 
 // Tabs that always stay visible in Focus Mode regardless of attention data.

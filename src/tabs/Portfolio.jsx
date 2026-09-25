@@ -6,6 +6,7 @@ import { useState, useEffect, useRef, useMemo, useCallback } from 'react';
 import { useCollection } from '../supabase/useCollection.js';
 import { STORAGE_KEYS }  from '../utils/storage.js';
 import { DEFAULT_CURRENCY } from '../utils/currency.js';
+import { toLocalDateKey } from '../utils/localDate.js';
 
 // ─── Shared primitives ────────────────────────────────────────────────────────
 
@@ -246,7 +247,7 @@ function Overview({ enriched, fmt, currency }) {
 function Holdings({ holdings, enriched, onAdd, onRemove, onUpdate, fmt, loading }) {
   const [showForm, setShowForm] = useState(false);
   const [form, setForm] = useState({
-    symbol: '', shares: '', avgCost: '', buyDate: new Date().toISOString().split('T')[0], note: '',
+    symbol: '', shares: '', avgCost: '', buyDate: toLocalDateKey(new Date()), note: '',
   });
 
   function handleAdd() {
@@ -255,7 +256,7 @@ function Holdings({ holdings, enriched, onAdd, onRemove, onUpdate, fmt, loading 
     const cost   = parseFloat(form.avgCost);
     if (!sym || !shares || !cost || shares <= 0 || cost <= 0) return;
     onAdd({ symbol: sym, shares, avgCost: cost, buyDate: form.buyDate, note: form.note.trim() });
-    setForm({ symbol: '', shares: '', avgCost: '', buyDate: new Date().toISOString().split('T')[0], note: '' });
+    setForm({ symbol: '', shares: '', avgCost: '', buyDate: toLocalDateKey(new Date()), note: '' });
     setShowForm(false);
   }
 

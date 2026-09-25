@@ -14,6 +14,7 @@ import { STORAGE_KEYS }  from '../utils/storage.js';
 import { askClaudeRaw }  from '../utils/claudeRaw.js';
 import { RingChart, ProgressBar, BarChart } from '../components/Charts.jsx';
 import { useHealthData } from '../hooks/useHealthData.js';
+import { toLocalDateKey } from '../utils/localDate.js';
 
 // Map LM strength fields → Workout-tab exercise names, so LM can show your real lifts.
 const LIFT_MAP = { bench: 'Bench Press', squat: 'Barbell Squat', deadlift: 'Deadlift', pullups: 'Pull-ups', dips: 'Dips' };
@@ -103,7 +104,7 @@ function Tag({ label, colour }) {
 const MUTE = 'rgba(255,255,255,0.3)';
 const FIELD_LABEL = { fontSize: 10, fontWeight: 700, letterSpacing: '0.08em', color: MUTE,
   fontFamily: 'ui-monospace,monospace', marginBottom: 4, textTransform: 'uppercase' };
-const today = () => new Date().toISOString().split('T')[0];
+const today = () => toLocalDateKey(new Date());
 
 function EmptyState({ children }) {
   return (
@@ -1199,7 +1200,7 @@ function DailyTracker({ daily }) {
     const byDate = Object.fromEntries(daily.items.map(d => [d.date, d.pct || 0]));
     let s = 0; const d = new Date();
     for (;;) {
-      const key = d.toISOString().split('T')[0];
+      const key = toLocalDateKey(d);
       if ((byDate[key] || 0) >= 80) { s++; d.setDate(d.getDate() - 1); }
       else if (key === today() && s === 0) { d.setDate(d.getDate() - 1); } // allow today incomplete
       else break;

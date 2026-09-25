@@ -6,10 +6,11 @@
 import { useState, useEffect, useRef } from 'react';
 import { supabase, getUserId, getUserIdSync } from '../supabase/supabase.js';
 import { storage, STORAGE_KEYS } from '../utils/storage.js';
+import { toLocalDateKey } from '../utils/localDate.js';
 
-const TODAY = () => new Date().toISOString().slice(0, 10);
+const TODAY = () => toLocalDateKey(new Date());
 const YESTERDAY = () => {
-  const d = new Date(); d.setDate(d.getDate() - 1); return d.toISOString().slice(0, 10);
+  const d = new Date(); d.setDate(d.getDate() - 1); return toLocalDateKey(d);
 };
 
 function clamp(v, lo = 0, hi = 100) { return Math.max(lo, Math.min(hi, v)); }

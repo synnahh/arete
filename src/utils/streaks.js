@@ -6,8 +6,9 @@
 // stays in sync automatically.
 
 import { storage, STORAGE_KEYS } from './storage.js';
+import { toLocalDateKey } from './localDate.js';
 
-const isoDay = (d) => d.toISOString().split('T')[0];
+const isoDay = (d) => toLocalDateKey(d);
 
 // Pull a YYYY-MM-DD from whatever date-ish field a row carries.
 function rowDate(x) {

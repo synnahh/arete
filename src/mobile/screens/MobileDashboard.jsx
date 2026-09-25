@@ -9,6 +9,7 @@ import { askOllama }      from '../../ai/ollama.js';
 import { getXP, getRank, TIER_CONFIG, TIER_THRESHOLDS } from '../../utils/xp.js';
 import { DEFAULT_OVERLOAD_EXERCISES } from '../../tabs/Workout.jsx';
 import DayRing from '../../components/DayRing.jsx';
+import { toLocalDateKey } from '../../utils/localDate.js';
 
 //  Shared components 
 function MCard({ children, style = {}, onClick }) {
@@ -459,7 +460,7 @@ function DonutChart({ segments, size = 88, thickness = 14 }) {
 }
 
 function ProductivityWidget({ onTabChange }) {
-  const today = new Date().toISOString().split('T')[0];
+  const today = toLocalDateKey(new Date());
   const tasks = storage.get(STORAGE_KEYS.TASKS, []);
   const tagMap = {};
   tasks.forEach(t => {

@@ -50,6 +50,7 @@ import { TIER_CONFIG, TIER_THRESHOLDS, XP_SOURCES } from '../utils/xp.js';
 import { ALL_TABS }              from '../components/Sidebar.jsx';
 import { supabase, getUserIdSync, signOut as supabaseSignOut, getAuthUser } from '../supabase/supabase.js';
 import { currencySymbol as currencySym } from '../utils/currency.js';
+import { toLocalDateKey } from '../utils/localDate.js';
 
 //  Sections 
 const SECTIONS = [
@@ -2460,7 +2461,7 @@ export function DataSection() {
     const url  = URL.createObjectURL(blob);
     const a    = document.createElement('a');
     a.href     = url;
-    a.download = `VALERIE_backup_${new Date().toISOString().split('T')[0]}.json`;
+    a.download = `VALERIE_backup_${toLocalDateKey(new Date())}.json`;
     a.click();
     URL.revokeObjectURL(url);
     setExported(true);

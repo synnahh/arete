@@ -4,6 +4,7 @@ import { useState, useEffect, useRef } from 'react';
 import { useCollection } from '../../supabase/useCollection.js';
 import { askClaudeRaw }  from '../../utils/claudeRaw.js';
 import { currencySymbol as currencySym, readCurrency } from '../../utils/currency.js';
+import { toLocalDateKey } from '../../utils/localDate.js';
 
 const FINNHUB_KEY_KEY = 'valerie_finnhub_key';
 
@@ -177,7 +178,7 @@ function Holdings({ holdings, prices, refreshPrices, loading }) {
 
   function add() {
     if (!form.ticker || !form.shares) return;
-    portfolio.add({ ...form, ticker: form.ticker.toUpperCase(), date: new Date().toISOString().split('T')[0], createdAt: new Date().toISOString() });
+    portfolio.add({ ...form, ticker: form.ticker.toUpperCase(), date: toLocalDateKey(new Date()), createdAt: new Date().toISOString() });
     setForm({ ticker:'', shares:'', avgPrice:'', note:'' }); setShowAdd(false);
     setTimeout(refreshPrices, 1000);
   }

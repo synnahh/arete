@@ -4,9 +4,10 @@
 
 import { useState, useEffect } from 'react';
 import { storage, STORAGE_KEYS } from '../utils/storage.js';
+import { toLocalDateKey, isOnLocalDay } from '../utils/localDate.js';
 
 const arr = (k) => { const v = storage.get(k, []); return Array.isArray(v) ? v : (v?.daily || []); };
-const todayStr = () => new Date().toISOString().slice(0, 10);
+const todayStr = () => toLocalDateKey(new Date());
 
 function gather() {
   const t = todayStr();
@@ -29,7 +30,7 @@ function gather() {
   // Momentum
   const streaks = arr(STORAGE_KEYS.HABITS).filter(h => (h.streak || 0) > 0)
     .sort((a, b) => (b.streak || 0) - (a.streak || 0)).slice(0, 3);
-  const focusToday = arr(STORAGE_KEYS.FOCUS_SESSIONS).filter(s => (s.completedAt || s.date || '').startsWith(t)).length;
+  const focusToday = arr(STORAGE_KEYS.FOCUS_SESSIONS).filter(s => isOnLocalDay(s.date || s.completedAt, t)).length;
   const lmToday = arr('valerie_lm_daily').find(d => d.date === t);
 
   return { events, overdue, dueToday, restock, streaks, focusToday, lmPct: lmToday?.pct ?? null };

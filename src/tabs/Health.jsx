@@ -11,9 +11,10 @@ import { useAppleHealth } from '../hooks/useAppleHealth.js';
 import { MICRONUTRIENTS, MICRO_BY_KEY, MICRO_GROUPS, extractMicrosFromOFF, scaleMicros, sumMicros, hasMicros } from '../utils/micronutrients.js';
 import { currencySymbol as currencySym } from '../utils/currency.js';
 import { searchOpenFoodFacts, lookupBarcode, startBarcodeScan } from '../utils/openFoodFacts.js';
+import { toLocalDateKey } from '../utils/localDate.js';
 
 //  Helpers 
-const todayStr = () => new Date().toISOString().slice(0, 10);
+const todayStr = () => toLocalDateKey(new Date());
 const nowStr   = () => new Date().toLocaleTimeString('en-AU', { hour: '2-digit', minute: '2-digit', hour12: false });
 
 const Icon = ({ d, size = 15 }) => (
@@ -2244,7 +2245,7 @@ function MealPlanner({ settings, savedMeals = [], addSavedMeal, bodyMetrics = []
     await txn.add({
       type: 'expense', amount: parseFloat(weeklyTotal.toFixed(2)),
       description: 'Weekly meal plan — food & ingredients',
-      category: 'food', date: new Date().toISOString().slice(0, 10),
+      category: 'food', date: toLocalDateKey(new Date()),
       createdAt: new Date().toISOString(),
     });
     setLogged(true);
@@ -2475,7 +2476,7 @@ function circadianScore(hour, sleepEfficiency = 75) {
 }
 
 function PeakStateSection({ stimLogs, sleepData, peakState }) {
-  const today = new Date().toISOString().slice(0, 10);
+  const today = toLocalDateKey(new Date());
 
   const lastSleep = useMemo(() =>
     [...(sleepData || [])].sort((a,b)=>(b.date??'').localeCompare(a.date??''))[0],

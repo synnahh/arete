@@ -4,6 +4,7 @@ import { useCollection } from '../supabase/useCollection.js';
 import { STORAGE_KEYS }  from '../utils/storage.js';
 import { addXP }         from '../utils/xp.js';
 import { storage }       from '../utils/storage.js';
+import { toLocalDateKey } from '../utils/localDate.js';
 
 //  Ambient sound engine (AudioContext  fully offline) 
 function createNoiseBuffer(audioCtx, type) {
@@ -176,7 +177,7 @@ export default function Focus({ settings }) {
   const intervalRef  = useRef(null);
 
   // Today's completed sessions
-  const today = new Date().toISOString().split('T')[0];
+  const today = toLocalDateKey(new Date());
   const todaySessions = sessions.items.filter(s => s.date === today);
 
   // Duration change resets remaining

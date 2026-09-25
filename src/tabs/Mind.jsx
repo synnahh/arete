@@ -6,6 +6,7 @@ import { useCollection } from '../supabase/useCollection.js';
 import { useDocument }   from '../supabase/useDocument.js';
 import { STORAGE_KEYS }  from '../utils/storage.js';
 import { askClaudeRaw }  from '../utils/claudeRaw.js';
+import { toLocalDateKey } from '../utils/localDate.js';
 
 // ─── Shared design tokens ─────────────────────────────────────────────────────
 
@@ -522,7 +523,7 @@ function LifeLedger({ fmt }) {
 
   function handleAdd() {
     const store = formType === 'decision' ? decisions : formType === 'failure' ? failures : wisdom;
-    const base  = { date: new Date().toISOString().split('T')[0], type: formType, createdAt: new Date().toISOString() };
+    const base  = { date: toLocalDateKey(new Date()), type: formType, createdAt: new Date().toISOString() };
     store.add({ ...base, ...form });
     setForm({}); setShowForm(false);
   }
@@ -714,7 +715,7 @@ function Beliefs() {
 
   function handleAdd() {
     if (!form.title.trim()) return;
-    beliefs.add({ ...form, confidence: parseInt(form.confidence) || 7, date: new Date().toISOString().split('T')[0], history: [], createdAt: new Date().toISOString() });
+    beliefs.add({ ...form, confidence: parseInt(form.confidence) || 7, date: toLocalDateKey(new Date()), history: [], createdAt: new Date().toISOString() });
     setForm({ title: '', context: '', confidence: '7', tags: '' });
     setShowForm(false);
   }
@@ -818,7 +819,7 @@ function MemoryVault() {
 
   function handleAdd() {
     if (!form.title.trim()) return;
-    memories.add({ ...form, date: new Date().toISOString().split('T')[0], createdAt: new Date().toISOString() });
+    memories.add({ ...form, date: toLocalDateKey(new Date()), createdAt: new Date().toISOString() });
     setForm({ title: '', content: '', type: 'note', tags: '' });
     setShowForm(false);
   }

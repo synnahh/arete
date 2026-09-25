@@ -7,6 +7,7 @@ import { useState, useEffect, useRef } from 'react';
 import { platformFetch as fetch } from '../utils/platform.js';
 import { storage, STORAGE_KEYS } from '../utils/storage.js';
 import { speakText, cancelCurrentSpeech } from '../ai/speech.js';
+import { toLocalDateKey, isOnLocalDay } from '../utils/localDate.js';
 
 // Fetch current weather from Open-Meteo (free, no API key, uses coordinates)
 async function fetchWeather(lat, lon) {
@@ -42,7 +43,7 @@ function greetingByTime() {
   return 'Good evening';
 }
 
-function todayISO() { return new Date().toISOString().split('T')[0]; }
+function todayISO() { return toLocalDateKey(new Date()); }
 
 export default function DailyBrief({ ai, settings, onClose }) {
   const [visible,  setVisible]  = useState(false);
@@ -132,7 +133,7 @@ export default function DailyBrief({ ai, settings, onClose }) {
     //  Today's calendar events 
     if (briefConfig.calendar !== false) {
       const events = storage.get(STORAGE_KEYS.EVENTS, []);
-      const todayEvents = events.filter(e => e.date === todayISO() || e.start?.startsWith(todayISO()));
+      const todayEvents = events.filter(e => e.date === todayISO() || isOnLocalDay(e.start, todayISO()));
       if (todayEvents.length > 0) {
         parts.push(`Calendar: ${todayEvents.length} event${todayEvents.length > 1 ? 's' : ''} today  ${todayEvents.map(e => e.title || e.summary).join(', ')}.`);
       } else {

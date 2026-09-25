@@ -11,8 +11,9 @@
 import { useMemo } from 'react';
 import { useCollection } from '../supabase/useCollection.js';
 import { STORAGE_KEYS } from '../utils/storage.js';
+import { toLocalDateKey } from '../utils/localDate.js';
 
-const todayStr = () => new Date().toISOString().slice(0, 10);
+const todayStr = () => toLocalDateKey(new Date());
 const byDateDesc = (a, b) => (b.date ?? '').localeCompare(a.date ?? '');
 
 export function useHealthData() {

@@ -7,9 +7,10 @@ import { useCollection } from '../supabase/useCollection.js';
 import { useDocument }   from '../supabase/useDocument.js';
 import { STORAGE_KEYS }  from '../utils/storage.js';
 import { anteriorData, posteriorData } from '../components/bodyModel.js';
+import { toLocalDateKey } from '../utils/localDate.js';
 
 //  Helpers 
-const todayStr = () => new Date().toISOString().slice(0, 10);
+const todayStr = () => toLocalDateKey(new Date());
 const DAY_KEYS = ['sun', 'mon', 'tue', 'wed', 'thu', 'fri', 'sat'];
 const DAY_LABELS = { sun: 'Sun', mon: 'Mon', tue: 'Tue', wed: 'Wed', thu: 'Thu', fri: 'Fri', sat: 'Sat' };
 const SPLIT_COLOURS = { push: '#e25d7a', pull: '#4a9eff', legs: '#f4a642', rest: 'rgba(255,255,255,0.2)', custom: '#9b5de5' };

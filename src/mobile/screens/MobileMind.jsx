@@ -5,6 +5,7 @@ import { useState, useRef, useEffect } from 'react';
 import { useCollection } from '../../supabase/useCollection.js';
 import { useDocument }   from '../../supabase/useDocument.js';
 import { askClaudeRaw }  from '../../utils/claudeRaw.js';
+import { toLocalDateKey } from '../../utils/localDate.js';
 
 // ─── Shared primitives ────────────────────────────────────────────────────────
 
@@ -253,7 +254,7 @@ function Ledger() {
 
   function add() {
     const store = type === 'decision' ? decisions : type === 'failure' ? failures : wisdom;
-    store.add({ ...form, type, date: new Date().toISOString().split('T')[0], createdAt: new Date().toISOString() });
+    store.add({ ...form, type, date: toLocalDateKey(new Date()), createdAt: new Date().toISOString() });
     setForm({}); setShowAdd(false);
   }
 
@@ -331,7 +332,7 @@ function Beliefs() {
 
   function add() {
     if (!form.title.trim()) return;
-    beliefs.add({ ...form, confidence: parseInt(form.confidence)||7, date: new Date().toISOString().split('T')[0], createdAt: new Date().toISOString() });
+    beliefs.add({ ...form, confidence: parseInt(form.confidence)||7, date: toLocalDateKey(new Date()), createdAt: new Date().toISOString() });
     setForm({ title:'', context:'', confidence:'7', tags:'' }); setShowAdd(false);
   }
 
@@ -406,7 +407,7 @@ function Vault() {
 
   function add() {
     if (!form.title.trim()) return;
-    memories.add({ ...form, date: new Date().toISOString().split('T')[0], createdAt: new Date().toISOString() });
+    memories.add({ ...form, date: toLocalDateKey(new Date()), createdAt: new Date().toISOString() });
     setForm({ title:'', content:'', type:'note', tags:'' }); setShowAdd(false);
   }
 

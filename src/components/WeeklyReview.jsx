@@ -6,6 +6,7 @@
 import { useState, useEffect } from 'react';
 import { storage, STORAGE_KEYS } from '../utils/storage.js';
 import { askClaudeRaw } from '../utils/claudeRaw.js';
+import { toLocalDateKey } from '../utils/localDate.js';
 
 const arr = (k) => { const v = storage.get(k, []); return Array.isArray(v) ? v : (v?.daily || []); };
 const within = (dateStr, days) => { if (!dateStr) return false; const d = new Date(dateStr); return (Date.now() - d) <= days * 86400000 && d <= new Date(); };
@@ -13,7 +14,7 @@ const avg = (nums) => nums.length ? (nums.reduce((a, b) => a + b, 0) / nums.leng
 
 function buildWeeklyContext() {
   const L = [];
-  const t = new Date().toISOString().slice(0, 10);
+  const t = toLocalDateKey(new Date());
 
   // Tasks
   try {

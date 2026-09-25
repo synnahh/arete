@@ -5,6 +5,8 @@
 import { supabase, getUserId, getUserIdSync } from '../supabase/supabase.js';
 import { storage, STORAGE_KEYS } from '../utils/storage.js';
 import { sanitizePayload } from '../utils/sanitize.js';
+import { toLocalDateKey } from '../utils/localDate.js';
+import { makeTask } from '../domain/tasks.js';
 
 //  Callback registry 
 // Components register handlers here so VALERIE can trigger UI actions.
@@ -98,15 +100,12 @@ async function _executeOne(action) {
 
     //  Add task 
     case 'addTask': {
-      if (!action.title?.trim()) break;
-      const payload = {
-        title:       action.title.trim(),
-        description: action.description || '',
-        priority:    ['high','medium','low'].includes(action.priority) ? action.priority : 'medium',
-        completed:   false,
-        createdAt:   Date.now(),
-        updatedAt:   Date.now(),
-      };
+      // The model is prompted with `title`; accept `text` too. Write the
+      // canonical {text, done} shape the Tasks UI reads (was {title, completed},
+      // which rendered as blank rows).
+      const text = (action.text ?? action.title ?? '').trim();
+      if (!text) break;
+      const payload = makeTask({ text, priority: action.priority, description: action.description || '' });
       await insertActionRow('tasks', STORAGE_KEYS.TASKS, sanitizePayload(payload));
       break;
     }
@@ -128,7 +127,7 @@ async function _executeOne(action) {
     //  Log mood 
     case 'logMood': {
       const value = Math.min(10, Math.max(1, Number(action.value) || 5));
-      const today = new Date().toISOString().split('T')[0];
+      const today = toLocalDateKey(new Date());
       const entry = { date: today, value, note: action.note || '', ts: Date.now() };
       const existing = storage.get(STORAGE_KEYS.MOOD_LOGS, []);
       const updated  = [entry, ...existing.filter(m => m.date !== today)].slice(0, 90);
@@ -149,7 +148,7 @@ async function _executeOne(action) {
     //  Log water 
     case 'logWater': {
       const amount = Math.min(2000, Math.max(50, Number(action.amount) || 250));
-      const today  = new Date().toISOString().split('T')[0];
+      const today  = toLocalDateKey(new Date());
       // Water is stored as a flat array by useCollection  keep that format consistent
       const existing = storage.get(STORAGE_KEYS.WATER, []);
       const logs = Array.isArray(existing) ? existing : (existing?.daily || []);
@@ -178,7 +177,7 @@ async function _executeOne(action) {
       const amount = Math.abs(Number(action.amount));
       if (!amount) break;
       const type = action.transactionType === 'expense' ? 'expense' : 'income';
-      const today = new Date().toISOString().split('T')[0];
+      const today = toLocalDateKey(new Date());
       const payload = {
         type,
         amount,
@@ -196,7 +195,7 @@ async function _executeOne(action) {
     case 'logCalories': {
       const cal   = Math.abs(Number(action.calories));
       if (!cal) break;
-      const today = new Date().toISOString().split('T')[0];
+      const today = toLocalDateKey(new Date());
       const health = storage.get(STORAGE_KEYS.HEALTH, {});
       const logs   = health.calorieLogs || [];
       const entry  = { date: today, calories: cal, meal: action.meal || '', ts: Date.now() };
@@ -209,7 +208,7 @@ async function _executeOne(action) {
     case 'logSleep': {
       const hours = Number(action.hours);
       if (!hours) break;
-      const today = new Date().toISOString().split('T')[0];
+      const today = toLocalDateKey(new Date());
       const sleep = storage.get(STORAGE_KEYS.SLEEP, { logs: [] });
       sleep.logs  = [{ date: today, hours, quality: action.quality || null, ts: Date.now() },
                      ...(sleep.logs || []).filter(l => l.date !== today)].slice(0, 90);
@@ -277,7 +276,7 @@ async function _executeOne(action) {
       // current date in her context before emitting the action.
       const date = /^\d{4}-\d{2}-\d{2}$/.test(action.date || '')
         ? action.date
-        : new Date().toISOString().split('T')[0];
+        : toLocalDateKey(new Date());
       const norm = (t) => {
         if (!t) return '';
         const m = String(t).match(/^(\d{1,2}):?(\d{2})$/); // accepts "1230" or "12:30"
@@ -305,7 +304,7 @@ async function _executeOne(action) {
       const payload = {
         name:         action.name.trim(),
         category:     validCats.includes(action.category) ? action.category : 'other',
-        boughtDate:   /^\d{4}-\d{2}-\d{2}$/.test(action.boughtDate || '') ? action.boughtDate : new Date().toISOString().split('T')[0],
+        boughtDate:   /^\d{4}-\d{2}-\d{2}$/.test(action.boughtDate || '') ? action.boughtDate : toLocalDateKey(new Date()),
         lifespanDays: Number.isFinite(Number(action.lifespanDays)) && action.lifespanDays ? parseInt(action.lifespanDays) : null,
         price:        Number.isFinite(Number(action.price)) && action.price ? parseFloat(action.price) : null,
         notes:        action.notes?.trim() || null,

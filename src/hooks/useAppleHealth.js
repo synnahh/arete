@@ -4,8 +4,9 @@
 
 import { useState, useEffect } from 'react';
 import { supabase } from '../supabase/supabase.js';
+import { toLocalDateKey } from '../utils/localDate.js';
 
-const todayStr = () => new Date().toISOString().slice(0, 10);
+const todayStr = () => toLocalDateKey(new Date());
 
 function parseDoc(data) {
   if (!data) return null;

@@ -4,6 +4,7 @@
 import { useState, useEffect, useCallback, useMemo, useRef } from 'react';
 import { useCollection } from '../supabase/useCollection.js';
 import { STORAGE_KEYS, storage } from '../utils/storage.js';
+import { toLocalDateKey } from '../utils/localDate.js';
 
 const GCAL_CLIENT_ID = import.meta.env.VITE_GOOGLE_CLIENT_ID;
 const GCAL_SCOPE     = 'https://www.googleapis.com/auth/calendar';
@@ -26,8 +27,8 @@ const MicIcon   = () => <Icon d="M12 1a3 3 0 00-3 3v8a3 3 0 006 0V4a3 3 0 00-3-3
 const EVENT_COLOURS = ['#4a9eff', '#4caf7d', '#f4a642', '#e55a5a', '#9b5de5', '#00c9a7', '#f7b731'];
 
 //  Date helpers 
-function todayStr()    { return new Date().toISOString().slice(0, 10); }
-function tomorrowStr() { const d = new Date(); d.setDate(d.getDate() + 1); return d.toISOString().slice(0, 10); }
+function todayStr()    { return toLocalDateKey(new Date()); }
+function tomorrowStr() { const d = new Date(); d.setDate(d.getDate() + 1); return toLocalDateKey(d); }
 
 function formatEventDate(dateStr) {
   const today    = todayStr();
@@ -455,7 +456,7 @@ function DayPlannerBlock({ block, style }) {
 }
 
 function DayPlanner({ ai, allEvents, settings, peakState, onAddEvents }) {
-  const [selectedDate, setSelectedDate] = useState(() => new Date().toISOString().slice(0, 10));
+  const [selectedDate, setSelectedDate] = useState(() => toLocalDateKey(new Date()));
   const [blocks,       setBlocks]       = useState([]);
   const [loading,      setLoading]      = useState(false);
   const [error,        setError]        = useState('');
@@ -513,8 +514,8 @@ function DayPlanner({ ai, allEvents, settings, peakState, onAddEvents }) {
   }, [blocks]);
 
   const dateLabel = useMemo(() => {
-    const today = new Date().toISOString().slice(0, 10);
-    const tom   = new Date(Date.now() + 86400000).toISOString().slice(0, 10);
+    const today = toLocalDateKey(new Date());
+    const tom   = toLocalDateKey(new Date(Date.now() + 86400000));
     if (selectedDate === today) return 'Today';
     if (selectedDate === tom)   return 'Tomorrow';
     return new Date(selectedDate + 'T00:00:00').toLocaleDateString('en-AU', { weekday: 'long', day: 'numeric', month: 'long' });

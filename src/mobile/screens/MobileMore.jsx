@@ -5,6 +5,7 @@ import { useCollection } from '../../supabase/useCollection.js';
 import { haptics }       from '../utils/haptics.js';
 import MobileWorkout     from './MobileWorkout.jsx';
 import MobileLM          from './MobileLM.jsx';
+import { toLocalDateKey } from '../../utils/localDate.js';
 
 //  Shared card 
 function MCard({ children, style = {}, onClick }) {
@@ -225,7 +226,7 @@ const BRICKS = [
 
 //  Quick stats strip 
 function QuickStats() {
-  const today = new Date().toISOString().split('T')[0];
+  const today = toLocalDateKey(new Date());
   const tasks = storage.get(STORAGE_KEYS.TASKS, []);
   const pending = tasks.filter(t => !t.done).length;
   const done    = tasks.filter(t =>  t.done).length;

@@ -6,6 +6,7 @@ import { useState, useRef, useEffect, useCallback } from 'react';
 import VaIerieOrb from '../components/VaIerieOrb.jsx';
 import { storage, STORAGE_KEYS } from '../utils/storage.js';
 import { MIC_DISABLED } from '../ai/useAI.js';
+import { toLocalDateKey } from '../utils/localDate.js';
 
 //  Icons 
 const MicIcon = ({ active }) => (
@@ -234,7 +235,7 @@ export default function Assistant({ settings, ai }) {
     const url  = URL.createObjectURL(blob);
     const a    = document.createElement('a');
     a.href     = url;
-    a.download = `VALERIE_${new Date().toISOString().split('T')[0]}.txt`;
+    a.download = `VALERIE_${toLocalDateKey(new Date())}.txt`;
     a.click();
     URL.revokeObjectURL(url);
   }, [ai?.messages]);

@@ -3,6 +3,7 @@ import { useState } from 'react';
 import { useCollection } from '../supabase/useCollection.js';
 import { STORAGE_KEYS }  from '../utils/storage.js';
 import { insertRow, deleteRow } from '../utils/quickWrite.js';
+import { toLocalDateKey } from '../utils/localDate.js';
 
 //  Categories 
 const CATEGORIES = [
@@ -33,7 +34,7 @@ function getStatus(days) {
 const STATUS_COLOUR = { green: '#4caf7d', amber: '#f4a642', red: '#e55a5a', unknown: '#555' };
 const STATUS_LABEL  = { green: 'Stocked', amber: 'Low',    red: 'Due now', unknown: '' };
 
-const todayISO = () => new Date().toISOString().split('T')[0];
+const todayISO = () => toLocalDateKey(new Date());
 
 //  Shared styles 
 const INPUT = {

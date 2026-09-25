@@ -3,8 +3,9 @@
 //   { id, icon, text, tab, severity }  severity: 'info' | 'warn' | 'alert'
 
 import { storage, STORAGE_KEYS } from '../utils/storage.js';
+import { toLocalDateKey } from '../utils/localDate.js';
 
-const dayKey = (d) => d.toISOString().slice(0, 10);
+const dayKey = (d) => toLocalDateKey(d);
 const today  = () => dayKey(new Date());
 const arr    = (k) => { const v = storage.get(k, []); return Array.isArray(v) ? v : (v?.daily || []); };
 

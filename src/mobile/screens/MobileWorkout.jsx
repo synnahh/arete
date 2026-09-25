@@ -9,6 +9,7 @@ import {
   DEFAULT_SPLITS,
   computeProgression,
 } from '../../tabs/Workout.jsx';
+import { toLocalDateKey } from '../../utils/localDate.js';
 
 const DAY_KEYS   = ['sun','mon','tue','wed','thu','fri','sat'];
 const SPLIT_COLOURS = { push:'#e25d7a', pull:'#4a9eff', legs:'#f4a642', rest:'rgba(255,255,255,0.18)', custom:'#9b5de5' };
@@ -67,7 +68,7 @@ function ExerciseRow({ ex, workoutLogs, onLog, todayLog }) {
     setSaving(true);
     haptics.success();
     const w = ex.bodyweight ? 0 : (weight ?? prog.nextWeight);
-    await onLog({ exerciseName: ex.name, topSet: { weight: w, reps }, date: new Date().toISOString().split('T')[0] });
+    await onLog({ exerciseName: ex.name, topSet: { weight: w, reps }, date: toLocalDateKey(new Date()) });
     setSaving(false);
     setExpanded(false);
   }
@@ -186,7 +187,7 @@ function ExerciseRow({ ex, workoutLogs, onLog, todayLog }) {
 
 //  Main 
 export default function MobileWorkout() {
-  const today    = new Date().toISOString().split('T')[0];
+  const today    = toLocalDateKey(new Date());
   const todayKey = DAY_KEYS[new Date().getDay()];
 
   const { items: programs    = [] }                  = useCollection('programs',      STORAGE_KEYS.PROGRAMS);

@@ -6,6 +6,7 @@ import { ProgressBar, MilestoneLine } from '../components/Charts.jsx';
 import { getXP, addXP, getRank, awardActivityXP, TIER_CONFIG, TIER_THRESHOLDS, XP_SOURCES } from '../utils/xp.js';
 import { computeStreaks } from '../utils/streaks.js';
 import { AnimatedNumber } from '../components/Motion.jsx';
+import { toLocalDateKey, isOnLocalDay } from '../utils/localDate.js';
 
 //  Glass label 
 function GlassLabel({ children }) {
@@ -201,7 +202,7 @@ function TierTrack({ currentTier, currentSubRank }) {
 const MOODS = ['😞','😔','😐','🙂','😊','😄','🤩'];
 
 function MoodCheckin({ moodLogs, onLog }) {
-  const todayStr = new Date().toISOString().split('T')[0];
+  const todayStr = toLocalDateKey(new Date());
   const todayLog = moodLogs.find(m => m.date === todayStr);
   const [selected, setSelected] = useState(null);
   const [note, setNote]         = useState('');
@@ -270,7 +271,7 @@ function MoodCheckin({ moodLogs, onLog }) {
 
 //  Overview sub-tab 
 function Overview({ xp, rank, habits, moodLogs, onLogMood, focusSessions }) {
-  const today     = new Date().toISOString().split('T')[0];
+  const today     = toLocalDateKey(new Date());
   const todayFoc  = focusSessions.filter(s => s.date === today).length;
   const recentXP  = xp.log?.slice(0, 5) || [];
 
@@ -317,7 +318,7 @@ function Overview({ xp, rank, habits, moodLogs, onLogMood, focusSessions }) {
         {[
   ['Focus sessions', todayFoc, '⏱️'],
   ['Habits done', habits.filter(h => h.lastCompleted === today).length, '✅'],
-  ['XP today', xp.log?.filter(e => e.date?.startsWith(today)).reduce((s,e) => s + e.amount, 0) || 0, '⚡'],
+  ['XP today', xp.log?.filter(e => isOnLocalDay(e.date, today)).reduce((s,e) => s + e.amount, 0) || 0, '⚡'],
         ].map(([label, val, icon]) => (
           <div key={label} style={{
             flex: 1, minWidth: 100,
@@ -401,7 +402,7 @@ function MomentumCard({ streaks }) {
 
 //  Streaks sub-tab
 function Streaks({ habits, streaks }) {
-  const today   = new Date().toISOString().split('T')[0];
+  const today   = toLocalDateKey(new Date());
   const sorted  = [...habits].sort((a, b) => (b.streak || 0) - (a.streak || 0));
 
   return (
@@ -593,8 +594,8 @@ function Stats({ focusSessions, habits }) {
 
   const last7 = Array.from({ length: 7 }, (_, i) => {
     const d = new Date(now); d.setDate(d.getDate() - (6 - i));
-    const key = d.toISOString().split('T')[0];
-    const dayXP = (xp.log || []).filter(e => e.date?.startsWith(key)).reduce((s, e) => s + e.amount, 0);
+    const key = toLocalDateKey(d);
+    const dayXP = (xp.log || []).filter(e => isOnLocalDay(e.date, key)).reduce((s, e) => s + e.amount, 0);
     const daySessions = focusSessions.filter(s => s.date === key).length;
     return { date: key, xp: dayXP, sessions: daySessions,
       label: d.toLocaleDateString('en-GB', { weekday: 'short' }) };

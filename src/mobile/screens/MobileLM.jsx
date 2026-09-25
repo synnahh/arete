@@ -10,6 +10,7 @@ import { askClaudeRaw }  from '../../utils/claudeRaw.js';
 import { haptics }       from '../utils/haptics.js';
 import { useHealthData } from '../../hooks/useHealthData.js';
 import { STORAGE_KEYS }  from '../../utils/storage.js';
+import { toLocalDateKey } from '../../utils/localDate.js';
 
 const LIFT_MAP = { bench: 'Bench Press', squat: 'Barbell Squat', deadlift: 'Deadlift', pullups: 'Pull-ups', dips: 'Dips' };
 function latestLifts(items = []) {
@@ -48,7 +49,7 @@ const BTN_GHOST = { padding: '9px 16px', borderRadius: 10, cursor: 'pointer',
 const LABEL = { fontSize: 10, fontWeight: 700, letterSpacing: '0.08em', color: 'rgba(255,255,255,0.3)',
   fontFamily: 'ui-monospace,monospace', marginBottom: 6, textTransform: 'uppercase' };
 const MUTE = 'rgba(255,255,255,0.3)';
-const today = () => new Date().toISOString().split('T')[0];
+const today = () => toLocalDateKey(new Date());
 
 function Spinner() {
   return (
@@ -248,7 +249,7 @@ function DailyTracker({ daily }) {
     const byDate = Object.fromEntries(daily.items.map(d => [d.date, d.pct || 0]));
     let s = 0; const d = new Date();
     for (;;) {
-      const key = d.toISOString().split('T')[0];
+      const key = toLocalDateKey(d);
       if ((byDate[key] || 0) >= 80) { s++; d.setDate(d.getDate()-1); }
       else if (key === today() && s === 0) { d.setDate(d.getDate()-1); }
       else break;

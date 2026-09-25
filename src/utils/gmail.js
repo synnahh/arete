@@ -2,6 +2,7 @@
 // Uses Gmail API with readonly scope. Token stored in Supabase user_meta.
 
 import { supabase, getUserId } from '../supabase/supabase.js';
+import { toLocalDateKey } from './localDate.js';
 
 const GMAIL_SCOPES = 'https://www.googleapis.com/auth/gmail.readonly';
 const TOKEN_KEY    = 'valerie_gmail_token';
@@ -194,7 +195,7 @@ export function applyRulesToEmails(messages, rules = DEFAULT_EMAIL_RULES) {
             messageId:   msg.id,
             subject:     getHeader(msg, 'Subject'),
             from:        getHeader(msg, 'From'),
-            date:        date ? new Date(date).toISOString().split('T')[0] : new Date().toISOString().split('T')[0],
+            date:        date ? toLocalDateKey(new Date(date)) : toLocalDateKey(new Date()),
             ruleLabel:   rule.label,
             type:        rule.type,
             category:    rule.category,

@@ -4,6 +4,7 @@ import { useCollection } from '../../supabase/useCollection.js';
 import { STORAGE_KEYS }  from '../../utils/storage.js';
 import { searchOpenFoodFacts, lookupBarcode, startBarcodeScan } from '../../utils/openFoodFacts.js';
 import { scaleMicros } from '../../utils/micronutrients.js';
+import { toLocalDateKey } from '../../utils/localDate.js';
 
 const nowStr = () => new Date().toLocaleTimeString('en-AU', { hour: '2-digit', minute: '2-digit', hour12: false });
 
@@ -769,7 +770,7 @@ function BodyTab({ today }) {
 //  Main 
 export default function MobileHealth({ settings }) {
   const [sub, setSub] = useState('Overview');
-  const today = new Date().toISOString().split('T')[0];
+  const today = toLocalDateKey(new Date());
 
   return (
     <div style={{ padding: '16px', paddingTop: 20, display: 'flex', flexDirection: 'column', gap: 0 }}>
