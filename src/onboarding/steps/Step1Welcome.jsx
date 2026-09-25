@@ -1,4 +1,4 @@
-// Step 1 — Welcome screen with VALERIE logo
+// Step 1  Welcome screen with VALERIE logo
 
 export default function Step1Welcome({ next }) {
   return (
@@ -24,13 +24,13 @@ export default function Step1Welcome({ next }) {
           Welcome.
         </h1>
         <p style={{ fontSize: 15, color: 'var(--text-secondary)', lineHeight: 1.6, maxWidth: 340 }}>
-          I'm <strong>VALERIE</strong> — your personal{' '}
+          I'm <strong>VALERIE</strong>  your personal{' '}
           <em>Vocal Adaptive Layer for Emotional Responsive Intelligent Engine</em>.{' '}
           Let's get you set up. This takes about 2 minutes.
         </p>
       </div>
 
-      <PrimaryButton onClick={next}>Get started →</PrimaryButton>
+      <PrimaryButton onClick={next}>Get started </PrimaryButton>
     </div>
   );
 }

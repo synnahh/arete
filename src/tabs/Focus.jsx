@@ -1,11 +1,11 @@
-// ─── VALERIE — Focus Tab ──────────────────────────────────────────────────────
+//  VALERIE  Focus Tab 
 import { useState, useEffect, useRef, useCallback } from 'react';
-import { useCollection } from '../firebase/useCollection.js';
+import { useCollection } from '../supabase/useCollection.js';
 import { STORAGE_KEYS }  from '../utils/storage.js';
 import { addXP }         from '../utils/xp.js';
 import { storage }       from '../utils/storage.js';
 
-// ─── Ambient sound engine (AudioContext — fully offline) ──────────────────────
+//  Ambient sound engine (AudioContext  fully offline) 
 function createNoiseBuffer(audioCtx, type) {
   const sampleRate = audioCtx.sampleRate;
   const len        = sampleRate * 3; // 3-second loop
@@ -80,16 +80,16 @@ function buildAmbient(audioCtx, type) {
   return { source, gainNode };
 }
 
-// ─── Ambient sounds list ──────────────────────────────────────────────────────
+//  Ambient sounds list 
 const SOUNDS = [
   { id: 'off',      label: 'Off',       icon: '🔇', engine: null      },
   { id: 'white',    label: 'Rain',      icon: '🌧️', engine: 'white'   },
   { id: 'brown',    label: 'Brown',     icon: '🌊', engine: 'brown'   },
   { id: 'pink',     label: 'Forest',    icon: '🌲', engine: 'pink'    },
-  { id: 'binaural', label: 'Focus',     icon: '🎵', engine: 'binaural'},
+  { id: 'binaural', label: 'Focus',     icon: '🎧', engine: 'binaural'},
 ];
 
-// ─── SVG ring timer ───────────────────────────────────────────────────────────
+//  SVG ring timer 
 function RingTimer({ remaining, total, running, size = 260 }) {
   const cx  = size / 2;
   const r   = (size - 22) / 2;
@@ -133,7 +133,7 @@ function RingTimer({ remaining, total, running, size = 260 }) {
   );
 }
 
-// ─── Session dots ─────────────────────────────────────────────────────────────
+//  Session dots 
 function SessionDots({ completed, total = 4 }) {
   const show = Math.max(total, completed);
   return (
@@ -155,7 +155,7 @@ function SessionDots({ completed, total = 4 }) {
   );
 }
 
-// ─── Main Focus Tab ───────────────────────────────────────────────────────────
+//  Main Focus Tab 
 export default function Focus({ settings }) {
   const sessions = useCollection('focus_sessions', STORAGE_KEYS.FOCUS_SESSIONS);
   const tasks    = storage.get(STORAGE_KEYS.TASKS, []);
@@ -378,13 +378,13 @@ export default function Focus({ settings }) {
         <button onClick={handleReset} style={{
           width: 40, height: 40, borderRadius: '50%', border: 'none', cursor: 'pointer',
           background: 'rgba(255,255,255,0.07)', color: 'var(--text-secondary)', fontSize: 16,
-        }} title="Reset">↺</button>
+        }} title="Reset"> </button>
 
         {finished ? (
           <button onClick={handleReset} style={{
             width: 60, height: 60, borderRadius: '50%', border: 'none', cursor: 'pointer',
             background: '#4caf7d', color: '#fff', fontSize: 22,
-          }}>✓</button>
+}}>↺</button>
         ) : (
           <button onClick={running ? handlePause : handleStart} style={{
             width: 60, height: 60, borderRadius: '50%', border: 'none', cursor: 'pointer',
@@ -409,7 +409,7 @@ export default function Focus({ settings }) {
           borderRadius: 12, padding: '12px 24px', textAlign: 'center',
         }}>
           <div style={{ fontSize: 14, color: '#4caf7d', fontWeight: 400 }}>
-            Session complete — +15 XP earned
+            Session complete  +15 XP earned
           </div>
           <div style={{ fontSize: 12, color: 'var(--text-muted)', marginTop: 4 }}>
             {durationMin} minutes of focused work
@@ -434,7 +434,7 @@ export default function Focus({ settings }) {
         </div>
         {running && sound !== 'off' && (
           <div style={{ fontSize: 11, color: 'var(--text-muted)' }}>
-            ♪ Playing — audio generated locally, no files required
+            " Playing  audio generated locally, no files required
           </div>
         )}
       </div>
@@ -444,3 +444,4 @@ export default function Focus({ settings }) {
     </div>
   );
 }
+

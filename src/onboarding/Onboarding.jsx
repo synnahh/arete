@@ -1,62 +1,21 @@
-import { useState, useEffect } from 'react';
+import { useState } from 'react';
 import { storage, STORAGE_KEYS } from '../utils/storage.js';
-import { getGreeting } from '../utils/time.js';
-import { THEMES, applyTheme } from '../styles/themes.js';
-import Step1Welcome       from './steps/Step1Welcome.jsx';
-import Step2Name          from './steps/Step2Name.jsx';
-import Step3AssistantName from './steps/Step3AssistantName.jsx';
-import Step4ApiKey        from './steps/Step4ApiKey.jsx';
-import Step5Voice         from './steps/Step5Voice.jsx';
-import Step6Theme         from './steps/Step6Theme.jsx';
-import Step7Greeting      from './steps/Step7Greeting.jsx';
+import { applyTheme } from '../styles/themes.js';
+import { PrimaryButton } from './steps/Step1Welcome.jsx';
 
-const TOTAL_STEPS = 7;
+applyTheme('obsidian');
 
 export default function Onboarding({ onComplete }) {
-  const [step, setStep]   = useState(1);
-  const [data, setData]   = useState({
-    userName:      '',
-    assistantName: 'VALERIE',
-    apiKey:        '',
-    voice:         null,
-    theme:         'obsidian',
-  });
-  const [animating, setAnimating] = useState(false);
+  const [name,  setName]  = useState('');
+  const [ready, setReady] = useState(false);
 
-  // Apply theme live as user picks it
-  useEffect(() => { applyTheme(data.theme); }, [data.theme]);
-
-  function update(patch) {
-    setData(prev => ({ ...prev, ...patch }));
-  }
-
-  function next() {
-    if (animating || step >= TOTAL_STEPS) return;
-    setAnimating(true);
-    setTimeout(() => { setStep(s => s + 1); setAnimating(false); }, 10);
-  }
-
-  function back() {
-    if (animating || step <= 1) return;
-    setAnimating(true);
-    setTimeout(() => { setStep(s => s - 1); setAnimating(false); }, 10);
-  }
-
-  function finish() {
-    // Save everything to localStorage
-    storage.set(STORAGE_KEYS.USER, { name: data.userName, assistantName: data.assistantName });
-    storage.set(STORAGE_KEYS.SETTINGS, {
-      userName:      data.userName,
-      assistantName: data.assistantName,
-      apiKey:        data.apiKey,
-      voice:         data.voice,
-      theme:         data.theme,
-    });
+  function finish(overrideName) {
+    const userName = (overrideName || name).trim() || 'Sir';
+    storage.set(STORAGE_KEYS.USER,     { name: userName, assistantName: 'VALERIE' });
+    storage.set(STORAGE_KEYS.SETTINGS, { userName, assistantName: 'VALERIE', theme: 'obsidian' });
     storage.set(STORAGE_KEYS.ONBOARDED, true);
-    onComplete(data);
+    onComplete({ userName, assistantName: 'VALERIE', theme: 'obsidian' });
   }
-
-  const stepProps = { data, update, next, back, finish, step, total: TOTAL_STEPS };
 
   return (
     <div style={{
@@ -64,56 +23,65 @@ export default function Onboarding({ onComplete }) {
       background: 'var(--bg-base)',
       display: 'flex', flexDirection: 'column',
       alignItems: 'center', justifyContent: 'center',
-      zIndex: 999,
+      zIndex: 999, padding: '0 24px',
     }}>
-      {/* Progress dots */}
-      {step < TOTAL_STEPS && (
-        <ProgressDots current={step} total={TOTAL_STEPS} />
-      )}
-
-      {/* Step content */}
-      <div key={step} className="slide-in-step" style={{ width: '100%', maxWidth: 480, padding: '0 24px' }}>
-        {step === 1 && <Step1Welcome  {...stepProps} />}
-        {step === 2 && <Step2Name     {...stepProps} />}
-        {step === 3 && <Step3AssistantName {...stepProps} />}
-        {step === 4 && <Step4ApiKey   {...stepProps} />}
-        {step === 5 && <Step5Voice    {...stepProps} />}
-        {step === 6 && <Step6Theme    {...stepProps} />}
-        {step === 7 && <Step7Greeting {...stepProps} />}
-      </div>
-    </div>
-  );
-}
-
-function ProgressDots({ current, total }) {
-  return (
-    <div style={{
-      position: 'absolute', top: 32,
-      display: 'flex', alignItems: 'center', gap: 8,
-    }}>
-      {Array.from({ length: total - 1 }, (_, i) => { // -1 because step 7 is the reveal
-        const idx = i + 1;
-        const done   = idx < current;
-        const active = idx === current;
-        return (
-          <div key={idx} style={{
-            height: 5,
-            width: active ? 22 : 8,
-            borderRadius: 3,
-            background: done || active ? 'var(--accent)' : 'var(--text-muted)',
-            opacity: done ? 0.55 : active ? 1 : 0.3,
-            transition: 'all 0.3s cubic-bezier(0.4, 0, 0.2, 1)',
-          }} />
-        );
-      })}
-
-      {/* Step label */}
-      <span style={{
-        position: 'absolute', right: -72, top: -2,
-        fontSize: 11, color: 'var(--text-muted)', letterSpacing: '0.06em',
+      <div style={{
+        width: '100%', maxWidth: 420,
+        display: 'flex', flexDirection: 'column',
+        alignItems: 'center', gap: 36, textAlign: 'center',
       }}>
-        {current} / {total}
-      </span>
+
+        {/* Logo */}
+        <img src="/assets/valerie-logo.png" alt="VALERIE" style={{
+          width: 100, height: 100, objectFit: 'contain',
+          filter: 'drop-shadow(0 0 24px var(--orb-glow))',
+          animation: 'orb-breathe 3.2s ease-in-out infinite',
+        }} />
+
+        {/* Heading */}
+        <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
+          <h1 style={{ fontSize: 32, fontWeight: 300, letterSpacing: '0.06em', color: 'var(--text-primary)', margin: 0 }}>
+            Welcome.
+          </h1>
+        </div>
+
+        {/* Name input */}
+        <div style={{ width: '100%', display: 'flex', flexDirection: 'column', gap: 8 }}>
+          <p style={{ fontSize: 12, color: 'var(--text-muted)', margin: 0 }}>
+            What should VALERIE call you?
+          </p>
+          <input
+            autoFocus
+            type="text"
+            value={name}
+            onChange={e => { setName(e.target.value); setReady(e.target.value.trim().length > 0); }}
+            onKeyDown={e => { if (e.key === 'Enter' && ready) finish(); }}
+            placeholder="Sir"
+            style={{
+              width: '100%', padding: '13px 18px', borderRadius: 12,
+              border: '0.5px solid var(--input-border)', background: 'var(--input-bg)',
+              color: 'var(--text-primary)', fontSize: 16, fontWeight: 300,
+              outline: 'none', textAlign: 'center', letterSpacing: '0.04em',
+              transition: 'border-color 0.18s ease', boxSizing: 'border-box',
+            }}
+            onFocus={e => { e.target.style.borderColor = 'var(--accent)'; }}
+            onBlur={e => { e.target.style.borderColor = 'var(--input-border)'; }}
+          />
+        </div>
+
+        <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 12, width: '100%' }}>
+          <PrimaryButton onClick={() => finish()} disabled={!ready}>
+            Enter 
+          </PrimaryButton>
+          <button onClick={() => finish('Sir')} style={{
+            background: 'none', border: 'none', cursor: 'pointer',
+            fontSize: 11, color: 'var(--text-muted)', letterSpacing: '0.04em', padding: 0,
+          }}>
+            Skip  call me Sir
+          </button>
+        </div>
+
+      </div>
     </div>
   );
 }

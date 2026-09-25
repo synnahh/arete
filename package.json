@@ -1,7 +1,7 @@
 {
   "name": "valerie-temp",
   "private": true,
-  "version": "0.1.0",
+  "version": "2.3.0",
   "type": "module",
   "scripts": {
     "dev": "vite",
@@ -15,6 +15,7 @@
   },
   "dependencies": {
     "@sentry/react": "^10.56.0",
+    "@supabase/supabase-js": "^2.107.0",
     "@tauri-apps/api": "^2",
     "@tauri-apps/plugin-autostart": "^2.5.1",
     "@tauri-apps/plugin-http": "^2.5.9",

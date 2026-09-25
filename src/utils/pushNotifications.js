@@ -1,30 +1,23 @@
-// ─── pushNotifications.js — Web Push / FCM token management ──────────────────
-// Handles permission requests, FCM token registration, and token storage.
-// Only active on the PWA build — desktop Tauri uses native OS notifications.
+//  pushNotifications.js  Web Push permission + token management 
+// Uses standard Web Push API with VAPID  no Firebase Messaging dependency.
+// Works on iOS Safari PWA (16.4+), Chrome, Firefox, Edge.
 
-import { db, getDeviceId }                     from '../firebase/firebase.js';
-import { doc, setDoc }                          from 'firebase/firestore';
-import { captureError }                         from './sentry.js';
+import { supabase, getUserId } from '../supabase/supabase.js';
+import { captureError }        from './sentry.js';
 
 const VAPID_KEY = import.meta.env.VITE_FIREBASE_VAPID_KEY;
 
 /**
- * Request notification permission and register the FCM token.
+ * Request notification permission.
  * Returns 'granted' | 'denied' | 'unavailable' | 'no-vapid-key'
  */
 export async function requestPushPermission() {
-  // Push not supported in Tauri or old browsers
-  if (!('Notification' in window) || !('serviceWorker' in navigator)) {
-    return 'unavailable';
-  }
-
+  if (!('Notification' in window) || !('serviceWorker' in navigator)) return 'unavailable';
   if (!VAPID_KEY) {
-    console.warn('[Push] VITE_FIREBASE_VAPID_KEY not set — push notifications disabled');
+    console.warn('[Push] VITE_FIREBASE_VAPID_KEY not set  push notifications disabled');
     return 'no-vapid-key';
   }
 
-  // iOS Safari requires the request to come from a user gesture — this
-  // function should be called from a button click handler.
   const permission = await Notification.requestPermission();
   if (permission !== 'granted') return 'denied';
 
@@ -33,36 +26,41 @@ export async function requestPushPermission() {
 }
 
 /**
- * Register (or refresh) the FCM token and persist it to Firestore.
- * Called automatically after permission is granted, and on every app launch
- * when permission is already granted (token can rotate).
+ * Register (or refresh) the push subscription and save to Supabase.
  */
 export async function registerFCMToken() {
   if (!VAPID_KEY || Notification.permission !== 'granted') return null;
 
   try {
-    // Dynamically import so firebase/messaging doesn't bloat the Tauri bundle
-    const { getMessaging, getToken } = await import('firebase/messaging');
-    const { getApp }                 = await import('firebase/app');
+    const swReg = await Promise.race([
+      navigator.serviceWorker.ready,
+      new Promise((_, reject) => setTimeout(() => reject(new Error('SW timeout')), 5000)),
+    ]);
 
-    const messaging = getMessaging(getApp());
-    const swReg     = await navigator.serviceWorker.ready;
+    // Convert VAPID key to Uint8Array
+    const urlBase64ToUint8 = (base64) => {
+      const padding = '='.repeat((4 - base64.length % 4) % 4);
+      const base64Fixed = (base64 + padding).replace(/-/g, '+').replace(/_/g, '/');
+      const raw = atob(base64Fixed);
+      return Uint8Array.from([...raw].map(c => c.charCodeAt(0)));
+    };
 
-    const token = await getToken(messaging, {
-      vapidKey:            VAPID_KEY,
-      serviceWorkerRegistration: swReg,
+    const subscription = await swReg.pushManager.subscribe({
+      userVisibleOnly:      true,
+      applicationServerKey: urlBase64ToUint8(VAPID_KEY),
     });
 
-    if (token) {
-      // Store token in Firestore so server-side or VALERIE-desktop can send pushes
-      const userId = getDeviceId();
-      await setDoc(
-        doc(db, 'users', userId, 'meta', 'push_token'),
-        { token, updatedAt: Date.now(), platform: 'pwa' },
-      ).catch(() => {});
+    if (subscription) {
+      // Store subscription in Supabase
+      const userId = await getUserId();
+      await supabase.from('user_meta').upsert({
+        user_id: userId,
+        key:     'push_token',
+        value:   { subscription: subscription.toJSON(), updatedAt: Date.now(), platform: 'pwa' },
+      }, { onConflict: 'user_id,key' });
     }
 
-    return token;
+    return subscription;
   } catch (err) {
     captureError(err, { source: 'push_token_register' });
     return null;
@@ -79,7 +77,6 @@ export function pushPermissionStatus() {
 
 /**
  * Send a local notification immediately (no server required).
- * Use for in-app triggered alerts when the app is in the foreground.
  */
 export async function showLocalNotification(title, body, { tag, url } = {}) {
   if (Notification.permission !== 'granted') return;

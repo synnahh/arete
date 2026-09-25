@@ -1,7 +1,7 @@
-// ─── MobileWorkout.jsx — Progressive overload workout logger for iOS PWA ──────
+//  MobileWorkout.jsx  Progressive overload workout logger for iOS PWA 
 import { useState, useMemo } from 'react';
-import { useCollection }  from '../../firebase/useCollection.js';
-import { useDocument }    from '../../firebase/useDocument.js';
+import { useCollection }  from '../../supabase/useCollection.js';
+import { useDocument }    from '../../supabase/useDocument.js';
 import { STORAGE_KEYS }   from '../../utils/storage.js';
 import { haptics }        from '../utils/haptics.js';
 import {
@@ -23,7 +23,7 @@ function MCard({ children, style = {} }) {
   );
 }
 
-// ── Reps grid ──────────────────────────────────────────────────────────────────
+//  Reps grid 
 function RepsGrid({ repsMin, repsMax, selected, onSelect }) {
   const options = Array.from({ length: repsMax + 4 - Math.max(1, repsMin - 2) }, (_, i) => Math.max(1, repsMin - 2) + i);
   return (
@@ -46,7 +46,7 @@ function RepsGrid({ repsMin, repsMax, selected, onSelect }) {
   );
 }
 
-// ── Exercise row ───────────────────────────────────────────────────────────────
+//  Exercise row 
 function ExerciseRow({ ex, workoutLogs, onLog, todayLog }) {
   const [expanded, setExpanded] = useState(false);
   const [weight,   setWeight]   = useState(null);
@@ -103,7 +103,7 @@ function ExerciseRow({ ex, workoutLogs, onLog, todayLog }) {
             {ex.name}
           </div>
           <div style={{ fontSize: 11, color: 'var(--text-muted)', marginTop: 2 }}>
-            {ex.bodyweight ? `BW · ${ex.repsMin}–${ex.repsMax} reps` : `${prog.nextWeight}kg · ${ex.repsMin}–${ex.repsMax} reps`}
+            {ex.bodyweight ? `BW · ${ex.repsMin}${ex.repsMax} reps` : `${prog.nextWeight}kg · ${ex.repsMin}${ex.repsMax} reps`}
           </div>
         </div>
 
@@ -176,7 +176,7 @@ function ExerciseRow({ ex, workoutLogs, onLog, todayLog }) {
             WebkitTapHighlightColor: 'transparent', transition: 'all 0.15s ease',
             opacity: saving ? 0.6 : 1,
           }}>
-            {saving ? 'Saving…' : reps !== null ? `Log ${ex.bodyweight ? '' : `${weight ?? prog.nextWeight}kg × `}${reps} reps ✓` : 'Select reps to log'}
+            {saving ? 'Saving…' : reps !== null ? `Log ${ex.bodyweight ? '' : `${weight ?? prog.nextWeight}kg  `}${reps} reps S` : 'Select reps to log'}
           </button>
         </div>
       )}
@@ -184,7 +184,7 @@ function ExerciseRow({ ex, workoutLogs, onLog, todayLog }) {
   );
 }
 
-// ── Main ───────────────────────────────────────────────────────────────────────
+//  Main 
 export default function MobileWorkout() {
   const today    = new Date().toISOString().split('T')[0];
   const todayKey = DAY_KEYS[new Date().getDay()];
@@ -216,7 +216,7 @@ export default function MobileWorkout() {
     await addLog({ ...entry, createdAt: new Date().toISOString() });
   }
 
-  // ── No program ────────────────────────────────────────────────────────────
+  //  No program 
   if (!active) return (
     <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
       <MCard style={{ padding: '20px 18px' }}>
@@ -228,11 +228,11 @@ export default function MobileWorkout() {
     </div>
   );
 
-  // ── Rest day ──────────────────────────────────────────────────────────────
+  //  Rest day 
   if (isRest) return (
     <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
       <MCard style={{ padding: '28px 18px', textAlign: 'center' }}>
-        <div style={{ fontSize: 32, marginBottom: 12 }}>😴</div>
+<div style={{ fontSize: 32, marginBottom: 12 }}>🏋️</div>
         <div style={{ fontSize: 18, fontWeight: 300, color: 'var(--text-primary)', marginBottom: 6 }}>Rest Day</div>
         <div style={{ fontSize: 13, color: 'var(--text-muted)' }}>{active.name} · {active.days?.[todayKey]?.label || 'Recovery'}</div>
       </MCard>
@@ -297,7 +297,7 @@ export default function MobileWorkout() {
       {/* All done state */}
       {doneCount === todayExercises.length && todayExercises.length > 0 && (
         <MCard style={{ padding: '20px 18px', textAlign: 'center' }}>
-          <div style={{ fontSize: 28, marginBottom: 8 }}>🏆</div>
+          <div style={{ fontSize: 28, marginBottom: 8 }}>x </div>
           <div style={{ fontSize: 16, fontWeight: 600, color: '#4caf7d', marginBottom: 4 }}>Session Complete!</div>
           <div style={{ fontSize: 12, color: 'var(--text-muted)' }}>All {todayExercises.length} exercises logged.</div>
         </MCard>
@@ -305,3 +305,5 @@ export default function MobileWorkout() {
     </div>
   );
 }
+
+

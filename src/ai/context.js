@@ -1,15 +1,15 @@
-// ─── context.js — Dynamic live context builder ─────────────────────────────────
+//  context.js  Dynamic live context builder 
 // Before every AI request, we assemble a real-time snapshot of the app's state.
 // This is injected into VALERIE's system prompt so she always speaks from
-// current knowledge — never generically.
+// current knowledge  never generically.
 
 import { storage, STORAGE_KEYS } from '../utils/storage.js';
 
-// ─── buildContext ──────────────────────────────────────────────────────────────
+//  buildContext 
 /**
  * Assembles a live context string from localStorage data.
  * @param {object} opts
- * @param {string} [opts.activeTab] — currently visible tab
+ * @param {string} [opts.activeTab]  currently visible tab
  * @returns {string}
  */
 export function buildContext({ activeTab = 'dashboard' } = {}) {
@@ -24,17 +24,17 @@ export function buildContext({ activeTab = 'dashboard' } = {}) {
     '',
   ];
 
-  // ── Tasks ────────────────────────────────────────────────────────────────
+  //  Tasks 
   try {
     const tasks = storage.get(STORAGE_KEYS.TASKS, []);
     const open  = tasks.filter(t => !t.completed);
     const high  = open.filter(t => t.priority === 'high');
     lines.push(`Pending tasks: ${open.length} total${high.length ? `, ${high.length} high priority` : ''}`);
     const preview = open.slice(0, 4).map(t => `"${t.title}"${t.priority === 'high' ? ' [HIGH]' : ''}`).join(', ');
-    if (preview) lines.push(`  → ${preview}`);
+    if (preview) lines.push(`   ${preview}`);
   } catch {}
 
-  // ── Calendar events ───────────────────────────────────────────────────────
+  //  Calendar events 
   try {
     const events   = storage.get(STORAGE_KEYS.EVENTS, []);
     const today    = now.toISOString().split('T')[0];
@@ -49,7 +49,7 @@ export function buildContext({ activeTab = 'dashboard' } = {}) {
     }
   } catch {}
 
-  // ── Habits / streaks ──────────────────────────────────────────────────────
+  //  Habits / streaks 
   try {
     const habits = storage.get(STORAGE_KEYS.HABITS, []);
     if (habits.length) {
@@ -63,7 +63,7 @@ export function buildContext({ activeTab = 'dashboard' } = {}) {
     }
   } catch {}
 
-  // ── Focus session ─────────────────────────────────────────────────────────
+  //  Focus session 
   try {
     const sessions = storage.get(STORAGE_KEYS.FOCUS_SESSIONS, []);
     const todayStr = now.toISOString().split('T')[0];
@@ -73,7 +73,7 @@ export function buildContext({ activeTab = 'dashboard' } = {}) {
     }
   } catch {}
 
-  // ── Health / water ────────────────────────────────────────────────────────
+  //  Health / water 
   // Water is stored as a flat array of {date, amount, ...} objects by useCollection
   try {
     const waterLogs = storage.get(STORAGE_KEYS.WATER, []);
@@ -88,7 +88,7 @@ export function buildContext({ activeTab = 'dashboard' } = {}) {
     }
   } catch {}
 
-  // ── Sleep ─────────────────────────────────────────────────────────────────
+  //  Sleep 
   try {
     const sleepLogs = storage.get(STORAGE_KEYS.SLEEP, []);
     const logs = Array.isArray(sleepLogs) ? sleepLogs : [];
@@ -102,19 +102,19 @@ export function buildContext({ activeTab = 'dashboard' } = {}) {
     }
   } catch {}
 
-  // ── Mood ──────────────────────────────────────────────────────────────────
+  //  Mood 
   try {
     const moodLogs = storage.get(STORAGE_KEYS.MOOD_LOGS, []);
     const todayStr = now.toISOString().split('T')[0];
     const todayMood = moodLogs.find(m => m.date === todayStr);
     if (todayMood) {
-      lines.push(`Mood today: ${todayMood.emoji || ''} (${todayMood.value || '—'}/10)`);
+      lines.push(`Mood today: ${todayMood.emoji || ''} (${todayMood.value || ''}/10)`);
     } else {
       lines.push('Mood today: Not yet logged');
     }
   } catch {}
 
-  // ── XP / rank ─────────────────────────────────────────────────────────────
+  //  XP / rank 
   try {
     const xpData = storage.get('xp', { total: 0 });
     if (xpData.total > 0) {
@@ -122,7 +122,7 @@ export function buildContext({ activeTab = 'dashboard' } = {}) {
     }
   } catch {}
 
-  // ── Finance snapshot ──────────────────────────────────────────────────────
+  //  Finance snapshot 
   try {
     const transactions = storage.get(STORAGE_KEYS.TRANSACTIONS, []);
     const now7 = new Date(Date.now() - 7 * 24 * 60 * 60 * 1000);
@@ -132,6 +132,24 @@ export function buildContext({ activeTab = 'dashboard' } = {}) {
       .reduce((sum, t) => sum + (t.amount || 0), 0);
     if (weekSpend > 0) {
       lines.push(`Spending this week: $${weekSpend.toFixed(2)}`);
+    }
+  } catch {}
+
+  //  Body / physique (from Health body_metrics — also fed by Apple Health)
+  try {
+    const body   = storage.get(STORAGE_KEYS.BODY, []);
+    const latest = [...(Array.isArray(body) ? body : [])].sort((a, b) => (b.date ?? '').localeCompare(a.date ?? ''))[0];
+    if (latest?.weight) lines.push(`Body: ${latest.weight}kg${latest.bodyFat ? `, ${latest.bodyFat}% body fat` : ''}${latest.muscle ? `, ${latest.muscle}kg muscle` : ''}`);
+  } catch {}
+
+  //  Looksmaxxing (LM) phase + appearance scorecard
+  try {
+    const lm = storage.get('valerie_lm_profile', {}) || {};
+    if (lm.phase) lines.push(`Looksmaxxing phase: ${lm.phase}${(lm.priorities || []).length ? ` (priorities: ${lm.priorities.join(', ')})` : ''}`);
+    const sc = lm.scorecard;
+    if (sc) {
+      const vals = Object.values(sc).map(v => v?.current).filter(v => v != null);
+      if (vals.length) lines.push(`Appearance scorecard: ${(vals.reduce((a, b) => a + Number(b), 0) / vals.length).toFixed(1)}/10 avg across ${vals.length} categories`);
     }
   } catch {}
 

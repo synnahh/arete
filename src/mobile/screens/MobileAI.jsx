@@ -1,9 +1,9 @@
-// ─── MobileAI.jsx — VALERIE AI assistant screen for iOS PWA ─────────────────
+//  MobileAI.jsx  VALERIE AI assistant screen for iOS PWA
+//  Text-only on iOS  voice (mic input + TTS output) is disabled on mobile.
 import { useState, useRef, useEffect } from 'react';
-import { speakText, cancelCurrentSpeech } from '../../ai/speech.js';
 import { storage, STORAGE_KEYS }          from '../../utils/storage.js';
 
-// ── Orb ────────────────────────────────────────────────────────────────────────
+//  Orb 
 function Orb({ state }) {
   const color = state === 'listening' ? '#4a9eff'
               : state === 'thinking'  ? '#f59e0b'
@@ -37,7 +37,7 @@ function Orb({ state }) {
   );
 }
 
-// ── Message bubble ─────────────────────────────────────────────────────────────
+//  Message bubble 
 function Bubble({ msg }) {
   const isUser = msg.role === 'user';
   return (
@@ -58,8 +58,7 @@ function Bubble({ msg }) {
 }
 
 export default function MobileAI({ settings, ai, compact = false }) {
-  const [input,    setInput]    = useState('');
-  const [speaking, setSpeaking] = useState(false);
+  const [input, setInput] = useState('');
   const scrollRef = useRef(null);
 
   const orbState = ai?.orbState || 'idle';
@@ -77,13 +76,6 @@ export default function MobileAI({ settings, ai, compact = false }) {
     setInput('');
   }
 
-  function startListening() {
-    if (!ai) return;
-    const SR = window.SpeechRecognition || window.webkitSpeechRecognition;
-    if (!SR) { alert('Speech recognition not supported in this browser.'); return; }
-    ai.startVoiceSession?.();
-  }
-
   return (
     <div style={{ height: '100%', display: 'flex', flexDirection: 'column' }}>
 
@@ -94,7 +86,7 @@ export default function MobileAI({ settings, ai, compact = false }) {
         }
       `}</style>
 
-      {/* Header — hidden when compact (sheet has its own) */}
+      {/* Header  hidden when compact (sheet has its own) */}
       {!compact && (
         <div style={{ padding: '16px 16px 0', paddingTop: 20 }}>
           <div style={{ fontSize: 22, fontWeight: 300, color: 'var(--text-primary)', marginBottom: 4 }}>
@@ -106,13 +98,13 @@ export default function MobileAI({ settings, ai, compact = false }) {
         </div>
       )}
 
-      {/* Orb — shown when no messages or always on top */}
+      {/* Orb  shown when no messages or always on top */}
       {messages.length === 0 && (
         <div style={{ flex: 1, display: 'flex', flexDirection: 'column',
           alignItems: 'center', justifyContent: 'center', gap: 16, padding: '0 32px' }}>
           <Orb state={orbState} />
           <div style={{ textAlign: 'center', fontSize: 14, color: 'var(--text-muted)', lineHeight: 1.6 }}>
-            Tap the mic to speak<br />or type a message below
+            Type a message below<br />to chat with VALERIE
           </div>
         </div>
       )}
@@ -146,27 +138,7 @@ export default function MobileAI({ settings, ai, compact = false }) {
         borderTop: '0.5px solid var(--card-border)',
         display: 'flex', gap: 10, alignItems: 'center',
       }}>
-        {/* Mic button */}
-        <button onClick={startListening} style={{
-          width: 44, height: 44, borderRadius: '50%', flexShrink: 0,
-          background: orbState === 'listening' ? 'var(--accent)' : 'var(--hover-bg)',
-          border: `0.5px solid ${orbState === 'listening' ? 'var(--accent)' : 'var(--card-border)'}`,
-          display: 'flex', alignItems: 'center', justifyContent: 'center',
-          cursor: 'pointer', WebkitTapHighlightColor: 'transparent',
-          transition: 'all 0.2s ease',
-        }}>
-          <svg width="18" height="18" viewBox="0 0 24 24" fill="none">
-            <rect x="9" y="2" width="6" height="11" rx="3"
-              fill={orbState === 'listening' ? 'var(--bg-base)' : 'var(--text-secondary)'} />
-            <path d="M5 10a7 7 0 0014 0" stroke={orbState === 'listening' ? 'var(--bg-base)' : 'var(--text-secondary)'}
-              strokeWidth="1.5" strokeLinecap="round"/>
-            <line x1="12" y1="17" x2="12" y2="21"
-              stroke={orbState === 'listening' ? 'var(--bg-base)' : 'var(--text-secondary)'}
-              strokeWidth="1.5" strokeLinecap="round"/>
-          </svg>
-        </button>
-
-        {/* Text input */}
+        {/* Text input  (mic removed: iOS is text-only) */}
         <input
           value={input}
           onChange={e => setInput(e.target.value)}

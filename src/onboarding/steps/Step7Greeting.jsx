@@ -1,12 +1,12 @@
 import { useEffect, useRef } from 'react';
 import { getGreeting } from '../../utils/time.js';
 
-// VALERIE's exact first words — from the locked spec
+// VALERIE's exact first words  from the locked spec
 function buildGreeting(userName, assistantName) {
   const timeGreeting = getGreeting();
   const name = userName || 'Rob';
   // Exact locked line for Rob; adapts name dynamically
-  return `${timeGreeting}, ${name}. Quite the setup you've put together. I'll admit — I'm impressed. Let's make it worth it.`;
+  return `${timeGreeting}, ${name}. Quite the setup you've put together. I'll admit  I'm impressed. Let's make it worth it.`;
 }
 
 export default function Step7Greeting({ data, finish }) {
@@ -30,7 +30,7 @@ export default function Step7Greeting({ data, finish }) {
     utt.rate  = 0.95;
     utt.pitch = 1.0;
 
-    // Small delay — let the animation settle first
+    // Small delay  let the animation settle first
     setTimeout(() => window.speechSynthesis.speak(utt), 600);
 
     return () => window.speechSynthesis.cancel();
@@ -41,7 +41,7 @@ export default function Step7Greeting({ data, finish }) {
       display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 36,
       textAlign: 'center',
     }}>
-      {/* Orb — warm glow version */}
+      {/* Orb  warm glow version */}
       <div className="fade-in" style={{ animationDelay: '0.1s', opacity: 0 }}>
         <div style={{
           width: 80, height: 80, borderRadius: '50%',
@@ -66,7 +66,7 @@ export default function Step7Greeting({ data, finish }) {
           "{greeting}"
         </p>
         <p style={{ fontSize: 12, color: 'var(--text-muted)' }}>
-          — {data.assistantName}
+           {data.assistantName}
         </p>
       </div>
 
@@ -90,7 +90,7 @@ export default function Step7Greeting({ data, finish }) {
           e.target.style.background = 'var(--active-bg)';
           e.target.style.boxShadow = 'none';
         }}>
-          Enter {data.assistantName} →
+          Enter {data.assistantName} 
         </button>
       </div>
     </div>

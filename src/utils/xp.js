@@ -1,39 +1,54 @@
-// ─── VALERIE XP & Rank System ─────────────────────────────────────────────────
+//  VALERIE XP & Rank System 
 
 import { useState, useEffect } from 'react';
-import { doc, setDoc, onSnapshot } from 'firebase/firestore';
-import { db, getDeviceId } from '../firebase/firebase.js';
+import { supabase, getUserId, getUserIdSync } from '../supabase/supabase.js';
+import { storage, STORAGE_KEYS } from './storage.js';
+import { computeStreaks } from './streaks.js';
 
 const XP_KEY = 'valerie_xp';
 
-function syncXPToFirestore(xpData) {
-  const userId = getDeviceId();
-  setDoc(doc(db, 'users', userId, 'meta', 'xp'), xpData)
-    .catch(err => console.warn('[XP sync]', err.message));
+// XP syncs constantly in the background (every task/habit/workout completion),
+// so failures are logged loudly but don't toast — a toast per completion would
+// be noise. Real data-loss risks (tasks, transactions, settings) DO toast; see
+// insertActionRow in ai/actions.js and useCollection/useDocument.
+async function syncXPToSupabase(xpData) {
+  const userId = await getUserId();
+  if (!userId) { console.error('[XP sync] not signed in'); return; }
+  supabase.from('user_meta')
+    .upsert({ user_id: userId, key: 'xp', value: xpData }, { onConflict: 'user_id,key' })
+    .then(({ error }) => { if (error) console.error('[XP sync]', error.message); });
 }
 
 // Hook for components that need real-time XP (cross-device sync)
 export function useXP() {
   const [xp, setXp] = useState(() => getXP());
+
   useEffect(() => {
-    const userId = getDeviceId();
-    const unsub = onSnapshot(
-      doc(db, 'users', userId, 'meta', 'xp'),
-      snap => {
-        if (snap.exists()) {
-          const d = snap.data();
-          localStorage.setItem(XP_KEY, JSON.stringify(d));
-          setXp(d);
-        }
-      },
-      err => console.warn('[XP onSnapshot]', err.message),
-    );
-    return () => unsub();
+    let sub;
+    getUserId().then(userId => {
+      // Initial fetch
+      supabase.from('user_meta').select('value')
+        .eq('user_id', userId).eq('key', 'xp').maybeSingle()
+        .then(({ data }) => {
+          if (data?.value) { localStorage.setItem(XP_KEY, JSON.stringify(data.value)); setXp(data.value); }
+        });
+
+      // Realtime
+      sub = supabase.channel(`xp:${userId}`)
+        .on('postgres_changes', { event: '*', schema: 'public', table: 'user_meta', filter: `user_id=eq.${userId}` },
+          async () => {
+            const { data } = await supabase.from('user_meta').select('value').eq('user_id', userId).eq('key', 'xp').maybeSingle();
+            if (data?.value) { localStorage.setItem(XP_KEY, JSON.stringify(data.value)); setXp(data.value); }
+          })
+        .subscribe();
+    });
+    return () => { if (sub) supabase.removeChannel(sub); };
   }, []);
+
   return xp;
 }
 
-// ─── Tier thresholds (total XP to enter each tier) ───────────────────────────
+//  Tier thresholds (total XP to enter each tier) 
 export const TIER_THRESHOLDS = [0, 600, 1800, 4000, 8000, 14000, 22000, 38000];
 
 export const TIER_CONFIG = [
@@ -47,7 +62,7 @@ export const TIER_CONFIG = [
   { tier: 8, name: 'Ascendant', color: '#ffffff', shape: 'ascendant'},
 ];
 
-// ─── XP sources ───────────────────────────────────────────────────────────────
+//  XP sources 
 export const XP_SOURCES = {
   TASK_COMPLETED:     { amount: 10,  label: 'Task completed'           },
   HABIT_DAILY:        { amount: 25,  label: 'Habit maintained'         },
@@ -63,7 +78,7 @@ export const XP_SOURCES = {
   WATER_GOAL:         { amount: 10,  label: 'Water goal hit'           },
 };
 
-// ─── Read XP from localStorage ────────────────────────────────────────────────
+//  Read XP from localStorage 
 export function getXP() {
   try {
     const raw = localStorage.getItem(XP_KEY);
@@ -71,7 +86,7 @@ export function getXP() {
   } catch { return { total: 0, log: [] }; }
 }
 
-// ─── Add XP ───────────────────────────────────────────────────────────────────
+//  Add XP 
 export function addXP(sourceKey, overrideLabel) {
   const src = XP_SOURCES[sourceKey];
   if (!src) return;
@@ -84,11 +99,53 @@ export function addXP(sourceKey, overrideLabel) {
     date:   new Date().toISOString(),
   }, ...(xp.log || [])].slice(0, 300);
   localStorage.setItem(XP_KEY, JSON.stringify(xp));
-  syncXPToFirestore(xp);
+  syncXPToSupabase(xp);
   return xp.total;
 }
 
-// ─── Compute rank from total XP ───────────────────────────────────────────────
+//  Unified XP sweep — award XP for cross-domain activity, idempotently.
+// Each award is keyed by the entity/day it represents and recorded in an
+// `awarded` ledger, so this is safe to call on every app load and can never
+// double-count. Covers the domains that previously never fed XP (tasks,
+// workouts, habits) plus overall streak milestones. Focus & mood keep their
+// own inline awards, so they're intentionally excluded here.
+export function awardActivityXP() {
+  const xp = getXP();
+  if (!xp.awarded) xp.awarded = {};
+  let changed = false;
+
+  const award = (ledgerKey, sourceKey, label) => {
+    if (xp.awarded[ledgerKey]) return;
+    const src = XP_SOURCES[sourceKey];
+    if (!src) return;
+    xp.awarded[ledgerKey] = true;
+    xp.total = (xp.total || 0) + src.amount;
+    xp.log = [{ source: sourceKey, amount: src.amount, label: label || src.label, date: new Date().toISOString() },
+      ...(xp.log || [])].slice(0, 300);
+    changed = true;
+  };
+
+  const arr = (k) => { const v = storage.get(k, []); return Array.isArray(v) ? v : []; };
+
+  arr(STORAGE_KEYS.TASKS).forEach(t => { if (t.done && t.id) award(`TASK:${t.id}`, 'TASK_COMPLETED'); });
+  arr(STORAGE_KEYS.WORKOUT_LOGS).forEach(w => { if (w.id) award(`WORKOUT:${w.id}`, 'WORKOUT_LOGGED'); });
+  arr(STORAGE_KEYS.HABITS).forEach(h => { if (h.id && h.lastCompleted) award(`HABIT:${h.id}:${h.lastCompleted}`, 'HABIT_DAILY'); });
+
+  try {
+    const best = computeStreaks().overall.best;
+    if (best >= 7)   award('STREAK:overall:7',   'STREAK_7');
+    if (best >= 30)  award('STREAK:overall:30',  'STREAK_30');
+    if (best >= 100) award('STREAK:overall:100', 'STREAK_100');
+  } catch { /* streak compute is best-effort */ }
+
+  if (changed) {
+    localStorage.setItem(XP_KEY, JSON.stringify(xp));
+    syncXPToSupabase(xp);
+  }
+  return xp;
+}
+
+//  Compute rank from total XP
 export function getRank(totalXP = 0) {
   let tier = 1;
   for (let i = 0; i < TIER_THRESHOLDS.length; i++) {
@@ -115,3 +172,4 @@ export function getRank(totalXP = 0) {
 
   return { tier, subRank, config: cfg, tierProgress, xpToNext };
 }
+

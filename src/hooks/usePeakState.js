@@ -1,11 +1,10 @@
-// ─── usePeakState — computes 0-100 daily Peak State score ─────────────────────
+//  usePeakState  computes 0-100 daily Peak State score 
 // Resets at midnight. Sleep = previous night's entry only.
 // Factors: sleep quality 25%, sleep duration 15%, hydration 15%,
 //          supplements 10%, macros 10%, workout 10%, stimulants 10%, mood 5%
 
 import { useState, useEffect, useRef } from 'react';
-import { collection, onSnapshot, query, orderBy } from 'firebase/firestore';
-import { db, getDeviceId }  from '../firebase/firebase.js';
+import { supabase, getUserId, getUserIdSync } from '../supabase/supabase.js';
 import { storage, STORAGE_KEYS } from '../utils/storage.js';
 
 const TODAY = () => new Date().toISOString().slice(0, 10);
@@ -42,7 +41,7 @@ function computeScore(collections, settings) {
   const factors = {};
   const actions = []; // "what to do now" suggestions
 
-  // ── 1. Sleep quality (efficiency %) — 25% ──────────────────────────────────
+  //  1. Sleep quality (efficiency %)  25% 
   const prevSleep = [...(sleepData || [])].sort((a, b) => (b.date ?? '').localeCompare(a.date ?? '')).find(s => s.date <= today);
   const sleepEff = prevSleep?.efficiency ?? null;
   const sleepQualityScore = sleepEff !== null ? clamp(sleepEff) : 0;
@@ -50,9 +49,9 @@ function computeScore(collections, settings) {
   score += sleepQualityPts;
   factors.sleepQuality = { label: 'Sleep Quality', value: sleepEff !== null ? `${sleepEff}%` : 'No data', pts: Math.round(sleepQualityPts), max: 25, pct: sleepQualityScore };
   if (sleepEff === null) actions.push({ priority: 3, text: 'Log last night\'s sleep to unlock +25 points' });
-  else if (sleepEff < 70) actions.push({ priority: 2, text: `Sleep efficiency was ${sleepEff}% — aim for 85%+ tonight` });
+  else if (sleepEff < 70) actions.push({ priority: 2, text: `Sleep efficiency was ${sleepEff}%  aim for 85%+ tonight` });
 
-  // ── 2. Sleep duration (vs 8h = 480 min) — 15% ─────────────────────────────
+  //  2. Sleep duration (vs 8h = 480 min)  15% 
   const sleepDur  = prevSleep?.duration ?? null;
   const durScore  = sleepDur !== null ? clamp((sleepDur / 480) * 100) : 0;
   const durPts    = (durScore / 100) * 15;
@@ -60,9 +59,9 @@ function computeScore(collections, settings) {
   const durH = sleepDur ? Math.floor(sleepDur / 60) : 0;
   const durM = sleepDur ? sleepDur % 60 : 0;
   factors.sleepDuration = { label: 'Sleep Duration', value: sleepDur !== null ? `${durH}h ${durM}m` : 'No data', pts: Math.round(durPts), max: 15, pct: durScore };
-  if (sleepDur !== null && sleepDur < 420) actions.push({ priority: 2, text: `Only ${durH}h ${durM}m sleep — target 7–8h tonight` });
+  if (sleepDur !== null && sleepDur < 420) actions.push({ priority: 2, text: `Only ${durH}h ${durM}m sleep  target 78h tonight` });
 
-  // ── 3. Hydration — 15% ─────────────────────────────────────────────────────
+  //  3. Hydration  15% 
   const goal       = waterGoalMl();
   const todayWater = (waterLogs || []).filter(l => l.date === today).reduce((s, l) => s + (l.amount || 0), 0);
   const hydPct     = clamp((todayWater / goal) * 100);
@@ -72,7 +71,7 @@ function computeScore(collections, settings) {
   factors.hydration = { label: 'Hydration', value: `${todayWater >= 1000 ? (todayWater / 1000).toFixed(1) + 'L' : todayWater + 'ml'} / ${goal >= 1000 ? (goal / 1000).toFixed(1) + 'L' : goal + 'ml'}`, pts: Math.round(hydPts), max: 15, pct: hydPct };
   if (hydPct < 100 && remaining > 0) actions.push({ priority: hydPct < 50 ? 1 : 3, text: `Drink ${remaining >= 1000 ? (remaining / 1000).toFixed(1) + 'L' : remaining + 'ml'} more water to add +${Math.round(((remaining / goal) * 15))} pts` });
 
-  // ── 4. Supplements — 10% ───────────────────────────────────────────────────
+  //  4. Supplements  10% 
   const totalSupps = (supplements || []).length;
   const takenSupps = new Set((suppLogs || []).filter(l => l.date === today).map(l => l.suppId)).size;
   const suppPct    = totalSupps > 0 ? clamp((takenSupps / totalSupps) * 100) : 100;
@@ -81,7 +80,7 @@ function computeScore(collections, settings) {
   factors.supplements = { label: 'Supplements', value: totalSupps > 0 ? `${takenSupps}/${totalSupps}` : 'None set', pts: Math.round(suppPts), max: 10, pct: suppPct };
   if (totalSupps > 0 && takenSupps < totalSupps) actions.push({ priority: 4, text: `Take ${totalSupps - takenSupps} remaining supplement${totalSupps - takenSupps > 1 ? 's' : ''} (+${Math.round(((totalSupps - takenSupps) / totalSupps) * 10)} pts)` });
 
-  // ── 5. Macros — 10% ────────────────────────────────────────────────────────
+  //  5. Macros  10% 
   const calGoal   = settings?.macroGoal    ?? 2500;
   const protGoal  = settings?.proteinGoal  ?? 160;
   const todayNut  = (nutritionLogs || []).filter(l => l.date === today);
@@ -95,14 +94,14 @@ function computeScore(collections, settings) {
   factors.macros = { label: 'Macros', value: `${todayCal} kcal · ${todayProt}g pro`, pts: Math.round(macroPts), max: 10, pct: macroPct };
   if (macroPct < 80) actions.push({ priority: 4, text: `Log your meals to track macros (+${Math.round((1 - macroPct / 100) * 10)} pts available)` });
 
-  // ── 6. Workout — 10% ───────────────────────────────────────────────────────
+  //  6. Workout  10% 
   const workedOut   = (workoutLogs || []).some(l => l.date === today);
   const workoutPts  = workedOut ? 10 : 0;
   score += workoutPts;
-  factors.workout = { label: 'Workout', value: workedOut ? 'Done ✓' : 'Not yet', pts: workoutPts, max: 10, pct: workedOut ? 100 : 0 };
+  factors.workout = { label: 'Workout', value: workedOut ? 'Done S' : 'Not yet', pts: workoutPts, max: 10, pct: workedOut ? 100 : 0 };
   if (!workedOut) actions.push({ priority: 3, text: 'Complete a workout for +10 pts' });
 
-  // ── 7. Stimulant timing — 10% ──────────────────────────────────────────────
+  //  7. Stimulant timing  10% 
   // Penalty: any caffeine logged within 6h of midnight (i.e. after 18:00)
   const todayCaff = (stimLogs || []).filter(l => l.date === today && l.type === 'caffeine');
   const lateCaff  = todayCaff.filter(l => {
@@ -112,10 +111,10 @@ function computeScore(collections, settings) {
   const stimScore  = lateCaff.length > 0 ? 0 : 100;
   const stimPts    = (stimScore / 100) * 10;
   score += stimPts;
-  factors.stimulants = { label: 'Stimulant Timing', value: lateCaff.length > 0 ? `⚠ Caffeine after 6PM` : 'Good', pts: Math.round(stimPts), max: 10, pct: stimScore };
-  if (lateCaff.length > 0) actions.push({ priority: 2, text: 'Avoid caffeine after 6PM — it hurt sleep quality (-10 pts)' });
+  factors.stimulants = { label: 'Stimulant Timing', value: lateCaff.length > 0 ? `a Caffeine after 6PM` : 'Good', pts: Math.round(stimPts), max: 10, pct: stimScore };
+  if (lateCaff.length > 0) actions.push({ priority: 2, text: 'Avoid caffeine after 6PM  it hurt sleep quality (-10 pts)' });
 
-  // ── 8. Mood — 5% ───────────────────────────────────────────────────────────
+  //  8. Mood  5% 
   const todayMood = (moodLogs || []).find(m => m.date === today);
   const moodVal   = todayMood?.value ?? null;
   const moodScore = moodVal !== null ? clamp(((moodVal - 1) / 6) * 100) : 0;
@@ -134,9 +133,8 @@ function computeScore(collections, settings) {
 }
 
 export function usePeakState(settings) {
-  const userId = getDeviceId();
 
-  // Water is stored as a flat array by useCollection — normalise on read so
+  // Water is stored as a flat array by useCollection  normalise on read so
   // legacy {daily:[]} format (written by old actions.js) still works.
   const _readWater = () => {
     const raw = storage.get(STORAGE_KEYS.WATER, []);
@@ -145,7 +143,7 @@ export function usePeakState(settings) {
 
   const [state, setState] = useState(() => {
     try {
-      // Instant hydrate from localStorage — zero flicker
+      // Instant hydrate from localStorage  zero flicker
       const collections = {
         sleepData:     storage.get(STORAGE_KEYS.SLEEP, [])         || [],
         waterLogs:     _readWater(),
@@ -182,32 +180,47 @@ export function usePeakState(settings) {
   };
 
   useEffect(() => {
-    const subs = [
-      ['sleep_data',      STORAGE_KEYS.SLEEP,         'sleepData'],
-      ['water_logs',      STORAGE_KEYS.WATER,          'waterLogs'],
-      ['supplement_logs', STORAGE_KEYS.SUPP_LOGS,      'suppLogs'],
-      ['supplements',     STORAGE_KEYS.SUPPLEMENTS,    'supplements'],
-      ['nutrition_logs',  STORAGE_KEYS.MACROS,         'nutritionLogs'],
-      ['workout_logs',    STORAGE_KEYS.WORKOUT_LOGS,   'workoutLogs'],
-      ['stimulant_logs',  STORAGE_KEYS.STIMULANTS,     'stimLogs'],
-      ['mood_logs',       STORAGE_KEYS.MOOD_LOGS,      'moodLogs'],
-    ].map(([col, storageKey, key]) => {
-      const q = query(collection(db, 'users', userId, col), orderBy('createdAt', 'desc'));
-      return onSnapshot(q, snap => {
-        const data = snap.docs.map(d => ({ id: d.id, ...d.data() }));
-        collectionsRef.current = { ...collectionsRef.current, [key]: data };
-        storage.set(storageKey, data);
-        recompute();
-      }, () => {}); // silent error — already have localStorage data
+    let channel;
+    const TABLE_MAP = [
+      ['sleep_data',      STORAGE_KEYS.SLEEP,        'sleepData'],
+      ['water_logs',      STORAGE_KEYS.WATER,        'waterLogs'],
+      ['supplement_logs', STORAGE_KEYS.SUPP_LOGS,    'suppLogs'],
+      ['supplements',     STORAGE_KEYS.SUPPLEMENTS,  'supplements'],
+      ['nutrition_logs',  STORAGE_KEYS.MACROS,       'nutritionLogs'],
+      ['workout_logs',    STORAGE_KEYS.WORKOUT_LOGS, 'workoutLogs'],
+      ['stimulant_logs',  STORAGE_KEYS.STIMULANTS,   'stimLogs'],
+      ['mood_logs',       STORAGE_KEYS.MOOD_LOGS,    'moodLogs'],
+    ];
+
+    async function fetchTable(tableName, storageKey, key, uid) {
+      const { data } = await supabase.from(tableName).select('*').eq('user_id', uid).order('created_at', { ascending: false });
+      const mapped = (data || []).map(r => ({ id: r.id, ...r.data }));
+      collectionsRef.current = { ...collectionsRef.current, [key]: mapped };
+      storage.set(storageKey, mapped);
+      recompute();
+    }
+
+    let alive = true;
+    getUserId().then(uid => {
+      if (!alive) return; // effect was cleaned up before getUserId resolved (StrictMode)
+      TABLE_MAP.forEach(([t, s, k]) => fetchTable(t, s, k, uid));
+      // Unique channel name per mount — avoids reusing an already-subscribed channel
+      // (which throws "cannot add postgres_changes callbacks after subscribe()").
+      channel = supabase.channel(`peak_state:${uid}:${Math.random().toString(36).slice(2)}`);
+      TABLE_MAP.forEach(([t, s, k]) => {
+        channel.on('postgres_changes', { event: '*', schema: 'public', table: t, filter: 'user_id=eq.' + uid },
+          () => fetchTable(t, s, k, uid));
+      });
+      channel.subscribe();
     });
 
-    return () => subs.forEach(u => u());
-  }, [userId]); // eslint-disable-line react-hooks/exhaustive-deps
+    return () => { alive = false; if (channel) supabase.removeChannel(channel); };
+  }, []); // eslint-disable-line react-hooks/exhaustive-deps
 
   // Recompute when settings change (macro goals etc.)
   useEffect(() => { recompute(); }, [settings?.macroGoal, settings?.proteinGoal]); // eslint-disable-line react-hooks/exhaustive-deps
 
-  // Midnight reset — reschedules itself so it fires every night, not just the first
+  // Midnight reset  reschedules itself so it fires every night, not just the first
   useEffect(() => {
     const msUntilMidnight = () => {
       const now = new Date();
@@ -224,3 +237,5 @@ export function usePeakState(settings) {
 
   return state;
 }
+
+

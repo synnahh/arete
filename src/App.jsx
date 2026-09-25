@@ -1,20 +1,24 @@
-import { useState, useEffect, useCallback, Component } from 'react';
+import { useState, useEffect, useCallback, useRef, Component } from 'react';
 import { platformInvoke, isMobile } from './utils/platform.js';
+import { handleSpotifyCallback }    from './utils/spotify.js';
 import { storage, STORAGE_KEYS }    from './utils/storage.js';
+import { supabase }                 from './supabase/supabase.js';
 import MobileShell                  from './mobile/MobileShell.jsx';
 import { applyTheme }            from './styles/themes.js';
 import { getTimeOfDay }          from './utils/time.js';
 import { useAI }                 from './ai/useAI.js';
-import { useFirebaseStatus }    from './firebase/useFirebaseStatus.js';
+import { useSupabaseStatus }    from './supabase/useSupabaseStatus.js';
 import { usePeakState }         from './hooks/usePeakState.js';
 import { useSleepSchedule }    from './hooks/useSleepSchedule.js';
 import { useNotifications }    from './hooks/useNotifications.js';
 import Onboarding                from './onboarding/Onboarding.jsx';
+import PinGate                   from './components/PinGate.jsx';
+import SignIn                    from './components/SignIn.jsx';
 import Sidebar                   from './components/Sidebar.jsx';
 import QuickCapture              from './components/QuickCapture.jsx';
 import CommandPalette            from './components/CommandPalette.jsx';
 
-// ─── Tab imports ──────────────────────────────────────────────────────────────
+//  Tab imports 
 import Dashboard  from './tabs/Dashboard.jsx';
 import Assistant  from './tabs/Assistant.jsx';
 import Tasks      from './tabs/Tasks.jsx';
@@ -23,6 +27,7 @@ import Notes      from './tabs/Notes.jsx';
 import Health     from './tabs/Health.jsx';
 import Workout    from './tabs/Workout.jsx';
 import Finance    from './tabs/Finance.jsx';
+import Portfolio  from './tabs/Portfolio.jsx';
 import Progress   from './tabs/Progress.jsx';
 import Style      from './tabs/Style.jsx';
 import Essentials from './tabs/Essentials.jsx';
@@ -30,8 +35,13 @@ import Lists      from './tabs/Lists.jsx';
 import Focus      from './tabs/Focus.jsx';
 import Vault      from './tabs/Vault.jsx';
 import Settings   from './tabs/Settings.jsx';
+import Places     from './tabs/Places.jsx';
 import Routines   from './tabs/Routines.jsx';
-import DailyBrief from './components/DailyBrief.jsx';
+import Mind       from './tabs/Mind.jsx';
+import LM         from './tabs/LM.jsx';
+import NudgeStack from './components/NudgeStack.jsx';
+import WeeklyReview from './components/WeeklyReview.jsx';
+import TodayView from './components/TodayView.jsx';
 
 const TAB_MAP = {
   dashboard:  Dashboard,
@@ -42,6 +52,7 @@ const TAB_MAP = {
   health:     Health,
   workout:    Workout,
   finance:    Finance,
+  portfolio:  Portfolio,
   progress:   Progress,
   style:      Style,
   essentials: Essentials,
@@ -50,12 +61,15 @@ const TAB_MAP = {
   vault:      Vault,
   settings:   Settings,
   routines:   Routines,
+  mind:       Mind,
+  lm:         LM,
+  places:     Places,
 };
 
-// ─── Tab-level error boundary ─────────────────────────────────────────────────
+//  Tab-level error boundary 
 // Catches any crash inside an active tab and shows a recovery UI instead of
 // taking down the entire app with a white screen.
-// ── Root-level boundary — catches anything outside tabs, auto-reloads ──────────
+//  Root-level boundary  catches anything outside tabs, auto-reloads 
 class RootErrorBoundary extends Component {
   constructor(props) { super(props); this.state = { error: null, reloading: false }; }
   static getDerivedStateFromError(err) { return { error: err }; }
@@ -72,7 +86,7 @@ class RootErrorBoundary extends Component {
           display: 'flex', flexDirection: 'column',
           alignItems: 'center', justifyContent: 'center', gap: 20,
         }}>
-          <div style={{ fontSize: 32 }}>⚡</div>
+          <div style={{ fontSize: 32 }}>⚠️</div>
           <div style={{ fontSize: 16, fontWeight: 600, color: '#fff' }}>VALERIE encountered an error</div>
           <div style={{ fontSize: 12, color: 'rgba(255,255,255,0.4)', maxWidth: 360, textAlign: 'center', lineHeight: 1.7 }}>
             {String(this.state.error?.message || this.state.error)}
@@ -107,7 +121,7 @@ class TabErrorBoundary extends Component {
           alignItems: 'center', justifyContent: 'center', gap: 16,
           color: 'var(--text-secondary)', padding: 40,
         }}>
-          <div style={{ fontSize: 28 }}>⚠</div>
+          <div style={{ fontSize: 28 }}>⚠️</div>
           <div style={{ fontSize: 14, fontWeight: 600, color: 'var(--text-primary)' }}>
             Something crashed in this tab.
           </div>
@@ -137,33 +151,73 @@ export default function App() {
   const [settings,      setSettings]      = useState(null);
   const [paletteOpen,   setPaletteOpen]   = useState(false);
 
-  // ── AI brain ──────────────────────────────────────────────────────────────
-  const ai = useAI();
+  // ── PIN gate — always required on app open (hardcoded single-user PIN) ──────
+  const [locked, setLocked] = useState(true);
 
-  // ── Firebase status ───────────────────────────────────────────────────────
-  const firebaseSynced = useFirebaseStatus();
-
-  // ── Peak State — computed once at app level, shared to Sidebar + Dashboard ─
-  const peakState = usePeakState(settings);
-
-  // ── Sleep Schedule — dims interface + fires reminders as bedtime approaches ─
-  const { dimLevel, isSleepTime } = useSleepSchedule(settings);
-
-  // ── Notification scheduler — habits, water, tasks, finance, storage alerts ──
-  useNotifications(settings);
-
-  // ── Sleep toast ───────────────────────────────────────────────────────────
-  const [sleepToast, setSleepToast] = useState(null);
+  // ── Supabase session ──────────────────────────────────────────────────────
+  // One shared account across all devices = one auth.uid() = RLS lets every
+  // device see the same rows. Sign-in shows ONCE per device (session persists).
+  const [hasSession, setHasSession] = useState(null); // null = checking
   useEffect(() => {
-    const handler = (e) => {
-      setSleepToast(e.detail?.message || null);
-      setTimeout(() => setSleepToast(null), 5000);
-    };
-    window.addEventListener('valerie:toast', handler);
-    return () => window.removeEventListener('valerie:toast', handler);
+    supabase.auth.getSession().then(({ data: { session } }) => {
+      setHasSession(!!session?.user);
+    });
+    const { data: { subscription } } = supabase.auth.onAuthStateChange((_e, session) => {
+      setHasSession(!!session?.user);
+    });
+    return () => subscription.unsubscribe();
   }, []);
 
-  // ── WebView2 black-screen recovery on focus ───────────────────────────────
+  //  AI brain 
+  const ai = useAI();
+
+  //  Firebase status 
+  const firebaseSynced = useSupabaseStatus();
+
+  //  Peak State  computed once at app level, shared to Sidebar + Dashboard 
+  const peakState = usePeakState(settings);
+
+  //  Sleep Schedule  dims interface + fires reminders as bedtime approaches 
+  const { dimLevel, isSleepTime } = useSleepSchedule(settings);
+
+  //  Notification scheduler  habits, water, tasks, finance, storage alerts 
+  useNotifications(settings);
+
+  //  Spotify OAuth callback 
+  useEffect(() => {
+    const params = new URLSearchParams(window.location.search);
+    const code   = params.get('code');
+    const state  = params.get('state');
+    if (code && window.location.pathname === '/callback') {
+      handleSpotifyCallback(code)
+        .then(() => {
+          window.history.replaceState({}, '', '/');
+          window.dispatchEvent(new CustomEvent('valerie:toast', { detail: { message: '🎵 Spotify connected', type: 'success' } }));
+        })
+        .catch(err => {
+          console.error('[Spotify callback]', err);
+          window.history.replaceState({}, '', '/');
+        });
+    }
+  }, []);
+
+  //  Toast (supports an optional Undo action via detail.undo)
+  const [sleepToast, setSleepToast] = useState(null);
+  const toastTimerRef = useRef(null);
+  useEffect(() => {
+    const handler = (e) => {
+      const detail = e.detail || {};
+      if (!detail.message) return;
+      setSleepToast(detail);
+      if (toastTimerRef.current) clearTimeout(toastTimerRef.current);
+      // Give a longer window when there's an Undo to act on
+      toastTimerRef.current = setTimeout(() => setSleepToast(null), detail.undo ? 8000 : 5000);
+    };
+    window.addEventListener('valerie:toast', handler);
+    return () => { window.removeEventListener('valerie:toast', handler); if (toastTimerRef.current) clearTimeout(toastTimerRef.current); };
+  }, []);
+
+  //  WebView2 black-screen recovery on focus 
   // When Chrome (or any window) occludes VALERIE, WebView2 can suspend its GPU
   // swap chain. On refocus the frame stays black. Forcing a GPU composite layer
   // re-establishment via a transform toggle kicks the renderer back to life.
@@ -183,17 +237,17 @@ export default function App() {
     return () => window.removeEventListener('focus', recover);
   }, []);
 
-  // ── Wire VALERIE's navigate action to the real tab-change function ─────────
+  //  Wire VALERIE's navigate action to the real tab-change function 
   useEffect(() => {
     ai.registerCallback('navigate', setActiveTab);
   }, [ai.registerCallback]); // eslint-disable-line react-hooks/exhaustive-deps
 
-  // ── Keep VALERIE's context aware of the active tab ─────────────────────────
+  //  Keep VALERIE's context aware of the active tab 
   useEffect(() => {
     ai.setActiveTab(activeTab);
   }, [activeTab, ai.setActiveTab]); // eslint-disable-line react-hooks/exhaustive-deps
 
-  // ── Ctrl+K global keyboard shortcut ───────────────────────────────────────
+  //  Ctrl+K global keyboard shortcut 
   useEffect(() => {
     const handler = (e) => {
       // Ctrl+K (Windows/Linux) or Cmd+K (Mac)
@@ -210,42 +264,45 @@ export default function App() {
     return () => window.removeEventListener('keydown', handler);
   }, [paletteOpen]);
 
-  // ── On mount: load settings, apply theme, check onboarding flag ────────────
+  //  On mount: load settings, apply theme, check onboarding flag
   useEffect(() => {
-    const savedSettings = storage.get(STORAGE_KEYS.SETTINGS);
-    const isOnboarded   = storage.get(STORAGE_KEYS.ONBOARDED, false);
+    const isOnboarded = storage.get(STORAGE_KEYS.ONBOARDED, false);
+    setOnboarded(isOnboarded);
 
-    if (savedSettings) {
-      // One-time migration: phantom theme was accidentally saved — reset to obsidian
-      if (savedSettings.theme === 'phantom') {
-        savedSettings.theme = 'obsidian';
-        savedSettings.accentColorHex = '';
-        storage.set(STORAGE_KEYS.SETTINGS, savedSettings);
-      }
-      setSettings(savedSettings);
-      applyTheme(savedSettings.theme || 'obsidian');
-
-      // Always clear any stale inline accent override first, then re-apply only if saved
+    function applyAndSet(s) {
+      if (s.theme === 'phantom') { s.theme = 'obsidian'; s.accentColorHex = ''; }
+      setSettings(s);
+      storage.set(STORAGE_KEYS.SETTINGS, s);
+      applyTheme(s.theme || 'obsidian');
       document.documentElement.style.removeProperty('--accent');
       document.documentElement.style.removeProperty('--accent-solid');
-      if (savedSettings.accentColorHex) {
-        document.documentElement.style.setProperty('--accent',       savedSettings.accentColorHex);
-        document.documentElement.style.setProperty('--accent-solid', savedSettings.accentColorHex);
+      if (s.accentColorHex) {
+        document.documentElement.style.setProperty('--accent',       s.accentColorHex);
+        document.documentElement.style.setProperty('--accent-solid', s.accentColorHex);
       }
+      if (s.fontFamily) document.documentElement.style.setProperty('--font-family', s.fontFamily);
+    }
 
-      // Restore custom font if set
-      if (savedSettings.fontFamily) {
-        document.documentElement.style.setProperty('--font-family', savedSettings.fontFamily);
-      }
+    const local = storage.get(STORAGE_KEYS.SETTINGS);
+    if (local) {
+      applyAndSet(local);
     } else {
       applyTheme('obsidian');
       document.documentElement.style.removeProperty('--accent');
       document.documentElement.style.removeProperty('--accent-solid');
     }
 
-    setOnboarded(isOnboarded);
+    // If no local settings (e.g. first launch on iOS PWA), pull from Supabase
+    if (!local) {
+      supabase.auth.getSession().then(({ data: { session } }) => {
+        if (!session?.user) return;
+        const uid = session.user.id;
+        supabase.from('user_meta').select('value').eq('user_id', uid).eq('key', 'settings').single()
+          .then(({ data }) => { if (data?.value) applyAndSet(data.value); });
+      });
+    }
 
-    // Launch Ollama silently in the background — no terminal window
+    // Launch Ollama silently in the background  no terminal window
     platformInvoke('launch_ollama').catch(() => {});
 
     // Log unhandled errors without suppressing React's own error handling
@@ -259,7 +316,7 @@ export default function App() {
     };
   }, []);
 
-  // ── Live settings sync — update state when Settings tab saves changes ──────
+  //  Live settings sync  update state when Settings tab saves changes 
   useEffect(() => {
     const handler = (e) => {
       const updated = e.detail ?? storage.get(STORAGE_KEYS.SETTINGS, {});
@@ -277,10 +334,23 @@ export default function App() {
     return () => window.removeEventListener('valerie:settings-changed', handler);
   }, []);
 
-  // ── Apply time-of-day background class ────────────────────────────────────
+  //  Apply time-of-day background class 
   const tod = getTimeOfDay();
 
-  // ── Loading state ─────────────────────────────────────────────────────────
+  // ── PIN gate takes priority over everything ──
+  if (locked) {
+    return <PinGate onUnlock={() => setLocked(false)} />;
+  }
+
+  // ── One-time device sign-in (only when there's no persisted session) ──
+  if (hasSession === null) {
+    return <div style={{ width: '100%', height: '100%', background: '#080c14' }} />;
+  }
+  if (hasSession === false) {
+    return <SignIn onSignedIn={() => setHasSession(true)} />;
+  }
+
+  //  Loading state (settings loading)
   if (onboarded === null) {
     return (
       <div style={{
@@ -291,7 +361,7 @@ export default function App() {
     );
   }
 
-  // ── Onboarding ────────────────────────────────────────────────────────────
+  //  Onboarding (name personalisation — runs once after first sign-in)
   if (!onboarded) {
     return (
       <Onboarding onComplete={(data) => {
@@ -302,7 +372,7 @@ export default function App() {
     );
   }
 
-  // ── Mobile PWA shell — renders instead of desktop layout on phones/tablets ──
+  //  Mobile PWA shell  renders instead of desktop layout on phones/tablets 
   if (isMobile()) {
     return (
       <MobileShell
@@ -315,10 +385,10 @@ export default function App() {
     );
   }
 
-  // ── Main app shell ────────────────────────────────────────────────────────
+  //  Main app shell 
   const ActiveTab = TAB_MAP[activeTab] || Dashboard;
 
-  // Layout density for the active tab — drives CSS variable + prop
+  // Layout density for the active tab  drives CSS variable + prop
   const layoutDensity = settings?.tabLayouts?.[activeTab] || 'standard';
 
   return (
@@ -350,20 +420,22 @@ export default function App() {
         }}
       >
         <TabErrorBoundary key={activeTab}>
-          <ActiveTab
-            settings={settings}
-            onTabChange={setActiveTab}
-            ai={ai}
-            density={layoutDensity}
-            peakState={peakState}
-          />
+          <div className="val-fade-up" style={{ flex: 1, minHeight: 0, display: 'flex', flexDirection: 'column' }}>
+            <ActiveTab
+              settings={settings}
+              onTabChange={setActiveTab}
+              ai={ai}
+              density={layoutDensity}
+              peakState={peakState}
+            />
+          </div>
         </TabErrorBoundary>
 
-        {/* Quick Capture — floats above all content */}
+        {/* Quick Capture  floats above all content */}
         <QuickCapture ai={ai} />
       </main>
 
-      {/* Ctrl+K Command Palette — renders above everything */}
+      {/* Ctrl+K Command Palette  renders above everything */}
       <CommandPalette
         open={paletteOpen}
         onClose={() => setPaletteOpen(false)}
@@ -371,10 +443,12 @@ export default function App() {
         ai={ai}
       />
 
-      {/* Daily Brief — once-per-day greeting overlay */}
-      <DailyBrief ai={ai} settings={settings} />
+      {/* Proactive nudges + whole-life Weekly Review + unified Today view */}
+      <NudgeStack onTabChange={setActiveTab} />
+      <WeeklyReview />
+      <TodayView onTabChange={setActiveTab} />
 
-      {/* Sleep dim overlay — fades in as bedtime approaches. Max 80% opacity (never fully black). */}
+      {/* Sleep dim overlay  fades in as bedtime approaches. Max 80% opacity (never fully black). */}
       {dimLevel > 0 && (
         <div
           onClick={() => {
@@ -394,21 +468,31 @@ export default function App() {
         />
       )}
 
-      {/* Sleep toast */}
+      {/* Toast (message + optional Undo) */}
       {sleepToast && (
         <div style={{
           position: 'fixed', bottom: 28, left: '50%', transform: 'translateX(-50%)',
           background: 'rgba(8,12,20,0.96)', border: '0.5px solid rgba(74,158,255,0.3)',
-          borderRadius: 12, padding: '11px 20px', zIndex: 10000,
+          borderRadius: 12, padding: '11px 18px', zIndex: 10000,
           fontSize: 13, color: 'var(--text-primary)', whiteSpace: 'nowrap',
           boxShadow: '0 4px 24px rgba(0,0,0,0.55)',
-          display: 'flex', alignItems: 'center', gap: 9,
+          display: 'flex', alignItems: 'center', gap: 10,
           animation: 'fadeIn 0.25s ease',
         }}>
-          <span style={{ fontSize: 16 }}>🌙</span>
-          {sleepToast}
+          <span style={{ fontSize: 16 }}>
+            {sleepToast.type === 'sleep' ? '🌙' : sleepToast.type === 'success' ? '✓' : sleepToast.type === 'error' ? '⚠️' : 'ℹ️'}
+          </span>
+          {sleepToast.message}
+          {sleepToast.undo && (
+            <button
+              onClick={() => { try { sleepToast.undo(); } catch {} setSleepToast(null); }}
+              style={{ marginLeft: 4, background: 'var(--accent)', color: '#fff', border: 'none',
+                borderRadius: 8, padding: '4px 12px', fontSize: 12, fontWeight: 600, cursor: 'pointer' }}
+            >Undo</button>
+          )}
         </div>
       )}
     </div>
   );
 }
+

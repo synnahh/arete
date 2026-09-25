@@ -1,8 +1,8 @@
-// ─── Calendar Tab ─────────────────────────────────────────────────────────────
-// Agenda view · local events (Firebase) · Google Calendar OAuth integration
+//  Calendar Tab
+// Sub-tabs: Agenda · Day Planner (AI time-blocking)
 
 import { useState, useEffect, useCallback, useMemo, useRef } from 'react';
-import { useCollection } from '../firebase/useCollection.js';
+import { useCollection } from '../supabase/useCollection.js';
 import { STORAGE_KEYS, storage } from '../utils/storage.js';
 
 const GCAL_CLIENT_ID = import.meta.env.VITE_GOOGLE_CLIENT_ID;
@@ -10,7 +10,7 @@ const GCAL_SCOPE     = 'https://www.googleapis.com/auth/calendar';
 const GCAL_API       = 'https://www.googleapis.com/calendar/v3';
 const GCAL_TOKEN_KEY = 'valerie_gcal_token';
 
-// ── Icons ─────────────────────────────────────────────────────────────────────
+//  Icons 
 const Icon = ({ d, size = 15 }) => (
   <svg width={size} height={size} viewBox="0 0 24 24" fill="none"
     stroke="currentColor" strokeWidth={1.7} strokeLinecap="round" strokeLinejoin="round">
@@ -22,10 +22,10 @@ const EditIcon  = () => <Icon d="M11 4H4a2 2 0 00-2 2v14a2 2 0 002 2h14a2 2 0 00
 const CloseIcon = () => <Icon d="M18 6L6 18 M6 6l12 12" />;
 const MicIcon   = () => <Icon d="M12 1a3 3 0 00-3 3v8a3 3 0 006 0V4a3 3 0 00-3-3z M19 10v2a7 7 0 01-14 0v-2 M12 19v4 M8 23h8" />;
 
-// ── Colour swatches ───────────────────────────────────────────────────────────
+//  Colour swatches 
 const EVENT_COLOURS = ['#4a9eff', '#4caf7d', '#f4a642', '#e55a5a', '#9b5de5', '#00c9a7', '#f7b731'];
 
-// ── Date helpers ──────────────────────────────────────────────────────────────
+//  Date helpers 
 function todayStr()    { return new Date().toISOString().slice(0, 10); }
 function tomorrowStr() { const d = new Date(); d.setDate(d.getDate() + 1); return d.toISOString().slice(0, 10); }
 
@@ -64,7 +64,7 @@ function applyFilter(events, filter) {
   }
 }
 
-// ── Google Calendar token helpers ─────────────────────────────────────────────
+//  Google Calendar token helpers 
 function saveGcalToken(token) {
   localStorage.setItem(GCAL_TOKEN_KEY, JSON.stringify({
     access_token: token.access_token,
@@ -82,7 +82,7 @@ function loadGcalToken() {
 }
 function clearGcalToken() { localStorage.removeItem(GCAL_TOKEN_KEY); }
 
-// ── Google Calendar API helpers ───────────────────────────────────────────────
+//  Google Calendar API helpers 
 async function gcalFetch(path, options = {}, token) {
   const res = await fetch(`${GCAL_API}${path}`, {
     ...options,
@@ -148,11 +148,12 @@ async function deleteGcalEvent(token, googleId) {
   });
 }
 
-// ── Event card ────────────────────────────────────────────────────────────────
+//  Event card 
 function EventCard({ event, onEdit, onDelete }) {
   const [hovered, setHovered] = useState(false);
   const colour = event.colour || '#4a9eff';
   const isGoogle = event.source === 'google';
+  const isTask   = event.source === 'task';
 
   return (
     <div
@@ -194,6 +195,15 @@ function EventCard({ event, onEdit, onDelete }) {
               Google
             </span>
           )}
+          {isTask && (
+            <span style={{
+              fontSize: 9, padding: '1px 6px', borderRadius: 10,
+              background: colour + '1f', color: colour,
+              border: `0.5px solid ${colour}55`, flexShrink: 0,
+            }}>
+              Task
+            </span>
+          )}
         </div>
         {event.description && (
           <div style={{ fontSize: 11.5, color: 'var(--text-muted)', marginTop: 2 }}>
@@ -205,12 +215,12 @@ function EventCard({ event, onEdit, onDelete }) {
       {/* Time */}
       {event.time && (
         <div style={{ fontSize: 12, color: 'var(--text-muted)', flexShrink: 0 }}>
-          {event.time}{event.endTime ? ` – ${event.endTime}` : ''}
+          {event.time}{event.endTime ? `  ${event.endTime}` : ''}
         </div>
       )}
 
-      {/* Actions on hover */}
-      {hovered && (
+      {/* Actions on hover  (tasks are read-only here  manage them in the Tasks tab) */}
+      {hovered && !isTask && (
         <div style={{ display: 'flex', gap: 4, flexShrink: 0 }}>
           {!isGoogle && (
             <button onClick={() => onEdit(event)} style={tinyBtnStyle} title="Edit">
@@ -232,7 +242,7 @@ const tinyBtnStyle = {
   display: 'flex', alignItems: 'center', justifyContent: 'center',
 };
 
-// ── Event panel (add/edit) ────────────────────────────────────────────────────
+//  Event panel (add/edit) 
 function EventPanel({ event, onSave, onClose }) {
   const isEdit = !!event?.id;
   const [form, setForm] = useState({
@@ -259,7 +269,7 @@ function EventPanel({ event, onSave, onClose }) {
         <span style={{ fontSize: 10, color: 'var(--text-muted)', letterSpacing: '0.07em' }}>
           {isEdit ? 'EDIT EVENT' : 'NEW EVENT'}
         </span>
-        <button onClick={onClose} style={{ ...tinyBtnStyle, fontSize: 16 }}>×</button>
+        <button onClick={onClose} style={{ ...tinyBtnStyle, fontSize: 16 }}></button>
       </div>
 
       <div>
@@ -318,9 +328,320 @@ const lblStyle = { display: 'block', fontSize: 10, color: 'var(--text-muted)', l
 const ghostBtnStyle   = { padding: '7px 0', borderRadius: 7, border: '0.5px solid var(--card-border)', background: 'transparent', color: 'var(--text-secondary)', cursor: 'pointer', fontSize: 12 };
 const primaryBtnStyle = { padding: '7px 0', borderRadius: 7, border: '0.5px solid var(--card-border)', background: 'var(--active-bg)', color: 'var(--accent)', cursor: 'pointer', fontSize: 12, fontWeight: 500 };
 
-// ── Main Calendar component ────────────────────────────────────────────────────
-export default function Calendar({ ai }) {
+//  Main Calendar component 
+// ─────────────────────────────────────────────────────────────
+//  AI Day Planner
+// ─────────────────────────────────────────────────────────────
+
+const BLOCK_COLOURS = {
+  task:     '#5b9cf6',
+  event:    '#9b5de5',
+  routine:  '#4caf7d',
+  break:    '#888',
+  focus:    '#f4a642',
+  meal:     '#00c9a7',
+  exercise: '#e55a5a',
+  free:     '#555',
+};
+
+function timeToMinutes(t) {
+  if (!t) return 0;
+  const [h, m] = t.split(':').map(Number);
+  return h * 60 + (m || 0);
+}
+
+function minutesToTime(m) {
+  const h = Math.floor(m / 60) % 24;
+  const min = m % 60;
+  return `${String(h).padStart(2, '0')}:${String(min).padStart(2, '0')}`;
+}
+
+function formatTime12(t) {
+  if (!t) return '';
+  const [h, m] = t.split(':').map(Number);
+  const ampm = h >= 12 ? 'PM' : 'AM';
+  const hour = h % 12 || 12;
+  return `${hour}:${String(m).padStart(2, '0')} ${ampm}`;
+}
+
+function buildPrompt({ dateStr, tasks, events, routines, settings, peakState }) {
+  const userName = settings?.userName || 'Sir';
+  const wakeTime = settings?.wakeTime || '07:00';
+  const sleepTime = settings?.sleepTarget || '23:00';
+  const peakWindow = peakState?.window || null;
+
+  const todayTasks = tasks
+    .filter(t => !t.completed && (!t.dueDate || t.dueDate <= dateStr))
+    .slice(0, 10)
+    .map(t => `- ${t.title}${t.priority ? ` [${t.priority}]` : ''}`)
+    .join('\n') || 'None';
+
+  const dayEvents = events
+    .filter(e => (e.date || e.start?.date || e.start?.dateTime?.slice(0,10)) === dateStr)
+    .map(e => `- ${e.title} at ${e.time || e.start?.dateTime?.slice(11,16) || 'TBD'}${e.endTime ? ` - ${e.endTime}` : ''}`)
+    .join('\n') || 'None';
+
+  const todayRoutines = routines
+    .filter(r => r.active !== false)
+    .slice(0, 6)
+    .map(r => `- ${r.title} (${r.time || 'flexible'}, ~${r.duration || 15}min)`)
+    .join('\n') || 'None';
+
+  return `You are VALERIE, ${userName}'s personal AI assistant. Create a realistic, optimised time-blocked day plan for ${dateStr}.
+
+Wake time: ${wakeTime}
+Sleep target: ${sleepTime}
+${peakWindow ? `Peak cognitive window: ${peakWindow.start} – ${peakWindow.end} (schedule deep work here)` : ''}
+
+SCHEDULED EVENTS (fixed, do not move):
+${dayEvents}
+
+TASKS TO COMPLETE:
+${todayTasks}
+
+DAILY ROUTINES:
+${todayRoutines}
+
+Return ONLY a JSON array of time blocks. Each block:
+{
+  "start": "HH:MM",
+  "end": "HH:MM",
+  "title": "string",
+  "type": "task|event|routine|break|focus|meal|exercise|free",
+  "note": "optional short note"
+}
+
+Rules:
+- Cover ${wakeTime} to ${sleepTime}
+- Fixed events must stay at their scheduled times
+- Schedule deep focus tasks in the peak window if set
+- Include meals, breaks, and wind-down time
+- Keep it realistic — don't overload
+- Return valid JSON only, no markdown, no explanation`;
+}
+
+function DayPlannerBlock({ block, style }) {
+  const colour = BLOCK_COLOURS[block.type] || '#888';
+  const startMin = timeToMinutes(block.start);
+  const endMin   = timeToMinutes(block.end);
+  const duration = endMin - startMin;
+
+  return (
+    <div style={{
+      background: `${colour}18`,
+      border: `0.5px solid ${colour}55`,
+      borderLeft: `3px solid ${colour}`,
+      borderRadius: 8,
+      padding: '7px 12px',
+      marginBottom: 4,
+      ...style,
+    }}>
+      <div style={{ display: 'flex', alignItems: 'baseline', gap: 8 }}>
+        <span style={{ fontSize: 11, color: colour, fontWeight: 600, minWidth: 80 }}>
+          {formatTime12(block.start)}
+        </span>
+        <span style={{ fontSize: 13, fontWeight: 500, color: 'var(--text-primary)' }}>{block.title}</span>
+        <span style={{ fontSize: 10, color: 'var(--text-muted)', marginLeft: 'auto' }}>
+          {duration > 0 ? `${duration}m` : ''}
+        </span>
+      </div>
+      {block.note && (
+        <div style={{ fontSize: 11, color: 'var(--text-secondary)', marginTop: 3, paddingLeft: 88 }}>
+          {block.note}
+        </div>
+      )}
+    </div>
+  );
+}
+
+function DayPlanner({ ai, allEvents, settings, peakState, onAddEvents }) {
+  const [selectedDate, setSelectedDate] = useState(() => new Date().toISOString().slice(0, 10));
+  const [blocks,       setBlocks]       = useState([]);
+  const [loading,      setLoading]      = useState(false);
+  const [error,        setError]        = useState('');
+  const [added,        setAdded]        = useState(false);
+
+  const tasks    = useMemo(() => storage.get(STORAGE_KEYS.TASKS, []),    []);
+  const routines = useMemo(() => storage.get(STORAGE_KEYS.ROUTINES, []), []);
+
+  async function generate() {
+    if (!ai?.ask) { setError('AI not available. Add your Claude API key in Settings.'); return; }
+    setLoading(true);
+    setError('');
+    setBlocks([]);
+    setAdded(false);
+    try {
+      const prompt = buildPrompt({ dateStr: selectedDate, tasks, events: allEvents, routines, settings, peakState });
+      const raw = await ai.ask(prompt, { maxTokens: 1500 });
+      const jsonMatch = raw.match(/\[[\s\S]*\]/);
+      if (!jsonMatch) throw new Error('No valid schedule returned. Try again.');
+      const parsed = JSON.parse(jsonMatch[0]);
+      setBlocks(parsed.filter(b => b.start && b.end && b.title));
+    } catch (err) {
+      setError(err.message || 'Failed to generate plan.');
+    } finally {
+      setLoading(false);
+    }
+  }
+
+  function handleAddToAgenda() {
+    if (!onAddEvents || blocks.length === 0) return;
+    const newEvents = blocks
+      .filter(b => b.type !== 'free' && b.type !== 'break')
+      .map(b => ({
+        title: b.title,
+        date:  selectedDate,
+        time:  b.start,
+        endTime: b.end,
+        colour: BLOCK_COLOURS[b.type] || '#4a9eff',
+        description: b.note || '',
+        source: 'planner',
+      }));
+    onAddEvents(newEvents);
+    setAdded(true);
+  }
+
+  const grouped = useMemo(() => {
+    const groups = { Morning: [], Afternoon: [], Evening: [] };
+    blocks.forEach(b => {
+      const h = parseInt(b.start.split(':')[0], 10);
+      if (h < 12)       groups.Morning.push(b);
+      else if (h < 17)  groups.Afternoon.push(b);
+      else              groups.Evening.push(b);
+    });
+    return groups;
+  }, [blocks]);
+
+  const dateLabel = useMemo(() => {
+    const today = new Date().toISOString().slice(0, 10);
+    const tom   = new Date(Date.now() + 86400000).toISOString().slice(0, 10);
+    if (selectedDate === today) return 'Today';
+    if (selectedDate === tom)   return 'Tomorrow';
+    return new Date(selectedDate + 'T00:00:00').toLocaleDateString('en-AU', { weekday: 'long', day: 'numeric', month: 'long' });
+  }, [selectedDate]);
+
+  return (
+    <div style={{ flex: 1, display: 'flex', flexDirection: 'column', overflow: 'hidden' }}>
+
+      {/* Planner header */}
+      <div style={{
+        padding: '14px 24px 12px',
+        borderBottom: '0.5px solid var(--sidebar-divider)',
+        display: 'flex', alignItems: 'center', gap: 12, flexShrink: 0,
+      }}>
+        <div style={{ display: 'flex', flexDirection: 'column' }}>
+          <span style={{ fontSize: 15, fontWeight: 500, color: 'var(--text-primary)' }}>Day Planner</span>
+          <span style={{ fontSize: 11, color: 'var(--text-muted)', marginTop: 1 }}>{dateLabel}</span>
+        </div>
+
+        <input
+          type="date"
+          value={selectedDate}
+          onChange={e => { setSelectedDate(e.target.value); setBlocks([]); setAdded(false); }}
+          style={{
+            background: 'var(--hover-bg)', border: '0.5px solid var(--card-border)',
+            color: 'var(--text-primary)', borderRadius: 7, padding: '5px 10px',
+            fontSize: 12, cursor: 'pointer', outline: 'none',
+          }}
+        />
+
+        <div style={{ flex: 1 }} />
+
+        {blocks.length > 0 && !added && (
+          <button onClick={handleAddToAgenda} style={{
+            padding: '5px 14px', borderRadius: 7, fontSize: 12,
+            background: 'rgba(76,175,125,0.1)', border: '0.5px solid rgba(76,175,125,0.3)',
+            color: '#4caf7d', cursor: 'pointer', fontWeight: 500,
+          }}>
+            + Add to Agenda
+          </button>
+        )}
+        {added && (
+          <span style={{ fontSize: 11, color: '#4caf7d' }}>✓ Added to agenda</span>
+        )}
+
+        <button onClick={generate} disabled={loading} style={{
+          padding: '6px 16px', borderRadius: 7, fontSize: 12, fontWeight: 500,
+          background: loading ? 'var(--hover-bg)' : 'var(--active-bg)',
+          border: '0.5px solid var(--card-border)',
+          color: loading ? 'var(--text-muted)' : 'var(--accent)',
+          cursor: loading ? 'default' : 'pointer',
+          display: 'flex', alignItems: 'center', gap: 7,
+        }}>
+          {loading ? (
+            <><div style={{ width: 13, height: 13, borderRadius: '50%', border: '2px solid rgba(255,255,255,0.15)', borderTopColor: 'var(--accent)', animation: 'spin 0.7s linear infinite' }} /> Planning...</>
+          ) : (
+            <>{blocks.length > 0 ? '↺ Regenerate' : '✦ Generate Plan'}</>
+          )}
+        </button>
+      </div>
+
+      {/* Body */}
+      <div style={{ flex: 1, overflowY: 'auto', padding: '16px 24px' }}>
+
+        {error && (
+          <div style={{ padding: '10px 14px', borderRadius: 8, background: 'rgba(229,90,90,0.08)', border: '0.5px solid rgba(229,90,90,0.2)', color: '#e55a5a', fontSize: 12, marginBottom: 16 }}>
+            {error}
+          </div>
+        )}
+
+        {blocks.length === 0 && !loading && !error && (
+          <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', height: '70%', gap: 12, opacity: 0.45 }}>
+            <div style={{ fontSize: 32 }}>🗓</div>
+            <div style={{ fontSize: 13, color: 'var(--text-muted)', textAlign: 'center', lineHeight: 1.6 }}>
+              VALERIE will build a time-blocked schedule<br />based on your tasks, events, and routines.
+            </div>
+          </div>
+        )}
+
+        {loading && (
+          <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', height: '70%', gap: 14, opacity: 0.6 }}>
+            <div style={{ width: 28, height: 28, borderRadius: '50%', border: '2px solid rgba(255,255,255,0.1)', borderTopColor: 'var(--accent)', animation: 'spin 0.7s linear infinite' }} />
+            <div style={{ fontSize: 12, color: 'var(--text-muted)' }}>Building your day...</div>
+          </div>
+        )}
+
+        {blocks.length > 0 && Object.entries(grouped).map(([period, periodBlocks]) =>
+          periodBlocks.length === 0 ? null : (
+            <div key={period} style={{ marginBottom: 20 }}>
+              <div style={{
+                fontSize: 10, fontWeight: 700, letterSpacing: '0.1em',
+                color: 'var(--text-muted)', textTransform: 'uppercase',
+                marginBottom: 8, display: 'flex', alignItems: 'center', gap: 8,
+              }}>
+                {period}
+                <div style={{ flex: 1, height: '0.5px', background: 'var(--sidebar-divider)' }} />
+              </div>
+              {periodBlocks.map((b, i) => <DayPlannerBlock key={i} block={b} />)}
+            </div>
+          )
+        )}
+
+        {/* Legend */}
+        {blocks.length > 0 && (
+          <div style={{ display: 'flex', flexWrap: 'wrap', gap: '6px 14px', marginTop: 8, paddingTop: 12, borderTop: '0.5px solid var(--sidebar-divider)' }}>
+            {Object.entries(BLOCK_COLOURS).map(([type, colour]) => (
+              <div key={type} style={{ display: 'flex', alignItems: 'center', gap: 5 }}>
+                <div style={{ width: 8, height: 8, borderRadius: 2, background: colour }} />
+                <span style={{ fontSize: 10, color: 'var(--text-muted)', textTransform: 'capitalize' }}>{type}</span>
+              </div>
+            ))}
+          </div>
+        )}
+      </div>
+    </div>
+  );
+}
+
+// ─────────────────────────────────────────────────────────────
+//  Main Calendar Tab
+// ─────────────────────────────────────────────────────────────
+
+export default function Calendar({ ai, settings, peakState }) {
   const { items: localEvents, add, update, remove, synced } = useCollection('events', STORAGE_KEYS.EVENTS);
+  // Tasks with due dates appear on the calendar as read-only entries (managed in Tasks tab).
+  const { items: taskItems } = useCollection('tasks', STORAGE_KEYS.TASKS);
+  const [subTab,      setSubTab]      = useState('agenda');
   const [filter,      setFilter]      = useState('upcoming');
   const [panel,       setPanel]       = useState(null); // null | { mode:'add' } | { mode:'edit', event }
   const [gcalToken,   setGcalToken]   = useState(() => loadGcalToken());
@@ -330,7 +651,7 @@ export default function Calendar({ ai }) {
   const [voiceActive, setVoice]       = useState(false);
   const tokenClientRef = useRef(null);
 
-  // ── Google Calendar OAuth (GIS) ────────────────────────────────────────────
+  //  Google Calendar OAuth (GIS) 
   useEffect(() => {
     if (!GCAL_CLIENT_ID || GCAL_CLIENT_ID === 'YOUR_GOOGLE_CLIENT_ID_HERE') return;
     if (!window.google?.accounts?.oauth2) return;
@@ -359,7 +680,7 @@ export default function Calendar({ ai }) {
     setGcalEvents([]);
   }, []);
 
-  // ── Fetch Google Calendar events when token exists ─────────────────────────
+  //  Fetch Google Calendar events when token exists 
   useEffect(() => {
     if (!gcalToken) return;
     setGcalLoading(true);
@@ -375,18 +696,31 @@ export default function Calendar({ ai }) {
       });
   }, [gcalToken]);
 
-  // ── Merge local + Google events ────────────────────────────────────────────
+  //  Due-dated, incomplete tasks as read-only calendar entries
+  const taskEvents = useMemo(() => (taskItems || [])
+    .filter(t => t.dueDate && !t.done)
+    .map(t => ({
+      id:          `task_${t.id}`,
+      title:       t.text || t.title || 'Task',
+      description: t.description || '',
+      date:        t.dueDate,
+      time:        '',
+      colour:      t.priority === 'high' ? '#e55a5a' : t.priority === 'med' ? '#f4a642' : '#6BE3A4',
+      source:      'task',
+    })), [taskItems]);
+
+  //  Merge local + Google + task events
   const allEvents = useMemo(() => {
     const gcalIds = new Set(gcalEvents.map(e => e.googleId));
     // Remove local events that have been synced to Google (have googleId)
     const local = localEvents.filter(e => !e.googleId || !gcalIds.has(e.googleId));
-    return [...local, ...gcalEvents];
-  }, [localEvents, gcalEvents]);
+    return [...local, ...gcalEvents, ...taskEvents];
+  }, [localEvents, gcalEvents, taskEvents]);
 
   const filtered = useMemo(() => applyFilter(allEvents, filter), [allEvents, filter]);
   const grouped  = useMemo(() => groupByDate(filtered), [filtered]);
 
-  // ── Save event ─────────────────────────────────────────────────────────────
+  //  Save event 
   const handleSave = useCallback(async (form) => {
     const isEdit = panel?.mode === 'edit';
     const payload = {
@@ -412,8 +746,9 @@ export default function Calendar({ ai }) {
     setPanel(null);
   }, [add, update, panel, gcalToken]);
 
-  // ── Delete event ───────────────────────────────────────────────────────────
+  //  Delete event 
   const handleDelete = useCallback(async (event) => {
+    if (event.source === 'task') return; // tasks are managed in the Tasks tab
     if (event.source === 'google' || event.googleId) {
       if (gcalToken) {
         try { await deleteGcalEvent(gcalToken, event.googleId || event.id); }
@@ -428,7 +763,7 @@ export default function Calendar({ ai }) {
     }
   }, [remove, gcalToken]);
 
-  // ── Voice command ──────────────────────────────────────────────────────────
+  //  Voice command 
   const handleVoice = useCallback(() => {
     if (!ai?.startListening) return;
     setVoice(true);
@@ -446,10 +781,49 @@ export default function Calendar({ ai }) {
 
   const clientIdMissing = !GCAL_CLIENT_ID || GCAL_CLIENT_ID === 'YOUR_GOOGLE_CLIENT_ID_HERE';
 
-  return (
-    <div style={{ display: 'flex', height: '100%', overflow: 'hidden', position: 'relative' }}>
+  // Add multiple events to agenda from planner
+  const handleAddPlannerEvents = useCallback(async (events) => {
+    for (const ev of events) await add(ev);
+  }, [add]);
 
-      {/* ── Main agenda ───────────────────────────────────────────────────── */}
+  return (
+    <div style={{ display: 'flex', height: '100%', overflow: 'hidden', position: 'relative', flexDirection: 'column' }}>
+
+      {/* Sub-tab strip */}
+      <div style={{
+        display: 'flex', alignItems: 'center', gap: 0,
+        padding: '0 24px',
+        borderBottom: '0.5px solid var(--sidebar-divider)',
+        background: 'var(--bg-base)', flexShrink: 0,
+      }}>
+        {[['agenda', 'Agenda'], ['planner', '✦ Day Planner']].map(([id, label]) => (
+          <button key={id} onClick={() => setSubTab(id)} style={{
+            padding: '11px 14px', fontSize: 12, fontWeight: subTab === id ? 600 : 400,
+            background: 'none', border: 'none', cursor: 'pointer',
+            borderBottom: `2px solid ${subTab === id ? 'var(--accent)' : 'transparent'}`,
+            color: subTab === id ? 'var(--accent)' : 'var(--text-muted)',
+            transition: 'all 0.15s', marginBottom: -1,
+          }}>
+            {label}
+          </button>
+        ))}
+      </div>
+
+      {/* Day Planner sub-tab */}
+      {subTab === 'planner' && (
+        <DayPlanner
+          ai={ai}
+          allEvents={allEvents}
+          settings={settings}
+          peakState={peakState}
+          onAddEvents={handleAddPlannerEvents}
+        />
+      )}
+
+      {/* Agenda sub-tab */}
+      {subTab === 'agenda' && (
+      <div style={{ display: 'flex', flex: 1, overflow: 'hidden', position: 'relative' }}>
+      {/*  Main agenda  */}
       <div style={{
         flex: 1, display: 'flex', flexDirection: 'column', overflow: 'hidden',
         transition: 'margin-right 0.22s ease',
@@ -463,7 +837,7 @@ export default function Calendar({ ai }) {
         }}>
           <h2 style={{ fontSize: 15, fontWeight: 500, color: 'var(--text-primary)', margin: 0 }}>
             Calendar
-            {synced && <span style={{ fontSize: 9.5, color: 'var(--text-muted)', marginLeft: 8, fontWeight: 400 }}>● synced</span>}
+            {synced && <span style={{ fontSize: 9.5, color: 'var(--text-muted)', marginLeft: 8, fontWeight: 400 }}> synced</span>}
           </h2>
 
           {/* Filters */}
@@ -490,7 +864,7 @@ export default function Calendar({ ai }) {
               background: 'rgba(66,133,244,0.1)', border: '0.5px solid rgba(66,133,244,0.3)',
               color: '#4a9eff', transition: 'all 0.15s ease',
             }}>
-              {gcalLoading ? 'Syncing…' : '● Google Calendar'}
+              {gcalLoading ? 'Syncing...' : ' Google Calendar'}
             </button>
           ) : (
             <button onClick={connectGcal} style={{
@@ -499,7 +873,7 @@ export default function Calendar({ ai }) {
               color: 'var(--text-secondary)', transition: 'all 0.15s ease',
             }}
             title={clientIdMissing ? 'Add VITE_GOOGLE_CLIENT_ID to .env to enable' : 'Connect Google Calendar'}>
-              {clientIdMissing ? '○ Google Cal (setup needed)' : '+ Connect Google'}
+              {clientIdMissing ? '⚠️ Google Cal (setup needed)' : '+ Connect Google'}
             </button>
           )}
 
@@ -530,7 +904,7 @@ export default function Calendar({ ai }) {
             borderBottom: '0.5px solid rgba(229,90,90,0.2)',
             fontSize: 12, color: '#e55a5a', display: 'flex', alignItems: 'center', gap: 8,
           }}>
-            <span>⚠</span> {gcalError}
+            <span>a</span> {gcalError}
             <button onClick={() => setGcalError(null)} style={{ marginLeft: 'auto', ...tinyBtnStyle }}>
               <CloseIcon />
             </button>
@@ -585,7 +959,7 @@ export default function Calendar({ ai }) {
         </div>
       </div>
 
-      {/* ── Slide-in panel ────────────────────────────────────────────────── */}
+      {/*  Slide-in panel  */}
       {panel && (
         <div style={{
           position: 'absolute', top: 0, right: 0, bottom: 0, width: 260,
@@ -601,6 +975,10 @@ export default function Calendar({ ai }) {
           />
         </div>
       )}
+      </div>
+      )}
+      <style>{'@keyframes spin { to { transform: rotate(360deg); } }'}</style>
     </div>
   );
 }
+

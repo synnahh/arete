@@ -1,13 +1,12 @@
-// ─── actions.js — VALERIE action layer ────────────────────────────────────────
+//  actions.js  VALERIE action layer 
 // Parses structured action objects from Claude's JSON response and executes them.
-// This is how VALERIE actually controls the app — not just talks about it.
+// This is how VALERIE actually controls the app  not just talks about it.
 
-import { db, getDeviceId } from '../firebase/firebase.js';
-import { collection, addDoc, doc, setDoc } from 'firebase/firestore';
+import { supabase, getUserId, getUserIdSync } from '../supabase/supabase.js';
 import { storage, STORAGE_KEYS } from '../utils/storage.js';
 import { sanitizePayload } from '../utils/sanitize.js';
 
-// ─── Callback registry ─────────────────────────────────────────────────────────
+//  Callback registry 
 // Components register handlers here so VALERIE can trigger UI actions.
 const _registry = {};
 
@@ -15,7 +14,27 @@ export function registerActionHandler(name, fn) {
   _registry[name] = fn;
 }
 
-// ─── parseResponse ─────────────────────────────────────────────────────────────
+// Insert a row VALERIE created on the user's behalf (task/note/transaction/etc).
+// A failed insert used to fall back to a `local_*` row with NO indication
+// anything went wrong — the item just never showed up on the other device.
+// Now it still saves locally (so the action doesn't feel like it failed) but
+// loudly reports why it didn't sync.
+async function insertActionRow(table, storageKey, payload) {
+  const userId = await getUserId();
+  if (userId) {
+    const { error } = await supabase.from(table).insert({ user_id: userId, data: payload });
+    if (!error) return;
+    console.error(`[VALERIE action] insert failed on "${table}":`, error.message);
+    window.dispatchEvent(new CustomEvent('valerie:toast', { detail: { message: `⚠️ Couldn't sync — ${error.message}. Saved on this device only.`, type: 'error' } }));
+  } else {
+    console.error(`[VALERIE action] insert failed on "${table}": not signed in`);
+    window.dispatchEvent(new CustomEvent('valerie:toast', { detail: { message: '⚠️ Not signed in — saved on this device only', type: 'error' } }));
+  }
+  const local = storage.get(storageKey, []);
+  storage.set(storageKey, [{ id: `local_${Date.now()}`, ...payload }, ...local]);
+}
+
+//  parseResponse 
 /**
  * Parse Claude's JSON response into { speech, actions, remember }.
  * Falls back gracefully if Claude didn't return valid JSON.
@@ -46,7 +65,7 @@ export function parseResponse(raw) {
   };
 }
 
-// ─── executeActions ────────────────────────────────────────────────────────────
+//  executeActions 
 /**
  * Execute an array of action objects from VALERIE's response.
  * Runs sequentially to avoid race conditions.
@@ -66,17 +85,18 @@ async function _executeOne(action) {
 
   switch (action.type) {
 
-    // ── Navigation ─────────────────────────────────────────────────────────
+    //  Navigation
     case 'navigate': {
-      const valid = ['dashboard','assistant','tasks','calendar','notes','health',
-                     'finance','progress','style','essentials','lists','focus','vault','settings'];
+      const valid = ['dashboard','assistant','tasks','calendar','notes','health','workout',
+                     'finance','portfolio','progress','style','essentials','lists','focus',
+                     'routines','mind','lm','places','vault','settings'];
       if (valid.includes(action.target)) {
         _registry.navigate?.(action.target);
       }
       break;
     }
 
-    // ── Add task ───────────────────────────────────────────────────────────
+    //  Add task 
     case 'addTask': {
       if (!action.title?.trim()) break;
       const payload = {
@@ -87,17 +107,11 @@ async function _executeOne(action) {
         createdAt:   Date.now(),
         updatedAt:   Date.now(),
       };
-      try {
-        const userId = getDeviceId();
-        await addDoc(collection(db, 'users', userId, 'tasks'), sanitizePayload(payload));
-      } catch {
-        const local = storage.get(STORAGE_KEYS.TASKS, []);
-        storage.set(STORAGE_KEYS.TASKS, [{ id: `local_${Date.now()}`, ...sanitizePayload(payload) }, ...local]);
-      }
+      await insertActionRow('tasks', STORAGE_KEYS.TASKS, sanitizePayload(payload));
       break;
     }
 
-    // ── Add note ───────────────────────────────────────────────────────────
+    //  Add note
     case 'addNote': {
       if (!action.title?.trim() && !action.content?.trim()) break;
       const payload = {
@@ -107,17 +121,11 @@ async function _executeOne(action) {
         createdAt: Date.now(),
         updatedAt: Date.now(),
       };
-      try {
-        const userId = getDeviceId();
-        await addDoc(collection(db, 'users', userId, 'notes'), sanitizePayload(payload));
-      } catch {
-        const local = storage.get(STORAGE_KEYS.NOTES, []);
-        storage.set(STORAGE_KEYS.NOTES, [{ id: `local_${Date.now()}`, ...sanitizePayload(payload) }, ...local]);
-      }
+      await insertActionRow('notes', STORAGE_KEYS.NOTES, sanitizePayload(payload));
       break;
     }
 
-    // ── Log mood ───────────────────────────────────────────────────────────
+    //  Log mood 
     case 'logMood': {
       const value = Math.min(10, Math.max(1, Number(action.value) || 5));
       const today = new Date().toISOString().split('T')[0];
@@ -125,25 +133,31 @@ async function _executeOne(action) {
       const existing = storage.get(STORAGE_KEYS.MOOD_LOGS, []);
       const updated  = [entry, ...existing.filter(m => m.date !== today)].slice(0, 90);
       storage.set(STORAGE_KEYS.MOOD_LOGS, updated);
-      try {
-        const userId = getDeviceId();
-        await addDoc(collection(db, 'users', userId, 'mood_logs'), entry);
-      } catch {}
+      const moodUserId = await getUserId();
+      if (moodUserId) {
+        const { error } = await supabase.from('mood_logs').insert({ user_id: moodUserId, data: entry });
+        if (error) {
+          console.error('[VALERIE action] insert failed on "mood_logs":', error.message);
+          window.dispatchEvent(new CustomEvent('valerie:toast', { detail: { message: `⚠️ Couldn't sync mood log — ${error.message}`, type: 'error' } }));
+        }
+      } else {
+        console.error('[VALERIE action] insert failed on "mood_logs": not signed in');
+      }
       break;
     }
 
-    // ── Log water ──────────────────────────────────────────────────────────
+    //  Log water 
     case 'logWater': {
       const amount = Math.min(2000, Math.max(50, Number(action.amount) || 250));
       const today  = new Date().toISOString().split('T')[0];
-      // Water is stored as a flat array by useCollection — keep that format consistent
+      // Water is stored as a flat array by useCollection  keep that format consistent
       const existing = storage.get(STORAGE_KEYS.WATER, []);
       const logs = Array.isArray(existing) ? existing : (existing?.daily || []);
       storage.set(STORAGE_KEYS.WATER, [...logs, { date: today, amount, ts: Date.now(), createdAt: Date.now() }].slice(-200));
       break;
     }
 
-    // ── Start focus session (navigates to Focus tab) ───────────────────────
+    //  Start focus session (navigates to Focus tab) 
     case 'startFocus': {
       _registry.navigate?.('focus');
       // Also store a pending duration so Focus tab can auto-start if it reads it
@@ -153,13 +167,13 @@ async function _executeOne(action) {
       break;
     }
 
-    // ── Open settings ──────────────────────────────────────────────────────
+    //  Open settings 
     case 'openSettings': {
       _registry.navigate?.('settings');
       break;
     }
 
-    // ── Add transaction (income or expense) ───────────────────────────────
+    //  Add transaction (income or expense) 
     case 'addTransaction': {
       const amount = Math.abs(Number(action.amount));
       if (!amount) break;
@@ -174,17 +188,11 @@ async function _executeOne(action) {
         createdAt:   Date.now(),
         updatedAt:   Date.now(),
       };
-      try {
-        const userId = getDeviceId();
-        await addDoc(collection(db, 'users', userId, 'transactions'), sanitizePayload(payload));
-      } catch {
-        const local = storage.get(STORAGE_KEYS.TRANSACTIONS, []);
-        storage.set(STORAGE_KEYS.TRANSACTIONS, [{ id: `local_${Date.now()}`, ...sanitizePayload(payload) }, ...local]);
-      }
+      await insertActionRow('transactions', STORAGE_KEYS.TRANSACTIONS, sanitizePayload(payload));
       break;
     }
 
-    // ── Log calories ───────────────────────────────────────────────────────
+    //  Log calories
     case 'logCalories': {
       const cal   = Math.abs(Number(action.calories));
       if (!cal) break;
@@ -197,7 +205,7 @@ async function _executeOne(action) {
       break;
     }
 
-    // ── Log sleep ──────────────────────────────────────────────────────────
+    //  Log sleep 
     case 'logSleep': {
       const hours = Number(action.hours);
       if (!hours) break;
@@ -209,7 +217,7 @@ async function _executeOne(action) {
       break;
     }
 
-    // ── Toggle a boolean setting ──────────────────────────────────────────
+    //  Toggle a boolean setting 
     case 'toggleSetting': {
       const key = action.key;
       if (!key) break;
@@ -219,11 +227,18 @@ async function _executeOne(action) {
       window.dispatchEvent(new CustomEvent('valerie:settings-changed', { detail: merged }));
       // Strip sensitive keys before syncing to Firestore
       const { apiKey: _a, finnhubKey: _f, ...safeSettings } = merged;
-      setDoc(doc(db, 'users', getDeviceId(), 'meta', 'settings'), safeSettings).catch(() => {});
+      const uidTS = getUserIdSync();
+      if (uidTS) {
+        supabase.from('user_meta').upsert({ user_id: uidTS, key: 'settings', value: safeSettings }, { onConflict: 'user_id,key' }).then(({ error }) => {
+          if (error) { console.error('[VALERIE action] settings sync failed:', error.message); window.dispatchEvent(new CustomEvent('valerie:toast', { detail: { message: `⚠️ Couldn't sync settings — ${error.message}`, type: 'error' } })); }
+        });
+      } else {
+        console.error('[VALERIE action] settings sync failed: not signed in');
+      }
       break;
     }
 
-    // ── Change a specific setting value ───────────────────────────────────
+    //  Change a specific setting value 
     case 'changeSetting': {
       const { key: sKey, value: sVal } = action;
       if (!sKey) break;
@@ -233,11 +248,18 @@ async function _executeOne(action) {
       window.dispatchEvent(new CustomEvent('valerie:settings-changed', { detail: updated }));
       // Strip sensitive keys before syncing to Firestore
       const { apiKey: _a2, finnhubKey: _f2, ...safeUpdated } = updated;
-      setDoc(doc(db, 'users', getDeviceId(), 'meta', 'settings'), safeUpdated).catch(() => {});
+      const uidCS = getUserIdSync();
+      if (uidCS) {
+        supabase.from('user_meta').upsert({ user_id: uidCS, key: 'settings', value: safeUpdated }, { onConflict: 'user_id,key' }).then(({ error }) => {
+          if (error) { console.error('[VALERIE action] settings sync failed:', error.message); window.dispatchEvent(new CustomEvent('valerie:toast', { detail: { message: `⚠️ Couldn't sync settings — ${error.message}`, type: 'error' } })); }
+        });
+      } else {
+        console.error('[VALERIE action] settings sync failed: not signed in');
+      }
       break;
     }
 
-    // ── Open a specific settings section ──────────────────────────────────
+    //  Open a specific settings section
     case 'openSettingsSection': {
       _registry.navigate?.('settings');
       if (action.section) {
@@ -248,7 +270,54 @@ async function _executeOne(action) {
       break;
     }
 
+    //  Add calendar event
+    case 'addCalendarEvent': {
+      if (!action.title?.trim()) break;
+      // Require an ISO date (YYYY-MM-DD). VALERIE resolves "Wednesday" etc. from the
+      // current date in her context before emitting the action.
+      const date = /^\d{4}-\d{2}-\d{2}$/.test(action.date || '')
+        ? action.date
+        : new Date().toISOString().split('T')[0];
+      const norm = (t) => {
+        if (!t) return '';
+        const m = String(t).match(/^(\d{1,2}):?(\d{2})$/); // accepts "1230" or "12:30"
+        return m ? `${m[1].padStart(2, '0')}:${m[2]}` : '';
+      };
+      const payload = {
+        title:       action.title.trim(),
+        description: action.description || '',
+        date,
+        time:        norm(action.time),
+        endTime:     norm(action.endTime),
+        colour:      action.colour || '#4a9eff',
+        source:      'local',
+        createdAt:   Date.now(),
+        updatedAt:   Date.now(),
+      };
+      await insertActionRow('events', STORAGE_KEYS.EVENTS, sanitizePayload(payload));
+      break;
+    }
+
+    //  Add essential / restock item
+    case 'addEssential': {
+      if (!action.name?.trim()) break;
+      const validCats = ['grooming','health','kitchen','cleaning','supplements','other'];
+      const payload = {
+        name:         action.name.trim(),
+        category:     validCats.includes(action.category) ? action.category : 'other',
+        boughtDate:   /^\d{4}-\d{2}-\d{2}$/.test(action.boughtDate || '') ? action.boughtDate : new Date().toISOString().split('T')[0],
+        lifespanDays: Number.isFinite(Number(action.lifespanDays)) && action.lifespanDays ? parseInt(action.lifespanDays) : null,
+        price:        Number.isFinite(Number(action.price)) && action.price ? parseFloat(action.price) : null,
+        notes:        action.notes?.trim() || null,
+        createdAt:    new Date().toISOString(),
+      };
+      await insertActionRow('essentials', STORAGE_KEYS.ESSENTIALS, sanitizePayload(payload));
+      break;
+    }
+
     default:
       console.info('[VALERIE/Actions] Unknown action type:', action.type);
   }
 }
+
+

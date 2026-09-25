@@ -15,7 +15,7 @@ export default function Step6Theme({ data, update, next, back }) {
       <BackButton onClick={back} />
 
       <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
-        <div style={{ fontSize: 28, opacity: 0.4 }}>🎨</div>
+        <div style={{ fontSize: 28, opacity: 0.4 }}><</div>
         <h2 style={{ fontSize: 28, fontWeight: 300, color: 'var(--text-primary)', letterSpacing: '0.04em' }}>
           Make it yours
         </h2>
@@ -24,7 +24,7 @@ export default function Step6Theme({ data, update, next, back }) {
         </p>
       </div>
 
-      {/* Theme grid — 2 columns */}
+      {/* Theme grid  2 columns */}
       <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 10 }}>
         {THEME_KEYS.map(key => {
           const t = THEMES[key];
@@ -50,7 +50,7 @@ export default function Step6Theme({ data, update, next, back }) {
                   border: `1px solid ${t.preview.accent}60`,
                 }} />
                 {active && (
-                  <span style={{ fontSize: 10, color: t.preview.accent, opacity: 0.9 }}>✓</span>
+                  <span style={{ fontSize: 10, color: t.preview.accent, opacity: 0.9 }}></span>
                 )}
               </div>
               <div>
@@ -73,7 +73,7 @@ export default function Step6Theme({ data, update, next, back }) {
         })}
       </div>
 
-      <PrimaryButton onClick={next}>Continue →</PrimaryButton>
+      <PrimaryButton onClick={next}>Continue </PrimaryButton>
     </div>
   );
 }

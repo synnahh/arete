@@ -1,12 +1,13 @@
-// ─── MobileFinance.jsx — Finance tab for VALERIE iOS PWA ─────────────────────
+//  MobileFinance.jsx  Finance tab for VALERIE iOS PWA 
 import { useState, useMemo } from 'react';
-import { useCollection } from '../../firebase/useCollection.js';
+import { useCollection } from '../../supabase/useCollection.js';
 import { STORAGE_KEYS }  from '../../utils/storage.js';
+import { currencySymbol as currencySym, DEFAULT_CURRENCY } from '../../utils/currency.js';
 
 const CATEGORIES = [
   { id: 'food',          label: 'Food & Drink',   colour: '#f4a642', icon: '🍔' },
   { id: 'transport',     label: 'Transport',       colour: '#5b9cf6', icon: '🚗' },
-  { id: 'shopping',      label: 'Shopping',        colour: '#e55a5a', icon: '🛍️' },
+  { id: 'shopping',      label: 'Shopping',        colour: '#e55a5a', icon: '🛒' },
   { id: 'entertainment', label: 'Entertainment',   colour: '#a78bfa', icon: '🎬' },
   { id: 'health',        label: 'Health',          colour: '#4caf7d', icon: '💊' },
   { id: 'bills',         label: 'Bills',           colour: '#64748b', icon: '📋' },
@@ -18,19 +19,32 @@ const CAT_MAP = Object.fromEntries(CATEGORIES.map(c => [c.id, c]));
 
 const PCAT_MAP = {
   restock: { label: 'Restock', colour: '#4a9eff', icon: '🔄' },
-  fashion: { label: 'Fashion', colour: '#e25d7a', icon: '👚' },
+  fashion: { label: 'Fashion', colour: '#e25d7a', icon: '👗' },
   tech:    { label: 'Tech',    colour: '#9b5de5', icon: '💻' },
   home:    { label: 'Home',    colour: '#f4a642', icon: '🏠' },
-  fitness: { label: 'Fitness', colour: '#4caf7d', icon: '💪' },
+  fitness: { label: 'Fitness', colour: '#4caf7d', icon: '🏋️' },
   other:   { label: 'Other',   colour: '#6b7280', icon: '📦' },
 };
+
+// Subscriptions store a `category` (streaming/software/...), not an icon
+// directly — same categories as desktop's SUB_CATS.
+const SUB_CATS = [
+  { id: 'streaming', label: 'Streaming', icon: '📺' },
+  { id: 'software',  label: 'Software',  icon: '💻' },
+  { id: 'fitness',   label: 'Fitness',   icon: '🏋️' },
+  { id: 'food',      label: 'Food',      icon: '🍕' },
+  { id: 'finance',   label: 'Finance',   icon: '💳' },
+  { id: 'music',     label: 'Music',     icon: '🎵' },
+  { id: 'cloud',     label: 'Cloud',     icon: '☁️' },
+  { id: 'other',     label: 'Other',     icon: '📦' },
+];
 
 const SUB_TABS = ['Overview', 'Spending', 'Subscriptions', 'Purchases'];
 
 function todayISO() { return new Date().toISOString().split('T')[0]; }
 
 function fmtDate(str) {
-  if (!str) return '—';
+  if (!str) return '';
   const today = new Date().toISOString().split('T')[0];
   const yesterday = new Date(); yesterday.setDate(yesterday.getDate() - 1);
   const yStr = yesterday.toISOString().split('T')[0];
@@ -50,7 +64,7 @@ function daysUntil(dateStr) {
   return Math.ceil((new Date(dateStr) - new Date()) / 86400000);
 }
 
-// ── Cards ──────────────────────────────────────────────────────────────────────
+//  Cards 
 function MCard({ children, style = {} }) {
   return (
     <div style={{ background: 'var(--bg-panel)', border: '0.5px solid var(--card-border)',
@@ -69,7 +83,7 @@ function MLabel({ children }) {
   );
 }
 
-// ── Donut ──────────────────────────────────────────────────────────────────────
+//  Donut 
 function Donut({ segments, size = 96, thickness = 13, centerLabel, centerSub }) {
   const r = (size - thickness) / 2, cx = size / 2, cy = size / 2, circ = 2 * Math.PI * r;
   const total = segments.reduce((s, g) => s + g.value, 0);
@@ -105,10 +119,10 @@ function Donut({ segments, size = 96, thickness = 13, centerLabel, centerSub }) 
   );
 }
 
-// ── Overview ───────────────────────────────────────────────────────────────────
+//  Overview 
 function OverviewTab({ transactions, subscriptions, purchases, settings }) {
-  const currency = settings?.currency || 'AUD';
-  const sym = currency === 'GBP' ? '£' : currency === 'EUR' ? '€' : currency === 'USD' ? '$' : 'A$';
+  const currency = settings?.currency || DEFAULT_CURRENCY;
+  const sym = currencySym(currency);
   const fmt = n => `${sym}${Math.abs(n || 0).toFixed(2)}`;
 
   const thisMonth = new Date().toISOString().slice(0, 7);
@@ -117,7 +131,7 @@ function OverviewTab({ transactions, subscriptions, purchases, settings }) {
   const expenses  = monthTx.filter(t => t.category !== 'income').reduce((s, t) => s + (t.amount || 0), 0);
   const balance   = income - expenses;
 
-  const subTotal  = subscriptions.reduce((s, sub) => s + toMonthly(sub.amount, sub.billingCycle), 0);
+  const subTotal  = subscriptions.reduce((s, sub) => s + toMonthly(sub.amount, sub.cycle), 0);
   const pendingP  = purchases.filter(p => p.status !== 'bought').length;
 
   // Spending by category (this month)
@@ -219,12 +233,85 @@ function OverviewTab({ transactions, subscriptions, purchases, settings }) {
   );
 }
 
-// ── Spending ───────────────────────────────────────────────────────────────────
-function SpendingTab({ transactions, settings }) {
-  const currency = settings?.currency || 'AUD';
-  const sym = currency === 'GBP' ? '£' : currency === 'EUR' ? '€' : currency === 'USD' ? '$' : 'A$';
+//  Log transaction sheet  matches desktop schema { amount, type, category, description, date }
+function LogTransactionSheet({ onAdd, onClose }) {
+  const [type, setType]   = useState('expense');
+  const [amount, setAmount] = useState('');
+  const [category, setCategory] = useState('food');
+  const [desc, setDesc]   = useState('');
+
+  function save() {
+    const n = parseFloat(amount);
+    if (!n || n <= 0) return;
+    onAdd({ amount: n, type, category: type === 'income' ? 'income' : category, description: desc.trim() || null, date: todayISO() });
+    onClose();
+  }
+
+  return (
+    <div style={{ position: 'fixed', inset: 0, zIndex: 200, background: 'rgba(0,0,0,0.6)',
+      display: 'flex', alignItems: 'flex-end' }} onClick={onClose}>
+      <div onClick={e => e.stopPropagation()} style={{
+        width: '100%', maxHeight: '80vh', overflowY: 'auto',
+        background: 'var(--bg-panel)', borderRadius: '20px 20px 0 0', padding: 18,
+        display: 'flex', flexDirection: 'column', gap: 12,
+      }}>
+        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+          <span style={{ fontSize: 16, fontWeight: 600, color: 'var(--text-primary)' }}>Log transaction</span>
+          <button onClick={onClose} style={{ background: 'none', border: 'none', color: 'var(--text-muted)', fontSize: 20, cursor: 'pointer' }}>×</button>
+        </div>
+
+        <div style={{ display: 'flex', gap: 8 }}>
+          {['expense', 'income'].map(t => (
+            <button key={t} onClick={() => setType(t)} style={{
+              flex: 1, padding: '8px 0', borderRadius: 10, fontSize: 13, fontWeight: 600, cursor: 'pointer',
+              border: type === t ? '1px solid var(--accent)' : '0.5px solid var(--card-border)',
+              background: type === t ? 'var(--active-bg)' : 'none',
+              color: type === t ? 'var(--accent)' : 'var(--text-secondary)',
+            }}>{t === 'expense' ? 'Expense' : 'Income'}</button>
+          ))}
+        </div>
+
+        <input type="number" value={amount} onChange={e => setAmount(e.target.value)}
+          placeholder="Amount" style={{
+          padding: '10px 12px', borderRadius: 10, border: '0.5px solid var(--card-border)',
+          background: 'var(--bg-base)', color: 'var(--text-primary)', fontSize: 14, outline: 'none',
+        }} />
+
+        {type === 'expense' && (
+          <div style={{ display: 'flex', flexWrap: 'wrap', gap: 6 }}>
+            {CATEGORIES.filter(c => c.id !== 'income').map(c => (
+              <button key={c.id} onClick={() => setCategory(c.id)} style={{
+                padding: '6px 12px', borderRadius: 20, fontSize: 12, cursor: 'pointer',
+                border: category === c.id ? `1px solid ${c.colour}` : '0.5px solid var(--card-border)',
+                background: category === c.id ? `${c.colour}22` : 'none',
+                color: category === c.id ? c.colour : 'var(--text-secondary)',
+              }}>{c.icon} {c.label}</button>
+            ))}
+          </div>
+        )}
+
+        <input value={desc} onChange={e => setDesc(e.target.value)}
+          placeholder="Description (optional)" style={{
+          padding: '10px 12px', borderRadius: 10, border: '0.5px solid var(--card-border)',
+          background: 'var(--bg-base)', color: 'var(--text-primary)', fontSize: 14, outline: 'none',
+        }} />
+
+        <button onClick={save} disabled={!amount} style={{
+          padding: '12px 0', borderRadius: 10, border: 'none', background: 'var(--accent)',
+          color: 'var(--bg-base)', fontWeight: 600, cursor: 'pointer', opacity: amount ? 1 : 0.4,
+        }}>Log it</button>
+      </div>
+    </div>
+  );
+}
+
+//  Spending
+function SpendingTab({ transactions, settings, onAdd }) {
+  const currency = settings?.currency || DEFAULT_CURRENCY;
+  const sym = currencySym(currency);
   const fmt = n => `${sym}${Math.abs(n || 0).toFixed(2)}`;
   const [period, setPeriod] = useState('month');
+  const [showAdd, setShowAdd] = useState(false);
 
   const now   = new Date();
   const filt  = transactions.filter(t => {
@@ -255,7 +342,7 @@ function SpendingTab({ transactions, settings }) {
 
   return (
     <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
-      {/* Period selector */}
+      {/* Period selector + log button */}
       <div style={{ display: 'flex', gap: 8 }}>
         {[['month','Month'],['week','Week'],['year','Year']].map(([v, l]) => (
           <button key={v} onClick={() => setPeriod(v)} style={{
@@ -267,7 +354,14 @@ function SpendingTab({ transactions, settings }) {
             WebkitTapHighlightColor: 'transparent',
           }}>{l}</button>
         ))}
+        <button onClick={() => setShowAdd(true)} style={{
+          marginLeft: 'auto', padding: '5px 16px', borderRadius: 20, fontSize: 12, fontWeight: 600,
+          border: 'none', background: 'var(--accent)', color: 'var(--bg-base)', cursor: 'pointer',
+          WebkitTapHighlightColor: 'transparent',
+        }}>+ Log</button>
       </div>
+
+      {showAdd && <LogTransactionSheet onAdd={onAdd} onClose={() => setShowAdd(false)} />}
 
       {/* Donut + breakdown */}
       <MCard style={{ padding: '16px 18px' }}>
@@ -315,20 +409,101 @@ function SpendingTab({ transactions, settings }) {
   );
 }
 
-// ── Subscriptions ──────────────────────────────────────────────────────────────
-function SubscriptionsTab({ subscriptions, settings }) {
-  const currency = settings?.currency || 'AUD';
-  const sym = currency === 'GBP' ? '£' : currency === 'EUR' ? '€' : currency === 'USD' ? '$' : 'A$';
-  const fmt = n => `${sym}${Math.abs(n || 0).toFixed(2)}`;
+//  Subscriptions 
+function AddSubscriptionSheet({ onAdd, onClose }) {
+  const [name, setName]   = useState('');
+  const [amount, setAmount] = useState('');
+  const [cycle, setCycle] = useState('monthly');
+  const [category, setCategory] = useState('streaming');
+  const [nextBill, setNextBill] = useState(todayISO());
 
-  const monthly = subscriptions.reduce((s, sub) => s + toMonthly(sub.amount, sub.billingCycle), 0);
+  function save() {
+    const n = parseFloat(amount);
+    if (!name.trim() || !n || n <= 0) return;
+    onAdd({ name: name.trim(), amount: n, cycle, nextBilling: nextBill, category, status: 'active' });
+    onClose();
+  }
+
+  return (
+    <div style={{ position: 'fixed', inset: 0, zIndex: 200, background: 'rgba(0,0,0,0.6)',
+      display: 'flex', alignItems: 'flex-end' }} onClick={onClose}>
+      <div onClick={e => e.stopPropagation()} style={{
+        width: '100%', maxHeight: '80vh', overflowY: 'auto',
+        background: 'var(--bg-panel)', borderRadius: '20px 20px 0 0', padding: 18,
+        display: 'flex', flexDirection: 'column', gap: 12,
+      }}>
+        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+          <span style={{ fontSize: 16, fontWeight: 600, color: 'var(--text-primary)' }}>Add subscription</span>
+          <button onClick={onClose} style={{ background: 'none', border: 'none', color: 'var(--text-muted)', fontSize: 20, cursor: 'pointer' }}>×</button>
+        </div>
+
+        <input value={name} onChange={e => setName(e.target.value)} placeholder="Name (e.g. Netflix)" style={{
+          padding: '10px 12px', borderRadius: 10, border: '0.5px solid var(--card-border)',
+          background: 'var(--bg-base)', color: 'var(--text-primary)', fontSize: 14, outline: 'none',
+        }} />
+        <input type="number" value={amount} onChange={e => setAmount(e.target.value)} placeholder="Amount" style={{
+          padding: '10px 12px', borderRadius: 10, border: '0.5px solid var(--card-border)',
+          background: 'var(--bg-base)', color: 'var(--text-primary)', fontSize: 14, outline: 'none',
+        }} />
+
+        <div style={{ display: 'flex', gap: 8 }}>
+          {['weekly', 'monthly', 'yearly'].map(c => (
+            <button key={c} onClick={() => setCycle(c)} style={{
+              flex: 1, padding: '8px 0', borderRadius: 10, fontSize: 12, fontWeight: 600, cursor: 'pointer',
+              border: cycle === c ? '1px solid var(--accent)' : '0.5px solid var(--card-border)',
+              background: cycle === c ? 'var(--active-bg)' : 'none',
+              color: cycle === c ? 'var(--accent)' : 'var(--text-secondary)',
+            }}>{c.charAt(0).toUpperCase() + c.slice(1)}</button>
+          ))}
+        </div>
+
+        <input type="date" value={nextBill} onChange={e => setNextBill(e.target.value)} style={{
+          padding: '10px 12px', borderRadius: 10, border: '0.5px solid var(--card-border)',
+          background: 'var(--bg-base)', color: 'var(--text-primary)', fontSize: 14, outline: 'none',
+        }} />
+
+        <div style={{ display: 'flex', flexWrap: 'wrap', gap: 6 }}>
+          {SUB_CATS.map(c => (
+            <button key={c.id} onClick={() => setCategory(c.id)} style={{
+              padding: '6px 12px', borderRadius: 20, fontSize: 12, cursor: 'pointer',
+              border: category === c.id ? '1px solid var(--accent)' : '0.5px solid var(--card-border)',
+              background: category === c.id ? 'var(--active-bg)' : 'none',
+              color: category === c.id ? 'var(--accent)' : 'var(--text-secondary)',
+            }}>{c.icon} {c.label}</button>
+          ))}
+        </div>
+
+        <button onClick={save} disabled={!name.trim() || !amount} style={{
+          padding: '12px 0', borderRadius: 10, border: 'none', background: 'var(--accent)',
+          color: 'var(--bg-base)', fontWeight: 600, cursor: 'pointer', opacity: (name.trim() && amount) ? 1 : 0.4,
+        }}>Add</button>
+      </div>
+    </div>
+  );
+}
+
+//  Subscriptions
+function SubscriptionsTab({ subscriptions, settings, onAdd }) {
+  const currency = settings?.currency || DEFAULT_CURRENCY;
+  const sym = currencySym(currency);
+  const fmt = n => `${sym}${Math.abs(n || 0).toFixed(2)}`;
+  const [showAdd, setShowAdd] = useState(false);
+
+  const monthly = subscriptions.reduce((s, sub) => s + toMonthly(sub.amount, sub.cycle), 0);
   const yearly  = monthly * 12;
 
   const sorted = [...subscriptions].sort((a, b) =>
-    toMonthly(b.amount, b.billingCycle) - toMonthly(a.amount, a.billingCycle));
+    toMonthly(b.amount, b.cycle) - toMonthly(a.amount, a.cycle));
 
   return (
     <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
+
+      <button onClick={() => setShowAdd(true)} style={{
+        padding: '11px 0', borderRadius: 12, border: 'none', background: 'var(--accent)',
+        color: 'var(--bg-base)', fontSize: 14, fontWeight: 600, cursor: 'pointer',
+        WebkitTapHighlightColor: 'transparent',
+      }}>+ Add subscription</button>
+      {showAdd && <AddSubscriptionSheet onAdd={onAdd} onClose={() => setShowAdd(false)} />}
 
       {/* Totals */}
       <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 10 }}>
@@ -346,11 +521,11 @@ function SubscriptionsTab({ subscriptions, settings }) {
       <MCard style={{ padding: 0 }}>
         {sorted.length === 0 ? (
           <div style={{ padding: '20px 18px', fontSize: 13, color: 'var(--text-muted)' }}>
-            No subscriptions tracked yet — add them on desktop
+            No subscriptions tracked yet  add them on desktop
           </div>
         ) : sorted.map((sub, i) => {
-          const days = sub.nextBillingDate ? daysUntil(sub.nextBillingDate) : null;
-          const mo   = toMonthly(sub.amount, sub.billingCycle);
+          const days = sub.nextBilling ? daysUntil(sub.nextBilling) : null;
+          const mo   = toMonthly(sub.amount, sub.cycle);
           return (
             <div key={sub.id || i} style={{
               display: 'flex', alignItems: 'center', gap: 14, padding: '13px 16px',
@@ -358,12 +533,12 @@ function SubscriptionsTab({ subscriptions, settings }) {
             }}>
               <div style={{ width: 36, height: 36, borderRadius: 9, flexShrink: 0,
                 background: 'var(--hover-bg)', display: 'flex', alignItems: 'center',
-                justifyContent: 'center', fontSize: 17 }}>{sub.icon || '📦'}</div>
+                justifyContent: 'center', fontSize: 17 }}>{SUB_CATS.find(c => c.id === sub.category)?.icon || '📦'}</div>
               <div style={{ flex: 1, minWidth: 0 }}>
                 <div style={{ fontSize: 14, color: 'var(--text-primary)',
                   overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{sub.name}</div>
                 <div style={{ fontSize: 11, color: 'var(--text-muted)', marginTop: 2 }}>
-                  {days !== null ? (days <= 7 ? <span style={{ color: '#f59e0b' }}>Due in {days}d</span> : `Due in ${days}d`) : sub.billingCycle}
+                  {days !== null ? (days <= 7 ? <span style={{ color: '#f59e0b' }}>Due in {days}d</span> : `Due in ${days}d`) : sub.cycle}
                 </div>
               </div>
               <div style={{ textAlign: 'right', flexShrink: 0 }}>
@@ -378,10 +553,10 @@ function SubscriptionsTab({ subscriptions, settings }) {
   );
 }
 
-// ── Purchases ──────────────────────────────────────────────────────────────────
+//  Purchases 
 function PurchasesTab({ purchases, settings }) {
-  const currency = settings?.currency || 'AUD';
-  const sym = currency === 'GBP' ? '£' : currency === 'EUR' ? '€' : currency === 'USD' ? '$' : 'A$';
+  const currency = settings?.currency || DEFAULT_CURRENCY;
+  const sym = currencySym(currency);
   const fmt = n => `${sym}${Math.abs(n || 0).toFixed(2)}`;
 
   const pending = purchases.filter(p => p.status !== 'bought');
@@ -428,7 +603,7 @@ function PurchasesTab({ purchases, settings }) {
                   </div>
                 </div>
                 <div style={{ fontSize: 14, color: 'var(--text-primary)', flexShrink: 0 }}>
-                  {p.price ? fmt(p.price) : '—'}
+                  {p.price ? fmt(p.price) : ''}
                 </div>
               </div>
             );
@@ -451,7 +626,7 @@ function PurchasesTab({ purchases, settings }) {
                 <div style={{ fontSize: 15 }}>{cat.icon}</div>
                 <span style={{ flex: 1, fontSize: 13, color: 'var(--text-secondary)',
                   textDecoration: 'line-through' }}>{p.name}</span>
-                <span style={{ fontSize: 12, color: '#4caf7d' }}>✓</span>
+<span style={{ fontSize: 12, color: "#4caf7d" }}>✓</span>
               </div>
             );
           })}
@@ -461,7 +636,7 @@ function PurchasesTab({ purchases, settings }) {
       {purchases.length === 0 && (
         <MCard style={{ padding: '20px 18px' }}>
           <div style={{ fontSize: 13, color: 'var(--text-muted)' }}>
-            No purchases tracked yet — add from desktop
+            No purchases tracked yet  add from desktop
           </div>
         </MCard>
       )}
@@ -469,12 +644,12 @@ function PurchasesTab({ purchases, settings }) {
   );
 }
 
-// ── Main ───────────────────────────────────────────────────────────────────────
+//  Main 
 export default function MobileFinance({ settings }) {
   const [sub, setSub] = useState('Overview');
 
-  const { items: transactions   = [] } = useCollection('transactions',       STORAGE_KEYS.TRANSACTIONS);
-  const { items: subscriptions  = [] } = useCollection('subscriptions',      STORAGE_KEYS.SUBSCRIPTIONS);
+  const { items: transactions   = [], add: addTransaction  } = useCollection('transactions',       STORAGE_KEYS.TRANSACTIONS);
+  const { items: subscriptions  = [], add: addSubscription } = useCollection('subscriptions',      STORAGE_KEYS.SUBSCRIPTIONS);
   const { items: purchases      = [] } = useCollection('planned_purchases',  STORAGE_KEYS.PLANNED_PURCHASES);
 
   return (
@@ -498,9 +673,11 @@ export default function MobileFinance({ settings }) {
       </div>
 
       {sub === 'Overview'       && <OverviewTab       transactions={transactions} subscriptions={subscriptions} purchases={purchases} settings={settings} />}
-      {sub === 'Spending'       && <SpendingTab        transactions={transactions} settings={settings} />}
-      {sub === 'Subscriptions'  && <SubscriptionsTab   subscriptions={subscriptions} settings={settings} />}
+      {sub === 'Spending'       && <SpendingTab        transactions={transactions} settings={settings} onAdd={addTransaction} />}
+      {sub === 'Subscriptions'  && <SubscriptionsTab   subscriptions={subscriptions} settings={settings} onAdd={addSubscription} />}
       {sub === 'Purchases'      && <PurchasesTab       purchases={purchases} settings={settings} />}
     </div>
   );
 }
+
+

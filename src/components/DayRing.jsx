@@ -55,7 +55,7 @@ function compute(now) {
       percent: 0,
       color: '#4D4B47',
       phase: 'SLEEPING',
-      status: '😴 Still sleeping',
+      status: '=4 Still sleeping',
       remaining: `${fmtRemaining(minsUntilWake)} until wake-up`,
       dashoffset: C,
     };
@@ -66,7 +66,7 @@ function compute(now) {
       percent: 100,
       color: '#E25D7A',
       phase: 'PAST BEDTIME',
-      status: '⚠️ Past bedtime',
+      status: ' Past bedtime',
       remaining: 'Sleep!',
       dashoffset: 0,
     };
@@ -77,11 +77,11 @@ function compute(now) {
   const minsLeft = Math.round((SLEEP_HOUR - hours) * 60);
 
   let phase, status;
-  if (percent < 25)      { phase = 'MORNING';   status = '☀️ Morning — fresh start'; }
-  else if (percent < 50) { phase = 'MIDDAY';    status = '⚡ Midday — keep moving'; }
-  else if (percent < 75) { phase = 'AFTERNOON'; status = '🔥 Afternoon — push it'; }
-  else if (percent < 90) { phase = 'EVENING';   status = '⏳ Evening — wrap up'; }
-  else                   { phase = 'BEDTIME';   status = '🌙 Bedtime soon'; }
+  if (percent < 25)      { phase = 'MORNING';   status = ' Morning  fresh start'; }
+  else if (percent < 50) { phase = 'MIDDAY';    status = ' Midday  keep moving'; }
+  else if (percent < 75) { phase = 'AFTERNOON'; status = '=% Afternoon  push it'; }
+  else if (percent < 90) { phase = 'EVENING';   status = ' Evening  wrap up'; }
+  else                   { phase = 'BEDTIME';   status = '< Bedtime soon'; }
 
   return {
     percent,
@@ -107,7 +107,7 @@ export default function DayRing() {
     return () => clearInterval(id);
   }, []);
 
-  const pctLabel = state.percent === 0 ? '—' : `${Math.round(state.percent)}%`;
+  const pctLabel = state.percent === 0 ? '' : `${Math.round(state.percent)}%`;
 
   return (
     <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 18, flexWrap: 'nowrap', minWidth: 0 }}>
@@ -176,7 +176,7 @@ export default function DayRing() {
           {state.remaining}
         </div>
         <div style={{ fontSize: 11, fontFamily: 'monospace', color: 'var(--text-secondary)' }}>
-          8:00 AM – 12:00 AM
+          8:00 AM  12:00 AM
         </div>
       </div>
     </div>

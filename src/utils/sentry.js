@@ -1,6 +1,6 @@
-// ─── sentry.js — Sentry helpers for manual capture ───────────────────────────
+//  sentry.js  Sentry helpers for manual capture 
 // Use these anywhere in the app to report errors or custom events.
-// Safe to call even when Sentry isn't configured — all functions are no-ops.
+// Safe to call even when Sentry isn't configured  all functions are no-ops.
 
 import * as Sentry from '@sentry/react';
 

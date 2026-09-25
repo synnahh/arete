@@ -358,3 +358,79 @@ select option {
   color:            var(--text-primary);
 }
 .orb-thinking  { animation: orb-thinking 1.4s linear infinite; }
+
+/* ════════════════════════════════════════════════════════════════════════════
+   VALERIE MOTION SYSTEM (v2.1)
+   CSS-first, GPU-friendly (transform/opacity only). One cohesive token set so
+   every surface eases the same way. Everything respects prefers-reduced-motion.
+   Primitives in src/components/Motion.jsx consume these.
+   ════════════════════════════════════════════════════════════════════════════ */
+:root {
+  --ease-out:    cubic-bezier(0.22, 1, 0.36, 1);   /* settle */
+  --ease-spring: cubic-bezier(0.34, 1.56, 0.64, 1); /* gentle overshoot */
+  --ease-in-out: cubic-bezier(0.65, 0, 0.35, 1);
+  --dur-fast:    0.16s;
+  --dur-med:     0.28s;
+  --dur-slow:    0.45s;
+}
+
+/* ── Entrance keyframes ─────────────────────────────────────── */
+@keyframes val-fade-up   { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: none; } }
+@keyframes val-fade-in   { from { opacity: 0; } to { opacity: 1; } }
+@keyframes val-scale-in  { from { opacity: 0; transform: scale(0.94); } to { opacity: 1; transform: scale(1); } }
+@keyframes val-pop       { 0% { transform: scale(0.8); opacity: 0; } 60% { transform: scale(1.06); } 100% { transform: scale(1); opacity: 1; } }
+
+/* ── Feedback / celebration keyframes ───────────────────────── */
+@keyframes val-shimmer   { 0% { background-position: -180% 0; } 100% { background-position: 180% 0; } }
+@keyframes val-float-up  { 0% { opacity: 0; transform: translateY(6px) scale(0.9); } 25% { opacity: 1; } 100% { opacity: 0; transform: translateY(-26px) scale(1); } }
+@keyframes val-bump      { 0%,100% { transform: scale(1); } 30% { transform: scale(1.35); } 55% { transform: scale(0.92); } }
+@keyframes val-glow-burst{ 0% { filter: drop-shadow(0 0 2px currentColor); transform: scale(1); }
+                           45% { filter: drop-shadow(0 0 22px currentColor); transform: scale(1.14); }
+                           100% { filter: drop-shadow(0 0 6px currentColor); transform: scale(1); } }
+@keyframes val-draw      { to { stroke-dashoffset: 0; } }
+@keyframes val-confetti  { 0% { transform: translateY(0) rotate(0); opacity: 1; } 100% { transform: translateY(120px) rotate(540deg); opacity: 0; } }
+
+/* ── Utility classes (set --d for per-item stagger delay) ───── */
+.val-fade-up   { opacity: 0; animation: val-fade-up  var(--dur-med)  var(--ease-out) forwards; animation-delay: var(--d, 0ms); }
+.val-fade-in   { opacity: 0; animation: val-fade-in  var(--dur-med)  ease forwards;            animation-delay: var(--d, 0ms); }
+.val-scale-in  { opacity: 0; animation: val-scale-in var(--dur-med)  var(--ease-out) forwards; animation-delay: var(--d, 0ms); }
+.val-pop       { animation: val-pop var(--dur-med) var(--ease-spring) forwards; }
+
+/* ── Hover lift for glass cards (desktop, pointer only) ─────── */
+@media (hover: hover) and (pointer: fine) {
+  .val-lift { transition: transform var(--dur-fast) var(--ease-out), box-shadow var(--dur-fast) var(--ease-out); }
+  .val-lift:hover { transform: translateY(-2px); }
+}
+
+/* ── Pressable: tactile press on tap/click ─────────────────── */
+.val-press { transition: transform var(--dur-fast) var(--ease-out); }
+.val-press:active { transform: scale(0.97); }
+
+/* ── Skeleton shimmer ──────────────────────────────────────── */
+.val-skeleton {
+  background: linear-gradient(100deg,
+    rgba(255,255,255,0.04) 30%,
+    rgba(255,255,255,0.10) 50%,
+    rgba(255,255,255,0.04) 70%);
+  background-size: 200% 100%;
+  animation: val-shimmer 1.4s ease-in-out infinite;
+  border-radius: 8px;
+}
+
+/* ── Reduced-motion kill switch (accessibility + Settings toggle) ──
+   Honour the OS setting, or a manual opt-out via <html data-reduce-motion>. */
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after {
+    animation-duration: 0.001ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.001ms !important;
+    scroll-behavior: auto !important;
+  }
+}
+html[data-reduce-motion="true"] *,
+html[data-reduce-motion="true"] *::before,
+html[data-reduce-motion="true"] *::after {
+  animation-duration: 0.001ms !important;
+  animation-iteration-count: 1 !important;
+  transition-duration: 0.001ms !important;
+}

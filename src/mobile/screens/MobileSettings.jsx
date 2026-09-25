@@ -1,30 +1,51 @@
-// ─── MobileSettings.jsx — Settings tab for VALERIE iOS PWA ──────────────────
-import { useState } from 'react';
-import { applyTheme, THEMES } from '../../styles/themes.js';
-import { storage, STORAGE_KEYS } from '../../utils/storage.js';
+//  MobileSettings.jsx  Full settings for VALERIE iOS PWA 
+// Drill-down: category list  section (real desktop components, mobile shell)
 
-function MCard({ children, style = {} }) {
+import { useState, useCallback } from 'react';
+import { storage, STORAGE_KEYS } from '../../utils/storage.js';
+import {
+  IdentitySection,
+  AppearanceSection,
+  VoiceSection,
+  AISection,
+  UnitsSection,
+  NotificationsSection,
+  DailyBriefSection,
+  ProgressSection,
+  IntegrationsSection,
+  DataSection,
+  SecuritySection,
+  AccountSection,
+} from '../../tabs/Settings.jsx';
+
+//  Primitives 
+function MCard({ children }) {
   return (
-    <div style={{ background: 'var(--bg-panel)', border: '0.5px solid var(--card-border)',
-      borderRadius: 16, overflow: 'hidden', ...style }}>
+    <div style={{
+      background: 'var(--bg-panel)', border: '0.5px solid var(--card-border)',
+      borderRadius: 16, overflow: 'hidden',
+    }}>
       {children}
     </div>
   );
 }
 
-function Row({ icon, label, value, onClick, last = false, danger = false }) {
+function MRow({ icon, label, value, onClick, last = false, danger = false }) {
   return (
     <button onClick={onClick} style={{
       width: '100%', display: 'flex', alignItems: 'center', gap: 14,
       padding: '14px 18px', background: 'none', border: 'none', cursor: 'pointer',
       borderBottom: last ? 'none' : '0.5px solid var(--card-border)',
       WebkitTapHighlightColor: 'transparent', textAlign: 'left',
-    }}>
-      <span style={{ fontSize: 20, width: 28, textAlign: 'center' }}>{icon}</span>
+    }}
+    onTouchStart={e => e.currentTarget.style.background = 'rgba(255,255,255,0.04)'}
+    onTouchEnd={e => e.currentTarget.style.background = 'none'}
+    >
+      <span style={{ fontSize: 20, width: 28, textAlign: 'center', flexShrink: 0 }}>{icon}</span>
       <span style={{ flex: 1, fontSize: 15, color: danger ? '#e05555' : 'var(--text-primary)' }}>
         {label}
       </span>
-      {value && <span style={{ fontSize: 13, color: 'var(--text-muted)' }}>{value}</span>}
+      {value && <span style={{ fontSize: 13, color: 'var(--text-muted)', marginRight: 4 }}>{value}</span>}
       {!danger && (
         <svg width="7" height="12" viewBox="0 0 7 12" fill="none">
           <path d="M1 1l5 5-5 5" stroke="var(--text-muted)" strokeWidth="1.5"
@@ -37,97 +58,128 @@ function Row({ icon, label, value, onClick, last = false, danger = false }) {
 
 function SectionHeader({ children }) {
   return (
-    <div style={{ fontSize: 11, fontWeight: 700, letterSpacing: '0.1em',
+    <div style={{
+      fontSize: 11, fontWeight: 700, letterSpacing: '0.1em',
       textTransform: 'uppercase', color: 'var(--text-muted)',
-      padding: '20px 4px 8px' }}>
+      padding: '20px 4px 8px',
+    }}>
       {children}
     </div>
   );
 }
 
-export default function MobileSettings({ settings, onSettingsChange }) {
-  const [showThemes, setShowThemes] = useState(false);
-  const currentTheme = settings?.theme || 'obsidian';
+//  Section list 
+const SECTIONS = [
+  { group: 'Personalisation', id: 'identity',      icon: '👤', label: 'Identity'         },
+  { group: 'Personalisation', id: 'appearance',    icon: '🎨', label: 'Appearance'       },
+  { group: 'Personalisation', id: 'voice',         icon: '🎙', label: 'Voice'            },
+  { group: 'Personalisation', id: 'ai',            icon: '🧠', label: 'AI'               },
+  { group: 'Personalisation', id: 'units',         icon: '💱', label: 'Units & Currency' },
+  { group: 'Features',        id: 'notifications', icon: '🔔', label: 'Notifications'    },
+  { group: 'Features',        id: 'daily_brief',   icon: '🌅', label: 'Daily Brief'      },
+  { group: 'Features',        id: 'progress',      icon: '⭐',  label: 'Progress & Rank'  },
+  { group: 'Connections',     id: 'integrations',  icon: '🔌', label: 'Integrations'     },
+  { group: 'Data',            id: 'data',          icon: '💾', label: 'Data'             },
+  { group: 'Data',            id: 'security',      icon: '🛡', label: 'Security'         },
+  { group: 'Data',            id: 'account',       icon: '☁',  label: 'Account & Sync'   },
+];
 
-  function selectTheme(key) {
-    applyTheme(key);
-    const updated = { ...(settings || {}), theme: key, accentColorHex: '' };
-    storage.set(STORAGE_KEYS.SETTINGS, updated);
-    onSettingsChange?.(updated);
-    document.documentElement.style.removeProperty('--accent');
-    document.documentElement.style.removeProperty('--accent-solid');
-    setShowThemes(false);
+const GROUPS = [...new Set(SECTIONS.map(s => s.group))];
+
+//  Section renderer 
+function SectionContent({ id, settings, onSave }) {
+  switch (id) {
+    case 'identity':      return <IdentitySection      settings={settings} onSave={onSave} />;
+    case 'appearance':    return <AppearanceSection    settings={settings} onSave={onSave} />;
+    case 'voice':         return <VoiceSection         settings={settings} onSave={onSave} />;
+    case 'ai':            return <AISection            settings={settings} onSave={onSave} />;
+    case 'units':         return <UnitsSection         settings={settings} onSave={onSave} />;
+    case 'notifications': return <NotificationsSection settings={settings} onSave={onSave} />;
+    case 'daily_brief':   return <DailyBriefSection    settings={settings} onSave={onSave} />;
+    case 'progress':      return <ProgressSection      settings={settings} onSave={onSave} />;
+    case 'integrations':  return <IntegrationsSection  settings={settings} onSave={onSave} />;
+    case 'data':          return <DataSection />;
+    case 'security':      return <SecuritySection settings={settings} onSave={onSave} />;
+    case 'account':       return <AccountSection />;
+    default:              return null;
   }
+}
 
-  return (
-    <div style={{ padding: '16px', paddingTop: 20 }}>
+//  Main 
+export default function MobileSettings({ settings, onSettingsChange }) {
+  const [activeSection, setActiveSection] = useState(null);
 
-      <div style={{ fontSize: 22, fontWeight: 300, color: 'var(--text-primary)',
-        marginBottom: 20 }}>Settings</div>
+  const handleSave = useCallback((updates) => {
+    const merged = { ...(settings || {}), ...updates };
+    storage.set(STORAGE_KEYS.SETTINGS, merged);
+    onSettingsChange?.(merged);
+  }, [settings, onSettingsChange]);
 
-      {/* ── Appearance ── */}
-      <SectionHeader>Appearance</SectionHeader>
-      <MCard>
-        <Row icon="🎨" label="Theme"
-          value={THEMES[currentTheme]?.name || 'Obsidian'}
-          onClick={() => setShowThemes(!showThemes)} last />
-      </MCard>
-
-      {showThemes && (
-        <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 10, marginTop: 10 }}>
-          {Object.values(THEMES).map(t => {
-            const active = currentTheme === t.key;
-            return (
-              <button key={t.key} onClick={() => selectTheme(t.key)} style={{
-                background: t.preview.bg, borderRadius: 12, padding: '14px 16px',
-                border: active ? `2px solid ${t.preview.accent}` : '0.5px solid rgba(255,255,255,0.08)',
-                cursor: 'pointer', textAlign: 'left',
-                WebkitTapHighlightColor: 'transparent',
-              }}>
-                <div style={{ width: 14, height: 14, borderRadius: '50%',
-                  background: t.preview.accent, marginBottom: 8 }} />
-                <div style={{ fontSize: 13, fontWeight: 600, color: 'rgba(255,255,255,0.9)' }}>
-                  {t.name}
-                </div>
-                <div style={{ fontSize: 11, color: 'rgba(255,255,255,0.45)', marginTop: 2 }}>
-                  {t.description}
-                </div>
-              </button>
-            );
-          })}
+  //  Section drill-down view 
+  if (activeSection) {
+    const sec = SECTIONS.find(s => s.id === activeSection);
+    return (
+      <div style={{ minHeight: '100%', display: 'flex', flexDirection: 'column' }}>
+        {/* Header */}
+        <div style={{
+          display: 'flex', alignItems: 'center', gap: 12,
+          padding: '16px 18px 14px',
+          borderBottom: '0.5px solid var(--card-border)',
+          flexShrink: 0,
+        }}>
+          <button onClick={() => setActiveSection(null)} style={{
+            background: 'var(--hover-bg)', border: '0.5px solid var(--card-border)',
+            borderRadius: 10, padding: '6px 14px', cursor: 'pointer',
+            color: 'var(--accent)', fontSize: 13, fontWeight: 500,
+            WebkitTapHighlightColor: 'transparent',
+          }}> Back</button>
+          <span style={{ fontSize: 16, fontWeight: 500, color: 'var(--text-primary)' }}>
+            {sec?.icon} {sec?.label}
+          </span>
         </div>
-      )}
 
-      {/* ── Security ── */}
-      <SectionHeader>Security</SectionHeader>
-      <MCard>
-        <Row icon="🔑" label="API Keys" />
-        <Row icon="🔒" label="Biometric Lock" />
-        <Row icon="🛡️" label="Data Privacy" last />
-      </MCard>
-
-      {/* ── Integrations ── */}
-      <SectionHeader>Integrations</SectionHeader>
-      <MCard>
-        <Row icon="🔥" label="Firebase" value="Connected" />
-        <Row icon="🎵" label="Spotify" />
-        <Row icon="📱" label="Twilio / SMS" />
-        <Row icon="🤖" label="AI Models" last />
-      </MCard>
-
-      {/* ── Danger ── */}
-      <SectionHeader>Account</SectionHeader>
-      <MCard>
-        <Row icon="🚪" label="Sign Out" last danger />
-      </MCard>
-
-      <div style={{ textAlign: 'center', marginTop: 32, marginBottom: 8 }}>
-        <div style={{ fontSize: 12, color: 'var(--text-muted)' }}>VALERIE</div>
-        <div style={{ fontSize: 11, color: 'var(--text-muted)', opacity: 0.5, marginTop: 4 }}>
-          Personal AI · All data synced via Firebase
+        {/* Content */}
+        <div style={{ flex: 1, padding: '20px 18px', overflowY: 'auto',
+          WebkitOverflowScrolling: 'touch' }}>
+          <SectionContent id={activeSection} settings={settings} onSave={handleSave} />
         </div>
       </div>
+    );
+  }
 
+  //  Category list view 
+  return (
+    <div style={{ padding: '16px', paddingTop: 20 }}>
+      <div style={{ fontSize: 22, fontWeight: 300, color: 'var(--text-primary)', marginBottom: 20 }}>
+        Settings
+      </div>
+
+      {GROUPS.map(group => {
+        const items = SECTIONS.filter(s => s.group === group);
+        return (
+          <div key={group}>
+            <SectionHeader>{group}</SectionHeader>
+            <MCard>
+              {items.map((sec, i) => (
+                <MRow
+                  key={sec.id}
+                  icon={sec.icon}
+                  label={sec.label}
+                  last={i === items.length - 1}
+                  onClick={() => setActiveSection(sec.id)}
+                />
+              ))}
+            </MCard>
+          </div>
+        );
+      })}
+
+      <div style={{ textAlign: 'center', marginTop: 32, marginBottom: 16 }}>
+        <div style={{ fontSize: 11, color: 'var(--text-muted)', opacity: 0.5,
+          fontFamily: 'ui-monospace, monospace', letterSpacing: '0.06em' }}>
+          VALERIE v{__APP_VERSION__}
+        </div>
+      </div>
     </div>
   );
 }

@@ -1,4 +1,4 @@
-// ─── finnhub.js — Stock market data via Finnhub free API ─────────────────────
+//  finnhub.js  Stock market data via Finnhub free API 
 // Sign up at finnhub.io for a free API key (no credit card required).
 // Free tier: 60 calls/minute, real-time US stock quotes.
 

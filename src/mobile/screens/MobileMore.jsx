@@ -1,11 +1,12 @@
-// ─── MobileMore.jsx — Feature hub with brick widget grid ─────────────────────
+//  MobileMore.jsx  Feature hub with brick widget grid 
 import { useState, useMemo, useRef, useEffect } from 'react';
 import { storage, STORAGE_KEYS } from '../../utils/storage.js';
-import { useCollection } from '../../firebase/useCollection.js';
+import { useCollection } from '../../supabase/useCollection.js';
 import { haptics }       from '../utils/haptics.js';
 import MobileWorkout     from './MobileWorkout.jsx';
+import MobileLM          from './MobileLM.jsx';
 
-// ── Shared card ────────────────────────────────────────────────────────────────
+//  Shared card 
 function MCard({ children, style = {}, onClick }) {
   return (
     <div onClick={onClick} style={{
@@ -17,7 +18,7 @@ function MCard({ children, style = {}, onClick }) {
   );
 }
 
-// ── Back header with swipe-back support ────────────────────────────────────────
+//  Back header with swipe-back support 
 function SubHeader({ title, onBack }) {
   return (
     <div style={{ display: 'flex', alignItems: 'center', gap: 10,
@@ -41,7 +42,7 @@ function SubHeader({ title, onBack }) {
   );
 }
 
-// ── Sub-screen wrapper with swipe-back ─────────────────────────────────────────
+//  Sub-screen wrapper with swipe-back 
 function SubScreen({ title, onBack, children }) {
   const ref      = useRef(null);
   const startX   = useRef(null);
@@ -90,21 +91,26 @@ function SubScreen({ title, onBack, children }) {
   );
 }
 
-// ── Tasks sub-screen ───────────────────────────────────────────────────────────
+//  Tasks sub-screen 
 function TasksScreen({ onBack }) {
-  const [tasks,  setTasks]  = useState(() => storage.get(STORAGE_KEYS.TASKS, []));
+  // Was raw localStorage (storage.get/set) — tasks added on the phone never
+  // reached Supabase, so they never appeared on desktop. Same table/schema as
+  // the desktop Tasks tab now.
+  const { items: tasks = [], add, update, remove: removeTask } = useCollection('tasks', STORAGE_KEYS.TASKS);
   const [input,  setInput]  = useState('');
   const [filter, setFilter] = useState('pending');
 
-  function save(u) { setTasks(u); storage.set(STORAGE_KEYS.TASKS, u); }
   function addTask() {
     if (!input.trim()) return;
     haptics.success();
-    save([{ id: Date.now(), text: input.trim(), done: false, createdAt: new Date().toISOString() }, ...tasks]);
+    add({ text: input.trim(), description: '', priority: 'med', dueDate: '', category: '', repeat: 'none', done: false });
     setInput('');
   }
-  function toggle(id) { haptics.light(); save(tasks.map(t => t.id === id ? { ...t, done: !t.done } : t)); }
-  function remove(id) { haptics.tap(); save(tasks.filter(t => t.id !== id)); }
+  function toggle(t) {
+    haptics.light();
+    update(t.id, { done: !t.done, completedAt: !t.done ? new Date().toISOString() : null });
+  }
+  function remove(id) { haptics.tap(); removeTask(id); }
 
   const filtered = useMemo(() => {
     if (filter === 'pending') return tasks.filter(t => !t.done);
@@ -154,7 +160,7 @@ function TasksScreen({ onBack }) {
         <MCard style={{ padding: 0 }}>
           {filtered.length === 0 ? (
             <div style={{ padding: '20px 18px', fontSize: 13, color: 'var(--text-muted)' }}>
-              {filter === 'pending' ? 'All clear — you\'re on top of everything.' : 'No tasks here.'}
+              {filter === 'pending' ? 'All clear  you\'re on top of everything.' : 'No tasks here.'}
             </div>
           ) : (
             filtered.map((t, i) => (
@@ -162,7 +168,7 @@ function TasksScreen({ onBack }) {
                 display: 'flex', alignItems: 'center', gap: 12, padding: '14px 18px',
                 borderBottom: i < filtered.length - 1 ? '0.5px solid var(--card-border)' : 'none',
               }}>
-                <button onClick={() => toggle(t.id)} style={{
+                <button onClick={() => toggle(t)} style={{
                   width: 22, height: 22, borderRadius: '50%', flexShrink: 0,
                   border: t.done ? 'none' : '1.5px solid var(--card-border)',
                   background: t.done ? 'var(--accent)' : 'none',
@@ -191,7 +197,7 @@ function TasksScreen({ onBack }) {
   );
 }
 
-// ── Placeholder sub-screen ─────────────────────────────────────────────────────
+//  Placeholder sub-screen 
 function PlaceholderScreen({ title, onBack }) {
   return (
     <SubScreen title={title} onBack={onBack}>
@@ -204,19 +210,20 @@ function PlaceholderScreen({ title, onBack }) {
   );
 }
 
-// ── Feature bricks ─────────────────────────────────────────────────────────────
+//  Feature bricks 
 const BRICKS = [
-  { id: 'tasks',    label: 'Tasks',    icon: '✓',  accent: 'var(--accent)',  action: 'sub'  },
-  { id: 'workout',  label: 'Workout',  icon: '💪', accent: '#f59e0b',        action: 'sub'  },
-  { id: 'finance',  label: 'Finance',  icon: '$',  accent: '#4caf7d',        action: 'tab'  },
-  { id: 'focus',    label: 'Focus',    icon: '⏱',  accent: '#a78bfa',        action: 'sub'  },
-  { id: 'notes',    label: 'Notes',    icon: '✏',  accent: '#f472b6',        action: 'sub'  },
-  { id: 'lists',    label: 'Lists',    icon: '≡',  accent: '#38bdf8',        action: 'sub'  },
-  { id: 'routines', label: 'Routines', icon: '↺',  accent: '#fb923c',        action: 'sub'  },
-  { id: 'calendar', label: 'Calendar', icon: '▦',  accent: '#e05555',        action: 'sub'  },
+  { id: 'lm',       label: 'Looksmaxxing', icon: '🗿', accent: '#a78bfa',    action: 'sub'  },
+  { id: 'tasks',    label: 'Tasks',    icon: '✅', accent: 'var(--accent)',  action: 'sub'  },
+  { id: 'workout',  label: 'Workout',  icon: '🏋️', accent: '#f59e0b',        action: 'sub'  },
+  { id: 'finance',  label: 'Finance',  icon: '💰', accent: '#4caf7d',        action: 'tab'  },
+  { id: 'focus',    label: 'Focus',    icon: '⏱️', accent: '#a78bfa',        action: 'sub'  },
+  { id: 'notes',    label: 'Notes',    icon: '📝', accent: '#f472b6',        action: 'sub'  },
+  { id: 'lists',    label: 'Lists',    icon: '📋', accent: '#38bdf8',        action: 'sub'  },
+  { id: 'routines', label: 'Routines', icon: '🔁', accent: '#fb923c',        action: 'sub'  },
+  { id: 'calendar', label: 'Calendar', icon: '📅', accent: '#e05555',        action: 'sub'  },
 ];
 
-// ── Quick stats strip ──────────────────────────────────────────────────────────
+//  Quick stats strip 
 function QuickStats() {
   const today = new Date().toISOString().split('T')[0];
   const tasks = storage.get(STORAGE_KEYS.TASKS, []);
@@ -264,7 +271,7 @@ function QuickStats() {
   );
 }
 
-// ── Main ───────────────────────────────────────────────────────────────────────
+//  Main 
 export default function MobileMore({ settings, onSettingsChange, onTabChange }) {
   const [active, setActive] = useState(null);
 
@@ -283,6 +290,11 @@ export default function MobileMore({ settings, onSettingsChange, onTabChange }) 
     if (active === 'workout') return (
       <SubScreen title="Workout" onBack={() => setActive(null)}>
         <MobileWorkout />
+      </SubScreen>
+    );
+    if (active === 'lm') return (
+      <SubScreen title="Looksmaxxing" onBack={() => setActive(null)}>
+        <MobileLM />
       </SubScreen>
     );
     const b = BRICKS.find(b => b.id === active);
@@ -329,13 +341,13 @@ export default function MobileMore({ settings, onSettingsChange, onTabChange }) 
                 {/* External link indicator for tab-navigating bricks */}
                 {brick.action === 'tab' && (
                   <div style={{ position: 'absolute', top: 10, right: 10,
-                    fontSize: 8, color: 'var(--text-muted)', opacity: 0.5 }}>↗</div>
+                    fontSize: 8, color: 'var(--text-muted)', opacity: 0.5 }}> </div>
                 )}
                 <div style={{
                   width: 36, height: 36, borderRadius: 10,
                   background: 'var(--hover-bg)',
                   display: 'flex', alignItems: 'center', justifyContent: 'center',
-                  fontSize: brick.icon.length === 1 && /[A-Za-z$✓≡↺▦⏱✏]/.test(brick.icon) ? 17 : 20,
+                  fontSize: brick.icon.length === 1 && /[A-Za-z$S0 ⏱S]/.test(brick.icon) ? 17 : 20,
                   color: brick.accent, fontWeight: 700,
                 }}>
                   {brick.icon}
@@ -354,3 +366,5 @@ export default function MobileMore({ settings, onSettingsChange, onTabChange }) 
     </div>
   );
 }
+
+

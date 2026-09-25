@@ -1,4 +1,4 @@
-// localStorage helpers — all VALERIE data uses these
+// localStorage helpers  all VALERIE data uses these
 
 const PREFIX = 'valerie_';
 
@@ -15,9 +15,9 @@ export const storage = {
     } catch (e) {
       // Notify user when storage is full so they know data isn't being saved
       if (e?.name === 'QuotaExceededError' || e?.code === 22) {
-        console.error('[VALERIE] localStorage full — data not saved:', key);
+        console.error('[VALERIE] localStorage full  data not saved:', key);
         window.dispatchEvent(new CustomEvent('valerie:toast', {
-          detail: { message: 'Storage full — some data could not be saved. Clear old data in Settings.', type: 'error' },
+          detail: { message: 'Storage full  some data could not be saved. Clear old data in Settings.', type: 'error' },
         }));
       } else {
         console.error('storage.set failed:', e);
@@ -36,7 +36,7 @@ export const storage = {
 
 // Specific keys
 export const STORAGE_KEYS = {
-  ONBOARDED:    'onboarded',        // flag — onboarding complete
+  ONBOARDED:    'onboarded',        // flag  onboarding complete
   SETTINGS:     'settings',         // all app preferences
   USER:         'user',             // name, title
   TASKS:        'tasks',
@@ -76,13 +76,19 @@ export const STORAGE_KEYS = {
   DAILY_BRIEF_DATE:     'daily_brief_date',
   SAVED_MEALS:          'saved_meals',
   SLEEP_SCHEDULE:       'sleep_schedule',
-  // Finance — separate key from Lists
+  // Finance  separate key from Lists
   PLANNED_PURCHASES:    'planned_purchases',
   // Workout / Dashboard
   PROGRAMS:             'programs',
   OVERLOAD_EXERCISES:   'overload_exercises',
   SPLIT_NAMES:          'split_names',
+  // Session 7 additions
+  PLACES:               'places',
+  MEAL_PLANS:           'meal_plans',
   // Health sub-docs
   WATER_PROFILE:        'water_profile',
   MEASUREMENTS:         'measurements',
+  // Finance v2  recurring rules + category budgets
+  RECURRING:            'recurring_transactions',
+  BUDGETS:              'budgets',
 };

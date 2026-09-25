@@ -1,12 +1,12 @@
-// ─── Tasks Tab ────────────────────────────────────────────────────────────────
+//  Tasks Tab 
 // Split view: list left · detail/add panel right
 // Firebase synced · localStorage fallback · voice commands
 
 import { useState, useCallback, useMemo } from 'react';
-import { useCollection } from '../firebase/useCollection.js';
+import { useCollection } from '../supabase/useCollection.js';
 import { STORAGE_KEYS }  from '../utils/storage.js';
 
-// ── Helpers ───────────────────────────────────────────────────────────────────
+//  Helpers 
 const PRIORITY = {
   high: { label: 'High', color: 'var(--priority-high)' },
   med:  { label: 'Med',  color: 'var(--priority-med)'  },
@@ -14,8 +14,28 @@ const PRIORITY = {
 };
 const FILTERS = ['all', 'today', 'upcoming', 'completed'];
 
+const REPEATS = {
+  none:    { label: 'None'    },
+  daily:   { label: 'Daily'   },
+  weekly:  { label: 'Weekly'  },
+  monthly: { label: 'Monthly' },
+};
+
 function todayStr() {
   return new Date().toISOString().slice(0, 10);
+}
+
+// Advance a YYYY-MM-DD date by a repeat cycle using UTC math (no timezone drift).
+function advanceByRepeat(iso, repeat) {
+  const base = iso || todayStr();
+  const [y, m, d] = base.split('-').map(Number);
+  if (!y || !m || !d) return base;
+  const dt = new Date(Date.UTC(y, m - 1, d));
+  if (repeat === 'daily')        dt.setUTCDate(dt.getUTCDate() + 1);
+  else if (repeat === 'weekly')  dt.setUTCDate(dt.getUTCDate() + 7);
+  else if (repeat === 'monthly') dt.setUTCMonth(dt.getUTCMonth() + 1);
+  else return base;
+  return dt.toISOString().split('T')[0];
 }
 
 function applyFilter(tasks, filter) {
@@ -28,7 +48,7 @@ function applyFilter(tasks, filter) {
   }
 }
 
-// ── Icons ─────────────────────────────────────────────────────────────────────
+//  Icons 
 const Icon = ({ d, size = 15 }) => (
   <svg width={size} height={size} viewBox="0 0 24 24" fill="none"
     stroke="currentColor" strokeWidth={1.7} strokeLinecap="round" strokeLinejoin="round">
@@ -40,7 +60,7 @@ const TrashIcon  = () => <Icon d="M3 6h18 M8 6V4a1 1 0 011-1h6a1 1 0 011 1v2 M19
 const MicIcon    = () => <Icon d="M12 1a3 3 0 00-3 3v8a3 3 0 006 0V4a3 3 0 00-3-3z M19 10v2a7 7 0 01-14 0v-2 M12 19v4 M8 23h8" />;
 const EditIcon   = () => <Icon d="M11 4H4a2 2 0 00-2 2v14a2 2 0 002 2h14a2 2 0 002-2v-7 M18.5 2.5a2.12 2.12 0 013 3L12 15l-4 1 1-4z" />;
 
-// ── Pill badge ────────────────────────────────────────────────────────────────
+//  Pill badge 
 function PriorityPill({ priority }) {
   const p = PRIORITY[priority] ?? PRIORITY.low;
   return (
@@ -56,13 +76,13 @@ function PriorityPill({ priority }) {
   );
 }
 
-// ── Empty state ───────────────────────────────────────────────────────────────
+//  Empty state 
 function EmptyState({ filter, onAdd }) {
   const messages = {
-    all:       { icon: '✅', text: 'No pending tasks.', sub: 'You\'re clear.' },
+    all:       { icon: "✅", text: "No pending tasks.", sub: "You're clear." },
     today:     { icon: '☀️', text: 'Nothing due today.', sub: 'Enjoy the day.' },
     upcoming:  { icon: '📅', text: 'No upcoming tasks.', sub: 'Schedule something.' },
-    completed: { icon: '🏁', text: 'Nothing completed yet.', sub: 'Start ticking things off.' },
+    completed: { icon: '🏆', text: 'Nothing completed yet.', sub: 'Start ticking things off.' },
   };
   const m = messages[filter];
   return (
@@ -79,7 +99,7 @@ function EmptyState({ filter, onAdd }) {
   );
 }
 
-// ── Task row ──────────────────────────────────────────────────────────────────
+//  Task row 
 function TaskRow({ task, selected, onSelect, onToggle }) {
   const [hovered, setHovered] = useState(false);
 
@@ -133,6 +153,9 @@ function TaskRow({ task, selected, onSelect, onToggle }) {
         )}
         <div style={{ display: 'flex', alignItems: 'center', gap: 6, marginTop: 3 }}>
           {task.priority && <PriorityPill priority={task.priority} />}
+          {task.repeat && task.repeat !== 'none' && (
+            <span style={{ fontSize: 10, color: 'var(--accent)' }} title={`Repeats ${REPEATS[task.repeat]?.label?.toLowerCase() ?? task.repeat}`}>🔁</span>
+          )}
           {task.dueDate && (
             <span style={{ fontSize: 10, color: 'var(--text-muted)' }}>
               {new Date(task.dueDate + 'T00:00:00').toLocaleDateString('en-AU', { day: 'numeric', month: 'short' })}
@@ -149,16 +172,17 @@ function TaskRow({ task, selected, onSelect, onToggle }) {
   );
 }
 
-// ── Detail / Add panel ────────────────────────────────────────────────────────
+//  Detail / Add panel 
 function TaskPanel({ mode, task, onSave, onDelete, onClose, onToggle }) {
   const isAdd  = mode === 'add';
   const isView = mode === 'view';
   const isEdit = mode === 'edit';
 
   const [form, setForm] = useState(
-    isAdd ? { text: '', description: '', priority: 'med', dueDate: '', category: '' } :
+    isAdd ? { text: '', description: '', priority: 'med', dueDate: '', category: '', repeat: 'none' } :
     { text: task?.text ?? '', description: task?.description ?? '',
-      priority: task?.priority ?? 'med', dueDate: task?.dueDate ?? '', category: task?.category ?? '' }
+      priority: task?.priority ?? 'med', dueDate: task?.dueDate ?? '', category: task?.category ?? '',
+      repeat: task?.repeat ?? 'none' }
   );
   const [editing, setEditing] = useState(isAdd);
 
@@ -171,7 +195,7 @@ function TaskPanel({ mode, task, onSave, onDelete, onClose, onToggle }) {
         justifyContent: 'center', gap: 12, height: '100%',
         padding: '24px 16px', opacity: 0.4,
       }}>
-        <span style={{ fontSize: 24 }}>☑</span>
+        <span style={{ fontSize: 24 }}></span>
         <p style={{ fontSize: 12, color: 'var(--text-muted)', textAlign: 'center', lineHeight: 1.5 }}>
           Select a task to view details
         </p>
@@ -204,7 +228,7 @@ function TaskPanel({ mode, task, onSave, onDelete, onClose, onToggle }) {
               <TrashIcon />
             </button>
           )}
-          <button onClick={onClose} style={{ ...iconBtnStyle, fontSize: 16, lineHeight: 1 }} title="Close">×</button>
+          <button onClick={onClose} style={{ ...iconBtnStyle, fontSize: 16, lineHeight: 1 }} title="Close"></button>
         </div>
       </div>
 
@@ -269,6 +293,22 @@ function TaskPanel({ mode, task, onSave, onDelete, onClose, onToggle }) {
               onBlur={e => e.target.style.borderColor = 'var(--input-border)'}
             />
           </div>
+          <div>
+            <label style={labelStyle}>Repeat</label>
+            <div style={{ display: 'flex', gap: 5 }}>
+              {Object.entries(REPEATS).map(([k, r]) => (
+                <button key={k} onClick={() => set('repeat', k)} style={{
+                  flex: 1, padding: '5px 0', borderRadius: 6, fontSize: 10.5, fontWeight: 500,
+                  border: `0.5px solid ${form.repeat === k ? 'var(--accent)' : 'var(--card-border)'}`,
+                  background: form.repeat === k ? 'var(--active-bg)' : 'transparent',
+                  color: form.repeat === k ? 'var(--accent)' : 'var(--text-muted)',
+                  cursor: 'pointer', transition: 'all 0.15s ease',
+                }}>
+                  {r.label}
+                </button>
+              ))}
+            </div>
+          </div>
           <div style={{ display: 'flex', gap: 6, marginTop: 'auto' }}>
             <button onClick={() => { setEditing(false); if (isAdd) onClose(); }}
               style={{ flex: 1, ...ghostBtnStyle }}>Cancel</button>
@@ -305,6 +345,11 @@ function TaskPanel({ mode, task, onSave, onDelete, onClose, onToggle }) {
                 <span style={{ fontSize: 12, color: 'var(--text-secondary)' }}>{task.category}</span>
               </Row>
             )}
+            {task.repeat && task.repeat !== 'none' && (
+              <Row label="Repeat">
+                <span style={{ fontSize: 12, color: 'var(--accent)' }}>🔁 {REPEATS[task.repeat]?.label ?? task.repeat}</span>
+              </Row>
+            )}
           </div>
           {/* Complete / Reopen */}
           <button
@@ -318,7 +363,7 @@ function TaskPanel({ mode, task, onSave, onDelete, onClose, onToggle }) {
               transition: 'all 0.15s ease',
             }}
           >
-            {task.done ? '↺ Reopen' : '✓ Mark complete'}
+            {task.done ? '↩ Reopen' : '✓ Mark complete'}
           </button>
         </div>
       )}
@@ -356,7 +401,7 @@ const primaryBtnStyle = {
   fontSize: 12, fontWeight: 500, transition: 'all 0.15s ease',
 };
 
-// ── Main Tasks component ───────────────────────────────────────────────────────
+//  Main Tasks component 
 export default function Tasks({ ai }) {
   const { items: tasks, add, update, remove, synced } = useCollection('tasks', STORAGE_KEYS.TASKS);
   const [filter, setFilter]     = useState('all');
@@ -365,39 +410,50 @@ export default function Tasks({ ai }) {
 
   const filtered = useMemo(() => applyFilter(tasks, filter), [tasks, filter]);
 
-  // ── Toggle done ────────────────────────────────────────────────────────────
+  //  Toggle done
   const handleToggle = useCallback(async (task) => {
-    await update(task.id, { done: !task.done });
+    const becomingDone = !task.done;
+    await update(task.id, { done: becomingDone, completedAt: becomingDone ? new Date().toISOString() : null });
+    // Recurring: when completed, spawn the next occurrence with an advanced due date
+    if (becomingDone && task.repeat && task.repeat !== 'none') {
+      await add({
+        text: task.text, description: task.description || '',
+        priority: task.priority || 'med',
+        dueDate: advanceByRepeat(task.dueDate, task.repeat),
+        category: task.category || '', repeat: task.repeat, done: false,
+      });
+    }
     // If marking done, close panel if it was showing this task
-    if (!task.done && panel?.task?.id === task.id) setPanel(null);
-  }, [update, panel]);
+    if (becomingDone && panel?.task?.id === task.id) setPanel(null);
+  }, [update, add, panel]);
 
-  // ── Save (add or edit) ─────────────────────────────────────────────────────
+  //  Save (add or edit) 
   const handleSave = useCallback(async (form) => {
     if (!form.text?.trim()) return;
     if (form.id) {
       await update(form.id, {
         text: form.text.trim(), description: form.description,
         priority: form.priority, dueDate: form.dueDate, category: form.category,
+        repeat: form.repeat || 'none',
       });
       setPanel({ mode: 'view', task: { ...panel?.task, ...form } });
     } else {
       await add({
         text: form.text.trim(), description: form.description || '',
         priority: form.priority || 'med', dueDate: form.dueDate || '',
-        category: form.category || '', done: false,
+        category: form.category || '', repeat: form.repeat || 'none', done: false,
       });
       setPanel(null);
     }
   }, [add, update, panel]);
 
-  // ── Delete ─────────────────────────────────────────────────────────────────
+  //  Delete 
   const handleDelete = useCallback(async (id) => {
     await remove(id);
     setPanel(null);
   }, [remove]);
 
-  // ── Voice command ──────────────────────────────────────────────────────────
+  //  Voice command 
   const handleVoice = useCallback(() => {
     if (!ai?.startListening) return;
     setVoice(true);
@@ -425,7 +481,7 @@ export default function Tasks({ ai }) {
   return (
     <div style={{ display: 'flex', height: '100%', overflow: 'hidden' }}>
 
-      {/* ── Left: task list ────────────────────────────────────────────────── */}
+      {/*  Left: task list  */}
       <div style={{
         flex: 1, display: 'flex', flexDirection: 'column',
         borderRight: '0.5px solid var(--sidebar-divider)', overflow: 'hidden',
@@ -440,7 +496,7 @@ export default function Tasks({ ai }) {
             Tasks
             {synced && (
               <span style={{ fontSize: 9.5, color: 'var(--text-muted)', marginLeft: 8, fontWeight: 400 }}>
-                ● synced
+                 synced
               </span>
             )}
           </h2>
@@ -509,7 +565,7 @@ export default function Tasks({ ai }) {
         </div>
       </div>
 
-      {/* ── Right: detail / add panel ──────────────────────────────────────── */}
+      {/*  Right: detail / add panel  */}
       <div style={{
         width: 220, flexShrink: 0,
         background: 'var(--bg-panel)',
@@ -528,3 +584,4 @@ export default function Tasks({ ai }) {
     </div>
   );
 }
+

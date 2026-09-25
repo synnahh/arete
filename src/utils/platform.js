@@ -1,4 +1,4 @@
-// ─── platform.js — Runtime environment detection ──────────────────────────────
+//  platform.js  Runtime environment detection 
 // Used throughout the app to switch between Tauri (desktop) and PWA (mobile/web)
 // behaviour without duplicating component logic.
 
@@ -13,15 +13,17 @@ export function isTauri() {
 /**
  * Returns true when the app should render the mobile (iOS) shell.
  *
- * PWA / Netlify builds: ALWAYS return true — this is the iOS app.
+ * PWA / Netlify builds: ALWAYS return true  this is the iOS app.
  * Tauri builds: detect based on viewport + user agent so the desktop
  *               shell still works during local development.
  */
 export function isMobile() {
   if (typeof window === 'undefined') return false;
 
-  // PWA build (Netlify) — always render the mobile shell.
-  // BUILD_TARGET is injected by vite.config.js define block at compile time.
+  // Tauri desktop app  ALWAYS desktop shell regardless of any env var or screen size
+  if (isTauri()) return false;
+
+  // PWA build (Netlify)  VITE_FORCE_MOBILE baked in at build time
   if (import.meta.env.VITE_FORCE_MOBILE === 'true') return true;
 
   // Allow explicit overrides via URL param during dev/testing
@@ -29,7 +31,7 @@ export function isMobile() {
   if (params.has('desktop')) return false;
   if (params.has('mobile'))  return true;
 
-  // Tauri or plain browser — detect naturally
+  // Plain browser  detect naturally by screen size / user agent
   return (
     window.innerWidth < 768 ||
     /iPhone|iPad|iPod|Android|Mobile/i.test(navigator.userAgent)
@@ -38,7 +40,7 @@ export function isMobile() {
 
 /**
  * Returns true when the app is running as an installed PWA
- * (added to home screen — no browser chrome).
+ * (added to home screen  no browser chrome).
  */
 export function isInstalledPWA() {
   return (
@@ -48,7 +50,7 @@ export function isInstalledPWA() {
 }
 
 /**
- * Safe fetch — uses Tauri's HTTP plugin on desktop (bypasses CORS),
+ * Safe fetch  uses Tauri's HTTP plugin on desktop (bypasses CORS),
  * falls back to standard browser fetch on web/PWA.
  */
 export async function platformFetch(url, options = {}) {
@@ -60,7 +62,7 @@ export async function platformFetch(url, options = {}) {
 }
 
 /**
- * Safe invoke — calls a Tauri backend command on desktop.
+ * Safe invoke  calls a Tauri backend command on desktop.
  * Returns null silently on web (where Tauri commands don't exist).
  */
 export async function platformInvoke(command, args = {}) {

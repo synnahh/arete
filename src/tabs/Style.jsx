@@ -1,22 +1,22 @@
-// Style tab — Session 5
+// Style tab  Session 5
 // Sub-tabs: Discover (occasion search + AI outfit visualisation + optional Google Custom Search)
-//           My Board (saved items — Wishlist / Purchased / Pass)
+//           My Board (saved items  Wishlist / Purchased / Pass)
 
 import { useState, useEffect } from 'react';
-import { useCollection }        from '../firebase/useCollection.js';
+import { useCollection }        from '../supabase/useCollection.js';
 import { STORAGE_KEYS, storage } from '../utils/storage.js';
 
-// ─── Currency helper ───────────────────────────────────────────────────────────
+//  Currency helper 
 function getCurrSymbol(currency) {
   switch (currency) {
     case 'GBP': return '£';
-    case 'EUR': return '€';
+    case 'EUR': return '';
     case 'AUD': return 'A$';
     default:    return '$';
   }
 }
 
-// ─── Constants ─────────────────────────────────────────────────────────────────
+//  Constants 
 
 const OCCASIONS = ['Smart Casual', 'Date Night', 'Work', 'Gym', 'Beach', 'Evening'];
 
@@ -33,7 +33,7 @@ const AESTHETICS = [
   'modern', 'classic', 'refined', 'edgy',
 ];
 
-// ─── Pollinations.ai ───────────────────────────────────────────────────────────
+//  Pollinations.ai 
 
 function pollinationsUrl(prompt, seed) {
   return `https://image.pollinations.ai/prompt/${encodeURIComponent(prompt)}?width=400&height=500&seed=${seed}&nologo=true`;
@@ -60,13 +60,13 @@ function buildResults(occasion, query) {
   });
 }
 
-// ─── Google Custom Search ──────────────────────────────────────────────────────
+//  Google Custom Search 
 
 async function searchGoogle(query, key, cx) {
   const url =
     `https://www.googleapis.com/customsearch/v1` +
-    `?key=${encodeURIComponent(key)}` +
-    `&cx=${encodeURIComponent(cx)}` +
+    `?key=${key.trim()}` +
+    `&cx=${cx.trim()}` +
     `&q=${encodeURIComponent(query)}` +
     `&searchType=image&num=9&imgSize=medium&safe=active`;
   const res = await fetch(url);
@@ -87,7 +87,7 @@ async function searchGoogle(query, key, cx) {
   }));
 }
 
-// ─── SaveModal ─────────────────────────────────────────────────────────────────
+//  SaveModal 
 
 function SaveModal({ result, onSave, onClose }) {
   const [category, setCategory] = useState('Clothing');
@@ -235,7 +235,7 @@ function SaveModal({ result, onSave, onClose }) {
   );
 }
 
-// ─── ResultCard ────────────────────────────────────────────────────────────────
+//  ResultCard 
 
 function ResultCard({ result, onSave }) {
   const [loaded, setLoaded]   = useState(false);
@@ -305,7 +305,7 @@ function ResultCard({ result, onSave }) {
             rel="noreferrer"
             style={{ fontSize: 10, color: 'var(--accent)', display: 'block', marginBottom: 6 }}
           >
-            View source ↗
+            View source  
           </a>
         )}
         <button
@@ -323,7 +323,7 @@ function ResultCard({ result, onSave }) {
   );
 }
 
-// ─── BoardCard ─────────────────────────────────────────────────────────────────
+//  BoardCard 
 
 function BoardCard({ item, selected, onSelect, currSymbol = '$' }) {
   const cfg = STATUS_CONFIG[item.status] || STATUS_CONFIG.wishlist;
@@ -357,7 +357,7 @@ function BoardCard({ item, selected, onSelect, currSymbol = '$' }) {
             display: 'flex', alignItems: 'center', justifyContent: 'center',
             fontSize: 30, opacity: 0.2,
           }}>
-            👗
+            x
           </div>
         )}
         {/* Status badge */}
@@ -389,7 +389,7 @@ function BoardCard({ item, selected, onSelect, currSymbol = '$' }) {
   );
 }
 
-// ─── DetailPanel ───────────────────────────────────────────────────────────────
+//  DetailPanel 
 
 function DetailPanel({ item, onUpdate, onRemove, onClose, currSymbol = '$' }) {
   const [fields, setFields] = useState({
@@ -459,7 +459,7 @@ function DetailPanel({ item, onUpdate, onRemove, onClose, currSymbol = '$' }) {
             color: 'var(--text-secondary)', cursor: 'pointer', padding: 0,
           }}
         >
-          ×
+          
         </button>
       </div>
 
@@ -482,7 +482,7 @@ function DetailPanel({ item, onUpdate, onRemove, onClose, currSymbol = '$' }) {
               display: 'flex', alignItems: 'center', justifyContent: 'center',
               fontSize: 36, opacity: 0.15,
             }}>
-              👗
+              x
             </div>
           )}
         </div>
@@ -584,7 +584,7 @@ function DetailPanel({ item, onUpdate, onRemove, onClose, currSymbol = '$' }) {
               border: '1px solid var(--border)', marginBottom: 14,
             }}
           >
-            Open shop link ↗
+            Open shop link  
           </a>
         )}
 
@@ -609,7 +609,7 @@ function DetailPanel({ item, onUpdate, onRemove, onClose, currSymbol = '$' }) {
               color: '#e55a5a', fontSize: 12, cursor: 'pointer',
             }}
           >
-            🗑
+            x
           </button>
         </div>
       </div>
@@ -617,7 +617,7 @@ function DetailPanel({ item, onUpdate, onRemove, onClose, currSymbol = '$' }) {
   );
 }
 
-// ─── AddManualModal ────────────────────────────────────────────────────────────
+//  AddManualModal 
 
 function AddManualModal({ onAdd, onClose, currSymbol = '$' }) {
   const [form, setForm] = useState({
@@ -782,7 +782,7 @@ function AddManualModal({ onAdd, onClose, currSymbol = '$' }) {
                 color: 'var(--accent)', fontSize: 12, cursor: 'pointer', whiteSpace: 'nowrap',
               }}
             >
-              ✨ Generate
+              ✦ Generate
             </button>
           </div>
           {/* Preview */}
@@ -860,7 +860,7 @@ function AddManualModal({ onAdd, onClose, currSymbol = '$' }) {
   );
 }
 
-// ─── DiscoverView ──────────────────────────────────────────────────────────────
+//  DiscoverView 
 
 function DiscoverView({ settings, onSaveResult, currSymbol = '$' }) {
   const [occasion,    setOccasion]    = useState('');
@@ -885,7 +885,7 @@ function DiscoverView({ settings, onSaveResult, currSymbol = '$' }) {
           .filter(Boolean).join(' ');
         res = await searchGoogle(q, settings.googleSearchKey, settings.googleSearchCx);
       } else {
-        // Synchronous — but images load async via <img> tags
+        // Synchronous  but images load async via <img> tags
         res = buildResults(occasion, query.trim());
       }
       setResults(res);
@@ -897,8 +897,7 @@ function DiscoverView({ settings, onSaveResult, currSymbol = '$' }) {
   };
 
   const handleKey = e => { if (e.key === 'Enter') handleSearch(); };
-
-  const searchLabel = hasGoogle ? '🔍 Search' : '✨ Generate';
+  const searchLabel = hasGoogle ? '🔍 Search' : '✦ Generate';
   const resultLabel = hasGoogle ? 'results' : 'generated looks';
   const searchTerm  = [occasion, query].filter(Boolean).join(' ') || 'your search';
 
@@ -917,7 +916,7 @@ function DiscoverView({ settings, onSaveResult, currSymbol = '$' }) {
             borderRadius: 8, padding: '9px 12px', marginBottom: 14,
             fontSize: 12, color: 'var(--text-secondary)', lineHeight: 1.4,
           }}>
-            <span style={{ flexShrink: 0 }}>💡</span>
+            <span style={{ flexShrink: 0 }}>🛍️</span>
             <span>
               Add a <strong style={{ color: 'var(--text-primary)' }}>Google Custom Search API key</strong> and Engine ID in{' '}
               <strong style={{ color: 'var(--text-primary)' }}>Settings → Integrations</strong> to unlock real shopping results.{' '}
@@ -1011,7 +1010,7 @@ function DiscoverView({ settings, onSaveResult, currSymbol = '$' }) {
             alignItems: 'center', justifyContent: 'center',
             color: 'var(--text-secondary)', gap: 10,
           }}>
-            <span style={{ fontSize: 52, opacity: 0.15 }}>👗</span>
+            <span style={{ fontSize: 52, opacity: 0.15 }}>✨</span>
             <p style={{ margin: 0, fontSize: 14 }}>Pick an occasion or search to discover looks</p>
             <p style={{ margin: 0, fontSize: 12, opacity: 0.6 }}>
               {hasGoogle
@@ -1069,7 +1068,7 @@ function DiscoverView({ settings, onSaveResult, currSymbol = '$' }) {
   );
 }
 
-// ─── BoardView ─────────────────────────────────────────────────────────────────
+//  BoardView 
 
 function BoardView({ items, onAdd, onUpdate, onRemove, currSymbol = '$' }) {
   const [boardCat,      setBoardCat]      = useState('All');
@@ -1187,10 +1186,10 @@ function BoardView({ items, onAdd, onUpdate, onRemove, currSymbol = '$' }) {
               justifyContent: 'center', minHeight: 300,
               color: 'var(--text-secondary)', gap: 10,
             }}>
-              <span style={{ fontSize: 40, opacity: 0.15 }}>🧥</span>
+              <span style={{ fontSize: 40, opacity: 0.15 }}>🔍</span>
               <p style={{ margin: 0, fontSize: 13 }}>
                 {items.length === 0
-                  ? 'Your board is empty — discover looks and save them here'
+                  ? 'Your board is empty  discover looks and save them here'
                   : 'No items match this filter'}
               </p>
               {items.length === 0 && (
@@ -1246,7 +1245,7 @@ function BoardView({ items, onAdd, onUpdate, onRemove, currSymbol = '$' }) {
   );
 }
 
-// ─── StyleTab ──────────────────────────────────────────────────────────────────
+//  StyleTab 
 
 export default function StyleTab({ settings }) {
   const { items, add, update, remove } = useCollection('style_board', STORAGE_KEYS.STYLE_BOARD);
@@ -1266,9 +1265,8 @@ export default function StyleTab({ settings }) {
       occasion: data.occasion || '',
     });
   };
-
   const tabs = [
-    { key: 'discover', label: '🔍 Discover' },
+    { key: 'discover', label: '✦ Discover' },
     { key: 'board',    label: '📌 My Board', count: items.length },
   ];
 
@@ -1318,3 +1316,4 @@ export default function StyleTab({ settings }) {
     </div>
   );
 }
+

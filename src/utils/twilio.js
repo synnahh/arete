@@ -1,6 +1,6 @@
-// ─── twilio.js — SMS via Twilio REST API ──────────────────────────────────────
+//  twilio.js  SMS via Twilio REST API 
 // Sends SMS through Twilio. Credentials (Account SID + Auth Token) are stored
-// in Settings → Notifications and never sent to Firestore.
+// in Settings  Notifications and never sent to Firestore.
 // Uses platformFetch so it works in both Tauri (bypasses CORS) and browser.
 
 import { platformFetch } from './platform.js';
@@ -11,11 +11,11 @@ const TWILIO_BASE = 'https://api.twilio.com/2010-04-01';
 /**
  * Send an SMS via Twilio.
  * @param {object} params
- * @param {string} params.to          — recipient phone number e.g. "+61412345678"
- * @param {string} params.from        — Twilio source number e.g. "+61400000001"
- * @param {string} params.body        — message body
- * @param {string} params.accountSid  — Twilio Account SID
- * @param {string} params.authToken   — Twilio Auth Token
+ * @param {string} params.to           recipient phone number e.g. "+61412345678"
+ * @param {string} params.from         Twilio source number e.g. "+61400000001"
+ * @param {string} params.body         message body
+ * @param {string} params.accountSid   Twilio Account SID
+ * @param {string} params.authToken    Twilio Auth Token
  * @returns {Promise<{ ok: boolean, error?: string }>}
  */
 export async function sendSMS({ to, from, body, accountSid, authToken }) {
@@ -60,7 +60,7 @@ export async function sendTestSMS(settings) {
   return sendSMS({
     to:         phoneNumber,
     from:       twilioReminders,
-    body:       'VALERIE — SMS is working correctly.',
+    body:       'VALERIE  SMS is working correctly.',
     accountSid: twilioAccountSid,
     authToken:  twilioAuthToken,
   });

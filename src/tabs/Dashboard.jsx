@@ -1,4 +1,4 @@
-// ─── Dashboard Tab — Dense Layout ─────────────────────────────────────────────
+//  Dashboard Tab  Dense Layout 
 import { useState, useEffect, useRef, useCallback, useMemo } from 'react';
 import { getGreeting, formatTime, formatDate } from '../utils/time.js';
 import { storage, STORAGE_KEYS } from '../utils/storage.js';
@@ -7,11 +7,12 @@ import { askOllama } from '../ai/ollama.js';
 import { rateLimitClaude } from '../utils/rateLimit.js';
 import { getXP, getRank, TIER_CONFIG, TIER_THRESHOLDS } from '../utils/xp.js';
 import DayRing from '../components/DayRing.jsx';
-import { useCollection } from '../firebase/useCollection.js';
-import { useDocument }   from '../firebase/useDocument.js';
+import { useCollection } from '../supabase/useCollection.js';
+import { useDocument }   from '../supabase/useDocument.js';
+import { getNowPlaying, getPlaybackState, pausePlayback, resumePlayback, skipNext, skipPrev, isSpotifyConnected } from '../utils/spotify.js';
 import { DEFAULT_OVERLOAD_EXERCISES } from './Workout.jsx';
 
-// ── Badge SVG (mirrored from Progress.jsx) ────────────────────────────────────
+//  Badge SVG (mirrored from Progress.jsx) 
 const toRad = d => d * Math.PI / 180;
 function poly(cx, cy, r, n, start = 0) {
   return Array.from({ length: n }, (_, i) => {
@@ -91,7 +92,7 @@ function RankBadge({ tier, subRank = 1, size = 80, pulse = false }) {
   );
 }
 
-// ── XP progress bar ───────────────────────────────────────────────────────────
+//  XP progress bar 
 function XpBar({ value, color }) {
   return (
     <div style={{ width: '100%', height: 4, borderRadius: 2, background: 'var(--hover-bg)', overflow: 'hidden' }}>
@@ -103,7 +104,7 @@ function XpBar({ value, color }) {
   );
 }
 
-// ── Shared card ───────────────────────────────────────────────────────────────
+//  Shared card 
 function Card({ children, style = {}, className = '' }) {
   return (
     <div className={`glass-card ${className}`} style={{
@@ -119,7 +120,7 @@ function Card({ children, style = {}, className = '' }) {
   );
 }
 
-// ── Label chip ─────────────────────────────────────────────────────────────────
+//  Label chip 
 function Label({ text, color }) {
   return (
     <span style={{
@@ -138,7 +139,7 @@ function Label({ text, color }) {
   );
 }
 
-// ── Top stat: Tasks count ──────────────────────────────────────────────────────
+//  Top stat: Tasks count 
 function TasksCountCard() {
   const tasks   = storage.get(STORAGE_KEYS.TASKS, []);
   const pending = tasks.filter(t => !t.done).length;
@@ -151,13 +152,13 @@ function TasksCountCard() {
         {pending}
       </div>
       <div style={{ fontSize: 11, color: 'var(--accent)', marginTop: 2 }}>
-        {done > 0 ? `${done} completed today` : "Nothing completed yet — let’s go"}
+        {done > 0 ? `${done} completed today` : "Nothing completed yet — let's go"}
       </div>
     </Card>
   );
 }
 
-// ── Top stat: Quote ────────────────────────────────────────────────────────────
+//  Top stat: Quote 
 const QUOTES = [
   { text: "Discipline equals freedom.", author: "Jocko Willink" },
   { text: "You have power over your mind, not outside events.", author: "Marcus Aurelius" },
@@ -177,12 +178,12 @@ function QuoteCard() {
       <p style={{ fontSize: 13, color: 'var(--text-secondary)', lineHeight: 1.6, fontStyle: 'italic', margin: 0, flex: 1 }}>
         "{quote.text}"
       </p>
-      <div style={{ fontSize: 11, color: 'var(--text-muted)' }}>— {quote.author}</div>
+      <div style={{ fontSize: 11, color: 'var(--text-muted)' }}> {quote.author}</div>
     </Card>
   );
 }
 
-// ── Inline clock for banner ────────────────────────────────────────────────────
+//  Inline clock for banner 
 function InlineClock() {
   const [now, setNow] = useState(new Date());
   useEffect(() => {
@@ -208,7 +209,7 @@ function InlineClock() {
   );
 }
 
-// ── Bible verse of the day ─────────────────────────────────────────────────────
+//  Bible verse of the day 
 const VERSES = [
   { text: "I can do all things through Christ who strengthens me.", ref: "Philippians 4:13" },
   { text: "The Lord is my shepherd; I shall not want.", ref: "Psalm 23:1" },
@@ -256,14 +257,14 @@ function VerseCard() {
   );
 }
 
-// ── Weather card (Open-Meteo, no API key) ─────────────────────────────────────
+//  Weather card (Open-Meteo, no API key) 
 const WMO_ICONS = {
   0: '☀️', 1: '🌤️', 2: '⛅', 3: '☁️',
   45: '🌫️', 48: '🌫️',
   51: '🌦️', 53: '🌦️', 55: '🌧️',
   61: '🌧️', 63: '🌧️', 65: '🌧️',
-  71: '🌨️', 73: '🌨️', 75: '❄️',
-  80: '🌦️', 81: '🌧️', 82: '⛈️',
+  71: '❄️', 73: '❄️', 75: '❄️',
+  80: '🌦️', 81: '🌦️', 82: '⛈️',
   95: '⛈️', 96: '⛈️', 99: '⛈️',
 };
 const WMO_DESC = {
@@ -281,36 +282,46 @@ function WeatherCard() {
   const [err, setErr] = useState(null);
 
   useEffect(() => {
-    const cached = sessionStorage.getItem('valerie_wx');
-    if (cached) { setWx(JSON.parse(cached)); return; }
+    // Use localStorage cache (1-hour TTL) so iOS PWA doesn't re-prompt every open
+    const WX_KEY = 'valerie_wx_cache';
+    try {
+      const cached = JSON.parse(localStorage.getItem(WX_KEY) || 'null');
+      if (cached && Date.now() - cached.ts < 3600_000) { setWx(cached); return; }
+    } catch {}
 
-    navigator.geolocation?.getCurrentPosition(
-      ({ coords }) => {
-        const { latitude: lat, longitude: lon } = coords;
-        fetch(
-          `https://api.open-meteo.com/v1/forecast?latitude=${lat}&longitude=${lon}` +
-          `&current=temperature_2m,apparent_temperature,weather_code,wind_speed_10m` +
-          `&temperature_unit=celsius&wind_speed_unit=kmh&timezone=auto`
-        )
-          .then(r => r.json())
-          .then(d => {
-            const c = d.current;
-            const data = {
-              temp: Math.round(c.temperature_2m),
-              feels: Math.round(c.apparent_temperature),
-              code: c.weather_code,
-              wind: Math.round(c.wind_speed_10m),
-            };
-            sessionStorage.setItem('valerie_wx', JSON.stringify(data));
-            setWx(data);
-          })
-          .catch(() => setErr('Could not load weather'));
-      },
-      () => setErr('Location access denied')
-    );
+    function doFetch(lat, lon) {
+      fetch(
+        `https://api.open-meteo.com/v1/forecast?latitude=${lat}&longitude=${lon}` +
+        `&current=temperature_2m,apparent_temperature,weather_code,wind_speed_10m` +
+        `&temperature_unit=celsius&wind_speed_unit=kmh&timezone=auto`
+      )
+        .then(r => r.json())
+        .then(d => {
+          const c = d.current;
+          const data = { temp: Math.round(c.temperature_2m), feels: Math.round(c.apparent_temperature), code: c.weather_code, wind: Math.round(c.wind_speed_10m), ts: Date.now() };
+          localStorage.setItem(WX_KEY, JSON.stringify(data));
+          setWx(data);
+        })
+        .catch(() => setErr('Could not load weather'));
+    }
+
+    // Only request location if permission already granted — never auto-prompt on iOS
+    if (navigator.permissions) {
+      navigator.permissions.query({ name: 'geolocation' }).then(({ state }) => {
+        if (state === 'granted') {
+          navigator.geolocation.getCurrentPosition(({ coords }) => doFetch(coords.latitude, coords.longitude), () => setErr('Location access denied'));
+        }
+        // state === 'prompt' or 'denied': silently skip — user must enable via browser
+      }).catch(() => {
+        // permissions API not supported — fall back to direct request
+        navigator.geolocation?.getCurrentPosition(({ coords }) => doFetch(coords.latitude, coords.longitude), () => {});
+      });
+    } else {
+      navigator.geolocation?.getCurrentPosition(({ coords }) => doFetch(coords.latitude, coords.longitude), () => {});
+    }
   }, []);
 
-  const icon = wx ? (WMO_ICONS[wx.code] ?? '🌡️') : null;
+  const icon = wx ? (WMO_ICONS[wx.code] ?? '🌤️') : null;
   const desc = wx ? (WMO_DESC[wx.code]  ?? 'Unknown') : null;
 
   return (
@@ -343,10 +354,10 @@ function WeatherCard() {
   );
 }
 
-// ── Priority dot colour ────────────────────────────────────────────────────────
+//  Priority dot colour 
 const PRIORITY_COLOR = { high: '#e55', med: '#f90', low: '#5a9' };
 
-// ── Left panel: Today's Tasks ──────────────────────────────────────────────────
+//  Left panel: Today's Tasks 
 function TasksPanel({ onTabChange }) {
   const [tasks,    setTasks]    = useState(() => storage.get(STORAGE_KEYS.TASKS, []));
   const [newText,  setNewText]  = useState('');
@@ -388,7 +399,7 @@ function TasksPanel({ onTabChange }) {
           onClick={() => onTabChange?.('tasks')}
           style={{ fontSize: 11, color: 'var(--accent)', background: 'none', border: 'none', cursor: 'pointer', padding: 0 }}
         >
-          View all →
+          View all  
         </button>
       </div>
 
@@ -396,7 +407,7 @@ function TasksPanel({ onTabChange }) {
       <div style={{ overflowY: 'auto', padding: '8px 0', minHeight: 200 }}>
         {visible.length === 0 ? (
           <div style={{ padding: '20px 18px', fontSize: 13, color: 'var(--text-muted)' }}>
-            All clear — you're on top of everything.
+            All clear  you're on top of everything.
           </div>
         ) : visible.map((t, i) => {
           const realIdx = tasks.indexOf(pending[i]);
@@ -422,12 +433,12 @@ function TasksPanel({ onTabChange }) {
                 display: 'flex', alignItems: 'center', justifyContent: 'center',
                 transition: 'all 0.15s',
               }}>
-                {t.done && <span style={{ fontSize: 9, color: '#fff' }}>✓</span>}
+{t.done && <span style={{ fontSize: 9, color: '#fff' }}>✓</span>}
               </div>
 
               {/* Priority flag */}
               {t.priority === 'high' && (
-                <span style={{ fontSize: 12, color: '#e55', flexShrink: 0 }}>⚑</span>
+                <span style={{ fontSize: 12, color: '#e55', flexShrink: 0 }}>a</span>
               )}
 
               {/* Text */}
@@ -449,7 +460,7 @@ function TasksPanel({ onTabChange }) {
 
         {pending.length > 7 && (
           <div style={{ padding: '8px 18px', fontSize: 11, color: 'var(--text-muted)' }}>
-            +{pending.length - 7} more — view all tasks
+            +{pending.length - 7} more  view all tasks
           </div>
         )}
       </div>
@@ -485,7 +496,7 @@ function TasksPanel({ onTabChange }) {
   );
 }
 
-// ── Right panel: stacked cards ─────────────────────────────────────────────────
+//  Right panel: stacked cards 
 function DailyBriefCard({ ai }) {
   const [brief,   setBrief]   = useState(null);
   const [loading, setLoading] = useState(false);
@@ -531,7 +542,7 @@ function DailyBriefCard({ ai }) {
           disabled={loading}
           style={{ fontSize: 10.5, color: 'var(--accent)', background: 'none', border: 'none', cursor: loading ? 'default' : 'pointer', opacity: loading ? 0.5 : 1, padding: 0 }}
         >
-          {loading ? 'Thinking…' : '↻ Refresh'}
+          {loading ? 'Thinking…' : '🔄 Refresh'}
         </button>
       </div>
       {loading ? (
@@ -571,7 +582,7 @@ function ProgressHeroCard({ onTabChange }) {
     ? Math.ceil(bandLow + bandSize - totalXp)
     : 0;
 
-  // Mini tier track — all 8 tiers as small badges
+  // Mini tier track  all 8 tiers as small badges
   const miniTiers = TIER_CONFIG.map((tc, i) => ({
     tier: i + 1, reached: i + 1 <= rank.tier, active: i + 1 === rank.tier, cfg: tc,
   }));
@@ -587,7 +598,7 @@ function ProgressHeroCard({ onTabChange }) {
         <button
           onClick={() => onTabChange?.('progress')}
           style={{ fontSize: 10.5, color: 'var(--accent)', background: 'none', border: 'none', cursor: 'pointer', padding: 0 }}
-        >View all →</button>
+        >View all  </button>
       </div>
 
       {/* Hero badge + rank info */}
@@ -649,29 +660,116 @@ function ProgressHeroCard({ onTabChange }) {
 }
 
 function SpotifyCard() {
+  const [track,   setTrack]   = useState(null);
+  const [playing, setPlaying] = useState(false);
+  const [loading, setLoading] = useState(false);
+  const connected = isSpotifyConnected();
+
+  useEffect(() => {
+    if (!connected) return;
+    let alive = true;
+
+    async function poll() {
+      const data = await getNowPlaying();
+      if (!alive) return;
+      if (data?.item) {
+        setTrack({
+          name:    data.item.name,
+          artist:  data.item.artists?.map(a => a.name).join(', ') ?? '',
+          album:   data.item.album?.name ?? '',
+          art:     data.item.album?.images?.[0]?.url ?? null,
+          duration: data.item.duration_ms,
+          progress: data.progress_ms,
+        });
+        setPlaying(data.is_playing);
+      } else {
+        setTrack(null);
+        setPlaying(false);
+      }
+    }
+
+    poll();
+    const id = setInterval(poll, 5000);
+    return () => { alive = false; clearInterval(id); };
+  }, [connected]);
+
+  async function toggle() {
+    setLoading(true);
+    if (playing) await pausePlayback(); else await resumePlayback();
+    setPlaying(p => !p);
+    setLoading(false);
+  }
+
+  const Btn = ({ onClick, children }) => (
+    <button onClick={onClick} style={{
+      background: 'none', border: 'none', cursor: 'pointer',
+      color: 'var(--text-secondary)', fontSize: 14, padding: '2px 6px',
+      borderRadius: 4, transition: 'color 0.15s',
+    }}
+    onMouseEnter={e => e.target.style.color = '#1db954'}
+    onMouseLeave={e => e.target.style.color = 'var(--text-secondary)'}
+    >{children}</button>
+  );
+
+  if (!connected) {
+    return (
+      <Card style={{ flexDirection: 'row', alignItems: 'center', gap: 12 }}>
+        <div style={{ width: 40, height: 40, borderRadius: 8, flexShrink: 0, background: 'linear-gradient(135deg, #1db954 0%, #0a7a33 100%)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 18 }}>"</div>
+        <div>
+          <div style={{ fontSize: 9.5, color: 'var(--text-muted)', letterSpacing: '0.08em', marginBottom: 3 }}>NOW PLAYING</div>
+          <div style={{ fontSize: 12.5, color: 'var(--text-secondary)' }}>Spotify not connected</div>
+          <div style={{ fontSize: 10.5, color: 'var(--text-muted)', marginTop: 2 }}>Settings → Integrations</div>
+        </div>
+      </Card>
+    );
+  }
+
   return (
-    <Card style={{ flexDirection: 'row', alignItems: 'center', gap: 12 }}>
-      <div style={{
-        width: 40, height: 40, borderRadius: 8, flexShrink: 0,
-        background: 'linear-gradient(135deg, #1db954 0%, #0a7a33 100%)',
-        display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 18,
-      }}>♪</div>
-      <div>
-        <div style={{ fontSize: 9.5, color: 'var(--text-muted)', letterSpacing: '0.08em', marginBottom: 3 }}>NOW PLAYING</div>
-        <div style={{ fontSize: 12.5, color: 'var(--text-secondary)' }}>Spotify not connected</div>
-        <div style={{ fontSize: 10.5, color: 'var(--text-muted)', marginTop: 2 }}>Settings → Integrations</div>
+    <Card style={{ gap: 10 }}>
+      <div style={{ fontSize: 9.5, color: 'var(--text-muted)', letterSpacing: '0.08em' }}>NOW PLAYING</div>
+      <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
+        {/* Album art */}
+        <div style={{ width: 44, height: 44, borderRadius: 6, flexShrink: 0, overflow: 'hidden', background: 'rgba(255,255,255,0.06)' }}>
+          {track?.art
+            ? <img src={track.art} alt="album" style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
+            : <div style={{ width: '100%', height: '100%', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 20 }}>"</div>
+          }
+        </div>
+        {/* Track info */}
+        <div style={{ flex: 1, minWidth: 0 }}>
+          {track ? (
+            <>
+              <div style={{ fontSize: 12.5, fontWeight: 500, color: 'var(--text-primary)', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{track.name}</div>
+              <div style={{ fontSize: 10.5, color: 'var(--text-muted)', marginTop: 2, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{track.artist}</div>
+            </>
+          ) : (
+            <div style={{ fontSize: 12, color: 'var(--text-muted)' }}>Nothing playing</div>
+          )}
+        </div>
+        {/* Controls */}
+        <div style={{ display: 'flex', alignItems: 'center', gap: 2, flexShrink: 0 }}>
+          <Btn onClick={() => skipPrev()}>⏮</Btn>
+          <Btn onClick={toggle}>{loading ? '…' : playing ? '⏸' : '▶'}</Btn>
+          <Btn onClick={() => skipNext()}>⏭</Btn>
+        </div>
       </div>
+      {/* Progress bar */}
+      {track && (
+        <div style={{ height: 2, borderRadius: 1, background: 'rgba(255,255,255,0.08)', overflow: 'hidden' }}>
+          <div style={{ height: '100%', width: `${Math.min((track.progress / track.duration) * 100, 100)}%`, background: '#1db954', borderRadius: 1, transition: 'width 1s linear' }} />
+        </div>
+      )}
     </Card>
   );
 }
 
-// ── Productivity Widget — Task tags donut + Focus time donut ──────────────────
+//  Productivity Widget  Task tags donut + Focus time donut 
 const TAG_COLOURS = [
   'var(--accent)', '#f59e0b', '#10b981', '#6366f1', '#ec4899',
   '#14b8a6', '#f97316', '#8b5cf6', '#06b6d4', '#84cc16',
 ];
 
-// SVG donut chart — segments defined by value array
+// SVG donut chart  segments defined by value array
 function DonutChart({ segments, size = 110, thickness = 18, emptyColor = 'var(--hover-bg)' }) {
   const r   = (size - thickness) / 2;
   const cx  = size / 2;
@@ -721,9 +819,9 @@ function DonutChart({ segments, size = 110, thickness = 18, emptyColor = 'var(--
 function ProductivityWidget({ onTabChange }) {
   const today = new Date().toISOString().split('T')[0];
 
-  // ── A: Task completion by tag ──────────────────────────────────────────────
+  //  A: Task completion by tag 
   const tasks    = storage.get(STORAGE_KEYS.TASKS, []);
-  const todayTasks = tasks; // tasks don't have a date field — show all pending/done
+  const todayTasks = tasks; // tasks don't have a date field  show all pending/done
 
   // Group by tag
   const tagMap = {};
@@ -744,7 +842,7 @@ function ProductivityWidget({ onTabChange }) {
   const totalTasks   = todayTasks.length;
   const doneTasks    = todayTasks.filter(t => t.done).length;
 
-  // ── B: Focus session time by label ────────────────────────────────────────
+  //  B: Focus session time by label 
   const allSessions = storage.get(STORAGE_KEYS.FOCUS_SESSIONS, []);
   const todaySessions = allSessions.filter(s => s.date === today);
 
@@ -773,42 +871,42 @@ function ProductivityWidget({ onTabChange }) {
         <button
           onClick={() => onTabChange?.('tasks')}
           style={{ fontSize: 10.5, color: 'var(--accent)', background: 'none', border: 'none', cursor: 'pointer', padding: 0 }}
-        >View tasks →</button>
+        >View tasks  </button>
       </div>
 
       <div style={{ display: 'flex', gap: 16 }}>
 
-        {/* ── Donut A: Tasks by tag ──────────────────────────────────── */}
-        <div style={{ display: 'flex', alignItems: 'center', gap: 12, flex: 1, minWidth: 0 }}>
+        {/*  Donut A: Tasks by tag  */}
+        <div style={{ display: 'flex', alignItems: 'center', gap: 10, flex: 1, minWidth: 0 }}>
           <div style={{ position: 'relative', flexShrink: 0 }}>
-            <DonutChart segments={taskSegments} size={88} thickness={15} />
+            <DonutChart segments={taskSegments} size={72} thickness={12} />
             {/* Centre label */}
             <div style={{
               position: 'absolute', inset: 0,
               display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center',
               pointerEvents: 'none',
             }}>
-              <div style={{ fontSize: 18, fontWeight: 300, color: 'var(--text-primary)', lineHeight: 1 }}>
+              <div style={{ fontSize: 14, fontWeight: 300, color: 'var(--text-primary)', lineHeight: 1 }}>
                 {doneTasks}/{totalTasks}
               </div>
-              <div style={{ fontSize: 8.5, color: 'var(--text-muted)', letterSpacing: '0.04em', marginTop: 2 }}>TASKS</div>
+              <div style={{ fontSize: 7.5, color: 'var(--text-muted)', letterSpacing: '0.04em', marginTop: 2 }}>TASKS</div>
             </div>
           </div>
 
           {/* Legend */}
-          <div style={{ display: 'flex', flexDirection: 'column', gap: 5, flex: 1, minWidth: 0 }}>
-            <div style={{ fontSize: 11, fontWeight: 600, color: 'var(--text-primary)', marginBottom: 2 }}>By Category</div>
+          <div style={{ display: 'flex', flexDirection: 'column', gap: 4, flex: 1, minWidth: 0 }}>
+            <div style={{ fontSize: 10.5, fontWeight: 600, color: 'var(--text-primary)', marginBottom: 2 }}>By Category</div>
             {taskSegments.length === 0 && (
-              <div style={{ fontSize: 11, color: 'var(--text-muted)' }}>No tasks yet</div>
+              <div style={{ fontSize: 10.5, color: 'var(--text-muted)' }}>No tasks yet</div>
             )}
             {taskSegments.map((s, i) => (
-              <div key={s.label} style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
-                <div style={{ width: 8, height: 8, borderRadius: 2, background: s.color, flexShrink: 0 }} />
+              <div key={s.label} style={{ display: 'flex', alignItems: 'center', gap: 5 }}>
+                <div style={{ width: 7, height: 7, borderRadius: 2, background: s.color, flexShrink: 0 }} />
                 <span style={{
-                  fontSize: 11, color: 'var(--text-secondary)',
+                  fontSize: 10.5, color: 'var(--text-secondary)',
                   overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', flex: 1,
                 }}>{s.label}</span>
-                <span style={{ fontSize: 10, color: 'var(--text-muted)', flexShrink: 0 }}>
+                <span style={{ fontSize: 9.5, color: 'var(--text-muted)', flexShrink: 0 }}>
                   {tagMap[s.label]?.done ?? 0}/{s.value}
                 </span>
               </div>
@@ -819,47 +917,47 @@ function ProductivityWidget({ onTabChange }) {
         {/* Divider */}
         <div style={{ width: '0.5px', background: 'var(--card-border)', alignSelf: 'stretch' }} />
 
-        {/* ── Donut B: Focus time ────────────────────────────────────── */}
-        <div style={{ display: 'flex', alignItems: 'center', gap: 12, flex: 1, minWidth: 0 }}>
+        {/*  Donut B: Focus time  */}
+        <div style={{ display: 'flex', alignItems: 'center', gap: 10, flex: 1, minWidth: 0 }}>
           <div style={{ position: 'relative', flexShrink: 0 }}>
-            <DonutChart segments={focusSegments} size={88} thickness={15} />
+            <DonutChart segments={focusSegments} size={72} thickness={12} />
             <div style={{
               position: 'absolute', inset: 0,
               display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center',
               pointerEvents: 'none',
             }}>
-              <div style={{ fontSize: 16, fontWeight: 300, color: 'var(--text-primary)', lineHeight: 1 }}>
+              <div style={{ fontSize: 13, fontWeight: 300, color: 'var(--text-primary)', lineHeight: 1 }}>
                 {focusH > 0 ? `${focusH}h ${focusM}m` : `${focusM}m`}
               </div>
-              <div style={{ fontSize: 8.5, color: 'var(--text-muted)', letterSpacing: '0.04em', marginTop: 2 }}>FOCUS</div>
+              <div style={{ fontSize: 7.5, color: 'var(--text-muted)', letterSpacing: '0.04em', marginTop: 2 }}>FOCUS</div>
             </div>
           </div>
 
-          <div style={{ display: 'flex', flexDirection: 'column', gap: 5, flex: 1, minWidth: 0 }}>
-            <div style={{ fontSize: 11, fontWeight: 600, color: 'var(--text-primary)', marginBottom: 2 }}>
+          <div style={{ display: 'flex', flexDirection: 'column', gap: 4, flex: 1, minWidth: 0 }}>
+            <div style={{ fontSize: 10.5, fontWeight: 600, color: 'var(--text-primary)', marginBottom: 2 }}>
               Focus Today
               {todaySessions.length > 0 && (
-                <span style={{ fontSize: 10, fontWeight: 400, color: 'var(--text-muted)', marginLeft: 6 }}>
+                <span style={{ fontSize: 9.5, fontWeight: 400, color: 'var(--text-muted)', marginLeft: 6 }}>
                   {todaySessions.length} session{todaySessions.length !== 1 ? 's' : ''}
                 </span>
               )}
             </div>
             {focusSegments.length === 0 ? (
-              <div style={{ fontSize: 11, color: 'var(--text-muted)' }}>
-                No focus sessions yet —{' '}
+              <div style={{ fontSize: 10.5, color: 'var(--text-muted)' }}>
+                No focus sessions yet{' '}
                 <span
                   onClick={() => onTabChange?.('focus')}
                   style={{ color: 'var(--accent)', cursor: 'pointer' }}
-                >start one →</span>
+                >start one</span>
               </div>
             ) : focusSegments.map((s) => (
-              <div key={s.label} style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
-                <div style={{ width: 8, height: 8, borderRadius: 2, background: s.color, flexShrink: 0 }} />
+              <div key={s.label} style={{ display: 'flex', alignItems: 'center', gap: 5 }}>
+                <div style={{ width: 7, height: 7, borderRadius: 2, background: s.color, flexShrink: 0 }} />
                 <span style={{
-                  fontSize: 11, color: 'var(--text-secondary)',
+                  fontSize: 10.5, color: 'var(--text-secondary)',
                   overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', flex: 1,
                 }}>{s.label}</span>
-                <span style={{ fontSize: 10, color: 'var(--text-muted)', flexShrink: 0 }}>
+                <span style={{ fontSize: 9.5, color: 'var(--text-muted)', flexShrink: 0 }}>
                   {s.value}m
                 </span>
               </div>
@@ -872,9 +970,9 @@ function ProductivityWidget({ onTabChange }) {
   );
 }
 
-// ── Main Dashboard ─────────────────────────────────────────────────────────────
-// ── Peak State Card ───────────────────────────────────────────────────────────
-// ── Today's Workout card ──────────────────────────────────────────────────────
+//  Main Dashboard 
+//  Peak State Card 
+//  Today's Workout card 
 const DAY_KEYS_W = ['sun','mon','tue','wed','thu','fri','sat'];
 const SPLIT_COLOURS_W = { push:'#e25d7a', pull:'#4a9eff', legs:'#f4a642', rest:'rgba(255,255,255,0.2)', custom:'#9b5de5' };
 
@@ -905,10 +1003,10 @@ function TodayWorkoutCard({ onTabChange }) {
       <div>
         <div style={{ fontSize: 9, fontWeight: 700, letterSpacing: '0.1em', color: isRest ? 'rgba(255,255,255,0.3)' : colour, textTransform: 'uppercase', marginBottom: 3 }}>Today</div>
         <div style={{ fontSize: 13, fontWeight: 600, color: 'var(--text-primary)' }}>
-          {isRest ? 'Rest Day' : `${label} Day — ${exCount} exercise${exCount !== 1 ? 's' : ''}`}
+          {isRest ? 'Rest Day' : `${label} Day  ${exCount} exercise${exCount !== 1 ? 's' : ''}`}
         </div>
       </div>
-      <div style={{ fontSize: 11, color: isRest ? 'rgba(255,255,255,0.2)' : colour, opacity: 0.7 }}>→</div>
+      <div style={{ fontSize: 11, color: isRest ? 'rgba(255,255,255,0.2)' : colour, opacity: 0.7 }}> </div>
     </div>
   );
 }
@@ -924,7 +1022,7 @@ function PeakStateCard({ peakState, onTabChange }) {
         <div style={{ fontSize: 9.5, color: 'var(--text-muted)', letterSpacing: '0.08em' }}>PEAK STATE</div>
         <button onClick={() => onTabChange?.('health')}
           style={{ fontSize: 10.5, color: 'var(--accent)', background: 'none', border: 'none', cursor: 'pointer', padding: 0 }}>
-          Health →
+          Health  
         </button>
       </div>
 
@@ -970,7 +1068,7 @@ function PeakStateCard({ peakState, onTabChange }) {
 
       {/* Suggestion */}
       <div style={{ fontSize: 11, color: 'var(--text-muted)', lineHeight: 1.5, paddingTop: 10, borderTop: '0.5px solid rgba(255,255,255,0.06)' }}>
-        <span style={{ color, fontWeight: 600 }}>→ </span>{suggestion}
+        <span style={{ color, fontWeight: 600 }}>  </span>{suggestion}
       </div>
     </Card>
   );
@@ -987,10 +1085,10 @@ export default function Dashboard({ settings, onTabChange, ai, density = 'standa
   const gap  = density === 'compact' ? 10 : density === 'spacious' ? 24 : 14;
 
   return (
-    // Fixed-height layout — everything fits the viewport, no scroll
+    // Fixed-height layout  everything fits the viewport, no scroll
     <div style={{ height: '100%', padding: pad, display: 'flex', flexDirection: 'column', gap, boxSizing: 'border-box', overflow: 'hidden' }}>
 
-      {/* ── Greeting banner ──────────────────────────────────────────────── */}
+      {/*  Greeting banner  */}
       <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexShrink: 0 }}>
         <div style={{ display: 'flex', alignItems: 'baseline', gap: 10 }}>
           <h1 style={{ fontSize: 22, fontWeight: 300, color: 'var(--text-primary)', letterSpacing: '0.03em', margin: 0 }}>
@@ -1001,7 +1099,7 @@ export default function Dashboard({ settings, onTabChange, ai, density = 'standa
         <InlineClock />
       </div>
 
-      {/* ── Top strip — 4 stat cards ─────────────────────────────────────── */}
+      {/*  Top strip  4 stat cards  */}
       <div style={{ display: 'flex', gap, flexShrink: 0 }}>
         <TasksCountCard />
         <QuoteCard />
@@ -1009,7 +1107,7 @@ export default function Dashboard({ settings, onTabChange, ai, density = 'standa
         <WeatherCard />
       </div>
 
-      {/* ── Main body — fills remaining height ───────────────────────────── */}
+      {/*  Main body  fills remaining height  */}
       <div style={{ flex: 1, minHeight: 0, display: 'flex', gap }}>
 
         {/* Left column: Tasks (grows) + Productivity (fixed bottom) */}
@@ -1033,3 +1131,4 @@ export default function Dashboard({ settings, onTabChange, ai, density = 'standa
     </div>
   );
 }
+

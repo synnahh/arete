@@ -1,10 +1,10 @@
 import { useState, useEffect, useRef, useMemo, useCallback } from 'react';
 import { createPortal } from 'react-dom';
 import { storage, STORAGE_KEYS } from '../utils/storage.js';
-import { doc, onSnapshot } from 'firebase/firestore';
-import { db, getDeviceId } from '../firebase/firebase.js';
+import { supabase, getUserId, getUserIdSync } from '../supabase/supabase.js';
+import { getAttentionTabs, FOCUS_ALWAYS_VISIBLE } from '../utils/attention.js';
 
-// ─── Icons (inline SVG — no external dep needed for now) ──────────────────────
+//  Icons (inline SVG  no external dep needed for now) 
 const Icon = ({ d, size = 20 }) => (
   <svg width={size} height={size} viewBox="0 0 24 24" fill="none"
     stroke="currentColor" strokeWidth={1.6} strokeLinecap="round" strokeLinejoin="round">
@@ -14,7 +14,7 @@ const Icon = ({ d, size = 20 }) => (
 
 const ICONS = {
   dashboard:  "M3 9l9-7 9 7v11a2 2 0 01-2 2H5a2 2 0 01-2-2z M9 22V12h6v10",
-  // 3D extruded V — front face + back face offset + three connector lines
+  // 3D extruded V  front face + back face offset + three connector lines
   assistant:  "M4 5L12 19L20 5 M6 3L14 17L22 3 M4 5L6 3 M20 5L22 3 M12 19L14 17",
   tasks:      "M9 11l3 3L22 4 M21 12v7a2 2 0 01-2 2H5a2 2 0 01-2-2V5a2 2 0 012-2h11",
   calendar:   "M8 2v4 M16 2v4 M3 10h18 M5 4h14a2 2 0 012 2v14a2 2 0 01-2 2H5a2 2 0 01-2-2V6a2 2 0 012-2z",
@@ -22,6 +22,7 @@ const ICONS = {
   health:     "M20.84 4.61a5.5 5.5 0 00-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 00-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 000-7.78z",
   workout:    "M6.5 6.5h11v11h-11z M2 12h4 M18 12h4 M12 2v4 M12 18v4",
   finance:    "M12 2v20 M17 5H9.5a3.5 3.5 0 000 7h5a3.5 3.5 0 010 7H6",
+  portfolio:  "M18 20V10 M12 20V4 M6 20v-6",
   progress:   "M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z",
   style:      "M20.84 7l-3-4H6.16L3 7l3.5 2V20h11V9L20.84 7zM9 4c0 1.65 1.35 3 3 3s3-1.35 3-3",
   essentials: "M21 16V8a2 2 0 00-1-1.73l-7-4a2 2 0 00-2 0l-7 4A2 2 0 003 8v8a2 2 0 001 1.73l7 4a2 2 0 002 0l7-4A2 2 0 0021 16z",
@@ -30,9 +31,13 @@ const ICONS = {
   vault:      "M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z",
   settings:   "M12 20a8 8 0 100-16 8 8 0 000 16z M12 14a2 2 0 100-4 2 2 0 000 4z",
   routines:   "M4 4h16v2H4z M4 8h10v2H4z M4 12h16v2H4z M4 16h10v2H4z M17 15l4 4-4 4",
+  mind:       "M9.5 2a2.5 2.5 0 015 0v.5A7.5 7.5 0 0117 9.5v1.5h1a1 1 0 011 1v3a1 1 0 01-1 1h-1v.5a3.5 3.5 0 01-3.5 3.5h-3A3.5 3.5 0 017 16.5V16H6a1 1 0 01-1-1v-3a1 1 0 011-1h1V9.5A7.5 7.5 0 019.5 2.5V2z",
+  places:     "M12 2C8.13 2 5 5.13 5 9c0 5.25 7 13 7 13s7-7.75 7-13c0-3.87-3.13-7-7-7zm0 9.5c-1.38 0-2.5-1.12-2.5-2.5s1.12-2.5 2.5-2.5 2.5 1.12 2.5 2.5-1.12 2.5-2.5 2.5z",
+  // Sharp 'chad' face — chiselled jaw silhouette + brow ticks
+  lm:         "M7 4L17 4L18 10.5L14.5 19L12 21L9.5 19L6 10.5Z M8.8 9H10.6 M13.4 9H15.2",
 };
 
-// ─── All reorderable tabs in default order ────────────────────────────────────
+//  All reorderable tabs in default order 
 export const ALL_TABS = [
   { id: 'dashboard',  label: 'Dashboard',  desc: 'Your daily command centre'           },
   { id: 'assistant',  label: 'Assistant',  desc: 'Chat with VALERIE'                   },
@@ -42,12 +47,16 @@ export const ALL_TABS = [
   { id: 'health',     label: 'Health',     desc: 'Sleep · Nutrition · Water · Body'    },
   { id: 'workout',    label: 'Workout',    desc: 'Overload coach · Splits · Exercises' },
   { id: 'finance',    label: 'Finance',    desc: 'Budget · Transactions · Goals'       },
+  { id: 'portfolio',  label: 'Portfolio',  desc: 'Stocks · Holdings · AI Advisor'      },
   { id: 'progress',   label: 'Progress',   desc: 'XP · Rank · Streaks · Goals'        },
   { id: 'style',      label: 'Style',      desc: 'Wardrobe & outfit planning'          },
   { id: 'essentials', label: 'Essentials', desc: 'Subscriptions & recurring items'     },
   { id: 'lists',      label: 'Lists',      desc: 'Shopping, reading & custom lists'    },
   { id: 'focus',      label: 'Focus',      desc: 'Pomodoro & deep work sessions'       },
   { id: 'routines',   label: 'Routines',   desc: 'Morning, evening & custom routines'  },
+  { id: 'mind',       label: 'Mind',       desc: 'Constitution · Advisors · Vault'     },
+  { id: 'places',    label: 'Places',     desc: 'Alone time · destinations · explore'  },
+  { id: 'lm',         label: 'LM',         desc: 'Looksmaxxing'                         },
 ];
 
 // Always pinned at bottom, not reorderable
@@ -56,7 +65,7 @@ const BOTTOM = [
   { id: 'settings', label: 'Settings', desc: 'App preferences & integrations' },
 ];
 
-// ─── Single tab button ────────────────────────────────────────────────────────
+//  Single tab button 
 function TabButton({ tab, active, onClick }) {
   const [tooltipPos, setTooltipPos] = useState(null);
   const btnRef = useRef(null);
@@ -96,7 +105,7 @@ function TabButton({ tab, active, onClick }) {
         <Icon d={ICONS[tab.id]} size={18} />
       </button>
 
-      {/* Tooltip rendered via portal — escapes sidebar overflow */}
+      {/* Tooltip rendered via portal  escapes sidebar overflow */}
       {tooltipPos && createPortal(
         <div
           onMouseEnter={handleEnter}
@@ -150,7 +159,7 @@ function TabButton({ tab, active, onClick }) {
   );
 }
 
-// ─── Group of tabs with a subtle divider ─────────────────────────────────────
+//  Group of tabs with a subtle divider 
 function TabGroup({ tabs, activeTab, onTabClick }) {
   return (
     <div style={{ display: 'flex', flexDirection: 'column', gap: 4, padding: '4px 0' }}>
@@ -161,7 +170,7 @@ function TabGroup({ tabs, activeTab, onTabClick }) {
   );
 }
 
-// ─── Connection status indicator ────────────────────────────────────────────
+//  Connection status indicator 
 function StatusIndicator({ claudeOnline, ollamaOnline, internetOnline, lastPinged, firebaseSynced }) {
   const [expanded, setExpanded] = useState(false);
 
@@ -197,7 +206,7 @@ function StatusIndicator({ claudeOnline, ollamaOnline, internetOnline, lastPinge
         if (s < 60) return `${s}s ago`;
         return `${Math.round(s/60)}m ago`;
       })()
-    : '—';
+    : '';
 
   return (
     <div style={{ position: 'relative' }}>
@@ -254,20 +263,124 @@ function StatusIndicator({ claudeOnline, ollamaOnline, internetOnline, lastPinge
   );
 }
 
-// ─── Sidebar divider ─────────────────────────────────────────────────────────
-function Divider() {
+// Category → label mapping (drives grouping regardless of reorder)
+const TAB_CATEGORY = {
+  dashboard:  'CORE',
+  assistant:  'CORE',
+  tasks:      'PLAN',
+  calendar:   'PLAN',
+  notes:      'PLAN',
+  health:     'BODY',
+  workout:    'BODY',
+  lm:         'BODY',
+  finance:    'MONEY',
+  portfolio:  'MONEY',
+  progress:   'GROWTH',
+  focus:      'GROWTH',
+  routines:   'GROWTH',
+  mind:       'GROWTH',
+  style:      'LIFE',
+  essentials: 'LIFE',
+  lists:      'LIFE',
+  places:     'LIFE',
+};
+
+//  Category divider with label
+function CategoryLabel({ label, first }) {
   return (
     <div style={{
-      width: 28,
-      height: '0.5px',
-      background: 'var(--sidebar-divider)',
-      margin: '2px auto',
-    }} />
+      display: 'flex',
+      flexDirection: 'column',
+      alignItems: 'center',
+      gap: 3,
+      padding: first ? '2px 0 2px' : '8px 0 2px',
+    }}>
+      {!first && <div style={{ width: 24, height: '0.5px', background: 'var(--sidebar-divider)' }} />}
+      <span style={{
+        fontSize: 6.5,
+        letterSpacing: '0.10em',
+        color: 'var(--text-muted)',
+        opacity: 0.5,
+        fontWeight: 600,
+        userSelect: 'none',
+      }}>{label}</span>
+    </div>
   );
 }
 
-// ─── Main Sidebar ─────────────────────────────────────────────────────────────
-// ─── Peak State dot indicator ─────────────────────────────────────────────────
+//  Focus Mode toggle  filters the sidebar down to tabs with items due today/tomorrow
+function FocusModeButton({ mode, onCycle, count }) {
+  const [tooltipPos, setTooltipPos] = useState(null);
+  const btnRef = useRef(null);
+
+  const handleEnter = useCallback(() => {
+    if (btnRef.current) {
+      const r = btnRef.current.getBoundingClientRect();
+      setTooltipPos({ top: r.top + r.height / 2, left: r.right + 10 });
+    }
+  }, []);
+  const handleLeave = useCallback(() => setTooltipPos(null), []);
+
+  const active = mode !== 'off';
+  const accent = mode === 'tomorrow' ? '#a78bfa' : '#f4a642';
+  const label = mode === 'tomorrow' ? 'Focus Mode · Tomorrow' : mode === 'today' ? 'Focus Mode · Today' : 'Focus Mode';
+  const desc = active
+    ? `${count} item${count === 1 ? '' : 's'} need attention  other tabs hidden. Click for ${mode === 'today' ? 'tomorrow' : 'off'}.`
+    : 'Click to hide tabs with nothing due today.';
+
+  return (
+    <div style={{ position: 'relative' }}>
+      <button
+        ref={btnRef}
+        onClick={onCycle}
+        onMouseEnter={handleEnter}
+        onMouseLeave={handleLeave}
+        aria-label={label}
+        style={{
+          width: 40, height: 40, display: 'flex', alignItems: 'center', justifyContent: 'center',
+          borderRadius: 10, border: 'none', cursor: 'pointer', position: 'relative',
+          transition: 'all 0.18s cubic-bezier(0.4, 0, 0.2, 1)',
+          background: active ? 'var(--active-bg)' : tooltipPos ? 'var(--hover-bg)' : 'transparent',
+          color: active ? accent : tooltipPos ? 'var(--accent)' : 'var(--text-secondary)',
+          opacity: active ? 1 : tooltipPos ? 0.9 : 0.65,
+        }}
+      >
+        <Icon d="M12 22c5.523 0 10-4.477 10-10S17.523 2 12 2 2 6.477 2 12s4.477 10 10 10z M12 16a4 4 0 100-8 4 4 0 000 8z" size={18} />
+        {active && (
+          <span style={{
+            position: 'absolute', top: 5, right: 5, width: 6, height: 6, borderRadius: '50%',
+            background: accent, boxShadow: `0 0 4px ${accent}`,
+          }} />
+        )}
+      </button>
+
+      {tooltipPos && createPortal(
+        <div
+          onMouseEnter={handleEnter}
+          onMouseLeave={handleLeave}
+          style={{
+            position: 'fixed', left: tooltipPos.left, top: tooltipPos.top, transform: 'translateY(-50%)',
+            pointerEvents: 'none', zIndex: 9999, display: 'flex', alignItems: 'center', gap: 0,
+            animation: 'tooltipIn 0.12s ease',
+          }}
+        >
+          <div style={{ width: 0, height: 0, borderTop: '5px solid transparent', borderBottom: '5px solid transparent', borderRight: '6px solid var(--card-border)', flexShrink: 0, marginRight: -1 }} />
+          <div style={{
+            background: 'var(--bg-panel)', border: '0.5px solid var(--card-border)', borderLeft: `2px solid ${active ? accent : 'var(--accent)'}`,
+            borderRadius: '0 8px 8px 0', padding: '7px 14px 7px 12px', whiteSpace: 'nowrap', backdropFilter: 'blur(20px)', boxShadow: '0 4px 20px rgba(0,0,0,0.45)',
+          }}>
+            <div style={{ fontSize: 12, fontWeight: 600, color: 'var(--text-primary)', letterSpacing: '0.01em', lineHeight: 1 }}>{label}</div>
+            <div style={{ fontSize: 10.5, color: 'var(--text-muted)', marginTop: 3, letterSpacing: '0.01em', maxWidth: 200, whiteSpace: 'normal' }}>{desc}</div>
+          </div>
+        </div>,
+        document.body
+      )}
+    </div>
+  );
+}
+
+//  Main Sidebar
+//  Peak State dot indicator
 function PeakStateDot({ peakState }) {
   const [expanded, setExpanded] = useState(false);
   if (!peakState) return null;
@@ -332,7 +445,7 @@ export default function Sidebar({ activeTab, onTabClick, claudeOnline, ollamaOnl
   const [orderedTabs, setOrderedTabs] = useState(() => {
     const saved = storage.get(STORAGE_KEYS.SIDEBAR_ORDER_DESKTOP, null);
     if (saved?.length) {
-      // Merge saved order with ALL_TABS — include any new tabs at end
+      // Merge saved order with ALL_TABS  include any new tabs at end
       const known = new Set(saved);
       const extra = ALL_TABS.filter(t => !known.has(t.id));
       return [...saved.map(id => ALL_TABS.find(t => t.id === id)).filter(Boolean), ...extra];
@@ -340,7 +453,7 @@ export default function Sidebar({ activeTab, onTabClick, claudeOnline, ollamaOnl
     return ALL_TABS;
   });
 
-  // Sync when storage changes (Settings tab reorders — same device)
+  // Sync when storage changes (Settings tab reorders  same device)
   useEffect(() => {
     const handler = () => {
       const saved = storage.get(STORAGE_KEYS.SIDEBAR_ORDER_DESKTOP, null);
@@ -354,34 +467,69 @@ export default function Sidebar({ activeTab, onTabClick, claudeOnline, ollamaOnl
     return () => window.removeEventListener('valerie:sidebar-order-changed', handler);
   }, []);
 
-  // Sync sidebar order from Firestore (cross-device)
+  // Sync sidebar order from Supabase (cross-device)
   useEffect(() => {
-    const userId = getDeviceId();
-    const unsub = onSnapshot(
-      doc(db, 'users', userId, 'meta', 'sidebar_order_desktop'),
-      snap => {
-        if (!snap.exists()) return;
-        const saved = snap.data().order;
+    let channel;
+    let alive = true;
+    getUserId().then(userId => {
+      if (!alive) return; // cleaned up before getUserId resolved (StrictMode race)
+      const applyOrder = (saved) => {
         if (!saved?.length) return;
         storage.set(STORAGE_KEYS.SIDEBAR_ORDER_DESKTOP, saved);
         const known = new Set(saved);
         const extra = ALL_TABS.filter(t => !known.has(t.id));
         setOrderedTabs([...saved.map(id => ALL_TABS.find(t => t.id === id)).filter(Boolean), ...extra]);
-      },
-      err => console.warn('[Sidebar order Firestore]', err.message),
-    );
-    return () => unsub();
+      };
+
+      supabase.from('user_meta').select('value').eq('user_id', userId).eq('key', 'sidebar_order_desktop').maybeSingle()
+        .then(({ data }) => { if (data?.value?.order) applyOrder(data.value.order); });
+
+      channel = supabase.channel(`sidebar:${userId}:${Math.random().toString(36).slice(2)}`)
+        .on('postgres_changes', { event: '*', schema: 'public', table: 'user_meta', filter: `user_id=eq.${userId}` },
+          async () => {
+            const { data } = await supabase.from('user_meta').select('value').eq('user_id', userId).eq('key', 'sidebar_order_desktop').maybeSingle();
+            if (data?.value?.order) applyOrder(data.value.order);
+          })
+        .subscribe();
+    });
+    return () => { alive = false; if (channel) supabase.removeChannel(channel); };
   }, []); // eslint-disable-line react-hooks/exhaustive-deps
 
-  const visible = (tabs) => tabs.filter(t => !hiddenTabs.includes(t.id));
+  // Focus Mode: cycles off  today  tomorrow  off, filtering the sidebar
+  // down to only tabs with actionable items due (see src/utils/attention.js)
+  const [focusMode, setFocusMode] = useState('off');
+  const attention = useMemo(
+    () => focusMode === 'off' ? null : getAttentionTabs(focusMode === 'tomorrow' ? 1 : 0),
+    [focusMode]
+  );
+  const cycleFocus = useCallback(
+    () => setFocusMode(m => m === 'off' ? 'today' : m === 'today' ? 'tomorrow' : 'off'),
+    []
+  );
+
+  const visible = (tabs) => tabs.filter(t => {
+    if (hiddenTabs.includes(t.id)) return false;
+    if (attention && !FOCUS_ALWAYS_VISIBLE.has(t.id) && !attention.tabs.has(t.id)) return false;
+    return true;
+  });
   const visibleMain = visible(orderedTabs);
 
-  // Insert dividers at positions 5 and 8 of the original default order for visual grouping
+  // Group tabs by category (fixed category order, user order preserved within each)
+  const CATEGORY_ORDER = ['CORE', 'PLAN', 'BODY', 'MONEY', 'GROWTH', 'LIFE', 'OTHER'];
   const withDividers = useMemo(() => {
+    const groups = Object.fromEntries(CATEGORY_ORDER.map(c => [c, []]));
+    visibleMain.forEach(tab => {
+      const cat = TAB_CATEGORY[tab.id] ?? 'OTHER';
+      (groups[cat] ?? (groups['OTHER'] = groups['OTHER'] || [])).push(tab);
+    });
     const result = [];
-    visibleMain.forEach((tab, i) => {
-      if (i === 5 || i === 8) result.push({ divider: true, key: `div-${i}` });
-      result.push(tab);
+    let first = true;
+    CATEGORY_ORDER.forEach(cat => {
+      const tabs = groups[cat];
+      if (!tabs?.length) return;
+      result.push({ divider: true, key: `div-${cat}`, label: cat, first });
+      first = false;
+      tabs.forEach(tab => result.push(tab));
     });
     return result;
   }, [visibleMain]);
@@ -415,13 +563,18 @@ export default function Sidebar({ activeTab, onTabClick, claudeOnline, ollamaOnl
         />
       </div>
 
+      {/* Focus Mode toggle */}
+      <div style={{ marginBottom: 10 }}>
+        <FocusModeButton mode={focusMode} onCycle={cycleFocus} count={attention?.count ?? 0} />
+      </div>
+
       {/* Scrollable tab area */}
       <div style={{ flex: 1, overflowY: 'auto', width: '100%',
         display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 0 }}>
-        <div style={{ display: 'flex', flexDirection: 'column', gap: 4, padding: '4px 0' }}>
+        <div style={{ display: 'flex', flexDirection: 'column', gap: 2, padding: '0 0 4px' }}>
           {withDividers.map(item =>
             item.divider
-              ? <Divider key={item.key} />
+              ? <CategoryLabel key={item.key} label={item.label} first={item.first} />
               : <TabButton key={item.id} tab={item} active={activeTab === item.id} onClick={onTabClick} />
           )}
         </div>
@@ -429,11 +582,11 @@ export default function Sidebar({ activeTab, onTabClick, claudeOnline, ollamaOnl
 
       {/* Bottom pinned section */}
       <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 4 }}>
-        <Divider />
+        <CategoryLabel label="SYS" />
         {visible(BOTTOM).map(tab => (
           <TabButton key={tab.id} tab={tab} active={activeTab === tab.id} onClick={onTabClick} />
         ))}
-        {/* Settings is always visible — never hideable */}
+        {/* Settings is always visible  never hideable */}
         {hiddenTabs.includes('settings') && (
           <TabButton tab={{ id: 'settings', label: 'Settings' }} active={activeTab === 'settings'} onClick={onTabClick} />
         )}
@@ -453,3 +606,5 @@ export default function Sidebar({ activeTab, onTabClick, claudeOnline, ollamaOnl
     </aside>
   );
 }
+
+

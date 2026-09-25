@@ -1,13 +1,13 @@
-// ─── VALERIE — Password Vault ─────────────────────────────────────────────────
-// AES-256-GCM · PBKDF2 key derivation · Local only · Never synced to Firebase
+//  VALERIE  Password Vault 
+// AES-256-GCM  PBKDF2 key derivation  Local only  Never synced to Firebase
 import { useState, useEffect, useRef, useCallback } from 'react';
 
-// ─── Vault storage keys (raw localStorage, never Firebase) ───────────────────
+//  Vault storage keys (raw localStorage, never Firebase) 
 const V_SALT = 'valerie_vault_salt';
 const V_DATA = 'valerie_vault_data';
 const AUTO_LOCK_MS = 5 * 60 * 1000; // 5 minutes default
 
-// ─── Crypto helpers ───────────────────────────────────────────────────────────
+//  Crypto helpers 
 function b64(buf) {
   return btoa(String.fromCharCode(...new Uint8Array(buf)));
 }
@@ -42,7 +42,7 @@ async function decryptEntries(blob, key) {
   return JSON.parse(new TextDecoder().decode(plain));
 }
 
-// ─── Password generator ───────────────────────────────────────────────────────
+//  Password generator 
 function genPassword(len = 20, opts = { upper: true, lower: true, numbers: true, symbols: true }) {
   let chars = '';
   if (opts.lower)   chars += 'abcdefghijklmnopqrstuvwxyz';
@@ -54,7 +54,7 @@ function genPassword(len = 20, opts = { upper: true, lower: true, numbers: true,
   return Array.from(arr).map(b => chars[b % chars.length]).join('');
 }
 
-// ─── HaveIBeenPwned k-anonymity check ────────────────────────────────────────
+//  HaveIBeenPwned k-anonymity check 
 async function checkBreach(password) {
   const encoder  = new TextEncoder();
   const data     = encoder.encode(password);
@@ -70,10 +70,10 @@ async function checkBreach(password) {
   } catch { return null; }
 }
 
-// ─── Categories ───────────────────────────────────────────────────────────────
+//  Categories 
 const CATEGORIES = ['All', 'Social', 'Finance', 'Work', 'Shopping', 'Other'];
 
-// ─── Shared styles ────────────────────────────────────────────────────────────
+//  Shared styles 
 const INPUT = {
   width: '100%', padding: '8px 12px', borderRadius: 8, boxSizing: 'border-box',
   background: 'rgba(255,255,255,0.06)', border: '0.5px solid var(--card-border)',
@@ -86,7 +86,7 @@ const BTN = (accent = false) => ({
   color: accent ? '#fff' : 'var(--text-secondary)', fontWeight: accent ? 500 : 400,
 });
 
-// ─── Lock screen ──────────────────────────────────────────────────────────────
+//  Lock screen 
 function LockScreen({ onUnlock, isFirstTime }) {
   const [pw,    setPw]    = useState('');
   const [pw2,   setPw2]   = useState('');
@@ -123,9 +123,9 @@ function LockScreen({ onUnlock, isFirstTime }) {
           borderRadius: 8, padding: '8px 14px',
           display: 'flex', alignItems: 'center', gap: 8,
         }}>
-          <span style={{ fontSize: 16 }}>🔒</span>
+          <span style={{ fontSize: 16 }}>=</span>
           <span style={{ fontSize: 12, color: '#f4a642' }}>
-            {isFirstTime ? 'Set your master password to create the vault' : 'Vault locked — enter master password'}
+            {isFirstTime ? 'Set your master password to create the vault' : 'Vault locked  enter master password'}
           </span>
         </div>
 
@@ -135,7 +135,7 @@ function LockScreen({ onUnlock, isFirstTime }) {
 
         {isFirstTime && (
           <div style={{ fontSize: 12, color: 'var(--text-muted)', lineHeight: 1.5, textAlign: 'center' }}>
-            Choose a strong master password. It is never stored anywhere — if forgotten, the vault cannot be recovered.
+            Choose a strong master password. It is never stored anywhere  if forgotten, the vault cannot be recovered.
           </div>
         )}
 
@@ -168,7 +168,7 @@ function LockScreen({ onUnlock, isFirstTime }) {
 
         {!isFirstTime && (
           <div style={{ fontSize: 11, color: 'var(--text-muted)', textAlign: 'center', lineHeight: 1.5 }}>
-            Desktop only · Encrypted with AES-256 · Never synced to cloud
+            Desktop only  Encrypted with AES-256  Never synced to cloud
           </div>
         )}
       </div>
@@ -176,7 +176,7 @@ function LockScreen({ onUnlock, isFirstTime }) {
   );
 }
 
-// ─── Password generator modal ──────────────────────────────────────────────
+//  Password generator modal 
 function GeneratorPanel({ onUse }) {
   const [len,     setLen]     = useState(20);
   const [upper,   setUpper]   = useState(true);
@@ -235,9 +235,9 @@ function GeneratorPanel({ onUse }) {
       </div>
 
       <div style={{ display: 'flex', gap: 8 }}>
-        <button onClick={regenerate} style={{ ...BTN(false), flex: 1 }}>↺ Regenerate</button>
+        <button onClick={regenerate} style={{ ...BTN(false), flex: 1 }}> Regenerate</button>
         <button onClick={copy} style={{ ...BTN(false), flex: 1 }}>
-          {copied ? '✓ Copied!' : '⧉ Copy'}
+          {copied ? ' Copied!' : ' Copy'}
         </button>
         {onUse && (
           <button onClick={() => onUse(pw)} style={{ ...BTN(true), flex: 1 }}>Use</button>
@@ -247,7 +247,7 @@ function GeneratorPanel({ onUse }) {
   );
 }
 
-// ─── Entry detail panel ───────────────────────────────────────────────────────
+//  Entry detail panel 
 function DetailPanel({ entry, onUpdate, onDelete }) {
   const [revealed,  setRevealed]  = useState(false);
   const [breach,    setBreach]    = useState(null); // null | number | 'checking' | 'error'
@@ -315,7 +315,7 @@ function DetailPanel({ entry, onUpdate, onDelete }) {
               onChange={e => setForm(f => ({ ...f, password: e.target.value }))}
               style={{ ...INPUT, fontFamily: 'monospace' }} />
             <button onClick={() => setShowGen(v => !v)} title="Generator"
-              style={{ ...BTN(false), padding: '8px 10px', flexShrink: 0 }}>⚙</button>
+              style={{ ...BTN(false), padding: '8px 10px', flexShrink: 0 }}></button>
           </div>
         </div>
         {showGen && (
@@ -354,7 +354,7 @@ function DetailPanel({ entry, onUpdate, onDelete }) {
       <div>
         <div style={{ fontSize: 10, color: 'var(--text-muted)', marginBottom: 3 }}>USERNAME / EMAIL</div>
         <div style={{ fontSize: 13, color: 'var(--text-primary)', fontFamily: 'monospace' }}>
-          {entry.username || '—'}
+          {entry.username || ''}
         </div>
       </div>
 
@@ -366,14 +366,14 @@ function DetailPanel({ entry, onUpdate, onDelete }) {
           fontFamily: 'monospace', fontSize: 13, letterSpacing: revealed ? '0.04em' : '0.2em',
           color: 'var(--text-primary)', wordBreak: 'break-all', minHeight: 36,
         }}>
-          {revealed ? entry.password : '•'.repeat(Math.min(entry.password?.length || 12, 20))}
+          {revealed ? entry.password : '"'.repeat(Math.min(entry.password?.length || 12, 20))}
         </div>
         <div style={{ display: 'flex', gap: 6, marginTop: 8 }}>
           <button onClick={() => setRevealed(v => !v)} style={{ ...BTN(false), flex: 1, fontSize: 12 }}>
-            {revealed ? '🙈 Hide' : '👁 Reveal'}
+            {revealed ? '=H Hide' : '=A Reveal'}
           </button>
           <button onClick={copyPassword} style={{ ...BTN(false), flex: 1, fontSize: 12 }}>
-            {copied ? '✓ Copied' : '⧉ Copy'}
+            {copied ? ' Copied' : ' Copy'}
           </button>
         </div>
         {copied && (
@@ -388,7 +388,7 @@ function DetailPanel({ entry, onUpdate, onDelete }) {
         <a href={entry.url} target="_blank" rel="noreferrer" style={{
           fontSize: 12, color: 'var(--accent)', textDecoration: 'none',
           wordBreak: 'break-all',
-        }}>🔗 {entry.url}</a>
+        }}>= {entry.url}</a>
       )}
 
       {/* Notes */}
@@ -403,10 +403,10 @@ function DetailPanel({ entry, onUpdate, onDelete }) {
           opacity: breach === 'checking' ? 0.6 : 1,
         }}>
           {breach === 'checking' ? 'Checking…'
-            : breach === null ? '🛡 Check for breaches (HIBP)'
-            : breach === 'error' ? '⚠ Check failed — tap to retry'
+            : breach === null ? '🔍 Check for breaches (HIBP)'
+            : breach === 'error' ? '⚠️ Check failed — tap to retry'
             : breach === 0 ? '✓ Not found in any known breach'
-            : `⚠ Found in ${breach.toLocaleString()} breach${breach !== 1 ? 'es' : ''}`}
+            : `⚠️ Found in ${breach.toLocaleString()} breach${breach !== 1 ? 'es' : ''}`}
         </button>
         {typeof breach === 'number' && breach > 0 && (
           <div style={{ fontSize: 10, color: '#f4a642', marginTop: 4, textAlign: 'center' }}>
@@ -414,7 +414,7 @@ function DetailPanel({ entry, onUpdate, onDelete }) {
           </div>
         )}
         <div style={{ fontSize: 9, color: 'var(--text-muted)', marginTop: 4, textAlign: 'center' }}>
-          Uses k-anonymity — only the first 5 chars of the SHA-1 hash are sent
+          Uses k-anonymity  only the first 5 chars of the SHA-1 hash are sent
         </div>
       </div>
 
@@ -427,7 +427,7 @@ function DetailPanel({ entry, onUpdate, onDelete }) {
   );
 }
 
-// ─── Main Vault Tab ───────────────────────────────────────────────────────────
+//  Main Vault Tab 
 export default function Vault() {
   const [locked,    setLocked]    = useState(true);
   const [entries,   setEntries]   = useState([]);
@@ -550,7 +550,7 @@ export default function Vault() {
   return (
     <div style={{ display: 'flex', height: '100%', overflow: 'hidden' }} onClick={resetAutoLock}>
 
-      {/* ── Left list ────────────────────────────────────────────────────── */}
+      {/*  Left list  */}
       <div style={{
         flex: 1, display: 'flex', flexDirection: 'column',
         borderRight: '0.5px solid var(--card-border)', overflow: 'hidden',
@@ -565,7 +565,7 @@ export default function Vault() {
           <button onClick={() => { setAdding(true); setSelected(null); setShowGen(false); }}
             style={BTN(true)}>+ Add</button>
           <button onClick={() => { setLocked(true); setCryptoKey(null); setEntries([]); setSelected(null); }}
-            title="Lock vault" style={{ ...BTN(false), padding: '7px 10px' }}>🔒</button>
+            title="Lock vault" style={{ ...BTN(false), padding: '7px 10px' }}>=</button>
         </div>
 
         {/* Category filter */}
@@ -586,7 +586,7 @@ export default function Vault() {
         <div style={{ flex: 1, overflowY: 'auto' }}>
           {filtered.length === 0 ? (
             <div style={{ padding: 32, textAlign: 'center' }}>
-              <div style={{ fontSize: 32, marginBottom: 10, opacity: 0.3 }}>🔐</div>
+              <div style={{ fontSize: 32, marginBottom: 10, opacity: 0.3 }}>=</div>
               <div style={{ color: 'var(--text-muted)', fontSize: 13 }}>
                 {entries.length === 0 ? 'Vault is empty. Add your first password.' : 'No entries match.'}
               </div>
@@ -623,7 +623,7 @@ export default function Vault() {
         </div>
       </div>
 
-      {/* ── Right panel ──────────────────────────────────────────────────── */}
+      {/*  Right panel  */}
       <div style={{
         width: 300, flexShrink: 0,
         padding: '20px 16px',
@@ -652,7 +652,7 @@ export default function Vault() {
                   onChange={e => setAddForm(f => ({ ...f, password: e.target.value }))}
                   style={{ ...INPUT, fontFamily: 'monospace' }} />
                 <button onClick={() => setShowGen(v => !v)} title="Generator"
-                  style={{ ...BTN(false), padding: '8px 10px', flexShrink: 0 }}>⚙</button>
+                  style={{ ...BTN(false), padding: '8px 10px', flexShrink: 0 }}></button>
               </div>
             </div>
             {showGen && (
@@ -688,7 +688,7 @@ export default function Vault() {
           />
         ) : (
           <div style={{ textAlign: 'center', paddingTop: 40 }}>
-            <div style={{ fontSize: 28, marginBottom: 8, opacity: 0.3 }}>🔐</div>
+            <div style={{ fontSize: 28, marginBottom: 8, opacity: 0.3 }}>=</div>
             <div style={{ fontSize: 12, color: 'var(--text-muted)' }}>Select an entry to view</div>
             <div style={{ marginTop: 24 }}>
               <GeneratorPanel />

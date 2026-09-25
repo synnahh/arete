@@ -1,9 +1,11 @@
 import { defineConfig } from "vite";
 import react from "@vitejs/plugin-react";
 import { VitePWA } from "vite-plugin-pwa";
+import { readFileSync } from "fs";
 
 const host     = process.env.TAURI_DEV_HOST;
 const isPWA    = process.env.BUILD_TARGET === "pwa";
+const pkg      = JSON.parse(readFileSync("./package.json", "utf-8"));
 
 export default defineConfig(async () => ({
   plugins: [
@@ -72,6 +74,21 @@ export default defineConfig(async () => ({
           if (id.includes('node_modules/firebase')) return 'vendor-firebase';
           if (id.includes('node_modules/react') || id.includes('node_modules/react-dom')) return 'vendor-react';
           if (id.includes('node_modules/@tauri-apps')) return 'vendor-tauri';
+
+          // Shared app modules FIRST — keeps common code out of the feature
+          // chunks. Without this, a shared util could be hoisted into `mobile`
+          // while `tab-settings` still imports it, producing a circular chunk
+          // (mobile -> tab-settings -> mobile).
+          if (id.includes('/src/utils/')     ||
+              id.includes('/src/hooks/')     ||
+              id.includes('/src/supabase/')  ||
+              id.includes('/src/styles/')    ||
+              id.includes('/src/ai/')) return 'shared';
+
+          // MobileSettings re-exports the desktop Settings sections, so keep it
+          // with tab-settings rather than letting `mobile` depend on it.
+          if (id.includes('/src/mobile/screens/MobileSettings')) return 'tab-settings';
+
           // Heavy tabs into their own chunks for faster first-load parse
           if (id.includes('/src/tabs/Health')) return 'tab-health';
           if (id.includes('/src/tabs/Finance')) return 'tab-finance';
@@ -84,8 +101,8 @@ export default defineConfig(async () => ({
   },
 
   define: {
-    // Available at runtime via import.meta.env.VITE_BUILD_TARGET
-    __BUILD_TARGET__: JSON.stringify(isPWA ? "pwa" : "tauri"),
+    __BUILD_TARGET__:  JSON.stringify(isPWA ? "pwa" : "tauri"),
+    __APP_VERSION__:   JSON.stringify(pkg.version),
   },
 
   clearScreen: false,

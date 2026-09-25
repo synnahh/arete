@@ -1,4 +1,4 @@
-// ─── rateLimit.js — Token bucket rate limiter ─────────────────────────────────
+//  rateLimit.js  Token bucket rate limiter 
 // Protects API credentials from abuse if keys are ever extracted from the app.
 // Each service gets its own bucket; calls that exceed the limit throw rather than
 // silently succeed, so callers can surface a useful error to the user.
@@ -38,7 +38,7 @@ export function consumeToken(service, maxPerMinute) {
   bucket.tokens -= 1;
 }
 
-// Per-service convenience wrappers — call before each API request
+// Per-service convenience wrappers  call before each API request
 export const rateLimitClaude      = () => consumeToken('claude',      10);
 export const rateLimitElevenLabs  = () => consumeToken('elevenlabs',  20);
 export const rateLimitFinnhub     = () => consumeToken('finnhub',     30);

@@ -1,34 +1,34 @@
-// ─── speech.js — VALERIE's voice layer ────────────────────────────────────────
-// Priority: ElevenLabs (real voice) → Browser SpeechSynthesis (fallback)
+//  speech.js  VALERIE's voice layer 
+// Priority: ElevenLabs (real voice)  Browser SpeechSynthesis (fallback)
 // Includes: speech cleaning pipeline, ElevenLabs fetch, audio playback management,
 //           voice session stop-intent detection.
 
 import { platformFetch, platformInvoke } from '../utils/platform.js';
 import { rateLimitElevenLabs } from '../utils/rateLimit.js';
 
-// ─── VALERIE's voice identity ──────────────────────────────────────────────────
-// Default voice ID — locked in as VALERIE's voice. Overridable in Settings.
+//  VALERIE's voice identity 
+// Default voice ID  locked in as VALERIE's voice. Overridable in Settings.
 const DEFAULT_VOICE_ID = import.meta.env.VITE_ELEVENLABS_VOICE_ID || 'yj30vwTGJxSHezdAGsv9';
-// API key is NOT read from env — enter it in Settings → Voice so it stays out of the bundle
-// Hardlocked via VITE_ELEVENLABS_API_KEY env var — no need to enter in Settings on web
+// API key is NOT read from env  enter it in Settings  Voice so it stays out of the bundle
+// Hardlocked via VITE_ELEVENLABS_API_KEY env var  no need to enter in Settings on web
 const DEFAULT_API_KEY  = import.meta.env.VITE_ELEVENLABS_API_KEY || '';
 const ELEVENLABS_MODEL    = 'eleven_monolingual_v1'; // compatible with free ElevenLabs plans
 
-// Session-level disables — set to true on first auth/plan rejection to avoid
+// Session-level disables  set to true on first auth/plan rejection to avoid
 // hammering broken credentials on every message.
 let _el11Disabled   = false;
 let _azureDisabled  = false;
 const ELEVENLABS_ENDPOINT = 'https://api.elevenlabs.io/v1/text-to-speech';
 
-// Voice character settings — tuned for VALERIE's confident, calm personality
+// Voice character settings  tuned for VALERIE's confident, calm personality
 const VALERIE_VOICE_SETTINGS = {
   stability:         0.45,  // slightly lower = more expressive, less monotone
   similarity_boost:  0.80,  // high fidelity to the chosen voice
-  style:             0.20,  // light style exaggeration — gives her character
+  style:             0.20,  // light style exaggeration  gives her character
   use_speaker_boost: true,  // enhanced clarity and presence
 };
 
-// ─── Stop-intent phrases — end a continuous voice session ─────────────────────
+//  Stop-intent phrases  end a continuous voice session 
 export const STOP_INTENTS = [
   'stop listening', 'stop', "that's all", 'thats all', 'goodbye',
   'bye', 'end session', 'quiet', 'go to sleep', 'sleep mode',
@@ -36,12 +36,12 @@ export const STOP_INTENTS = [
   "we're done", 'were done', 'dismiss',
 ];
 
-// ─── Audio state — tracks the current playing ElevenLabs audio element ────────
+//  Audio state  tracks the current playing ElevenLabs audio element 
 // Module-level so it can be cancelled from anywhere (endVoiceSession, etc.)
 let _currentAudio = null;
 
-// ─── cancelCurrentSpeech ──────────────────────────────────────────────────────
-// Stops whatever is currently playing — ElevenLabs audio OR browser TTS.
+//  cancelCurrentSpeech 
+// Stops whatever is currently playing  ElevenLabs audio OR browser TTS.
 // Call this before starting new speech, or when ending a voice session.
 
 export function cancelCurrentSpeech() {
@@ -59,7 +59,7 @@ export function cancelCurrentSpeech() {
   try { window.speechSynthesis?.cancel(); } catch {}
 }
 
-// ─── cleanForSpeech ────────────────────────────────────────────────────────────
+//  cleanForSpeech 
 // Converts raw AI text into natural spoken language.
 // Strips all markdown, symbols, code, hex codes, and technical noise.
 // VALERIE must never sound like a TTS bot reading formatting aloud.
@@ -93,7 +93,7 @@ export function cleanForSpeech(text) {
   // Remove raw URLs
   s = s.replace(/https?:\/\/[^\s,)]+/g, '');
 
-  // Remove markdown links — keep label text only
+  // Remove markdown links  keep label text only
   s = s.replace(/\[([^\]]+)\]\([^)]+\)/g, '$1');
 
   // Convert markdown lists to natural phrasing (remove bullet/number prefix)
@@ -113,8 +113,8 @@ export function cleanForSpeech(text) {
   // Naturalise currency for speech
   s = s.replace(/A\$(\d[\d,.]*)/g, '$1 Australian dollars');
   s = s.replace(/\$(\d[\d,.]*)/g, '$1 dollars');
-  s = s.replace(/£(\d[\d,.]*)/g, '$1 pounds');
-  s = s.replace(/€(\d[\d,.]*)/g, '$1 euros');
+  s = s.replace(/(\d[\d,.]*)/g, '$1 pounds');
+  s = s.replace(/(\d[\d,.]*)/g, '$1 euros');
 
   // Expand common abbreviations
   s = s.replace(/\be\.g\./gi, 'for example');
@@ -133,7 +133,7 @@ export function cleanForSpeech(text) {
   return s.trim();
 }
 
-// ─── isStopIntent ─────────────────────────────────────────────────────────────
+//  isStopIntent 
 // Returns true if the transcript matches a voice session end phrase.
 
 export function isStopIntent(transcript) {
@@ -141,7 +141,7 @@ export function isStopIntent(transcript) {
   return STOP_INTENTS.some(phrase => lower === phrase || lower.startsWith(phrase + ' '));
 }
 
-// ─── ElevenLabs fetch ─────────────────────────────────────────────────────────
+//  ElevenLabs fetch 
 // Makes the actual API call and returns a Blob of audio/mpeg.
 
 async function _fetchElevenLabsAudio(text, apiKey, voiceId) {
@@ -170,7 +170,7 @@ async function _fetchElevenLabsAudio(text, apiKey, voiceId) {
   return new Blob([buffer], { type: 'audio/mpeg' });
 }
 
-// ─── Azure TTS fetch ──────────────────────────────────────────────────────────
+//  Azure TTS fetch 
 // Calls the Azure Cognitive Services Speech REST API.
 // voiceName must be a valid Neural voice name, e.g. "en-AU-NatashaNeural".
 // region is the Azure region slug, e.g. "australiaeast".
@@ -185,7 +185,7 @@ function _escapeXml(str) {
 }
 
 async function _fetchAzureAudio(text, apiKey, region, voiceName = 'en-AU-NatashaNeural') {
-  // Derive xml:lang from the voice name prefix (e.g. "en-AU-NatashaNeural" → "en-AU")
+  // Derive xml:lang from the voice name prefix (e.g. "en-AU-NatashaNeural"  "en-AU")
   const langMatch = voiceName.match(/^([a-z]{2}-[A-Z]{2})/);
   const lang      = langMatch ? langMatch[1] : 'en-AU';
 
@@ -213,7 +213,7 @@ async function _fetchAzureAudio(text, apiKey, region, voiceName = 'en-AU-Natasha
   return new Blob([buffer], { type: 'audio/mpeg' });
 }
 
-// ─── speakText ─────────────────────────────────────────────────────────────────
+//  speakText 
 // Primary speech function. ElevenLabs is always tried first.
 // Falls back to browser SpeechSynthesis if ElevenLabs fails or has no key.
 //
@@ -226,18 +226,18 @@ export async function speakText(text, voiceSettings = {}, { onStart, onEnd, onEr
     return;
   }
 
-  // Resolve credentials — voiceSettings → keyring → empty
+  // Resolve credentials  voiceSettings  keyring  empty
   let apiKey = voiceSettings.elevenlabsKey || DEFAULT_API_KEY;
   if (!apiKey) {
     try { apiKey = await platformInvoke('get_secret', { service: 'valerie', key: 'elevenlabs_api_key' }) || ''; }
-    catch { /* keyring unavailable — fall through */ }
+    catch { /* keyring unavailable  fall through */ }
   }
   const voiceId = voiceSettings.elevenlabsVoiceId || DEFAULT_VOICE_ID;
 
   // Cancel anything currently speaking
   cancelCurrentSpeech();
 
-  // ── Priority 1: ElevenLabs ───────────────────────────────────────────────────
+  //  Priority 1: ElevenLabs 
   if (apiKey && !_el11Disabled) {
     try {
       const audioBlob = await _fetchElevenLabsAudio(text, apiKey, voiceId);
@@ -261,7 +261,7 @@ export async function speakText(text, voiceSettings = {}, { onStart, onEnd, onEr
       };
 
       await audio.play();
-      return; // success — done
+      return; // success  done
 
     } catch (err) {
       _currentAudio = null;
@@ -277,7 +277,7 @@ export async function speakText(text, voiceSettings = {}, { onStart, onEnd, onEr
     }
   }
 
-  // ── Priority 2: Azure Neural TTS ────────────────────────────────────────────
+  //  Priority 2: Azure Neural TTS 
   const azureKey    = voiceSettings.azureKey;
   const azureRegion = voiceSettings.azureRegion;
   if (azureKey && azureRegion && !_azureDisabled) {
@@ -304,7 +304,7 @@ export async function speakText(text, voiceSettings = {}, { onStart, onEnd, onEr
       };
 
       await audio.play();
-      return; // success — done
+      return; // success  done
 
     } catch (err) {
       _currentAudio = null;
@@ -318,9 +318,9 @@ export async function speakText(text, voiceSettings = {}, { onStart, onEnd, onEr
     }
   }
 
-  // ── All TTS providers failed — notify user so they know voice isn't working ──
+  //  All TTS providers failed  notify user so they know voice isn't working 
   window.dispatchEvent(new CustomEvent('valerie:toast', {
-    detail: { message: 'Voice unavailable — check ElevenLabs key in Settings → Voice.', type: 'error' },
+    detail: { message: 'Voice unavailable  check ElevenLabs key in Settings  Voice.', type: 'error' },
   }));
   onEnd?.();
 }

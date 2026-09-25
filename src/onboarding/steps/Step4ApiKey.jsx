@@ -16,12 +16,12 @@ export default function Step4ApiKey({ data, update, next, back }) {
       <BackButton onClick={back} />
 
       <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
-        <div style={{ fontSize: 28, opacity: 0.4 }}>🔑</div>
+        <div style={{ fontSize: 28, opacity: 0.4 }}>=</div>
         <h2 style={{ fontSize: 28, fontWeight: 300, color: 'var(--text-primary)', letterSpacing: '0.04em' }}>
           Anthropic API key
         </h2>
         <p style={{ fontSize: 14, color: 'var(--text-secondary)', lineHeight: 1.6 }}>
-          Optional — paste your key for full AI intelligence. Without it I'll run
+          Optional  paste your key for full AI intelligence. Without it I'll run
           locally via Ollama. You can add this later in Settings.
         </p>
       </div>
@@ -31,7 +31,7 @@ export default function Step4ApiKey({ data, update, next, back }) {
           type={show ? 'text' : 'password'}
           value={val}
           onChange={e => setVal(e.target.value)}
-          placeholder="sk-ant-… (optional)"
+          placeholder="sk-ant-& (optional)"
           style={{
             width: '100%', padding: '14px 44px 14px 16px', borderRadius: 10,
             border: '0.5px solid var(--input-border)',
@@ -52,11 +52,11 @@ export default function Step4ApiKey({ data, update, next, back }) {
       </div>
 
       <p style={{ fontSize: 12, color: 'var(--text-muted)', lineHeight: 1.5 }}>
-        🔒 Your key is stored encrypted on your device and never shared.
+        = Your key is stored encrypted on your device and never shared.
       </p>
 
       <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
-        <PrimaryButton onClick={handleContinue}>Continue →</PrimaryButton>
+        <PrimaryButton onClick={handleContinue}>Continue </PrimaryButton>
         <button onClick={() => { update({ apiKey: '' }); next(); }}
           style={{
             background: 'none', border: 'none', cursor: 'pointer',

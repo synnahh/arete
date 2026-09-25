@@ -1,4 +1,4 @@
-// ─── Firebase initialisation ──────────────────────────────────────────────────
+//  Firebase initialisation 
 import { initializeApp }                              from 'firebase/app';
 import { initializeFirestore, persistentLocalCache }  from 'firebase/firestore';
 import { getAuth, signInAnonymously, onAuthStateChanged } from 'firebase/auth';
@@ -21,9 +21,9 @@ export const db = initializeFirestore(app, {
 
 export const auth = getAuth(app);
 
-// ── Anonymous Authentication ───────────────────────────────────────────────────
+//  Anonymous Authentication 
 // Signs in silently on every launch. Provides request.auth for Firestore rules.
-// IMPORTANT: The Firebase UID is NOT used as the Firestore path key — we keep
+// IMPORTANT: The Firebase UID is NOT used as the Firestore path key  we keep
 // the existing device ID (valerie_device_id) as the path so existing user data
 // is never broken. Firebase Auth just supplies the auth token for the rules check.
 let _authReady = false;
@@ -35,17 +35,17 @@ signInAnonymously(auth).catch(err => {
 onAuthStateChanged(auth, (user) => {
   if (user) {
     _authReady = true;
-    // Store Firebase UID separately — do NOT overwrite valerie_device_id.
+    // Store Firebase UID separately  do NOT overwrite valerie_device_id.
     // valerie_device_id is the Firestore path key; changing it would orphan all data.
     localStorage.setItem('valerie_firebase_uid', user.uid);
     setSentryUser(user.uid);
   }
 });
 
-// ── Stable data path identifier ────────────────────────────────────────────────
+//  Stable data path identifier 
 // Returns the device ID that is used as the Firestore path key.
 // This is stable across all sessions and is never replaced by the Firebase UID.
-export function getDeviceId() {
+export function getUserIdSync() {
   let id = localStorage.getItem('valerie_device_id');
   if (!id) {
     id = 'user_' + Date.now().toString(36) + '_' + Math.random().toString(36).substr(2, 6);
@@ -63,3 +63,4 @@ export function waitForAuth() {
     });
   });
 }
+

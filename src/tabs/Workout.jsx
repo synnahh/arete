@@ -1,19 +1,20 @@
-// ─── Workout Tab ──────────────────────────────────────────────────────────────
+//  Workout Tab 
 // Sub-sections: Overload Coach · Exercises · Split Planner
-// All data via Firebase — workout_logs collection + meta docs for library/program
+// All data via Firebase  workout_logs collection + meta docs for library/program
 
 import { useState, useEffect, useMemo, useCallback } from 'react';
-import { useCollection } from '../firebase/useCollection.js';
-import { useDocument }   from '../firebase/useDocument.js';
+import { useCollection } from '../supabase/useCollection.js';
+import { useDocument }   from '../supabase/useDocument.js';
 import { STORAGE_KEYS }  from '../utils/storage.js';
+import { anteriorData, posteriorData } from '../components/bodyModel.js';
 
-// ── Helpers ───────────────────────────────────────────────────────────────────
+//  Helpers 
 const todayStr = () => new Date().toISOString().slice(0, 10);
 const DAY_KEYS = ['sun', 'mon', 'tue', 'wed', 'thu', 'fri', 'sat'];
 const DAY_LABELS = { sun: 'Sun', mon: 'Mon', tue: 'Tue', wed: 'Wed', thu: 'Thu', fri: 'Fri', sat: 'Sat' };
 const SPLIT_COLOURS = { push: '#e25d7a', pull: '#4a9eff', legs: '#f4a642', rest: 'rgba(255,255,255,0.2)', custom: '#9b5de5' };
 
-// ── Shared style tokens ───────────────────────────────────────────────────────
+//  Shared style tokens 
 const inputSx = {
   width: '100%', background: 'var(--input-bg)', border: '0.5px solid var(--input-border)',
   borderRadius: 7, padding: '7px 10px', fontSize: 12.5, color: 'var(--text-primary)',
@@ -71,7 +72,7 @@ function Section({ title, children, action }) {
   );
 }
 
-// ── Default exercise library ───────────────────────────────────────────────────
+//  Default exercise library 
 export const DEFAULT_OVERLOAD_EXERCISES = [
   // Push
   { id:'bp',  name:'Bench Press',         gym:'both',       day:'push', bodyweight:false, startingWeight:40, repsMin:6, repsMax:8,  increment:2.5 },
@@ -96,7 +97,7 @@ export const DEFAULT_OVERLOAD_EXERCISES = [
 
 export const DEFAULT_SPLITS = { push: 'Push', pull: 'Pull', legs: 'Legs' };
 
-// ── Default program template (PPL Mon–Sat, rest Sun) ─────────────────────────
+//  Default program template (PPL MonSat, rest Sun) 
 const DEFAULT_PROGRAM_DAYS = {
   mon: { splitType: 'push', label: 'Push' },
   tue: { splitType: 'pull', label: 'Pull' },
@@ -107,7 +108,7 @@ const DEFAULT_PROGRAM_DAYS = {
   sun: { splitType: 'rest', label: 'Rest' },
 };
 
-// ── Progression logic ────────────────────────────────────────────────────────
+//  Progression logic 
 export function computeProgression(ex, workoutLogs) {
   const logs = (workoutLogs || [])
     .filter(l => l.exerciseName === ex.name && l.topSet)
@@ -116,32 +117,32 @@ export function computeProgression(ex, workoutLogs) {
   const currentWeight = last?.topSet?.weight ?? ex.startingWeight;
   const lastReps = last?.topSet?.reps ?? null;
   let nextWeight = currentWeight, action = 'FIRST SET';
-  let hint = `Start at ${ex.bodyweight ? 'bodyweight' : `${currentWeight}kg`}. Target ${ex.repsMin}–${ex.repsMax} reps.`;
+  let hint = `Start at ${ex.bodyweight ? 'bodyweight' : `${currentWeight}kg`}. Target ${ex.repsMin}${ex.repsMax} reps.`;
   if (lastReps !== null) {
     if (lastReps >= ex.repsMax) {
       nextWeight = parseFloat((currentWeight + ex.increment).toFixed(2));
       action = 'ADD WEIGHT';
-      hint = `You hit ${lastReps} reps — time to add ${ex.increment}kg. Expect ${ex.repsMin}–${ex.repsMin + 1} next session.`;
+      hint = `You hit ${lastReps} reps  time to add ${ex.increment}kg. Expect ${ex.repsMin}${ex.repsMin + 1} next session.`;
     } else if (lastReps >= ex.repsMin) {
       action = 'HOLD';
-      hint = `You hit ${lastReps} reps — stay at ${currentWeight}kg and push for ${ex.repsMax}.`;
+      hint = `You hit ${lastReps} reps  stay at ${currentWeight}kg and push for ${ex.repsMax}.`;
     } else {
       nextWeight = Math.max(0, parseFloat((currentWeight - ex.increment).toFixed(2)));
       action = 'DROP WEIGHT';
-      hint = `Only ${lastReps} reps — drop to ${nextWeight}kg and rebuild.`;
+      hint = `Only ${lastReps} reps  drop to ${nextWeight}kg and rebuild.`;
     }
   }
   return { last, currentWeight, nextWeight, action, hint };
 }
 
-// ── Stepper ───────────────────────────────────────────────────────────────────
+//  Stepper 
 function Stepper({ value, onChange, min = 0, step = 1, label }) {
   return (
     <div style={{ display: 'flex', flexDirection: 'column', gap: 4 }}>
       {label && <span style={lblSx}>{label}</span>}
       <div style={{ display: 'flex', alignItems: 'center' }}>
         <button onClick={() => onChange(Math.max(min, parseFloat((value - step).toFixed(2))))}
-          style={{ width: 40, height: 42, borderRadius: '8px 0 0 8px', border: '0.5px solid var(--card-border)', background: 'var(--card-fill)', color: 'var(--text-primary)', fontSize: 18, cursor: 'pointer' }}>−</button>
+          style={{ width: 40, height: 42, borderRadius: '8px 0 0 8px', border: '0.5px solid var(--card-border)', background: 'var(--card-fill)', color: 'var(--text-primary)', fontSize: 18, cursor: 'pointer' }}></button>
         <div style={{ flex: 1, height: 42, display: 'flex', alignItems: 'center', justifyContent: 'center', border: '0.5px solid var(--card-border)', borderLeft: 'none', borderRight: 'none', background: 'var(--input-bg)', fontSize: 18, fontWeight: 700, color: 'var(--text-primary)', minWidth: 70 }}>
           {value}
         </div>
@@ -152,7 +153,7 @@ function Stepper({ value, onChange, min = 0, step = 1, label }) {
   );
 }
 
-// ── Toggle group ─────────────────────────────────────────────────────────────
+//  Toggle group 
 function ToggleGroup({ label, options, value, onChange }) {
   return (
     <div style={{ display: 'flex', gap: 8, alignItems: 'center', flex: 1 }}>
@@ -171,7 +172,7 @@ function ToggleGroup({ label, options, value, onChange }) {
   );
 }
 
-// ── Add / Edit Exercise Modal ─────────────────────────────────────────────────
+//  Add / Edit Exercise Modal 
 function ExerciseModal({ onClose, onSave, initial = null }) {
   const [name, setName]             = useState(initial?.name ?? '');
   const [gym, setGym]               = useState(initial?.gym ?? 'both');
@@ -227,9 +228,9 @@ function ExerciseModal({ onClose, onSave, initial = null }) {
   );
 }
 
-// ═══════════════════════════════════════════════════════════════════════════════
+// """""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
 // 1. OVERLOAD COACH
-// ═══════════════════════════════════════════════════════════════════════════════
+// """""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
 function OverloadCoach({ workoutLogs, addWorkoutLog, exercises, saveExercises, splitNames, saveSplitNames, todaySplitType }) {
   const [editingSplits, setEditingSplits] = useState(false);
   const [draftNames, setDraftNames]       = useState(splitNames);
@@ -279,7 +280,8 @@ function OverloadCoach({ workoutLogs, addWorkoutLog, exercises, saveExercises, s
   const handleLog = async () => {
     if (!selected || selectedReps === null || saving) return;
     setSaving(true);
-    await addWorkoutLog({ date: todayStr(), exerciseName: selected.name, muscle: selected.day, topSet: { weight: selected.bodyweight ? 0 : weight, reps: selectedReps } });
+    const muscles = EXERCISE_MUSCLES[selected.name] || MUSCLE_MAP[selected.day] || [];
+    await addWorkoutLog({ date: todayStr(), exerciseName: selected.name, muscle: selected.day, muscles, topSet: { weight: selected.bodyweight ? 0 : weight, reps: selectedReps } });
     setSaving(false); setSaved(true); setTimeout(() => setSaved(false), 2000);
   };
 
@@ -312,7 +314,7 @@ function OverloadCoach({ workoutLogs, addWorkoutLog, exercises, saveExercises, s
                   value={day} onChange={setDay} />
                 <button onClick={() => { setDraftNames(splitNames); setEditingSplits(true); }}
                   style={{ flexShrink: 0, background: 'none', border: '0.5px solid var(--card-border)', borderRadius: 6, padding: '6px 8px', cursor: 'pointer', color: 'var(--text-muted)', fontSize: 11 }}
-                  title="Rename splits">✏</button>
+title="Rename splits">✎</button>
               </div>
             )}
           </div>
@@ -337,7 +339,7 @@ function OverloadCoach({ workoutLogs, addWorkoutLog, exercises, saveExercises, s
               {prog.last && (
                 <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 14, padding: '8px 12px', borderRadius: 8, background: 'rgba(255,255,255,0.03)', border: '0.5px solid var(--card-border)' }}>
                   <span style={{ fontSize: 11, color: 'var(--text-muted)', letterSpacing: '0.06em' }}>LAST TIME</span>
-                  <span style={{ fontSize: 13, fontWeight: 600, color: 'var(--text-primary)' }}>{selected.bodyweight ? 'BW' : `${prog.last.topSet?.weight}kg`} × {prog.last.topSet?.reps}</span>
+                  <span style={{ fontSize: 13, fontWeight: 600, color: 'var(--text-primary)' }}>{selected.bodyweight ? 'BW' : `${prog.last.topSet?.weight}kg`}  {prog.last.topSet?.reps}</span>
                   <span style={{ fontSize: 10.5, color: 'var(--text-muted)' }}>{prog.last.date === todayStr() ? 'today' : prog.last.date?.slice(5)}</span>
                 </div>
               )}
@@ -364,14 +366,14 @@ function OverloadCoach({ workoutLogs, addWorkoutLog, exercises, saveExercises, s
               fontSize: 14, fontWeight: 600, cursor: selectedReps === null ? 'not-allowed' : 'pointer',
               opacity: selectedReps === null ? 0.4 : 1, transition: 'all 0.15s', letterSpacing: '0.03em',
             }}>
-              {saved ? '✓ Logged' : saving ? 'Saving…' : 'Log set'}
+              {saved ? '✔️ Logged' : saving ? 'Saving...' : 'Log set'}
             </button>
 
             <GlassCard style={{ background: 'rgba(30,50,30,0.55)', border: '0.5px solid rgba(76,175,125,0.2)' }}>
               <GlassLabel>Next Session</GlassLabel>
               <div style={{ fontSize: 10, letterSpacing: '0.1em', color: 'rgba(255,255,255,0.35)', marginBottom: 6, textTransform: 'uppercase' }}>{selected.name}</div>
               <div style={{ fontSize: 26, fontWeight: 700, color: 'var(--text-primary)', marginBottom: 8 }}>
-                {selected.bodyweight ? 'Bodyweight' : `${prog.nextWeight}kg`} × {selected.repsMin} reps
+                {selected.bodyweight ? 'Bodyweight' : `${prog.nextWeight}kg`}  {selected.repsMin} reps
               </div>
               <span style={{
                 display: 'inline-block', padding: '2px 9px', borderRadius: 12, fontSize: 10, fontWeight: 700,
@@ -395,9 +397,9 @@ function OverloadCoach({ workoutLogs, addWorkoutLog, exercises, saveExercises, s
   );
 }
 
-// ═══════════════════════════════════════════════════════════════════════════════
+// """""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
 // 2. EXERCISES LIBRARY
-// ═══════════════════════════════════════════════════════════════════════════════
+// """""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
 function ExercisesLibrary({ exercises, saveExercises }) {
   const [filter, setFilter]   = useState('all');
   const [showAdd, setShowAdd] = useState(false);
@@ -447,12 +449,12 @@ function ExercisesLibrary({ exercises, saveExercises }) {
             <div style={{ flex: 1, minWidth: 0 }}>
               <div style={{ fontSize: 13, fontWeight: 500, color: 'var(--text-primary)', marginBottom: 2 }}>{ex.name}</div>
               <div style={{ fontSize: 11, color: 'var(--text-muted)' }}>
-                {gymLabel[ex.gym]} · {ex.bodyweight ? 'Bodyweight' : `${ex.startingWeight}kg`} · {ex.repsMin}–{ex.repsMax} reps
+                {gymLabel[ex.gym]} · {ex.bodyweight ? 'Bodyweight' : `${ex.startingWeight}kg`} · {ex.repsMin}{ex.repsMax} reps
                 {!ex.bodyweight && ex.increment > 0 && ` · +${ex.increment}kg`}
               </div>
             </div>
             <button onClick={() => setEditing(ex)} style={{ ...btnGhost, padding: '4px 10px', fontSize: 11 }}>Edit</button>
-            <button onClick={() => handleRemove(ex.id)} style={{ ...btnGhost, padding: '4px 10px', fontSize: 11, color: '#e25d7a', borderColor: 'rgba(226,93,122,0.3)' }}>✕</button>
+            <button onClick={() => handleRemove(ex.id)} style={{ ...btnGhost, padding: '4px 10px', fontSize: 11, color: '#e25d7a', borderColor: 'rgba(226,93,122,0.3)' }}>🗑</button>
           </div>
         ))}
         {filtered.length === 0 && (
@@ -469,9 +471,9 @@ function ExercisesLibrary({ exercises, saveExercises }) {
   );
 }
 
-// ═══════════════════════════════════════════════════════════════════════════════
+// """""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
 // 3. SPLIT PLANNER
-// ═══════════════════════════════════════════════════════════════════════════════
+// """""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
 function SplitPlanner({ programs, addProgram, updateProgram, removeProgram, exercises, splitNames }) {
   const todayKey   = DAY_KEYS[new Date().getDay()];
   const activeProgram = programs.find(p => p.isActive) ?? null;
@@ -525,7 +527,7 @@ function SplitPlanner({ programs, addProgram, updateProgram, removeProgram, exer
                   <div style={{ flex: 1, fontSize: 13, fontWeight: p.isActive ? 600 : 400, color: p.isActive ? 'var(--accent)' : 'var(--text-secondary)' }}>{p.name}</div>
                   {p.isActive && <span style={{ fontSize: 10, color: 'var(--accent)', letterSpacing: '0.08em' }}>ACTIVE</span>}
                   {!p.isActive && <button onClick={() => setActiveProgram(p.id)} style={{ ...btnGhost, padding: '3px 10px', fontSize: 11 }}>Set active</button>}
-                  <button onClick={() => removeProgram(p.id)} style={{ ...btnGhost, padding: '3px 8px', fontSize: 11, color: '#e25d7a', borderColor: 'rgba(226,93,122,0.3)' }}>✕</button>
+                  <button onClick={() => removeProgram(p.id)} style={{ ...btnGhost, padding: '3px 8px', fontSize: 11, color: '#e25d7a', borderColor: 'rgba(226,93,122,0.3)' }}>🗑</button>
                 </div>
               ))}
               <button onClick={() => setShowNewProgram(true)} style={{ ...btnGhost, alignSelf: 'flex-start', marginTop: 4, fontSize: 11 }}>+ New program</button>
@@ -580,7 +582,7 @@ function SplitPlanner({ programs, addProgram, updateProgram, removeProgram, exer
             {/* Day editor */}
             {editingDay && (
               <GlassCard style={{ marginBottom: 16 }}>
-                <GlassLabel>{DAY_LABELS[editingDay]} — Edit Day</GlassLabel>
+                <GlassLabel>{DAY_LABELS[editingDay]}  Edit Day</GlassLabel>
                 <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
                   <div>
                     <span style={lblSx}>SPLIT TYPE</span>
@@ -631,7 +633,7 @@ function SplitPlanner({ programs, addProgram, updateProgram, removeProgram, exer
               const today = activeProgram.days?.[todayKey];
               if (!today || today.splitType === 'rest') return (
                 <div style={{ padding: '16px 20px', borderRadius: 12, background: 'rgba(255,255,255,0.03)', border: '0.5px solid var(--card-border)', textAlign: 'center' }}>
-                  <div style={{ fontSize: 13, color: 'var(--text-muted)' }}>Rest day — recover and recharge.</div>
+                  <div style={{ fontSize: 13, color: 'var(--text-muted)' }}>Rest day  recover and recharge.</div>
                 </div>
               );
               const exCount = exercises.filter(e => e.day === today.splitType).length;
@@ -640,7 +642,7 @@ function SplitPlanner({ programs, addProgram, updateProgram, removeProgram, exer
                 <div style={{ padding: '16px 20px', borderRadius: 12, background: `${colour}12`, border: `0.5px solid ${colour}40`, display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
                   <div>
                     <div style={{ fontSize: 12, color: colour, fontWeight: 700, letterSpacing: '0.08em', textTransform: 'uppercase', marginBottom: 4 }}>Today</div>
-                    <div style={{ fontSize: 16, fontWeight: 600, color: 'var(--text-primary)' }}>{today.label} Day — {exCount} exercise{exCount !== 1 ? 's' : ''}</div>
+                    <div style={{ fontSize: 16, fontWeight: 600, color: 'var(--text-primary)' }}>{today.label} Day  {exCount} exercise{exCount !== 1 ? 's' : ''}</div>
                   </div>
                 </div>
               );
@@ -652,13 +654,452 @@ function SplitPlanner({ programs, addProgram, updateProgram, removeProgram, exer
   );
 }
 
-// ═══════════════════════════════════════════════════════════════════════════════
-// ROOT — Workout Tab
-// ═══════════════════════════════════════════════════════════════════════════════
+// """""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
+// MUSCLE RANKING
+// """""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
+
+// Fallback: maps each split day-type → muscle groups (used for custom exercises
+// and old logs that don't carry a per-exercise muscle list).
+const MUSCLE_MAP = {
+  push: ['chest', 'shoulders', 'triceps'],
+  pull: ['back', 'biceps', 'forearms'],
+  legs: ['quads', 'hamstrings', 'glutes', 'calves'],
+};
+
+// Per-exercise muscle targeting — every logged set credits exactly the muscles
+// that exercise hits (primary movers).
+const EXERCISE_MUSCLES = {
+  'Bench Press':       ['chest', 'triceps', 'shoulders'],
+  'Overhead Press':    ['shoulders', 'triceps'],
+  'Dips':              ['chest', 'triceps'],
+  'Push Press':        ['shoulders', 'triceps'],
+  'DB Shoulder Press': ['shoulders', 'triceps'],
+  'Deadlift':          ['back', 'hamstrings', 'glutes'],
+  'Pull-ups':          ['back', 'biceps'],
+  'Barbell Row':       ['back', 'biceps'],
+  'Lat Pulldown':      ['back', 'biceps'],
+  'Face Pulls':        ['shoulders', 'back'],
+  'Barbell Squat':     ['quads', 'glutes'],
+  'Romanian Deadlift': ['hamstrings', 'glutes'],
+  'Leg Press':         ['quads', 'glutes'],
+  'Leg Curl':          ['hamstrings'],
+  'Walking Lunges':    ['quads', 'glutes'],
+  'Calf Raises':       ['calves'],
+};
+
+// Resolve which muscles a single logged set trained, most-specific first.
+function getLogMuscles(log) {
+  if (Array.isArray(log?.muscles) && log.muscles.length) return log.muscles;
+  if (log?.exerciseName && EXERCISE_MUSCLES[log.exerciseName]) return EXERCISE_MUSCLES[log.exerciseName];
+  const split = log?.splitType || log?.day || log?.muscle;
+  return MUSCLE_MAP[split] || [];
+}
+
+// All tracked muscles with display metadata
+const MUSCLES = [
+  // Front
+  { id: 'chest',      label: 'Chest',       side: 'front', x: 43,  y: 22, color: '#e25d7a' },
+  { id: 'shoulders',  label: 'Shoulders',   side: 'front', x: 30,  y: 18, color: '#f4a642' },
+  { id: 'biceps',     label: 'Biceps',      side: 'front', x: 24,  y: 30, color: '#4a9eff' },
+  { id: 'triceps',    label: 'Triceps',     side: 'front', x: 57,  y: 30, color: '#9b5de5' },
+  { id: 'forearms',   label: 'Forearms',    side: 'front', x: 20,  y: 40, color: '#00c9a7' },
+  { id: 'quads',      label: 'Quads',       side: 'front', x: 38,  y: 62, color: '#e25d7a' },
+  { id: 'calves',     label: 'Calves',      side: 'front', x: 38,  y: 82, color: '#4a9eff' },
+  // Back
+  { id: 'back',       label: 'Back',        side: 'back',  x: 43,  y: 26, color: '#4a9eff' },
+  { id: 'hamstrings', label: 'Hamstrings',  side: 'back',  x: 38,  y: 62, color: '#f4a642' },
+  { id: 'glutes',     label: 'Glutes',      side: 'back',  x: 43,  y: 52, color: '#9b5de5' },
+];
+
+// Slow progression — sessions are distinct days a muscle was trained (all-time).
+const RANK_LEVELS = [
+  { min: 0,  label: 'Untrained',    color: 'rgba(255,255,255,0.08)' },
+  { min: 1,  label: 'Beginner',     color: '#3b5bdb' },
+  { min: 8,  label: 'Developing',   color: '#4a9eff' },
+  { min: 20, label: 'Intermediate', color: '#4caf7d' },
+  { min: 40, label: 'Advanced',     color: '#f4a642' },
+  { min: 70, label: 'Elite',        color: '#e25d7a' },
+];
+const RANK_MAX = 70;  // sessions to reach Elite (drives progress bars)
+
+function getRankLevel(sessions) {
+  let level = RANK_LEVELS[0];
+  for (const r of RANK_LEVELS) { if (sessions >= r.min) level = r; }
+  return level;
+}
+
+// Sessions per muscle = number of distinct days that muscle was trained (all-time).
+function computeMuscleSessions(workoutLogs) {
+  const days = {};
+  MUSCLES.forEach(m => { days[m.id] = new Set(); });
+  (workoutLogs || []).forEach(log => {
+    if (!log.date) return;
+    getLogMuscles(log).forEach(mid => { if (days[mid]) days[mid].add(log.date); });
+  });
+  const counts = {};
+  MUSCLES.forEach(m => { counts[m.id] = days[m.id].size; });
+  return counts;
+}
+
+// Real anatomical figure rendered from vendored react-body-highlighter polygon
+// data (viewBox 0 0 100 200). Muscles are coloured by our rank system.
+const LIB_TO_MUSCLE = {
+  'chest': 'chest',
+  'front-deltoids': 'shoulders', 'back-deltoids': 'shoulders',
+  'biceps': 'biceps', 'triceps': 'triceps', 'forearm': 'forearms',
+  'trapezius': 'back', 'upper-back': 'back', 'lower-back': 'back',
+  'quadriceps': 'quads', 'hamstring': 'hamstrings', 'gluteal': 'glutes',
+  'calves': 'calves', 'left-soleus': 'calves', 'right-soleus': 'calves',
+};
+const BODY_FILL    = '#cfd4df';   // untracked anatomy (abs, neck, head, knees…)
+const UNTRAINED    = '#5a6072';   // tracked muscle, 0 sessions
+
+function BodySVG({ side, muscleSessions, large = false }) {
+  const modelData = side === 'back' ? posteriorData : anteriorData;
+
+  const fillFor = (slug) => {
+    const mid = LIB_TO_MUSCLE[slug];
+    if (!mid) return BODY_FILL;
+    const s = muscleSessions[mid] || 0;
+    return s === 0 ? UNTRAINED : getRankLevel(s).color;
+  };
+
+  return (
+    <svg viewBox="0 0 100 200"
+      style={{ width: '100%', maxWidth: large ? '100%' : 168, height: 'auto', display: 'block' }}>
+      {modelData.map((m, gi) =>
+        m.svgPoints.map((pts, i) => (
+          <polygon key={`${gi}-${i}`} points={pts}
+            fill={fillFor(m.muscle)}
+            stroke="rgba(0,0,0,0.28)" strokeWidth={0.3} strokeLinejoin="round"
+            style={{ transition: 'fill 0.4s ease' }} />
+        ))
+      )}
+    </svg>
+  );
+}
+
+function MuscleRanking({ workoutLogs, settings }) {
+  const [view, setView] = useState('front');
+  const muscleSessions = useMemo(() => computeMuscleSessions(workoutLogs), [workoutLogs]);
+  const bodyWeight = useMemo(() => {
+    const logs = workoutLogs.filter(l => l.bodyWeight).sort((a, b) => a.date?.localeCompare(b.date));
+    return logs.slice(-12).map(l => ({ date: l.date, w: l.bodyWeight }));
+  }, [workoutLogs]);
+
+  const frontMuscles = MUSCLES.filter(m => m.side === 'front');
+  const backMuscles  = MUSCLES.filter(m => m.side === 'back');
+
+  return (
+    <div style={{ height: '100%', overflowY: 'auto', padding: '20px 24px' }}>
+      <div style={{ fontSize: 13, fontWeight: 500, color: 'var(--text-primary)', marginBottom: 4 }}>Muscle Ranking</div>
+      <div style={{ fontSize: 11, color: 'var(--text-muted)', marginBottom: 20 }}>Ranks rise slowly as you log sets — every muscle each set hits is credited</div>
+
+      {/* Body map — one large figure with Front/Back toggle */}
+      <div style={{ display: 'flex', gap: 28, alignItems: 'center', justifyContent: 'center', marginBottom: 28, flexWrap: 'wrap' }}>
+        <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 14 }}>
+          {/* Front / Back toggle */}
+          <div style={{ display: 'flex', borderRadius: 9, overflow: 'hidden', border: '0.5px solid var(--card-border)' }}>
+            {['front', 'back'].map(s => (
+              <button key={s} onClick={() => setView(s)} style={{
+                padding: '6px 22px', border: 'none', cursor: 'pointer',
+                fontSize: 11, fontWeight: 600, letterSpacing: '0.08em', textTransform: 'uppercase',
+                background: view === s ? 'rgba(255,255,255,0.9)' : 'var(--card-fill)',
+                color: view === s ? '#111' : 'var(--text-secondary)', transition: 'all 0.12s',
+              }}>{s}</button>
+            ))}
+          </div>
+          {/* Big figure */}
+          <div style={{ width: 320, maxWidth: '78vw' }}>
+            <BodySVG side={view} muscleSessions={muscleSessions} large />
+          </div>
+        </div>
+
+        {/* Rank legend */}
+        <div style={{ display: 'flex', flexDirection: 'column', gap: 9 }}>
+          {RANK_LEVELS.map(r => (
+            <div key={r.label} style={{ display: 'flex', alignItems: 'center', gap: 9 }}>
+              <div style={{ width: 12, height: 12, borderRadius: '50%', background: r.color, flexShrink: 0 }} />
+              <span style={{ fontSize: 12, color: 'var(--text-secondary)' }}>{r.label}</span>
+            </div>
+          ))}
+        </div>
+      </div>
+
+      {/* Per-muscle table */}
+      <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 8, marginBottom: 28 }}>
+        {MUSCLES.map(m => {
+          const sessions = muscleSessions[m.id] || 0;
+          const rank = getRankLevel(sessions);
+          const pct = Math.min((sessions / RANK_MAX) * 100, 100);
+          return (
+            <div key={m.id} style={{
+              background: 'var(--hover-bg)', borderRadius: 10,
+              border: '0.5px solid var(--card-border)', padding: '10px 14px',
+            }}>
+              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'baseline', marginBottom: 6 }}>
+                <span style={{ fontSize: 12, fontWeight: 500, color: 'var(--text-primary)' }}>{m.label}</span>
+                <span style={{ fontSize: 10, color: rank.color, fontWeight: 600 }}>{rank.label}</span>
+              </div>
+              <div style={{ height: 3, background: 'rgba(255,255,255,0.06)', borderRadius: 2, overflow: 'hidden' }}>
+                <div style={{ height: '100%', width: `${pct}%`, background: rank.color, borderRadius: 2, transition: 'width 0.6s ease' }} />
+              </div>
+              <div style={{ fontSize: 10, color: 'var(--text-muted)', marginTop: 4 }}>{sessions} session{sessions !== 1 ? 's' : ''} logged</div>
+            </div>
+          );
+        })}
+      </div>
+
+      {/* Weight tracker */}
+      {bodyWeight.length > 0 && (
+        <div>
+          <div style={{ fontSize: 12, fontWeight: 500, color: 'var(--text-primary)', marginBottom: 12 }}>Body Weight</div>
+          <div style={{ background: 'var(--hover-bg)', borderRadius: 12, border: '0.5px solid var(--card-border)', padding: '14px 16px' }}>
+            <div style={{ display: 'flex', alignItems: 'flex-end', gap: 6, height: 60 }}>
+              {bodyWeight.map((d, i) => {
+                const vals = bodyWeight.map(x => x.w);
+                const min = Math.min(...vals), max = Math.max(...vals);
+                const range = max - min || 1;
+                const h = Math.max(8, ((d.w - min) / range) * 50 + 10);
+                return (
+                  <div key={i} style={{ flex: 1, display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 3 }}>
+                    <div style={{ fontSize: 8, color: 'var(--text-muted)' }}>{d.w}kg</div>
+                    <div style={{ width: '100%', height: h, background: 'rgba(91,156,246,0.4)', borderRadius: '3px 3px 0 0', border: '0.5px solid rgba(91,156,246,0.6)' }} />
+                  </div>
+                );
+              })}
+            </div>
+            <div style={{ display: 'flex', justifyContent: 'space-between', marginTop: 6 }}>
+              <span style={{ fontSize: 9, color: 'var(--text-muted)' }}>{bodyWeight[0]?.date?.slice(5)}</span>
+              <span style={{ fontSize: 9, color: 'var(--text-muted)' }}>{bodyWeight[bodyWeight.length - 1]?.date?.slice(5)}</span>
+            </div>
+          </div>
+        </div>
+      )}
+    </div>
+  );
+}
+
+// """""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
+// TRAINING CALENDAR
+// """""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
+const MUSCLE_BY_ID = Object.fromEntries(MUSCLES.map(m => [m.id, m]));
+const MONTH_NAMES = ['January','February','March','April','May','June','July','August','September','October','November','December'];
+const WEEK_HEADS  = ['S','M','T','W','T','F','S'];
+const pad2 = n => String(n).padStart(2, '0');
+const dateStr = (y, m, d) => `${y}-${pad2(m + 1)}-${pad2(d)}`;
+
+// Colour for a logged day: single split → its colour, multiple → "mixed" purple.
+function daySplitColour(splits) {
+  if (!splits || splits.size === 0) return null;
+  if (splits.size === 1) return SPLIT_COLOURS[[...splits][0]] || SPLIT_COLOURS.custom;
+  return SPLIT_COLOURS.custom;
+}
+
+function WorkoutCalendar({ workoutLogs }) {
+  const [cursor, setCursor] = useState(() => { const d = new Date(); return { y: d.getFullYear(), m: d.getMonth() }; });
+  const [mode, setMode]     = useState('month');   // 'month' | 'overall'
+  const [selected, setSelected] = useState(null);  // date string
+
+  // date → { logs, splits:Set, muscles:Set, sets:n }
+  const byDate = useMemo(() => {
+    const map = {};
+    (workoutLogs || []).forEach(l => {
+      if (!l.date) return;
+      const e = (map[l.date] ||= { logs: [], splits: new Set(), muscles: new Set(), sets: 0 });
+      e.logs.push(l); e.sets++;
+      const sp = l.muscle || l.splitType || l.day; if (sp) e.splits.add(sp);
+      getLogMuscles(l).forEach(mid => e.muscles.add(mid));
+    });
+    return map;
+  }, [workoutLogs]);
+
+  const totalDays = Object.keys(byDate).length;
+
+  const stepMonth = (delta) => setCursor(c => {
+    let m = c.m + delta, y = c.y;
+    if (m < 0) { m = 11; y--; } if (m > 11) { m = 0; y++; }
+    return { y, m };
+  });
+
+  // ── Month grid ──
+  const renderMonth = () => {
+    const { y, m } = cursor;
+    const firstDow = new Date(y, m, 1).getDay();
+    const daysIn   = new Date(y, m + 1, 0).getDate();
+    const cells = [];
+    for (let i = 0; i < firstDow; i++) cells.push(null);
+    for (let d = 1; d <= daysIn; d++) cells.push(d);
+
+    return (
+      <div>
+        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 16, marginBottom: 14 }}>
+          <button onClick={() => stepMonth(-1)} style={{ ...btnGhost, padding: '4px 12px' }}>‹</button>
+          <div style={{ fontSize: 14, fontWeight: 500, color: 'var(--text-primary)', minWidth: 150, textAlign: 'center' }}>{MONTH_NAMES[m]} {y}</div>
+          <button onClick={() => stepMonth(1)} style={{ ...btnGhost, padding: '4px 12px' }}>›</button>
+        </div>
+        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(7,1fr)', gap: 10, maxWidth: 820, margin: '0 auto' }}>
+          {WEEK_HEADS.map((w, i) => (
+            <div key={`h${i}`} style={{ textAlign: 'center', fontSize: 12, color: 'var(--text-muted)', fontWeight: 600, paddingBottom: 6 }}>{w}</div>
+          ))}
+          {cells.map((d, i) => {
+            if (d === null) return <div key={`b${i}`} />;
+            const ds = dateStr(y, m, d);
+            const e = byDate[ds];
+            const colour = e ? daySplitColour(e.splits) : null;
+            const isSel = selected === ds;
+            return (
+              <button key={ds} onClick={() => setSelected(isSel ? null : ds)}
+                title={e ? `${e.sets} set${e.sets !== 1 ? 's' : ''}` : ''}
+                style={{
+                  aspectRatio: '1', borderRadius: 12, cursor: 'pointer',
+                  border: isSel ? '1.5px solid var(--accent)' : `0.5px solid ${colour ? colour : 'var(--card-border)'}`,
+                  background: colour ? `${colour}33` : 'var(--card-fill)',
+                  color: colour ? '#fff' : 'var(--text-muted)',
+                  fontSize: 15, fontWeight: e ? 600 : 400, position: 'relative',
+                  display: 'flex', alignItems: 'center', justifyContent: 'center', transition: 'all 0.12s',
+                }}>
+                {d}
+                {e && (
+                  <span style={{ position: 'absolute', bottom: 4, left: 0, right: 0, display: 'flex', gap: 2, justifyContent: 'center' }}>
+                    {[...e.splits].slice(0, 3).map((s, k) => (
+                      <span key={k} style={{ width: 4, height: 4, borderRadius: '50%', background: SPLIT_COLOURS[s] || SPLIT_COLOURS.custom }} />
+                    ))}
+                  </span>
+                )}
+              </button>
+            );
+          })}
+        </div>
+      </div>
+    );
+  };
+
+  // ── Overall: full-year contribution heatmap ──
+  const renderOverall = () => {
+    const { y } = cursor;
+    const start = new Date(y, 0, 1); start.setDate(start.getDate() - start.getDay());
+    const end   = new Date(y, 11, 31);
+    const weeks = []; let cur = new Date(start);
+    while (cur <= end) {
+      const wk = [];
+      for (let i = 0; i < 7; i++) { wk.push(new Date(cur)); cur.setDate(cur.getDate() + 1); }
+      weeks.push(wk);
+    }
+    const heat = (n) => {
+      if (!n) return 'rgba(255,255,255,0.05)';
+      const t = Math.min(n / 8, 1);
+      return `rgba(74,158,255,${0.22 + t * 0.65})`;
+    };
+    return (
+      <div>
+        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 16, marginBottom: 14 }}>
+          <button onClick={() => setCursor(c => ({ ...c, y: c.y - 1 }))} style={{ ...btnGhost, padding: '4px 12px' }}>‹</button>
+          <div style={{ fontSize: 14, fontWeight: 500, color: 'var(--text-primary)', minWidth: 80, textAlign: 'center' }}>{y}</div>
+          <button onClick={() => setCursor(c => ({ ...c, y: c.y + 1 }))} style={{ ...btnGhost, padding: '4px 12px' }}>›</button>
+        </div>
+        <div style={{ overflowX: 'auto', paddingBottom: 8 }}>
+          <div style={{ display: 'flex', gap: 4, minWidth: 'min-content', justifyContent: 'center' }}>
+            {weeks.map((wk, wi) => (
+              <div key={wi} style={{ display: 'flex', flexDirection: 'column', gap: 4 }}>
+                {wk.map((day, di) => {
+                  const ds = dateStr(day.getFullYear(), day.getMonth(), day.getDate());
+                  const e = byDate[ds];
+                  const inYear = day.getFullYear() === y;
+                  return (
+                    <div key={di} onClick={() => e && setSelected(ds)}
+                      title={e ? `${ds} · ${e.sets} sets` : ds}
+                      style={{
+                        width: 15, height: 15, borderRadius: 3, cursor: e ? 'pointer' : 'default',
+                        background: inYear ? heat(e?.sets || 0) : 'transparent',
+                        outline: selected === ds ? '1.5px solid var(--accent)' : 'none',
+                      }} />
+                  );
+                })}
+              </div>
+            ))}
+          </div>
+        </div>
+      </div>
+    );
+  };
+
+  const sel = selected ? byDate[selected] : null;
+
+  return (
+    <div style={{ height: '100%', overflowY: 'auto', padding: '20px 24px' }}>
+      <div style={{ fontSize: 13, fontWeight: 500, color: 'var(--text-primary)', marginBottom: 4 }}>Training Calendar</div>
+      <div style={{ fontSize: 11, color: 'var(--text-muted)', marginBottom: 16 }}>{totalDays} day{totalDays !== 1 ? 's' : ''} logged · highlighted by split</div>
+
+      {/* Month / Overall toggle */}
+      <div style={{ display: 'flex', justifyContent: 'center', marginBottom: 18 }}>
+        <div style={{ display: 'flex', borderRadius: 9, overflow: 'hidden', border: '0.5px solid var(--card-border)' }}>
+          {[['month', 'Month'], ['overall', 'Overall']].map(([id, label]) => (
+            <button key={id} onClick={() => setMode(id)} style={{
+              padding: '6px 22px', border: 'none', cursor: 'pointer', fontSize: 11.5, fontWeight: 500,
+              background: mode === id ? 'rgba(255,255,255,0.9)' : 'var(--card-fill)',
+              color: mode === id ? '#111' : 'var(--text-secondary)', transition: 'all 0.12s',
+            }}>{label}</button>
+          ))}
+        </div>
+      </div>
+
+      {mode === 'month' ? renderMonth() : renderOverall()}
+
+      {/* Split legend */}
+      <div style={{ display: 'flex', gap: 16, justifyContent: 'center', flexWrap: 'wrap', marginTop: 18 }}>
+        {[['push', 'Push'], ['pull', 'Pull'], ['legs', 'Legs'], ['custom', 'Mixed / other']].map(([k, l]) => (
+          <div key={k} style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
+            <span style={{ width: 10, height: 10, borderRadius: 3, background: SPLIT_COLOURS[k] }} />
+            <span style={{ fontSize: 11, color: 'var(--text-secondary)' }}>{l}</span>
+          </div>
+        ))}
+      </div>
+
+      {/* Selected-day detail */}
+      {sel && (
+        <div style={{ marginTop: 22, background: 'var(--hover-bg)', border: '0.5px solid var(--card-border)', borderRadius: 12, padding: '16px 20px', maxWidth: 820, margin: '22px auto 0' }}>
+          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'baseline', marginBottom: 10 }}>
+            <span style={{ fontSize: 13, fontWeight: 500, color: 'var(--text-primary)' }}>{selected}</span>
+            <span style={{ fontSize: 11, color: 'var(--text-muted)' }}>{sel.sets} set{sel.sets !== 1 ? 's' : ''}</span>
+          </div>
+          {/* muscles hit */}
+          <div style={{ display: 'flex', flexWrap: 'wrap', gap: 6, marginBottom: 12 }}>
+            {[...sel.muscles].map(mid => {
+              const mm = MUSCLE_BY_ID[mid];
+              return (
+                <span key={mid} style={{ fontSize: 10.5, padding: '3px 9px', borderRadius: 20, background: `${mm?.color || '#888'}22`, color: mm?.color || 'var(--text-secondary)', border: `0.5px solid ${mm?.color || '#888'}55` }}>
+                  {mm?.label || mid}
+                </span>
+              );
+            })}
+          </div>
+          {/* exercises */}
+          <div style={{ display: 'flex', flexDirection: 'column', gap: 5 }}>
+            {sel.logs.map((l, i) => (
+              <div key={i} style={{ display: 'flex', justifyContent: 'space-between', fontSize: 11.5 }}>
+                <span style={{ color: 'var(--text-secondary)' }}>{l.exerciseName || 'Set'}</span>
+                <span style={{ color: 'var(--text-muted)', fontFamily: 'ui-monospace,monospace' }}>
+                  {l.topSet ? `${l.topSet.weight || 0}kg × ${l.topSet.reps}` : ''}
+                </span>
+              </div>
+            ))}
+          </div>
+        </div>
+      )}
+    </div>
+  );
+}
+
+// """""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
+// ROOT  Workout Tab
+// """""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
 const SUB_NAV = [
-  { id: 'overload', label: 'Overload Coach', icon: '🏋' },
-  { id: 'splits',   label: 'Split Planner',  icon: '📅' },
-  { id: 'exercises',label: 'Exercises',      icon: '📋' },
+  { id: 'overload', label: 'Overload Coach', icon: '📈' },
+  { id: 'splits',   label: 'Split Planner',  icon: '📋' },
+  { id: 'exercises',label: 'Exercises',      icon: '🏋️' },
+  { id: 'muscles',  label: 'Muscle Ranking', icon: '💪' },
+  { id: 'calendar', label: 'Calendar',       icon: '📅' },
 ];
 
 export default function WorkoutTab({ settings }) {
@@ -703,7 +1144,10 @@ export default function WorkoutTab({ settings }) {
         {sub === 'overload'  && <OverloadCoach workoutLogs={workoutLogs} addWorkoutLog={addWorkoutLog} exercises={exercises} saveExercises={saveExercisesDoc} splitNames={splitNames} saveSplitNames={saveSplitNamesDoc} todaySplitType={todaySplitType} />}
         {sub === 'splits'    && <SplitPlanner programs={programs} addProgram={addProgram} updateProgram={updateProgram} removeProgram={removeProgram} exercises={exercises} splitNames={splitNames} />}
         {sub === 'exercises' && <ExercisesLibrary exercises={exercises} saveExercises={saveExercisesDoc} />}
+        {sub === 'muscles'   && <MuscleRanking workoutLogs={workoutLogs} settings={settings} />}
+        {sub === 'calendar'  && <WorkoutCalendar workoutLogs={workoutLogs} />}
       </div>
     </div>
   );
 }
+

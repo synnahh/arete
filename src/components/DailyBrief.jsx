@@ -1,4 +1,4 @@
-// ─── DailyBrief.jsx — Morning greeting + brief trigger ────────────────────────
+//  DailyBrief.jsx  Morning greeting + brief trigger 
 // Shown once per day on first app open. VALERIE greets Rob and asks if he wants
 // his brief. Accepting builds a context-rich message and sends it through the
 // normal AI pipeline (she speaks it via TTS as usual).
@@ -49,7 +49,7 @@ export default function DailyBrief({ ai, settings, onClose }) {
   const [building, setBuilding] = useState(false);
   const recRef = useRef(null);
 
-  // Show only once per day — delay slightly to let network/ElevenLabs settle
+  // Show only once per day  delay slightly to let network/ElevenLabs settle
   useEffect(() => {
     const lastShown = storage.get(STORAGE_KEYS.DAILY_BRIEF_DATE, null);
     if (lastShown === todayISO()) return;
@@ -110,37 +110,43 @@ export default function DailyBrief({ ai, settings, onClose }) {
     const briefConfig = settings?.dailyBrief ?? {};
     const parts = [];
 
-    // ── Weather ───────────────────────────────────────────────────────────────
+    //  Weather 
     if (briefConfig.weather !== false) {
       try {
-        const pos = await new Promise((res, rej) =>
-          navigator.geolocation.getCurrentPosition(res, rej, { timeout: 5000 })
-        );
-        const w = await fetchWeather(pos.coords.latitude, pos.coords.longitude);
-        if (w) {
-          parts.push(`Weather: ${Math.round(w.temperature_2m)}°C and ${weatherDescription(w.weathercode)}, wind ${Math.round(w.windspeed_10m)} km/h.`);
+        // Only request location if already granted — don't auto-prompt on iOS PWA
+        const geoState = navigator.permissions
+          ? (await navigator.permissions.query({ name: 'geolocation' }).catch(() => ({ state: 'granted' }))).state
+          : 'granted';
+        if (geoState === 'granted') {
+          const pos = await new Promise((res, rej) =>
+            navigator.geolocation.getCurrentPosition(res, rej, { timeout: 5000 })
+          );
+          const w = await fetchWeather(pos.coords.latitude, pos.coords.longitude);
+          if (w) {
+            parts.push(`Weather: ${Math.round(w.temperature_2m)}C and ${weatherDescription(w.weathercode)}, wind ${Math.round(w.windspeed_10m)} km/h.`);
+          }
         }
       } catch { /* geolocation denied or unavailable */ }
     }
 
-    // ── Today's calendar events ────────────────────────────────────────────
+    //  Today's calendar events 
     if (briefConfig.calendar !== false) {
       const events = storage.get(STORAGE_KEYS.EVENTS, []);
       const todayEvents = events.filter(e => e.date === todayISO() || e.start?.startsWith(todayISO()));
       if (todayEvents.length > 0) {
-        parts.push(`Calendar: ${todayEvents.length} event${todayEvents.length > 1 ? 's' : ''} today — ${todayEvents.map(e => e.title || e.summary).join(', ')}.`);
+        parts.push(`Calendar: ${todayEvents.length} event${todayEvents.length > 1 ? 's' : ''} today  ${todayEvents.map(e => e.title || e.summary).join(', ')}.`);
       } else {
         parts.push('Calendar: No events scheduled today.');
       }
     }
 
-    // ── Outstanding tasks ─────────────────────────────────────────────────
+    //  Outstanding tasks 
     if (briefConfig.tasks !== false) {
       const tasks = storage.get(STORAGE_KEYS.TASKS, []);
       const open = tasks.filter(t => !t.completed);
       const high = open.filter(t => t.priority === 'high');
       if (high.length > 0) {
-        parts.push(`Tasks: ${high.length} high-priority task${high.length > 1 ? 's' : ''} open — ${high.slice(0,3).map(t => t.title).join(', ')}.`);
+        parts.push(`Tasks: ${high.length} high-priority task${high.length > 1 ? 's' : ''} open  ${high.slice(0,3).map(t => t.title).join(', ')}.`);
       } else if (open.length > 0) {
         parts.push(`Tasks: ${open.length} open task${open.length > 1 ? 's' : ''}.`);
       } else {
@@ -148,7 +154,7 @@ export default function DailyBrief({ ai, settings, onClose }) {
       }
     }
 
-    // ── Vitamins / supplements ────────────────────────────────────────────
+    //  Vitamins / supplements 
     if (briefConfig.vitamins !== false) {
       const supps = storage.get(STORAGE_KEYS.SUPPLEMENTS, []);
       const morning = supps.filter(s => s.active && (s.timing === 'morning' || !s.timing));
@@ -157,24 +163,24 @@ export default function DailyBrief({ ai, settings, onClose }) {
       }
     }
 
-    // ── Morning routine steps ─────────────────────────────────────────────
+    //  Morning routine steps 
     if (briefConfig.routine !== false) {
       const routines = storage.get(STORAGE_KEYS.ROUTINES, []);
       const todayKey = new Date().toLocaleDateString('en-US', { weekday: 'short' }).toLowerCase();
       const active = routines.find(r => r.reminder?.days?.includes(todayKey) || routines.length === 1);
       if (active?.steps?.length > 0) {
-        parts.push(`Routine: ${active.name} — ${active.steps.slice(0, 4).map(s => s.label).join(', ')}${active.steps.length > 4 ? '…' : '.'}`);
+        parts.push(`Routine: ${active.name}  ${active.steps.slice(0, 4).map(s => s.label).join(', ')}${active.steps.length > 4 ? '&' : '.'}`);
       }
     }
 
-    // ── Compose and send to VALERIE ───────────────────────────────────────
+    //  Compose and send to VALERIE 
     const now = new Date();
     const dayStr = now.toLocaleDateString('en-GB', { weekday: 'long', day: 'numeric', month: 'long' });
 
     const briefMsg = [
       `Please give me my morning daily brief. Today is ${dayStr}.`,
       ...parts,
-      'Give a smooth, natural spoken summary of the above. Keep it concise — cover the key points in one flowing response. Then wish Rob a good day.',
+      'Give a smooth, natural spoken summary of the above. Keep it concise  cover the key points in one flowing response. Then wish Rob a good day.',
     ].join(' ');
 
     setVisible(false);
@@ -216,7 +222,7 @@ export default function DailyBrief({ ai, settings, onClose }) {
         </div>
 
         <div style={{ fontSize: 12, color: 'rgba(74,158,255,0.7)', marginBottom: 22, textAlign: 'center' }}>
-          🎙 Listening for "yes" or "no"…
+          🎤 Listening for "yes" or "no"...
         </div>
 
         <div style={{ display: 'flex', gap: 10, width: '100%' }}>
@@ -243,7 +249,7 @@ export default function DailyBrief({ ai, settings, onClose }) {
         </div>
 
         <div style={{ fontSize: 11, color: 'var(--text-muted)', marginTop: 16, textAlign: 'center' }}>
-          Configure what's included in Settings → Daily Brief
+          Configure what's included in Settings  Daily Brief
         </div>
       </div>
     </div>

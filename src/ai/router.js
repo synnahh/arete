@@ -1,4 +1,4 @@
-// ─── AI Router — Claude primary, Ollama local fallback ────────────────────────
+//  AI Router  Claude primary, Ollama local fallback 
 // Architecture per overhaul directive:
 //   Claude  = primary reasoning + personality + conversation engine
 //   Ollama  = local systems layer, fast offline utility, fallback
@@ -19,9 +19,9 @@ import { askOllama  } from './ollama.js';
  * @param {string}  params.apiKey
  * @param {boolean} params.claudeOnline
  * @param {boolean} params.ollamaOnline
- * @param {string}  params.context       — live app context string
- * @param {Array}   params.memory        — long-term memory facts array
- * @param {string}  [params.forceEngine] — 'claude'|'ollama' to override
+ * @param {string}  params.context        live app context string
+ * @param {Array}   params.memory         long-term memory facts array
+ * @param {string}  [params.forceEngine]  'claude'|'ollama' to override
  * @returns {Promise<{ text: string, engine: 'claude'|'ollama'|'none'|'error' }>}
  */
 export async function routeMessage({
@@ -42,7 +42,7 @@ export async function routeMessage({
     engine = 'ollama';
   }
 
-  // Both offline — return graceful message
+  // Both offline  return graceful message
   if (engine === 'ollama' && !ollamaOnline) {
     return {
       text: JSON.stringify({
@@ -65,7 +65,7 @@ export async function routeMessage({
     };
   }
 
-  // ── Try primary engine ────────────────────────────────────────────────────
+  //  Try primary engine 
   try {
     if (engine === 'claude') {
       const text = await askClaude(message, history, apiKey, { context, memory });
@@ -77,7 +77,7 @@ export async function routeMessage({
   } catch (err) {
     console.warn(`[Router] ${engine} failed, trying fallback:`, err.message);
 
-    // ── Fallback to the other engine ────────────────────────────────────────
+    //  Fallback to the other engine 
     try {
       if (engine === 'claude' && ollamaOnline) {
         const text = await askOllama(message, history, { context });

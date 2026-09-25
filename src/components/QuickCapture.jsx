@@ -1,4 +1,4 @@
-// ─── Quick Capture — floating universal input accessible from any tab ─────────
+//  Quick Capture  floating universal input accessible from any tab 
 // Ctrl+Space to open | Esc to close | Enter to send to VALERIE
 
 import { useState, useEffect, useRef, useCallback } from 'react';
@@ -26,7 +26,7 @@ export default function QuickCapture({ ai }) {
   const [listening, setListening] = useState(false);
   const inputRef = useRef(null);
 
-  // ── Keyboard shortcut: Ctrl+Space ────────────────────────────────────────
+  //  Keyboard shortcut: Ctrl+Space 
   useEffect(() => {
     const handler = (e) => {
       if (e.ctrlKey && e.code === 'Space') {
@@ -52,7 +52,7 @@ export default function QuickCapture({ ai }) {
     }
   }, [open]);
 
-  // ── Send ──────────────────────────────────────────────────────────────────
+  //  Send 
   const handleSend = useCallback(() => {
     if (!text.trim()) return;
     ai?.sendMessage(text.trim());
@@ -64,7 +64,7 @@ export default function QuickCapture({ ai }) {
     }, 600);
   }, [text, ai]);
 
-  // ── Voice capture ─────────────────────────────────────────────────────────
+  //  Voice capture 
   const handleVoice = useCallback(() => {
     if (!ai?.startListening) return;
     setListening(true);
@@ -99,9 +99,7 @@ export default function QuickCapture({ ai }) {
         }}
         onMouseEnter={e => e.currentTarget.style.transform = 'scale(1.08)'}
         onMouseLeave={e => e.currentTarget.style.transform = 'scale(1)'}
-      >
-        ✦
-      </button>
+      >⚡</button>
     );
   }
 
@@ -157,7 +155,7 @@ export default function QuickCapture({ ai }) {
             onKeyDown={e => {
               if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); handleSend(); }
             }}
-            placeholder={sent ? '✓ Sent to VALERIE' : 'Ask VALERIE anything…'}
+            placeholder={sent ? ' Sent to VALERIE' : 'Ask VALERIE anything...'}
             disabled={sent}
             style={{
               flex: 1,
@@ -214,10 +212,10 @@ export default function QuickCapture({ ai }) {
         {ai && (
           <div style={{ fontSize: 9.5, color: 'var(--text-muted)', display: 'flex', gap: 12 }}>
             <span style={{ color: ai.claudeOnline ? '#4caf7d' : 'var(--text-muted)' }}>
-              ● Claude {ai.claudeOnline ? 'ready' : 'offline'}
+               Claude {ai.claudeOnline ? 'ready' : 'offline'}
             </span>
             <span style={{ color: ai.ollamaOnline ? '#4caf7d' : 'var(--text-muted)' }}>
-              ● Ollama {ai.ollamaOnline ? 'ready' : 'offline'}
+               Ollama {ai.ollamaOnline ? 'ready' : 'offline'}
             </span>
           </div>
         )}

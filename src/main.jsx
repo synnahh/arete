@@ -4,8 +4,8 @@ import * as Sentry from "@sentry/react";
 import App from "./App";
 import "./styles/globals.css";
 
-// ── Sentry error monitoring ────────────────────────────────────────────────────
-// DSN is set via VITE_SENTRY_DSN in .env — add it to activate.
+//  Sentry error monitoring 
+// DSN is set via VITE_SENTRY_DSN in .env  add it to activate.
 // Safe to deploy without a DSN; Sentry.init() is a no-op when dsn is falsy.
 if (import.meta.env.VITE_SENTRY_DSN) {
   Sentry.init({
@@ -31,7 +31,7 @@ if (import.meta.env.VITE_SENTRY_DSN) {
   });
 }
 
-// ── Root error boundary — Sentry-aware ────────────────────────────────────────
+//  Root error boundary  Sentry-aware 
 const SentryErrorBoundary = Sentry.ErrorBoundary || (({ children }) => children);
 
 ReactDOM.createRoot(document.getElementById("root")).render(

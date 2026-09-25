@@ -1,20 +1,21 @@
-// ─── VALERIE — Essentials / Restock Tracker ───────────────────────────────────
+//  VALERIE  Essentials / Restock Tracker 
 import { useState } from 'react';
-import { useCollection } from '../firebase/useCollection.js';
+import { useCollection } from '../supabase/useCollection.js';
 import { STORAGE_KEYS }  from '../utils/storage.js';
+import { insertRow, deleteRow } from '../utils/quickWrite.js';
 
-// ─── Categories ───────────────────────────────────────────────────────────────
+//  Categories 
 const CATEGORIES = [
-  { id: 'grooming',    label: 'Grooming',    icon: '💈' },
+  { id: 'grooming',    label: 'Grooming',    icon: '🪒' },
   { id: 'health',      label: 'Health',      icon: '💊' },
   { id: 'kitchen',     label: 'Kitchen',     icon: '🍳' },
   { id: 'cleaning',    label: 'Cleaning',    icon: '🧹' },
-  { id: 'supplements', label: 'Supplements', icon: '🥗' },
+  { id: 'supplements', label: 'Supplements', icon: '💪' },
   { id: 'other',       label: 'Other',       icon: '📦' },
 ];
 const CAT_MAP = Object.fromEntries(CATEGORIES.map(c => [c.id, c]));
 
-// ─── Status helpers ───────────────────────────────────────────────────────────
+//  Status helpers 
 function daysLeft(item) {
   if (!item.boughtDate || !item.lifespanDays) return null;
   const bought = new Date(item.boughtDate);
@@ -30,11 +31,11 @@ function getStatus(days) {
 }
 
 const STATUS_COLOUR = { green: '#4caf7d', amber: '#f4a642', red: '#e55a5a', unknown: '#555' };
-const STATUS_LABEL  = { green: 'Stocked', amber: 'Low',    red: 'Due now', unknown: '—' };
+const STATUS_LABEL  = { green: 'Stocked', amber: 'Low',    red: 'Due now', unknown: '' };
 
 const todayISO = () => new Date().toISOString().split('T')[0];
 
-// ─── Shared styles ────────────────────────────────────────────────────────────
+//  Shared styles 
 const INPUT = {
   flex: 1, padding: '8px 12px', borderRadius: 8,
   background: 'rgba(255,255,255,0.06)', border: '0.5px solid var(--card-border)',
@@ -49,7 +50,7 @@ const BTN_GHOST = {
   background: 'rgba(255,255,255,0.06)', color: 'var(--text-secondary)', fontSize: 13,
 };
 
-// ─── Add / Edit Panel ─────────────────────────────────────────────────────────
+//  Add / Edit Panel 
 function ItemForm({ initial, onSave, onCancel }) {
   const [name,     setName]     = useState(initial?.name       || '');
   const [cat,      setCat]      = useState(initial?.category   || 'grooming');
@@ -124,7 +125,7 @@ function ItemForm({ initial, onSave, onCancel }) {
   );
 }
 
-// ─── Detail Panel ─────────────────────────────────────────────────────────────
+//  Detail Panel 
 function DetailPanel({ item, onRestock, onEdit, onDelete }) {
   const days   = daysLeft(item);
   const status = getStatus(days);
@@ -133,7 +134,7 @@ function DetailPanel({ item, onRestock, onEdit, onDelete }) {
   const expire = item.boughtDate && item.lifespanDays
     ? new Date(new Date(item.boughtDate).getTime() + item.lifespanDays * 86400000)
         .toLocaleDateString('en-GB', { day: 'numeric', month: 'short', year: 'numeric' })
-    : '—';
+    : '';
 
   return (
     <div style={{ display: 'flex', flexDirection: 'column', gap: 14 }}>
@@ -169,10 +170,10 @@ function DetailPanel({ item, onRestock, onEdit, onDelete }) {
 
       {/* Info rows */}
       {[
-        ['Bought',    item.boughtDate ? new Date(item.boughtDate).toLocaleDateString('en-GB', { day: 'numeric', month: 'short', year: 'numeric' }) : '—'],
-        ['Lifespan',  item.lifespanDays ? `${item.lifespanDays} days` : '—'],
+        ['Bought',    item.boughtDate ? new Date(item.boughtDate).toLocaleDateString('en-GB', { day: 'numeric', month: 'short', year: 'numeric' }) : ''],
+        ['Lifespan',  item.lifespanDays ? `${item.lifespanDays} days` : ''],
         ['Runs out',  expire],
-        ['Price',     item.price ? `£${item.price.toFixed(2)}` : '—'],
+        ['Price',     item.price ? `£${item.price.toFixed(2)}` : ''],
       ].map(([label, val]) => (
         <div key={label} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center',
           borderBottom: '0.5px solid var(--card-border)', paddingBottom: 8 }}>
@@ -193,7 +194,7 @@ function DetailPanel({ item, onRestock, onEdit, onDelete }) {
         background: '#4caf7d',
         padding: '10px 16px',
       }}>
-        ✓ Mark as Restocked
+        S Mark as Restocked
       </button>
       <div style={{ display: 'flex', gap: 8 }}>
         <button onClick={onEdit} style={{ ...BTN_GHOST, flex: 1 }}>Edit</button>
@@ -203,7 +204,7 @@ function DetailPanel({ item, onRestock, onEdit, onDelete }) {
   );
 }
 
-// ─── Main Essentials Tab ──────────────────────────────────────────────────────
+//  Main Essentials Tab 
 export default function Essentials() {
   const { items, add, update, remove } = useCollection('essentials', STORAGE_KEYS.ESSENTIALS);
 
@@ -240,7 +241,29 @@ export default function Essentials() {
   }
 
   function handleRestock(id) {
+    const item = items.find(it => it.id === id);
     update(id, { boughtDate: todayISO() });
+    // Restocking with a known price logs an expense in Finance (instant correspondence),
+    // with an Undo that removes it if it was a mistake.
+    if (item?.price) {
+      const payload = {
+        type: 'expense', amount: item.price, category: 'Essentials',
+        description: `Restocked ${item.name}`, date: todayISO(),
+        createdAt: Date.now(), updatedAt: Date.now(),
+      };
+      insertRow('transactions', STORAGE_KEYS.TRANSACTIONS, payload).then(txnId => {
+        window.dispatchEvent(new CustomEvent('valerie:toast', {
+          detail: {
+            message: `Logged $${item.price} ${item.name} restock to Finance`,
+            type: 'success',
+            undo: () => {
+              deleteRow('transactions', STORAGE_KEYS.TRANSACTIONS, txnId);
+              window.dispatchEvent(new CustomEvent('valerie:toast', { detail: { message: 'Expense removed', type: 'info' } }));
+            },
+          },
+        }));
+      });
+    }
   }
 
   function handleDelete(id) {
@@ -256,7 +279,7 @@ export default function Essentials() {
   return (
     <div style={{ display: 'flex', height: '100%', overflow: 'hidden' }}>
 
-      {/* ── Left — list ──────────────────────────────────────────────────── */}
+      {/*  Left  list  */}
       <div style={{
         flex: 1, display: 'flex', flexDirection: 'column',
         borderRight: '0.5px solid var(--card-border)',
@@ -282,7 +305,7 @@ export default function Essentials() {
               </span>
             )}
             {redCount === 0 && amberCount === 0 && items.length > 0 && (
-              <span style={{ fontSize: 11, color: '#4caf7d' }}>All stocked ✓</span>
+              <span style={{ fontSize: 11, color: '#4caf7d' }}>All stocked S</span>
             )}
           </div>
           <button onClick={() => { setMode('add'); setSelected(null); }} style={BTN_ACCENT}>
@@ -371,7 +394,7 @@ export default function Essentials() {
         </div>
       </div>
 
-      {/* ── Right — detail / form panel ──────────────────────────────────── */}
+      {/*  Right  detail / form panel  */}
       <div style={{
         width: 260, flexShrink: 0,
         padding: '20px 16px',
@@ -401,7 +424,7 @@ export default function Essentials() {
         )}
         {mode === 'view' && !selectedItem && (
           <div style={{ textAlign: 'center', paddingTop: 40 }}>
-            <div style={{ fontSize: 28, marginBottom: 8, opacity: 0.3 }}>📦</div>
+            <div style={{ fontSize: 28, marginBottom: 8, opacity: 0.3 }}>✅</div>
             <div style={{ fontSize: 12, color: 'var(--text-muted)' }}>
               Select an item to view details
             </div>
@@ -411,3 +434,4 @@ export default function Essentials() {
     </div>
   );
 }
+

@@ -1,12 +1,13 @@
-// ─── Assistant Tab — VALERIE voice interface ───────────────────────────────────
+//  Assistant Tab  VALERIE voice interface 
 // Continuous voice session mode: one click starts, stays open until silence/stop intent.
 // Orb state drives all visual feedback. Messages display cleaned AI output.
 
 import { useState, useRef, useEffect, useCallback } from 'react';
 import VaIerieOrb from '../components/VaIerieOrb.jsx';
 import { storage, STORAGE_KEYS } from '../utils/storage.js';
+import { MIC_DISABLED } from '../ai/useAI.js';
 
-// ─── Icons ─────────────────────────────────────────────────────────────────────
+//  Icons 
 const MicIcon = ({ active }) => (
   <svg width={16} height={16} viewBox="0 0 24 24" fill="none"
     stroke="currentColor" strokeWidth={active ? 2 : 1.7}
@@ -61,15 +62,15 @@ const ExportIcon = () => (
   </svg>
 );
 
-// ─── Quick actions ─────────────────────────────────────────────────────────────
+//  Quick actions 
 const QUICK_ACTIONS = [
   { label: 'Daily brief',   prompt: 'Give me my daily brief.' },
-  { label: 'How am I doing', prompt: 'How am I doing overall — tasks, habits, everything.' },
+  { label: 'How am I doing', prompt: 'How am I doing overall  tasks, habits, everything.' },
   { label: 'Focus mode',    prompt: 'Start a focus session.' },
   { label: 'Stoic quote',   prompt: 'Give me a Stoic quote worth thinking about today.' },
 ];
 
-// ─── Message bubble ────────────────────────────────────────────────────────────
+//  Message bubble 
 function MessageBubble({ msg }) {
   const isUser = msg.role === 'user';
   const [copied, setCopied] = useState(false);
@@ -117,7 +118,7 @@ function MessageBubble({ msg }) {
       >
         {msg.content}
 
-        {/* Copy button — appears on hover */}
+        {/* Copy button  appears on hover */}
         {!isUser && (
           <button
             className="copy-btn"
@@ -147,7 +148,7 @@ function MessageBubble({ msg }) {
   );
 }
 
-// ─── Voice session indicator ───────────────────────────────────────────────────
+//  Voice session indicator 
 function VoiceSessionBadge({ active, onEnd }) {
   if (!active) return null;
   return (
@@ -179,7 +180,7 @@ function VoiceSessionBadge({ active, onEnd }) {
   );
 }
 
-// ─── Main Assistant Tab ────────────────────────────────────────────────────────
+//  Main Assistant Tab 
 export default function Assistant({ settings, ai }) {
   const [inputText,    setInputText]    = useState('');
   const [typingHint,   setTypingHint]   = useState(false);
@@ -227,8 +228,8 @@ export default function Assistant({ settings, ai }) {
     const userName = settings.userName || 'Rob';
     const text = ai.messages
       .map(m => `[${m.role === 'user' ? userName : 'VALERIE'}]\n${m.content}`)
-      .join('\n\n─────────────────────\n\n');
-    const header = `VALERIE Conversation Export\n${new Date().toLocaleString('en-AU')}\n${'═'.repeat(40)}\n\n`;
+      .join('\n\n\n\n');
+    const header = `VALERIE Conversation Export\n${new Date().toLocaleString('en-AU')}\n${'P'.repeat(40)}\n\n`;
     const blob = new Blob([header + text], { type: 'text/plain;charset=utf-8' });
     const url  = URL.createObjectURL(blob);
     const a    = document.createElement('a');
@@ -259,7 +260,7 @@ export default function Assistant({ settings, ai }) {
       overflow: 'hidden',
     }}>
 
-      {/* ── Top: Orb + status ────────────────────────────────────────────── */}
+      {/*  Top: Orb + status  */}
       <div style={{
         display: 'flex',
         flexDirection: 'column',
@@ -294,7 +295,7 @@ export default function Assistant({ settings, ai }) {
                 border: `0.5px solid ${ai.claudeOnline ? 'rgba(76,175,125,0.35)' : 'var(--card-border)'}`,
                 color: ai.claudeOnline ? '#4caf7d' : 'var(--text-muted)',
               }}>
-                Claude {ai.claudeOnline ? '●' : '○'}
+                Claude {ai.claudeOnline ? '' : ''}
               </span>
               <span style={{
                 fontSize: 10, padding: '3px 9px', borderRadius: 20,
@@ -302,14 +303,14 @@ export default function Assistant({ settings, ai }) {
                 border: `0.5px solid ${ai.ollamaOnline ? 'rgba(76,175,125,0.35)' : 'var(--card-border)'}`,
                 color: ai.ollamaOnline ? '#4caf7d' : 'var(--text-muted)',
               }}>
-                Ollama {ai.ollamaOnline ? '●' : '○'}
+                Ollama {ai.ollamaOnline ? '' : ''}
               </span>
             </>
           )}
         </div>
       </div>
 
-      {/* ── Messages ─────────────────────────────────────────────────────── */}
+      {/*  Messages  */}
       <div style={{
         flex: 1,
         overflowY: 'auto',
@@ -375,7 +376,7 @@ export default function Assistant({ settings, ai }) {
         )}
       </div>
 
-      {/* ── Input bar ────────────────────────────────────────────────────── */}
+      {/*  Input bar  */}
       <div style={{
         padding: '10px 24px 20px',
         borderTop: '0.5px solid var(--sidebar-divider)',
@@ -451,7 +452,7 @@ export default function Assistant({ settings, ai }) {
               isThinking   ? 'Thinking…'   :
               isSpeaking   ? 'Speaking…'   :
               sessionActive ? 'Voice session active — or type here'
-              : 'Talk to VALERIE…'
+              : 'Talk to VALERIE'
             }
             style={{
               flex: 1,
@@ -468,7 +469,8 @@ export default function Assistant({ settings, ai }) {
             onBlur={e => e.target.style.borderColor = sessionActive && isListening ? 'var(--accent)' : 'var(--input-border)'}
           />
 
-          {/* Mic / voice session toggle */}
+          {/* Mic / voice session toggle — hidden when mic input is disabled */}
+          {!MIC_DISABLED && (
           <button
             onClick={handleVoiceToggle}
             disabled={ai.loading && !sessionActive}
@@ -489,6 +491,7 @@ export default function Assistant({ settings, ai }) {
           >
             {sessionActive ? <MicIcon active={isListening} /> : <MicIcon />}
           </button>
+          )}
 
           {/* Send */}
           <button

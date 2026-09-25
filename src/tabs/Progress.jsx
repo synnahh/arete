@@ -1,11 +1,13 @@
-// ─── VALERIE — Progress Tab ───────────────────────────────────────────────────
-import { useState, useEffect } from 'react';
-import { useCollection } from '../firebase/useCollection.js';
+//  VALERIE  Progress Tab 
+import { useState, useEffect, useMemo } from 'react';
+import { useCollection } from '../supabase/useCollection.js';
 import { storage, STORAGE_KEYS } from '../utils/storage.js';
 import { ProgressBar, MilestoneLine } from '../components/Charts.jsx';
-import { getXP, addXP, getRank, TIER_CONFIG, TIER_THRESHOLDS, XP_SOURCES } from '../utils/xp.js';
+import { getXP, addXP, getRank, awardActivityXP, TIER_CONFIG, TIER_THRESHOLDS, XP_SOURCES } from '../utils/xp.js';
+import { computeStreaks } from '../utils/streaks.js';
+import { AnimatedNumber } from '../components/Motion.jsx';
 
-// ─── Glass label ─────────────────────────────────────────────────────────────
+//  Glass label 
 function GlassLabel({ children }) {
   return (
     <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: 14 }}>
@@ -16,7 +18,7 @@ function GlassLabel({ children }) {
   );
 }
 
-// ─── SVG Badge System ─────────────────────────────────────────────────────────
+//  SVG Badge System 
 // All badges use a 100x100 viewBox centred at (50, 50)
 const toRad = d => d * Math.PI / 180;
 
@@ -114,7 +116,7 @@ function Badge({ tier, subRank = 1, size = 80, pulse = false }) {
     </>;
 
   } else if (tier === 5) {
-    // 8-point barbed star — very sharp (Fang)
+    // 8-point barbed star  very sharp (Fang)
     const outer = ptsToD(starPts(c, c, 40, 7, 8, -90));
     const inner = ptsToD(starPts(c, c, 26, 5, 8, -90));
     shapes = <>
@@ -149,7 +151,7 @@ function Badge({ tier, subRank = 1, size = 80, pulse = false }) {
     </>;
 
   } else if (tier === 8) {
-    // Ascendant — 16-pt outer + 8-pt inner + diamond + glowing core
+    // Ascendant  16-pt outer + 8-pt inner + diamond + glowing core
     const outer   = ptsToD(starPts(c, c, 40, 22, 16, -90));
     const mid     = ptsToD(starPts(c, c, 28, 15,  8, -90));
     const diamond = ptsToD([[c, c-14],[c+10, c],[c, c+14],[c-10, c]]);
@@ -172,7 +174,7 @@ function Badge({ tier, subRank = 1, size = 80, pulse = false }) {
   );
 }
 
-// ─── Tier track ───────────────────────────────────────────────────────────────
+//  Tier track 
 function TierTrack({ currentTier, currentSubRank }) {
   return (
     <div style={{ display: 'flex', gap: 6, alignItems: 'center', flexWrap: 'wrap', justifyContent: 'center' }}>
@@ -195,8 +197,8 @@ function TierTrack({ currentTier, currentSubRank }) {
   );
 }
 
-// ─── Mood check-in ────────────────────────────────────────────────────────────
-const MOODS = ['😞','😕','😐','🙂','😊','😄','🤩'];
+//  Mood check-in 
+const MOODS = ['😞','😔','😐','🙂','😊','😄','🤩'];
 
 function MoodCheckin({ moodLogs, onLog }) {
   const todayStr = new Date().toISOString().split('T')[0];
@@ -266,7 +268,7 @@ function MoodCheckin({ moodLogs, onLog }) {
   );
 }
 
-// ─── Overview sub-tab ─────────────────────────────────────────────────────────
+//  Overview sub-tab 
 function Overview({ xp, rank, habits, moodLogs, onLogMood, focusSessions }) {
   const today     = new Date().toISOString().split('T')[0];
   const todayFoc  = focusSessions.filter(s => s.date === today).length;
@@ -313,9 +315,9 @@ function Overview({ xp, rank, habits, moodLogs, onLogMood, focusSessions }) {
       {/* Today quick stats */}
       <div style={{ display: 'flex', gap: 10, flexWrap: 'wrap' }}>
         {[
-          ['Focus sessions', todayFoc, '⏱'],
-          ['Habits done', habits.filter(h => h.lastCompleted === today).length, '✓'],
-          ['XP today', xp.log?.filter(e => e.date?.startsWith(today)).reduce((s,e) => s + e.amount, 0) || 0, '⚡'],
+  ['Focus sessions', todayFoc, '⏱️'],
+  ['Habits done', habits.filter(h => h.lastCompleted === today).length, '✅'],
+  ['XP today', xp.log?.filter(e => e.date?.startsWith(today)).reduce((s,e) => s + e.amount, 0) || 0, '⚡'],
         ].map(([label, val, icon]) => (
           <div key={label} style={{
             flex: 1, minWidth: 100,
@@ -353,13 +355,58 @@ function Overview({ xp, rank, habits, moodLogs, onLogMood, focusSessions }) {
   );
 }
 
-// ─── Streaks sub-tab ──────────────────────────────────────────────────────────
-function Streaks({ habits }) {
+//  Unified momentum card  overall + per-domain streaks
+function MomentumCard({ streaks }) {
+  const { overall, domains } = streaks;
+  const order = ['focus', 'health', 'lm', 'tasks'];
+  return (
+    <div style={{
+      background: 'var(--bg-panel)', border: '0.5px solid var(--card-border)',
+      borderRadius: 12, padding: '18px 20px',
+      display: 'flex', alignItems: 'center', gap: 20,
+    }}>
+      {/* Overall flame */}
+      <div style={{ textAlign: 'center', flexShrink: 0, minWidth: 96 }}>
+        <div style={{ fontSize: 40, fontWeight: 200, color: overall.current > 0 ? '#f4a642' : 'var(--text-muted)', lineHeight: 1, display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 4 }}>
+          {overall.current > 0 && <span className="val-pop" style={{ fontSize: 28 }}>🔥</span>}
+          <AnimatedNumber value={overall.current} duration={600} format={n => Math.round(n)} />
+        </div>
+        <div style={{ fontSize: 10, color: 'var(--text-muted)', marginTop: 6, letterSpacing: '0.06em' }}>DAY STREAK</div>
+        <div style={{ fontSize: 9.5, color: 'var(--text-muted)', marginTop: 2, opacity: 0.7 }}>best {overall.best}</div>
+      </div>
+      {/* Per-domain */}
+      <div style={{ flex: 1, display: 'grid', gridTemplateColumns: 'repeat(2,1fr)', gap: 8 }}>
+        {order.map(k => {
+          const d = domains[k];
+          return (
+            <div key={k} style={{
+              display: 'flex', alignItems: 'center', gap: 8, padding: '8px 10px',
+              borderRadius: 9, background: 'rgba(255,255,255,0.03)',
+              border: `0.5px solid ${d.active ? '#f4a64233' : 'var(--card-border)'}`,
+            }}>
+              <span style={{ fontSize: 16, flexShrink: 0, filter: d.current > 0 ? 'none' : 'grayscale(0.7) opacity(0.5)' }}>{d.icon}</span>
+              <div style={{ flex: 1, minWidth: 0 }}>
+                <div style={{ fontSize: 11.5, color: 'var(--text-secondary)' }}>{d.label}</div>
+              </div>
+              <div style={{ fontSize: 15, fontWeight: 300, color: d.current > 0 ? '#f4a642' : 'var(--text-muted)', fontVariantNumeric: 'tabular-nums' }}>
+                {d.current}
+              </div>
+            </div>
+          );
+        })}
+      </div>
+    </div>
+  );
+}
+
+//  Streaks sub-tab
+function Streaks({ habits, streaks }) {
   const today   = new Date().toISOString().split('T')[0];
   const sorted  = [...habits].sort((a, b) => (b.streak || 0) - (a.streak || 0));
 
   return (
     <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
+      {streaks && <MomentumCard streaks={streaks} />}
       <div style={{ fontSize: 11, color: 'var(--text-muted)', letterSpacing: '0.06em' }}>HABIT STREAKS</div>
       {sorted.length === 0 ? (
         <div style={{
@@ -378,16 +425,16 @@ function Streaks({ habits }) {
             borderRadius: 12, padding: '14px 18px',
             display: 'flex', alignItems: 'center', gap: 14,
           }}>
-            <span style={{ fontSize: 22, flexShrink: 0 }}>{h.icon || '◆'}</span>
+            <span style={{ fontSize: 22, flexShrink: 0 }}>{h.icon || ' '}</span>
             <div style={{ flex: 1 }}>
               <div style={{ fontSize: 13, color: 'var(--text-primary)' }}>{h.name}</div>
               <div style={{ fontSize: 11, color: 'var(--text-muted)', marginTop: 2 }}>
-                {active ? '✓ Done today' : '○ Not done today'}
+                {active ? '✓ Done today' : '✗ Not done today'}
               </div>
             </div>
             <div style={{ textAlign: 'right', flexShrink: 0 }}>
               <div style={{ fontSize: 22, fontWeight: 300, color: streak > 0 ? '#f4a642' : 'var(--text-muted)' }}>
-                {streak > 0 ? '🔥' : ''}{streak}
+  {streak > 0 ? '🔥' : ''}{streak}
               </div>
               <div style={{ fontSize: 10, color: 'var(--text-muted)' }}>day streak</div>
             </div>
@@ -398,7 +445,7 @@ function Streaks({ habits }) {
   );
 }
 
-// ─── Goals sub-tab ────────────────────────────────────────────────────────────
+//  Goals sub-tab 
 function Goals({ goals, onAdd, onUpdate, onRemove }) {
   const [showForm, setShowForm] = useState(false);
   const [name,     setName]     = useState('');
@@ -413,7 +460,7 @@ function Goals({ goals, onAdd, onUpdate, onRemove }) {
       name: name.trim(), target: parseFloat(target) || 100,
       unit: unit.trim() || '', current: parseFloat(current) || 0,
       deadline: deadline || null,
-      milestones: [{ pct: 25, label: '25%' }, { pct: 50, label: '50%' }, { pct: 75, label: '75%' }, { pct: 100, label: '🎉' }],
+  milestones: [{ pct: 25, label: '25%' }, { pct: 50, label: '50%' }, { pct: 75, label: '75%' }, { pct: 100, label: '🏆' }],
     });
     setName(''); setTarget(''); setUnit(''); setCurrent(''); setDeadline('');
     setShowForm(false);
@@ -502,7 +549,7 @@ function Goals({ goals, onAdd, onUpdate, onRemove }) {
             borderRadius: 12, padding: '16px 18px', display: 'flex', flexDirection: 'column', gap: 10,
           }}>
             <div style={{ display: 'flex', justifyContent: 'space-between' }}>
-              <div style={{ fontSize: 14, color: 'var(--text-primary)' }}>{g.name}{done ? ' 🎉' : ''}</div>
+              <div style={{ fontSize: 14, color: 'var(--text-primary)' }}>{g.name}{done ? ' x}0' : ''}</div>
               <div style={{ fontSize: 13, color: 'var(--text-muted)' }}>
                 {g.current || 0}{g.unit ? ` ${g.unit}` : ''} / {g.target}{g.unit ? ` ${g.unit}` : ''}
               </div>
@@ -539,7 +586,7 @@ function Goals({ goals, onAdd, onUpdate, onRemove }) {
   );
 }
 
-// ─── Stats sub-tab ────────────────────────────────────────────────────────────
+//  Stats sub-tab 
 function Stats({ focusSessions, habits }) {
   const xp  = getXP();
   const now = new Date();
@@ -581,7 +628,7 @@ function Stats({ focusSessions, habits }) {
         borderRadius: 12, padding: '16px 18px',
       }}>
         <div style={{ fontSize: 11, color: 'var(--text-muted)', letterSpacing: '0.06em', marginBottom: 14 }}>
-          XP — LAST 7 DAYS
+          XP  LAST 7 DAYS
         </div>
         <div style={{ display: 'flex', alignItems: 'flex-end', gap: 6, height: 80 }}>
           {last7.map((d, i) => {
@@ -632,7 +679,7 @@ function Stats({ focusSessions, habits }) {
   );
 }
 
-// ─── Rank sub-tab ─────────────────────────────────────────────────────────────
+//  Rank sub-tab 
 function RankView({ xp, rank }) {
   const subRankLabels = ['I', 'II', 'III'];
 
@@ -647,7 +694,7 @@ function RankView({ xp, rank }) {
             {rank.tier < 8 && ` ${subRankLabels[rank.subRank - 1]}`}
           </div>
           <div style={{ fontSize: 13, color: 'var(--text-muted)', marginTop: 4 }}>
-            {(xp.total || 0).toLocaleString()} XP
+            <AnimatedNumber value={xp.total || 0} /> XP
           </div>
         </div>
       </div>
@@ -733,7 +780,7 @@ function RankView({ xp, rank }) {
   );
 }
 
-// ─── Main Progress Tab — single scrollable page ───────────────────────────────
+//  Main Progress Tab  single scrollable page 
 export default function Progress() {
   const [xp, setXp] = useState(() => getXP());
 
@@ -742,7 +789,13 @@ export default function Progress() {
   const moodLogs = useCollection('mood_logs',       STORAGE_KEYS.MOOD_LOGS);
   const sessions = useCollection('focus_sessions',  STORAGE_KEYS.FOCUS_SESSIONS);
 
-  useEffect(() => { setXp(getXP()); }, []);
+  // Run the unified XP sweep once on mount (awards cross-domain activity
+  // idempotently), then read the resulting total.
+  useEffect(() => { awardActivityXP(); setXp(getXP()); }, []);
+
+  const streaks = useMemo(() => computeStreaks(), [
+    habits.items, sessions.items, goals.items, moodLogs.items,
+  ]);
 
   const rank = getRank(xp.total || 0);
 
@@ -756,13 +809,13 @@ export default function Progress() {
       {/* Main scroll area */}
       <div style={{ flex: 1, overflowY: 'auto', padding: '24px 28px', display: 'flex', flexDirection: 'column', gap: 32 }}>
 
-        {/* ── RANK ── */}
+        {/*  RANK  */}
         <section>
           <GlassLabel>Rank</GlassLabel>
           <RankView xp={xp} rank={rank} />
         </section>
 
-        {/* ── OVERVIEW — mood + today's stats ── */}
+        {/*  OVERVIEW  mood + today's stats  */}
         <section>
           <GlassLabel>Today</GlassLabel>
           <Overview
@@ -774,13 +827,13 @@ export default function Progress() {
           />
         </section>
 
-        {/* ── STREAKS ── */}
+        {/*  STREAKS  */}
         <section>
           <GlassLabel>Streaks</GlassLabel>
-          <Streaks habits={habits.items} />
+          <Streaks habits={habits.items} streaks={streaks} />
         </section>
 
-        {/* ── GOALS ── */}
+        {/*  GOALS  */}
         <section>
           <GlassLabel>Goals</GlassLabel>
           <Goals
@@ -791,7 +844,7 @@ export default function Progress() {
           />
         </section>
 
-        {/* ── STATS ── */}
+        {/*  STATS  */}
         <section>
           <GlassLabel>Stats</GlassLabel>
           <Stats focusSessions={sessions.items} habits={habits.items} />
@@ -801,3 +854,4 @@ export default function Progress() {
     </div>
   );
 }
+

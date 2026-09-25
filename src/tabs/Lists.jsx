@@ -1,18 +1,18 @@
-// ─── VALERIE — Lists Tab (Books · Shows · Films · Podcasts · Articles) ─────────
+//  VALERIE  Lists Tab (Books · Shows · Films · Podcasts · Articles) 
 import { useState } from 'react';
-import { useCollection } from '../firebase/useCollection.js';
+import { useCollection } from '../supabase/useCollection.js';
 import { STORAGE_KEYS }  from '../utils/storage.js';
 
-// ─── Category config ──────────────────────────────────────────────────────────
+//  Category config 
 const CATEGORIES = [
-  { id: 'books',    label: 'Books',    icon: '📖', placeholder: 'author',   meta: 'Author' },
+  { id: 'books',    label: 'Books',    icon: '📚', placeholder: 'author',   meta: 'Author' },
   { id: 'shows',    label: 'Shows',    icon: '📺', placeholder: 'creator',  meta: 'Creator' },
   { id: 'films',    label: 'Films',    icon: '🎬', placeholder: 'director', meta: 'Director' },
   { id: 'podcasts', label: 'Podcasts', icon: '🎙️', placeholder: 'host',     meta: 'Host' },
   { id: 'articles', label: 'Articles', icon: '📰', placeholder: 'source',   meta: 'Source' },
 ];
 
-// ─── Status config ────────────────────────────────────────────────────────────
+//  Status config 
 const STATUSES = [
   { id: 'up_next',     label: 'Up Next',     colour: '#5b9cf6' },
   { id: 'in_progress', label: 'In Progress', colour: '#f4a642' },
@@ -20,7 +20,7 @@ const STATUSES = [
 ];
 const STATUS_MAP = Object.fromEntries(STATUSES.map(s => [s.id, s]));
 
-// ─── Shared styles ────────────────────────────────────────────────────────────
+//  Shared styles 
 const INPUT = {
   flex: 1, padding: '8px 12px', borderRadius: 8,
   background: 'rgba(255,255,255,0.06)', border: '0.5px solid var(--card-border)',
@@ -35,7 +35,7 @@ const BTN_GHOST = {
   background: 'rgba(255,255,255,0.06)', color: 'var(--text-secondary)', fontSize: 13,
 };
 
-// ─── Star rating ──────────────────────────────────────────────────────────────
+//  Star rating 
 function StarRating({ value = 0, onChange }) {
   return (
     <div style={{ display: 'flex', gap: 3 }}>
@@ -43,13 +43,13 @@ function StarRating({ value = 0, onChange }) {
         <button key={n} onClick={() => onChange(n === value ? 0 : n)} style={{
           background: 'none', border: 'none', cursor: 'pointer',
           fontSize: 18, padding: 0, color: n <= value ? '#fbbf24' : 'rgba(255,255,255,0.15)',
-        }}>★</button>
+        }}>&</button>
       ))}
     </div>
   );
 }
 
-// ─── Add Item Panel ───────────────────────────────────────────────────────────
+//  Add Item Panel 
 function AddPanel({ category, onAdd, onCancel }) {
   const cat = CATEGORIES.find(c => c.id === category) || CATEGORIES[0];
   const [title,  setTitle]  = useState('');
@@ -118,7 +118,7 @@ function AddPanel({ category, onAdd, onCancel }) {
   );
 }
 
-// ─── Item Detail Panel ────────────────────────────────────────────────────────
+//  Item Detail Panel 
 function DetailPanel({ item, onUpdate, onDelete, onClose }) {
   const cat    = CATEGORIES.find(c => c.id === item.category) || CATEGORIES[0];
   const status = STATUS_MAP[item.status] || STATUSES[0];
@@ -208,7 +208,7 @@ function DetailPanel({ item, onUpdate, onDelete, onClose }) {
           fontSize: 12, color: 'var(--accent)',
           textDecoration: 'none', wordBreak: 'break-all',
         }}>
-          🔗 Open link
+          x Open link
         </a>
       )}
 
@@ -222,7 +222,7 @@ function DetailPanel({ item, onUpdate, onDelete, onClose }) {
   );
 }
 
-// ─── Item card ────────────────────────────────────────────────────────────────
+//  Item card 
 function ItemCard({ item, onClick }) {
   const status = STATUS_MAP[item.status] || STATUSES[0];
   return (
@@ -252,13 +252,13 @@ function ItemCard({ item, onClick }) {
         <div style={{ fontSize: 11, color: 'var(--text-muted)' }}>{item.meta}</div>
       )}
       {item.status === 'done' && item.rating > 0 && (
-        <div style={{ fontSize: 12, color: '#fbbf24' }}>{'★'.repeat(item.rating)}{'☆'.repeat(5 - item.rating)}</div>
+        <div style={{ fontSize: 12, color: '#fbbf24' }}>{'&'.repeat(item.rating)}{' '.repeat(5 - item.rating)}</div>
       )}
     </div>
   );
 }
 
-// ─── Main Lists Tab ───────────────────────────────────────────────────────────
+//  Main Lists Tab 
 export default function Lists() {
   const { items, add, update, remove } = useCollection('watch_list', STORAGE_KEYS.LISTS);
 
@@ -284,7 +284,7 @@ export default function Lists() {
   return (
     <div style={{ display: 'flex', height: '100%', overflow: 'hidden' }}>
 
-      {/* ── Category nav ─────────────────────────────────────────────────── */}
+      {/*  Category nav  */}
       <nav style={{
         width: 160, flexShrink: 0,
         borderRight: '0.5px solid var(--card-border)',
@@ -321,7 +321,7 @@ export default function Lists() {
         })}
       </nav>
 
-      {/* ── Content ───────────────────────────────────────────────────────── */}
+      {/*  Content  */}
       <div style={{ flex: 1, display: 'flex', flexDirection: 'column', overflow: 'hidden' }}>
         {/* Toolbar */}
         <div style={{
@@ -408,3 +408,4 @@ export default function Lists() {
     </div>
   );
 }
+

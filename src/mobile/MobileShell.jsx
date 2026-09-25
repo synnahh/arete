@@ -1,20 +1,22 @@
-// ─── MobileShell.jsx — iOS PWA shell with bottom tab navigation ───────────────
+//  MobileShell.jsx  iOS PWA shell with bottom tab navigation 
 import { useState, useEffect, useRef, useCallback } from 'react';
 import { useAI }              from '../ai/useAI.js';
 import { usePeakState }       from '../hooks/usePeakState.js';
 import { useNotifications }   from '../hooks/useNotifications.js';
 import { requestPushPermission, pushPermissionStatus, registerFCMToken } from '../utils/pushNotifications.js';
 import { isInstalledPWA }     from '../utils/platform.js';
-import MobileDashboard from './screens/MobileDashboard.jsx';
-import MobileHealth    from './screens/MobileHealth.jsx';
-import MobileMore      from './screens/MobileMore.jsx';
-import MobileFinance   from './screens/MobileFinance.jsx';
-import MobileSettings  from './screens/MobileSettings.jsx';
-import MobileAI        from './screens/MobileAI.jsx';
+import MobileDashboard  from './screens/MobileDashboard.jsx';
+import MobileHealth     from './screens/MobileHealth.jsx';
+import MobileMore       from './screens/MobileMore.jsx';
+import MobileFinance    from './screens/MobileFinance.jsx';
+import MobileSettings   from './screens/MobileSettings.jsx';
+import MobileAI         from './screens/MobileAI.jsx';
+import MobileMind       from './screens/MobileMind.jsx';
+import MobilePortfolio  from './screens/MobilePortfolio.jsx';
 import { haptics }     from './utils/haptics.js';
 import { storage, STORAGE_KEYS } from '../utils/storage.js';
 
-// ── Tab definitions ────────────────────────────────────────────────────────────
+//  Tab definitions 
 const TABS = [
   {
     id: 'dashboard',
@@ -73,6 +75,30 @@ const TABS = [
     ),
   },
   {
+    id: 'mind',
+    label: 'Mind',
+    icon: (active) => (
+      <svg width="22" height="22" viewBox="0 0 24 24" fill="none">
+        <path d="M9.5 2a2.5 2.5 0 015 0v.5A7.5 7.5 0 0117 9.5v1a5 5 0 01-10 0v-1A7.5 7.5 0 019.5 2.5V2z"
+          stroke="currentColor" strokeWidth={active ? 2 : 1.5}
+          fill={active ? 'currentColor' : 'none'} fillOpacity={active ? 0.15 : 0} />
+        <path d="M12 16v6M9 22h6" stroke="currentColor" strokeWidth={active ? 2 : 1.5} strokeLinecap="round" />
+      </svg>
+    ),
+  },
+  {
+    id: 'portfolio',
+    label: 'Portfolio',
+    icon: (active) => (
+      <svg width="22" height="22" viewBox="0 0 24 24" fill="none">
+        <polyline points="4 18 8 12 12 15 16 8 20 11"
+          stroke="currentColor" strokeWidth={active ? 2 : 1.5} strokeLinecap="round" strokeLinejoin="round"
+          fill={active ? 'currentColor' : 'none'} fillOpacity={active ? 0.1 : 0} />
+        <line x1="4" y1="21" x2="20" y2="21" stroke="currentColor" strokeWidth={active ? 2 : 1.5} strokeLinecap="round" />
+      </svg>
+    ),
+  },
+  {
     id: 'settings',
     label: 'Settings',
     icon: (active) => (
@@ -86,16 +112,16 @@ const TABS = [
   },
 ];
 
-// ── Floating VALERIE orb button ────────────────────────────────────────────────
+//  Floating VALERIE orb button 
 function VALERIEOrb({ onClick, orbState }) {
   const color = orbState === 'listening' ? '#4a9eff'
               : orbState === 'thinking'  ? '#f59e0b'
               : orbState === 'speaking'  ? 'var(--accent)'
               : 'var(--accent)';
   const pulse = orbState === 'listening' || orbState === 'speaking';
-  const stateLabel = orbState === 'listening' ? 'Listening…'
-                   : orbState === 'thinking'  ? 'Thinking…'
-                   : orbState === 'speaking'  ? 'Speaking…'
+  const stateLabel = orbState === 'listening' ? 'Listening...'
+                   : orbState === 'thinking'  ? 'Thinking...'
+                   : orbState === 'speaking'  ? 'Speaking...'
                    : null;
 
   return (
@@ -141,7 +167,7 @@ function VALERIEOrb({ onClick, orbState }) {
   );
 }
 
-// ── VALERIE slide-up chat sheet ────────────────────────────────────────────────
+//  VALERIE slide-up chat sheet 
 function VALERIESheet({ open, onClose, ai, settings }) {
   return (
     <>
@@ -188,7 +214,7 @@ function VALERIESheet({ open, onClose, ai, settings }) {
               display: 'flex', alignItems: 'center', justifyContent: 'center',
               cursor: 'pointer', WebkitTapHighlightColor: 'transparent',
               color: 'var(--text-muted)', fontSize: 16,
-            }}>×</button>
+            }}></button>
           </div>
         </div>
 
@@ -201,7 +227,7 @@ function VALERIESheet({ open, onClose, ai, settings }) {
   );
 }
 
-// ── Pull-to-refresh ────────────────────────────────────────────────────────────
+//  Pull-to-refresh 
 function usePullToRefresh(scrollRef, onRefresh) {
   const startY   = useRef(null);
   const pulling  = useRef(false);
@@ -239,7 +265,7 @@ function usePullToRefresh(scrollRef, onRefresh) {
   return { pullPct, refreshing, onTouchStart, onTouchMove, onTouchEnd };
 }
 
-// ── Shell ──────────────────────────────────────────────────────────────────────
+//  Shell 
 export default function MobileShell({ settings, onSettingsChange }) {
   const [activeTab, setActiveTab]   = useState('dashboard');
   const [valOpen,   setValOpen]     = useState(false);
@@ -247,7 +273,7 @@ export default function MobileShell({ settings, onSettingsChange }) {
   const ai        = useAI();
   const peakState = usePeakState(settings);
 
-  // Notification scheduler — drives SMS + push on mobile
+  // Notification scheduler  drives SMS + push on mobile
   useNotifications(settings);
 
   // Request push permission once on first installed PWA launch
@@ -255,7 +281,7 @@ export default function MobileShell({ settings, onSettingsChange }) {
     if (!isInstalledPWA()) return;
     const alreadyAsked = localStorage.getItem('valerie_push_asked');
     if (alreadyAsked) {
-      // Permission already granted — refresh the FCM token silently
+      // Permission already granted  refresh the FCM token silently
       if (pushPermissionStatus() === 'granted') registerFCMToken();
       return;
     }
@@ -281,6 +307,8 @@ export default function MobileShell({ settings, onSettingsChange }) {
     health:    <MobileHealth    {...screenProps} />,
     more:      <MobileMore      {...screenProps} />,
     finance:   <MobileFinance   {...screenProps} />,
+    mind:      <MobileMind      {...screenProps} />,
+    portfolio: <MobilePortfolio {...screenProps} />,
     settings:  <MobileSettings  {...screenProps} />,
   };
 
@@ -302,7 +330,7 @@ export default function MobileShell({ settings, onSettingsChange }) {
         }
       `}</style>
 
-      {/* ── Screen content with pull-to-refresh ── */}
+      {/*  Screen content with pull-to-refresh  */}
       <div
         ref={scrollRef}
         style={{ flex: 1, overflowY: 'auto', overflowX: 'hidden',
@@ -331,13 +359,13 @@ export default function MobileShell({ settings, onSettingsChange }) {
         {screens[activeTab]}
       </div>
 
-      {/* ── Floating VALERIE orb ── */}
+      {/*  Floating VALERIE orb  */}
       <VALERIEOrb onClick={() => setValOpen(true)} orbState={ai?.orbState || 'idle'} />
 
-      {/* ── VALERIE slide-up sheet ── */}
+      {/*  VALERIE slide-up sheet  */}
       <VALERIESheet open={valOpen} onClose={() => setValOpen(false)} ai={ai} settings={settings} />
 
-      {/* ── Bottom tab bar ── */}
+      {/*  Bottom tab bar  */}
       <nav style={{
         position: 'fixed', bottom: 0, left: 0, right: 0,
         height: 'calc(72px + env(safe-area-inset-bottom))',
