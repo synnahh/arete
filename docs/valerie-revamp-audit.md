@@ -93,6 +93,19 @@ Mobile shell nav (7): Home, Health, More, Finance, Mind, Portfolio, Settings.
 | D3 | Reminder engine runs only while the app is open: a 60-second `setInterval`, per-day flags in `localStorage`, active 06:00–22:00 local. Nothing fires when the tab or iOS PWA is closed. Dedupe is per device, so two devices can both fire. | `useNotifications.js` | `READ` |
 | D4 | Stale copy says "Data syncs automatically via Firebase" on five mobile placeholder screens. | `MobileMore.jsx` L206 | `READ` |
 | D5 | Sentry release `valerie@0.1.0` mislabels every error report. | `main.jsx` | `READ` |
+| D6 | **Silent task loss.** Both dashboards (desktop and iOS home) wrote tasks straight to `localStorage`. Those writes never reached Supabase, and the next `useCollection` fetch overwrote the local mirror, so a tick or add from either home screen was lost and never reached the other device. | `Dashboard.jsx`, `MobileDashboard.jsx` | `READ` |
+
+### 2.2 Fixed in this pass
+
+| # | Fix | Verification |
+|---|---|---|
+| D1 | `src/domain/tasks.js` normalises `{title, completed}` → `{text, done}` on every read; the assistant now writes the canonical shape. No stored rows rewritten. | 8 unit tests · `SEEN`: legacy task shows its title on desktop and iOS home; legacy done task counted as done |
+| D2 | `src/utils/localDate.js`; 78 sites rewritten by a receiver-aware codemod; 2 deliberate pure-UTC helpers left alone; timestamp-vs-day comparisons (XP log, focus sessions) and UTC month keys fixed. | 11 unit tests pinned to `Australia/Sydney`, incl. DST start 2026-10-04 · `SEEN`: date header correct |
+| D6 | `src/hooks/useTasks.js`: synced reads/writes, optimistic tick that reverts on failure, Add keeps text on failure. | `SEEN` with Supabase unreachable: tick reverted with "Couldn't update" toast; Add kept "Buy milk" and logged "Not signed in" — no silent success |
+
+Not yet verified: a successful write against the real Supabase project (needs the owner's login).
+
+**Behaviour change to know about:** day-keyed records written before this fix between local midnight and ~10–11am carry the previous UTC date. They stay where they are; only new records use the local day. On the day of upgrade a morning log may appear under yesterday.
 
 ---
 
@@ -105,7 +118,7 @@ Mobile shell nav (7): Home, Health, More, Finance, Mind, Portfolio, Settings.
 | Dev server (`vite`) | Starts in ~1.5 s and serves the PIN gate. Reached the dashboard only with a temporary local auth bypass (since reverted). | `SEEN` |
 | Type check | Not applicable: JavaScript only. | confirmed |
 | Lint | No linter configured. | confirmed |
-| Tests | None. No script, no directory, no framework. | confirmed |
+| Tests | None at baseline. **Now:** `npm test` (vitest, TZ=Australia/Sydney), 19 passing. | `RAN` |
 | Tauri build | Not run. `cargo` and `rustc` are not installed on this machine. | `RAN` (absence) |
 | Console at runtime | Only network errors to Supabase, caused by the browser pane's sandbox DNS. No React errors. | `SEEN` |
 | Real-data journeys | **Not exercised.** Needs the owner's Supabase login, which I will not enter. | — |
@@ -235,9 +248,9 @@ Legend: **K** keep · **M** merge · **Mv** move · **R** redesign · **H** hide
 
 ---
 
-## 9. What has already been changed in the copy
+## 9. What has already been changed in the copy (see git log in VALERIE-MAKEOVER)
 
-Only `src/tabs/Dashboard.jsx` (declutter pass: one glance strip, one unified Today panel, merged reflection card, dead badge code removed). `npm run build:pwa` passes with it. A temporary local auth bypass used for screenshots was reverted and `App.jsx` is byte-identical to the original.
+Commits after the owner-state checkpoint `3c77f12`: the Dashboard declutter pass, these docs, the D1/D2 fix (`51439d3`), and the D6 fix (`d25ad25`). Original Dashboard pass: `src/tabs/Dashboard.jsx` (declutter pass: one glance strip, one unified Today panel, merged reflection card, dead badge code removed). `npm run build:pwa` passes with it. A temporary local auth bypass used for screenshots was reverted and `App.jsx` is byte-identical to the original.
 
 ---
 
