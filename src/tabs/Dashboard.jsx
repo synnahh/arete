@@ -1,110 +1,32 @@
-//  Dashboard Tab  Dense Layout 
-import { useState, useEffect, useRef, useCallback, useMemo } from 'react';
-import { getGreeting, formatTime, formatDate } from '../utils/time.js';
+// ── Dashboard Tab — Decluttered Layout ──────────────────────────────────────
+// Redesign notes (makeover pass):
+//   - Old layout forced 10 bordered cards into one fixed, no-scroll viewport
+//     (4 stat cards + tasks + productivity + brief + spotify + peak state +
+//     workout + day ring). That density is what made the tab feel "too much".
+//   - This version keeps every feature but re-prioritises them:
+//       1. Header stays minimal (greeting, date, clock).
+//       2. A single-line "at a glance" strip replaces the 4 heavy stat cards.
+//       3. Tasks (primary) + a single unified "Today" panel (secondary
+//          info as internal rows, not 4 separate bordered cards) fill the
+//          first screen.
+//       4. Lower-priority content (reflection quote/verse, productivity
+//          breakdown, day ring) lives below the fold — the page scrolls
+//          instead of cramming everything above it.
+//   - Also removed ~150 lines of dead code (RankBadge/XpBar/ProgressHeroCard
+//     and their SVG helpers) that were defined but never rendered here.
+import { useState, useEffect, useRef, useCallback } from 'react';
+import { getGreeting, formatDate } from '../utils/time.js';
 import { storage, STORAGE_KEYS } from '../utils/storage.js';
 import { askClaude } from '../ai/claude.js';
 import { askOllama } from '../ai/ollama.js';
 import { rateLimitClaude } from '../utils/rateLimit.js';
-import { getXP, getRank, TIER_CONFIG, TIER_THRESHOLDS } from '../utils/xp.js';
 import DayRing from '../components/DayRing.jsx';
 import { useCollection } from '../supabase/useCollection.js';
 import { useDocument }   from '../supabase/useDocument.js';
-import { getNowPlaying, getPlaybackState, pausePlayback, resumePlayback, skipNext, skipPrev, isSpotifyConnected } from '../utils/spotify.js';
+import { getNowPlaying, pausePlayback, resumePlayback, skipNext, skipPrev, isSpotifyConnected } from '../utils/spotify.js';
 import { DEFAULT_OVERLOAD_EXERCISES } from './Workout.jsx';
 
-//  Badge SVG (mirrored from Progress.jsx) 
-const toRad = d => d * Math.PI / 180;
-function poly(cx, cy, r, n, start = 0) {
-  return Array.from({ length: n }, (_, i) => {
-    const a = toRad(start + i * 360 / n);
-    return [+(cx + r * Math.cos(a)).toFixed(2), +(cy + r * Math.sin(a)).toFixed(2)];
-  });
-}
-function starPts(cx, cy, R, r, n, start = -90) {
-  const pts = [];
-  for (let i = 0; i < n * 2; i++) {
-    const a = toRad(start + i * 180 / n);
-    pts.push([+(cx + (i % 2 === 0 ? R : r) * Math.cos(a)).toFixed(2), +(cy + (i % 2 === 0 ? R : r) * Math.sin(a)).toFixed(2)]);
-  }
-  return pts;
-}
-function ptsToD(pts) { return pts.map((p, i) => `${i===0?'M':'L'}${p[0]},${p[1]}`).join(' ') + ' Z'; }
-function crossD(cx, cy, R, hw) {
-  return `M${cx-hw},${cy-R} L${cx+hw},${cy-R} L${cx+hw},${cy-hw} L${cx+R},${cy-hw} L${cx+R},${cy+hw} L${cx+hw},${cy+hw} L${cx+hw},${cy+R} L${cx-hw},${cy+R} L${cx-hw},${cy+hw} L${cx-R},${cy+hw} L${cx-R},${cy-hw} L${cx-hw},${cy-hw} Z`;
-}
-function holeD(cx, cy, r) { return `M${cx+r},${cy-r} L${cx-r},${cy-r} L${cx-r},${cy+r} L${cx+r},${cy+r} Z`; }
-
-function RankBadge({ tier, subRank = 1, size = 80, pulse = false }) {
-  const cfg = TIER_CONFIG[tier - 1];
-  const col = cfg.color;
-  const c   = 50;
-  const glow = subRank === 3 || tier === 8 ? 10 : subRank === 2 ? 5 : 2;
-  const sw = 1.6, sw2 = 1.1;
-  let shapes = null;
-
-  if (tier === 1) {
-    const outer = poly(c,c,36,6,0), inner = poly(c,c,20,6,0);
-    const diam = [[outer[0],outer[3]],[outer[1],outer[4]],[outer[2],outer[5]]];
-    shapes = <>{[ptsToD(outer)].map((d,i)=><path key={i} d={d} fill="none" stroke={col} strokeWidth={sw}/>)}
-      {diam.map(([a,b],i)=><line key={i} x1={a[0]} y1={a[1]} x2={b[0]} y2={b[1]} stroke={col} strokeWidth={sw2} opacity={0.55}/>)}
-      {subRank>=2&&<><path d={ptsToD(inner)} fill="none" stroke={col} strokeWidth={sw2} opacity={0.7}/><circle cx={c} cy={c} r={7} fill="none" stroke={col} strokeWidth={sw2}/></>}
-      {subRank>=3&&<circle cx={c} cy={c} r={4} fill={col} opacity={0.9}/>}</>;
-  } else if (tier === 2) {
-    shapes = <><path d={ptsToD(starPts(c,c,40,6,4,-45))} fill="none" stroke={col} strokeWidth={sw}/>
-      {subRank>=2&&<><path d={ptsToD(starPts(c,c,26,4,4,-45))} fill="none" stroke={col} strokeWidth={sw2} opacity={0.7}/><circle cx={c} cy={c} r={6} fill="none" stroke={col} strokeWidth={sw2}/></>}
-      {subRank>=3&&<circle cx={c} cy={c} r={3.5} fill={col} opacity={0.9}/>}</>;
-  } else if (tier === 3) {
-    const cross = crossD(c,c,36,12)+' '+holeD(c,c,8);
-    shapes = <><path d={cross} fillRule="evenodd" fill={col} opacity={subRank>=2?0.85:0.7}/>
-      {subRank>=2&&<path d={crossD(c,c,24,7)+' '+holeD(c,c,5)} fillRule="evenodd" fill="none" stroke={col} strokeWidth={sw2} opacity={0.55}/>}
-      {subRank>=3&&<circle cx={c} cy={c} r={4} fill={col}/>}</>;
-  } else if (tier === 4) {
-    shapes = <><path d={ptsToD(starPts(c,c,38,16,6,-90))} fill="none" stroke={col} strokeWidth={sw}/>
-      {subRank>=2&&<><path d={ptsToD(starPts(c,c,24,10,6,-90))} fill="none" stroke={col} strokeWidth={sw2} opacity={0.7}/><circle cx={c} cy={c} r={6} fill="none" stroke={col} strokeWidth={sw2}/></>}
-      {subRank>=3&&<circle cx={c} cy={c} r={3.5} fill={col} opacity={0.9}/>}</>;
-  } else if (tier === 5) {
-    shapes = <><path d={ptsToD(starPts(c,c,40,7,8,-90))} fill="none" stroke={col} strokeWidth={sw}/>
-      {subRank>=2&&<><path d={ptsToD(starPts(c,c,26,5,8,-90))} fill="none" stroke={col} strokeWidth={sw2} opacity={0.65}/><circle cx={c} cy={c} r={7} fill="none" stroke={col} strokeWidth={sw2}/></>}
-      {subRank>=3&&<circle cx={c} cy={c} r={4} fill={col} opacity={0.9}/>}</>;
-  } else if (tier === 6) {
-    shapes = <><path d={ptsToD(starPts(c,c,38,20,8,-90))} fill="none" stroke={col} strokeWidth={sw}/>
-      <path d={ptsToD(starPts(c,c,32,15,8,-90))} fill="none" stroke={col} strokeWidth={sw2} opacity={0.6}/>
-      {subRank>=2&&<><path d={ptsToD(starPts(c,c,22,10,8,-90))} fill="none" stroke={col} strokeWidth={sw2} opacity={0.5}/><circle cx={c} cy={c} r={7} fill="none" stroke={col} strokeWidth={sw2}/></>}
-      {subRank>=3&&<circle cx={c} cy={c} r={4} fill={col} opacity={0.95}/>}</>;
-  } else if (tier === 7) {
-    shapes = <><path d={ptsToD(starPts(c,c,40,7,12,-90))} fill="none" stroke={col} strokeWidth={sw}/>
-      {subRank>=2&&<><path d={ptsToD(starPts(c,c,26,5,12,-90))} fill="none" stroke={col} strokeWidth={sw2} opacity={0.6}/><circle cx={c} cy={c} r={7} fill="none" stroke={col} strokeWidth={sw2}/></>}
-      {subRank>=3&&<circle cx={c} cy={c} r={4} fill={col} opacity={0.95}/>}</>;
-  } else if (tier === 8) {
-    shapes = <>
-      {[{d:ptsToD(starPts(c,c,40,22,16,-90))},{d:ptsToD(starPts(c,c,28,15,8,-90)),op:0.8}].map((s,i)=><path key={i} d={s.d} fill="none" stroke={col} strokeWidth={sw} opacity={s.op??1}/>)}
-      <path d={ptsToD([[c,c-14],[c+10,c],[c,c+14],[c-10,c]])} fill="none" stroke={col} strokeWidth={sw2} opacity={0.7}/>
-      <circle cx={c} cy={c} r={8} fill="none" stroke={col} strokeWidth={sw}/>
-      <circle cx={c} cy={c} r={4.5} fill={col} opacity={0.95}/></>;
-  }
-
-  return (
-    <svg viewBox="0 0 100 100" width={size} height={size}
-      style={{ filter:`drop-shadow(0 0 ${glow}px ${col})`, ...(pulse?{animation:'orbPulse 2.5s ease-in-out infinite'}:{}) }}>
-      {tier === 8 && <style>{`@keyframes orbPulse{0%,100%{opacity:0.7}50%{opacity:1}}`}</style>}
-      {shapes}
-    </svg>
-  );
-}
-
-//  XP progress bar 
-function XpBar({ value, color }) {
-  return (
-    <div style={{ width: '100%', height: 4, borderRadius: 2, background: 'var(--hover-bg)', overflow: 'hidden' }}>
-      <div style={{
-        height: '100%', width: `${Math.min(100, Math.max(0, value))}%`,
-        background: color, borderRadius: 2, transition: 'width 0.6s ease',
-      }} />
-    </div>
-  );
-}
-
-//  Shared card 
+// ── Shared card (used only for the secondary, below-the-fold section) ──────
 function Card({ children, style = {}, className = '' }) {
   return (
     <div className={`glass-card ${className}`} style={{
@@ -120,7 +42,6 @@ function Card({ children, style = {}, className = '' }) {
   );
 }
 
-//  Label chip 
 function Label({ text, color }) {
   return (
     <span style={{
@@ -139,51 +60,7 @@ function Label({ text, color }) {
   );
 }
 
-//  Top stat: Tasks count 
-function TasksCountCard() {
-  const tasks   = storage.get(STORAGE_KEYS.TASKS, []);
-  const pending = tasks.filter(t => !t.done).length;
-  const done    = tasks.filter(t => t.done).length;
-
-  return (
-    <Card style={{ flex: '1 1 0', minWidth: 0 }}>
-      <div style={{ fontSize: 9.5, color: 'var(--text-muted)', letterSpacing: '0.08em' }}>TASKS REMAINING TODAY</div>
-      <div style={{ fontSize: 44, fontWeight: 200, color: 'var(--text-primary)', lineHeight: 1 }}>
-        {pending}
-      </div>
-      <div style={{ fontSize: 11, color: 'var(--accent)', marginTop: 2 }}>
-        {done > 0 ? `${done} completed today` : "Nothing completed yet — let's go"}
-      </div>
-    </Card>
-  );
-}
-
-//  Top stat: Quote 
-const QUOTES = [
-  { text: "Discipline equals freedom.", author: "Jocko Willink" },
-  { text: "You have power over your mind, not outside events.", author: "Marcus Aurelius" },
-  { text: "The impediment to action advances action.", author: "Marcus Aurelius" },
-  { text: "We suffer more in imagination than in reality.", author: "Seneca" },
-  { text: "Hard choices, easy life. Easy choices, hard life.", author: "Jerzy Gregorek" },
-  { text: "A ship in harbour is safe, but that is not what ships are for.", author: "J. A. Shedd" },
-  { text: "The obstacle is the way.", author: "Ryan Holiday" },
-  { text: "If it is not right, do not do it; if it is not true, do not say it.", author: "Marcus Aurelius" },
-];
-
-function QuoteCard() {
-  const quote = QUOTES[new Date().getDate() % QUOTES.length];
-  return (
-    <Card style={{ flex: '2 1 0', minWidth: 0 }}>
-      <div style={{ fontSize: 9.5, color: 'var(--text-muted)', letterSpacing: '0.08em' }}>TODAY'S QUOTE</div>
-      <p style={{ fontSize: 13, color: 'var(--text-secondary)', lineHeight: 1.6, fontStyle: 'italic', margin: 0, flex: 1 }}>
-        "{quote.text}"
-      </p>
-      <div style={{ fontSize: 11, color: 'var(--text-muted)' }}> {quote.author}</div>
-    </Card>
-  );
-}
-
-//  Inline clock for banner 
+// ── Inline clock for banner ──────────────────────────────────────────────
 function InlineClock() {
   const [now, setNow] = useState(new Date());
   useEffect(() => {
@@ -209,7 +86,104 @@ function InlineClock() {
   );
 }
 
-//  Bible verse of the day 
+// ── "At a glance" strip — replaces the old 4 heavy stat cards ──────────────
+const WMO_ICONS = {
+  0: '☀️', 1: '🌤️', 2: '⛅', 3: '☁️',
+  45: '🌫️', 48: '🌫️',
+  51: '🌦️', 53: '🌦️', 55: '🌧️',
+  61: '🌧️', 63: '🌧️', 65: '🌧️',
+  71: '❄️', 73: '❄️', 75: '❄️',
+  80: '🌦️', 81: '🌦️', 82: '⛈️',
+  95: '⛈️', 96: '⛈️', 99: '⛈️',
+};
+
+function useWeather() {
+  const [wx, setWx] = useState(null);
+
+  useEffect(() => {
+    const WX_KEY = 'valerie_wx_cache';
+    try {
+      const cached = JSON.parse(localStorage.getItem(WX_KEY) || 'null');
+      if (cached && Date.now() - cached.ts < 3600_000) { setWx(cached); return; }
+    } catch {}
+
+    function doFetch(lat, lon) {
+      fetch(
+        `https://api.open-meteo.com/v1/forecast?latitude=${lat}&longitude=${lon}` +
+        `&current=temperature_2m,apparent_temperature,weather_code,wind_speed_10m` +
+        `&temperature_unit=celsius&wind_speed_unit=kmh&timezone=auto`
+      )
+        .then(r => r.json())
+        .then(d => {
+          const c = d.current;
+          const data = { temp: Math.round(c.temperature_2m), feels: Math.round(c.apparent_temperature), code: c.weather_code, wind: Math.round(c.wind_speed_10m), ts: Date.now() };
+          localStorage.setItem(WX_KEY, JSON.stringify(data));
+          setWx(data);
+        })
+        .catch(() => {});
+    }
+
+    if (navigator.permissions) {
+      navigator.permissions.query({ name: 'geolocation' }).then(({ state }) => {
+        if (state === 'granted') {
+          navigator.geolocation.getCurrentPosition(({ coords }) => doFetch(coords.latitude, coords.longitude), () => {});
+        }
+      }).catch(() => {
+        navigator.geolocation?.getCurrentPosition(({ coords }) => doFetch(coords.latitude, coords.longitude), () => {});
+      });
+    } else {
+      navigator.geolocation?.getCurrentPosition(({ coords }) => doFetch(coords.latitude, coords.longitude), () => {});
+    }
+  }, []);
+
+  return wx;
+}
+
+function GlanceStat({ icon, value, label, last }) {
+  return (
+    <div style={{
+      display: 'flex', alignItems: 'baseline', gap: 6,
+      paddingRight: 18, marginRight: 18,
+      borderRight: last ? 'none' : '0.5px solid var(--card-border)',
+    }}>
+      <span style={{ fontSize: 14, opacity: 0.85 }}>{icon}</span>
+      <span style={{ fontSize: 15, fontWeight: 600, color: 'var(--text-primary)', fontVariantNumeric: 'tabular-nums' }}>{value}</span>
+      <span style={{ fontSize: 11, color: 'var(--text-muted)' }}>{label}</span>
+    </div>
+  );
+}
+
+function GlanceStrip() {
+  const tasks   = storage.get(STORAGE_KEYS.TASKS, []);
+  const pending = tasks.filter(t => !t.done).length;
+  const done    = tasks.filter(t => t.done).length;
+  const streak  = storage.get(STORAGE_KEYS.PROGRESS, {}).streak ?? 0;
+  const wx      = useWeather();
+
+  return (
+    <div style={{ display: 'flex', alignItems: 'baseline', flexWrap: 'wrap', rowGap: 6 }}>
+      <GlanceStat icon="✓" value={pending} label={pending === 1 ? 'task left' : 'tasks left'} />
+      <GlanceStat icon="●" value={done} label="done today" />
+      <GlanceStat icon="🔥" value={streak} label={streak === 1 ? 'day streak' : 'day streak'} />
+      {wx && (
+        <GlanceStat icon={WMO_ICONS[wx.code] ?? '🌤️'} value={`${wx.temp}°`} label={`feels ${wx.feels}°`} last />
+      )}
+    </div>
+  );
+}
+
+// ── Reflection card — quote + verse combined into one card (was two) ───────
+const QUOTES = [
+  { text: "Discipline equals freedom.", author: "Jocko Willink" },
+  { text: "You have power over your mind, not outside events.", author: "Marcus Aurelius" },
+  { text: "The impediment to action advances action.", author: "Marcus Aurelius" },
+  { text: "We suffer more in imagination than in reality.", author: "Seneca" },
+  { text: "Hard choices, easy life. Easy choices, hard life.", author: "Jerzy Gregorek" },
+  { text: "A ship in harbour is safe, but that is not what ships are for.", author: "J. A. Shedd" },
+  { text: "The obstacle is the way.", author: "Ryan Holiday" },
+  { text: "If it is not right, do not do it; if it is not true, do not say it.", author: "Marcus Aurelius" },
+];
+
 const VERSES = [
   { text: "I can do all things through Christ who strengthens me.", ref: "Philippians 4:13" },
   { text: "The Lord is my shepherd; I shall not want.", ref: "Psalm 23:1" },
@@ -244,120 +218,29 @@ const VERSES = [
   { text: "Give thanks to the Lord, for he is good; his love endures forever.", ref: "Psalm 107:1" },
 ];
 
-function VerseCard() {
+function ReflectionCard() {
+  const quote = QUOTES[new Date().getDate() % QUOTES.length];
   const verse = VERSES[new Date().getDate() % VERSES.length];
   return (
-    <Card style={{ flex: '1.4 1 0', minWidth: 0 }}>
-      <div style={{ fontSize: 9.5, color: 'var(--text-muted)', letterSpacing: '0.08em' }}>TODAY'S VERSE</div>
-      <p style={{ fontSize: 12.5, color: 'var(--text-secondary)', lineHeight: 1.65, fontStyle: 'italic', margin: 0, flex: 1 }}>
-        "{verse.text}"
+    <Card style={{ flex: 1, minWidth: 0 }}>
+      <div style={{ fontSize: 9.5, color: 'var(--text-muted)', letterSpacing: '0.08em' }}>TODAY'S REFLECTION</div>
+      <p style={{ fontSize: 13, color: 'var(--text-secondary)', lineHeight: 1.6, fontStyle: 'italic', margin: 0 }}>
+        “{quote.text}”
+      </p>
+      <div style={{ fontSize: 11, color: 'var(--text-muted)' }}>— {quote.author}</div>
+      <div style={{ height: '0.5px', background: 'var(--card-border)', margin: '4px 0' }} />
+      <p style={{ fontSize: 12.5, color: 'var(--text-secondary)', lineHeight: 1.65, fontStyle: 'italic', margin: 0 }}>
+        “{verse.text}”
       </p>
       <div style={{ fontSize: 10.5, color: 'var(--accent)' }}>{verse.ref}</div>
     </Card>
   );
 }
 
-//  Weather card (Open-Meteo, no API key) 
-const WMO_ICONS = {
-  0: '☀️', 1: '🌤️', 2: '⛅', 3: '☁️',
-  45: '🌫️', 48: '🌫️',
-  51: '🌦️', 53: '🌦️', 55: '🌧️',
-  61: '🌧️', 63: '🌧️', 65: '🌧️',
-  71: '❄️', 73: '❄️', 75: '❄️',
-  80: '🌦️', 81: '🌦️', 82: '⛈️',
-  95: '⛈️', 96: '⛈️', 99: '⛈️',
-};
-const WMO_DESC = {
-  0: 'Clear sky', 1: 'Mainly clear', 2: 'Partly cloudy', 3: 'Overcast',
-  45: 'Foggy', 48: 'Icy fog',
-  51: 'Light drizzle', 53: 'Drizzle', 55: 'Heavy drizzle',
-  61: 'Light rain', 63: 'Rain', 65: 'Heavy rain',
-  71: 'Light snow', 73: 'Snow', 75: 'Heavy snow',
-  80: 'Showers', 81: 'Rain showers', 82: 'Violent showers',
-  95: 'Thunderstorm', 96: 'Thunderstorm', 99: 'Thunderstorm',
-};
-
-function WeatherCard() {
-  const [wx, setWx] = useState(null);
-  const [err, setErr] = useState(null);
-
-  useEffect(() => {
-    // Use localStorage cache (1-hour TTL) so iOS PWA doesn't re-prompt every open
-    const WX_KEY = 'valerie_wx_cache';
-    try {
-      const cached = JSON.parse(localStorage.getItem(WX_KEY) || 'null');
-      if (cached && Date.now() - cached.ts < 3600_000) { setWx(cached); return; }
-    } catch {}
-
-    function doFetch(lat, lon) {
-      fetch(
-        `https://api.open-meteo.com/v1/forecast?latitude=${lat}&longitude=${lon}` +
-        `&current=temperature_2m,apparent_temperature,weather_code,wind_speed_10m` +
-        `&temperature_unit=celsius&wind_speed_unit=kmh&timezone=auto`
-      )
-        .then(r => r.json())
-        .then(d => {
-          const c = d.current;
-          const data = { temp: Math.round(c.temperature_2m), feels: Math.round(c.apparent_temperature), code: c.weather_code, wind: Math.round(c.wind_speed_10m), ts: Date.now() };
-          localStorage.setItem(WX_KEY, JSON.stringify(data));
-          setWx(data);
-        })
-        .catch(() => setErr('Could not load weather'));
-    }
-
-    // Only request location if permission already granted — never auto-prompt on iOS
-    if (navigator.permissions) {
-      navigator.permissions.query({ name: 'geolocation' }).then(({ state }) => {
-        if (state === 'granted') {
-          navigator.geolocation.getCurrentPosition(({ coords }) => doFetch(coords.latitude, coords.longitude), () => setErr('Location access denied'));
-        }
-        // state === 'prompt' or 'denied': silently skip — user must enable via browser
-      }).catch(() => {
-        // permissions API not supported — fall back to direct request
-        navigator.geolocation?.getCurrentPosition(({ coords }) => doFetch(coords.latitude, coords.longitude), () => {});
-      });
-    } else {
-      navigator.geolocation?.getCurrentPosition(({ coords }) => doFetch(coords.latitude, coords.longitude), () => {});
-    }
-  }, []);
-
-  const icon = wx ? (WMO_ICONS[wx.code] ?? '🌤️') : null;
-  const desc = wx ? (WMO_DESC[wx.code]  ?? 'Unknown') : null;
-
-  return (
-    <Card style={{ flex: '1.2 1 0', minWidth: 0 }}>
-      <div style={{ fontSize: 9.5, color: 'var(--text-muted)', letterSpacing: '0.08em' }}>TODAY'S WEATHER</div>
-      {!wx && !err && (
-        <div style={{ fontSize: 12, color: 'var(--text-muted)', marginTop: 4 }}>Fetching…</div>
-      )}
-      {err && (
-        <div style={{ fontSize: 11.5, color: 'var(--text-muted)', marginTop: 4 }}>{err}</div>
-      )}
-      {wx && (
-        <>
-          <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginTop: 2 }}>
-            <span style={{ fontSize: 34, lineHeight: 1 }}>{icon}</span>
-            <div>
-              <div style={{ fontSize: 28, fontWeight: 200, color: 'var(--text-primary)', lineHeight: 1 }}>
-                {wx.temp}°C
-              </div>
-              <div style={{ fontSize: 10.5, color: 'var(--text-muted)', marginTop: 2 }}>
-                Feels {wx.feels}°C
-              </div>
-            </div>
-          </div>
-          <div style={{ fontSize: 11, color: 'var(--text-secondary)' }}>{desc}</div>
-          <div style={{ fontSize: 10.5, color: 'var(--text-muted)' }}>💨 {wx.wind} km/h</div>
-        </>
-      )}
-    </Card>
-  );
-}
-
-//  Priority dot colour 
+// ── Priority dot colour ──────────────────────────────────────────────────
 const PRIORITY_COLOR = { high: '#e55', med: '#f90', low: '#5a9' };
 
-//  Left panel: Today's Tasks 
+// ── Left panel: Today's Tasks (unchanged — already well-scoped) ────────────
 function TasksPanel({ onTabChange }) {
   const [tasks,    setTasks]    = useState(() => storage.get(STORAGE_KEYS.TASKS, []));
   const [newText,  setNewText]  = useState('');
@@ -377,14 +260,14 @@ function TasksPanel({ onTabChange }) {
   };
 
   const pending = tasks.filter(t => !t.done);
-  const visible = pending.slice(0, 7);
+  const visible = pending.slice(0, 8);
 
   return (
     <div style={{
-      flex: '1.1 1 0', minWidth: 0, display: 'flex', flexDirection: 'column', gap: 0,
+      flex: '1.2 1 0', minWidth: 0, display: 'flex', flexDirection: 'column', gap: 0,
       background: 'var(--bg-panel)', borderRadius: 12,
       border: '0.5px solid var(--card-border)',
-      overflow: 'hidden', minHeight: 320,
+      overflow: 'hidden', minHeight: 380,
     }}>
       {/* Header */}
       <div style={{
@@ -399,15 +282,15 @@ function TasksPanel({ onTabChange }) {
           onClick={() => onTabChange?.('tasks')}
           style={{ fontSize: 11, color: 'var(--accent)', background: 'none', border: 'none', cursor: 'pointer', padding: 0 }}
         >
-          View all  
+          View all →
         </button>
       </div>
 
       {/* Task list */}
-      <div style={{ overflowY: 'auto', padding: '8px 0', minHeight: 200 }}>
+      <div style={{ overflowY: 'auto', padding: '8px 0', minHeight: 200, flex: 1 }}>
         {visible.length === 0 ? (
           <div style={{ padding: '20px 18px', fontSize: 13, color: 'var(--text-muted)' }}>
-            All clear  you're on top of everything.
+            All clear — you're on top of everything.
           </div>
         ) : visible.map((t, i) => {
           const realIdx = tasks.indexOf(pending[i]);
@@ -433,13 +316,8 @@ function TasksPanel({ onTabChange }) {
                 display: 'flex', alignItems: 'center', justifyContent: 'center',
                 transition: 'all 0.15s',
               }}>
-{t.done && <span style={{ fontSize: 9, color: '#fff' }}>✓</span>}
+                {t.done && <span style={{ fontSize: 9, color: '#fff' }}>✓</span>}
               </div>
-
-              {/* Priority flag */}
-              {t.priority === 'high' && (
-                <span style={{ fontSize: 12, color: '#e55', flexShrink: 0 }}>a</span>
-              )}
 
               {/* Text */}
               <span style={{
@@ -458,9 +336,9 @@ function TasksPanel({ onTabChange }) {
           );
         })}
 
-        {pending.length > 7 && (
+        {pending.length > 8 && (
           <div style={{ padding: '8px 18px', fontSize: 11, color: 'var(--text-muted)' }}>
-            +{pending.length - 7} more  view all tasks
+            +{pending.length - 8} more — view all tasks
           </div>
         )}
       </div>
@@ -496,8 +374,12 @@ function TasksPanel({ onTabChange }) {
   );
 }
 
-//  Right panel: stacked cards 
-function DailyBriefCard({ ai }) {
+// ── Unified "Today" panel — one card, internal sections instead of 4 boxes ─
+function SectionDivider() {
+  return <div style={{ height: '0.5px', background: 'var(--card-border)', flexShrink: 0 }} />;
+}
+
+function DailyBriefSection({ ai }) {
   const [brief,   setBrief]   = useState(null);
   const [loading, setLoading] = useState(false);
   const generated = useRef(false);
@@ -534,7 +416,7 @@ function DailyBriefCard({ ai }) {
   }, [ai, generateBrief]);
 
   return (
-    <Card>
+    <div style={{ padding: '14px 18px', display: 'flex', flexDirection: 'column', gap: 8 }}>
       <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
         <div style={{ fontSize: 9.5, color: 'var(--text-muted)', letterSpacing: '0.08em' }}>DAILY BRIEF</div>
         <button
@@ -542,7 +424,7 @@ function DailyBriefCard({ ai }) {
           disabled={loading}
           style={{ fontSize: 10.5, color: 'var(--accent)', background: 'none', border: 'none', cursor: loading ? 'default' : 'pointer', opacity: loading ? 0.5 : 1, padding: 0 }}
         >
-          {loading ? 'Thinking…' : '🔄 Refresh'}
+          {loading ? 'Thinking…' : '↻ Refresh'}
         </button>
       </div>
       {loading ? (
@@ -555,111 +437,95 @@ function DailyBriefCard({ ai }) {
           {brief ?? 'Your daily brief will appear here.'}
         </p>
       )}
-    </Card>
+    </div>
   );
 }
 
-function ProgressHeroCard({ onTabChange }) {
-  const xpData  = getXP();
-  const totalXp = xpData.total ?? 0;
-  const rank    = getRank(totalXp);
-  const streak  = storage.get(STORAGE_KEYS.PROGRESS, {}).streak ?? 0;
-
-  const cfg      = rank.config;
-  const subLabels = ['I', 'II', 'III'];
-  const rankLabel = rank.tier < 8
-    ? `${cfg.name} ${subLabels[rank.subRank - 1]}`
-    : cfg.name;
-
-  // XP progress within current sub-rank band
-  const tierLow  = TIER_THRESHOLDS[rank.tier - 1] ?? 0;
-  const tierHigh = TIER_THRESHOLDS[rank.tier]      ?? tierLow + 1;
-  const bandSize = (tierHigh - tierLow) / 3;
-  const bandLow  = tierLow + (rank.subRank - 1) * bandSize;
-  const pct      = rank.tier < 8 ? ((totalXp - bandLow) / bandSize) * 100 : 100;
-
-  const xpToNext = rank.tier < 8
-    ? Math.ceil(bandLow + bandSize - totalXp)
-    : 0;
-
-  // Mini tier track  all 8 tiers as small badges
-  const miniTiers = TIER_CONFIG.map((tc, i) => ({
-    tier: i + 1, reached: i + 1 <= rank.tier, active: i + 1 === rank.tier, cfg: tc,
-  }));
+function PeakStateSection({ peakState, onTabChange }) {
+  if (!peakState) return null;
+  const { score, color, suggestion, factors } = peakState;
 
   return (
-    <div className="glass-card" style={{
-      borderRadius: 12, padding: '18px 20px', flex: 1,
-      display: 'flex', flexDirection: 'column', gap: 16, minHeight: 0,
-    }}>
-      {/* Header */}
+    <div style={{ padding: '14px 18px', display: 'flex', flexDirection: 'column', gap: 12 }}>
       <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
-        <div style={{ fontSize: 9.5, color: 'var(--text-muted)', letterSpacing: '0.08em' }}>PROGRESS</div>
-        <button
-          onClick={() => onTabChange?.('progress')}
-          style={{ fontSize: 10.5, color: 'var(--accent)', background: 'none', border: 'none', cursor: 'pointer', padding: 0 }}
-        >View all  </button>
+        <div style={{ fontSize: 9.5, color: 'var(--text-muted)', letterSpacing: '0.08em' }}>PEAK STATE</div>
+        <button onClick={() => onTabChange?.('health')}
+          style={{ fontSize: 10.5, color: 'var(--accent)', background: 'none', border: 'none', cursor: 'pointer', padding: 0 }}>
+          Health →
+        </button>
       </div>
 
-      {/* Hero badge + rank info */}
-      <div style={{ display: 'flex', alignItems: 'center', gap: 20 }}>
-        <div style={{ flexShrink: 0 }}>
-          <RankBadge tier={rank.tier} subRank={rank.subRank} size={110} pulse={rank.tier === 8} />
-        </div>
-        <div style={{ flex: 1, minWidth: 0 }}>
-          <div style={{ fontSize: 26, fontWeight: 300, color: cfg.color, lineHeight: 1, letterSpacing: '0.02em' }}>
-            {rankLabel}
-          </div>
-          <div style={{ fontSize: 11, color: 'var(--text-muted)', marginTop: 4, marginBottom: 12 }}>
-            {rank.tier < 8 ? `${xpToNext.toLocaleString()} XP to next rank` : 'Maximum rank achieved'}
-          </div>
-          <XpBar value={pct} color={cfg.color} />
-          <div style={{ display: 'flex', justifyContent: 'space-between', marginTop: 5 }}>
-            <span style={{ fontSize: 10, color: 'var(--text-muted)' }}>{totalXp.toLocaleString()} XP total</span>
-            <span style={{ fontSize: 10, color: cfg.color }}>{Math.round(pct)}%</span>
+      <div style={{ display: 'flex', alignItems: 'center', gap: 16 }}>
+        <div style={{ position: 'relative', width: 60, height: 60, flexShrink: 0 }}>
+          <svg viewBox="0 0 60 60" width="60" height="60">
+            <circle cx="30" cy="30" r="24" fill="none" stroke="rgba(255,255,255,0.06)" strokeWidth="5" />
+            <circle cx="30" cy="30" r="24" fill="none"
+              stroke={color} strokeWidth="5" strokeLinecap="round"
+              strokeDasharray={2 * Math.PI * 24}
+              strokeDashoffset={2 * Math.PI * 24 * (1 - score / 100)}
+              style={{ transform: 'rotate(-90deg)', transformOrigin: 'center', transition: 'stroke-dashoffset 0.8s cubic-bezier(0.22,1,0.36,1), stroke 0.5s' }}
+            />
+          </svg>
+          <div style={{ position: 'absolute', inset: 0, display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', pointerEvents: 'none' }}>
+            <div style={{ fontSize: 15, fontWeight: 800, color, lineHeight: 1, fontVariantNumeric: 'tabular-nums' }}>{score}</div>
           </div>
         </div>
-      </div>
 
-      {/* Stats row */}
-      <div style={{
-        display: 'flex', gap: 0,
-        borderTop: '0.5px solid var(--card-border)',
-        paddingTop: 12,
-      }}>
-        {[
-          { label: 'TOTAL XP',   value: totalXp.toLocaleString(), color: cfg.color },
-          { label: 'DAY STREAK', value: streak,                   color: 'var(--text-primary)' },
-          { label: 'TIER',       value: `${rank.tier} / 8`,       color: 'var(--text-secondary)' },
-        ].map((s, i, arr) => (
-          <div key={s.label} style={{
-            flex: 1, textAlign: 'center',
-            borderRight: i < arr.length - 1 ? '0.5px solid var(--card-border)' : 'none',
-          }}>
-            <div style={{ fontSize: 20, fontWeight: 300, color: s.color, lineHeight: 1 }}>{s.value}</div>
-            <div style={{ fontSize: 8.5, color: 'var(--text-muted)', letterSpacing: '0.07em', marginTop: 4 }}>{s.label}</div>
-          </div>
-        ))}
-      </div>
-
-      {/* Mini tier track */}
-      <div style={{ display: 'flex', gap: 6, justifyContent: 'center', alignItems: 'flex-end', flexWrap: 'wrap' }}>
-        {miniTiers.map(({ tier, reached, active, cfg: tc }) => (
-          <div key={tier} style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 3 }}>
-            <div style={{ opacity: reached ? 1 : 0.2, transition: 'opacity 0.3s' }}>
-              <RankBadge tier={tier} subRank={active ? rank.subRank : tier < rank.tier ? 3 : 1} size={30} />
+        <div style={{ flex: 1, display: 'flex', flexDirection: 'column', gap: 4 }}>
+          {Object.values(factors).slice(0, 3).map(f => (
+            <div key={f.label} style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
+              <div style={{ fontSize: 9, color: 'var(--text-muted)', width: 88, flexShrink: 0, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{f.label}</div>
+              <div style={{ flex: 1, height: 3, borderRadius: 2, background: 'rgba(255,255,255,0.06)' }}>
+                <div style={{ width: `${f.pct}%`, height: '100%', background: f.pct >= 80 ? '#4caf7d' : f.pct >= 50 ? '#f4a642' : '#e25d7a', borderRadius: 2, transition: 'width 0.6s' }} />
+              </div>
             </div>
-            <span style={{ fontSize: 7, color: active ? tc.color : 'var(--text-muted)', letterSpacing: '0.04em' }}>
-              {tc.name.toUpperCase()}
-            </span>
-          </div>
-        ))}
+          ))}
+        </div>
+      </div>
+
+      <div style={{ fontSize: 11, color: 'var(--text-muted)', lineHeight: 1.5 }}>
+        {suggestion}
       </div>
     </div>
   );
 }
 
-function SpotifyCard() {
+const DAY_KEYS_W = ['sun','mon','tue','wed','thu','fri','sat'];
+const SPLIT_COLOURS_W = { push:'#e25d7a', pull:'#4a9eff', legs:'#f4a642', rest:'rgba(255,255,255,0.2)', custom:'#9b5de5' };
+
+function WorkoutSection({ onTabChange }) {
+  const { items: programs } = useCollection('programs', STORAGE_KEYS.PROGRAMS);
+  const { data: storedExercises } = useDocument('overload_exercises', STORAGE_KEYS.OVERLOAD_EXERCISES, null);
+  const exercises = (Array.isArray(storedExercises) && storedExercises.length) ? storedExercises : DEFAULT_OVERLOAD_EXERCISES;
+
+  const todayKey  = DAY_KEYS_W[new Date().getDay()];
+  const active    = programs.find(p => p.isActive) ?? null;
+  if (!active) return null;
+
+  const todayData = active?.days?.[todayKey] ?? null;
+  const splitType = todayData?.splitType ?? null;
+  const label     = todayData?.label ?? 'Workout';
+  const isRest    = !splitType || splitType === 'rest';
+  const exCount   = isRest ? 0 : exercises.filter(e => e.day === splitType).length;
+  const colour    = SPLIT_COLOURS_W[splitType] ?? 'var(--accent)';
+
+  return (
+    <div
+      onClick={() => onTabChange?.('workout')}
+      style={{ padding: '12px 18px', display: 'flex', alignItems: 'center', justifyContent: 'space-between', cursor: 'pointer' }}
+    >
+      <div>
+        <div style={{ fontSize: 9, fontWeight: 700, letterSpacing: '0.1em', color: isRest ? 'var(--text-muted)' : colour, textTransform: 'uppercase', marginBottom: 3 }}>Today's Workout</div>
+        <div style={{ fontSize: 13, fontWeight: 600, color: 'var(--text-primary)' }}>
+          {isRest ? 'Rest Day' : `${label} Day — ${exCount} exercise${exCount !== 1 ? 's' : ''}`}
+        </div>
+      </div>
+      <span style={{ fontSize: 11, color: isRest ? 'var(--text-muted)' : colour, opacity: 0.7 }}>→</span>
+    </div>
+  );
+}
+
+function SpotifySection({ onTabChange }) {
   const [track,   setTrack]   = useState(null);
   const [playing, setPlaying] = useState(false);
   const [loading, setLoading] = useState(false);
@@ -676,10 +542,7 @@ function SpotifyCard() {
         setTrack({
           name:    data.item.name,
           artist:  data.item.artists?.map(a => a.name).join(', ') ?? '',
-          album:   data.item.album?.name ?? '',
           art:     data.item.album?.images?.[0]?.url ?? null,
-          duration: data.item.duration_ms,
-          progress: data.progress_ms,
         });
         setPlaying(data.is_playing);
       } else {
@@ -703,73 +566,71 @@ function SpotifyCard() {
   const Btn = ({ onClick, children }) => (
     <button onClick={onClick} style={{
       background: 'none', border: 'none', cursor: 'pointer',
-      color: 'var(--text-secondary)', fontSize: 14, padding: '2px 6px',
-      borderRadius: 4, transition: 'color 0.15s',
-    }}
-    onMouseEnter={e => e.target.style.color = '#1db954'}
-    onMouseLeave={e => e.target.style.color = 'var(--text-secondary)'}
-    >{children}</button>
+      color: 'var(--text-secondary)', fontSize: 13, padding: '2px 5px',
+    }}>{children}</button>
   );
 
   if (!connected) {
     return (
-      <Card style={{ flexDirection: 'row', alignItems: 'center', gap: 12 }}>
-        <div style={{ width: 40, height: 40, borderRadius: 8, flexShrink: 0, background: 'linear-gradient(135deg, #1db954 0%, #0a7a33 100%)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 18 }}>"</div>
-        <div>
-          <div style={{ fontSize: 9.5, color: 'var(--text-muted)', letterSpacing: '0.08em', marginBottom: 3 }}>NOW PLAYING</div>
-          <div style={{ fontSize: 12.5, color: 'var(--text-secondary)' }}>Spotify not connected</div>
-          <div style={{ fontSize: 10.5, color: 'var(--text-muted)', marginTop: 2 }}>Settings → Integrations</div>
+      <div style={{ padding: '12px 18px', display: 'flex', alignItems: 'center', gap: 10 }}>
+        <div style={{ fontSize: 9.5, color: 'var(--text-muted)', letterSpacing: '0.08em', flex: 1 }}>
+          NOW PLAYING
+          <div style={{ fontSize: 11.5, color: 'var(--text-secondary)', letterSpacing: 'normal', marginTop: 3 }}>Spotify not connected</div>
         </div>
-      </Card>
+      </div>
     );
   }
 
   return (
-    <Card style={{ gap: 10 }}>
-      <div style={{ fontSize: 9.5, color: 'var(--text-muted)', letterSpacing: '0.08em' }}>NOW PLAYING</div>
-      <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
-        {/* Album art */}
-        <div style={{ width: 44, height: 44, borderRadius: 6, flexShrink: 0, overflow: 'hidden', background: 'rgba(255,255,255,0.06)' }}>
-          {track?.art
-            ? <img src={track.art} alt="album" style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
-            : <div style={{ width: '100%', height: '100%', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 20 }}>"</div>
-          }
-        </div>
-        {/* Track info */}
-        <div style={{ flex: 1, minWidth: 0 }}>
-          {track ? (
-            <>
-              <div style={{ fontSize: 12.5, fontWeight: 500, color: 'var(--text-primary)', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{track.name}</div>
-              <div style={{ fontSize: 10.5, color: 'var(--text-muted)', marginTop: 2, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{track.artist}</div>
-            </>
-          ) : (
-            <div style={{ fontSize: 12, color: 'var(--text-muted)' }}>Nothing playing</div>
-          )}
-        </div>
-        {/* Controls */}
-        <div style={{ display: 'flex', alignItems: 'center', gap: 2, flexShrink: 0 }}>
-          <Btn onClick={() => skipPrev()}>⏮</Btn>
-          <Btn onClick={toggle}>{loading ? '…' : playing ? '⏸' : '▶'}</Btn>
-          <Btn onClick={() => skipNext()}>⏭</Btn>
-        </div>
+    <div style={{ padding: '12px 18px', display: 'flex', alignItems: 'center', gap: 12 }}>
+      <div style={{ width: 34, height: 34, borderRadius: 6, flexShrink: 0, overflow: 'hidden', background: 'rgba(255,255,255,0.06)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+        {track?.art ? <img src={track.art} alt="" style={{ width: '100%', height: '100%', objectFit: 'cover' }} /> : <span style={{ fontSize: 14 }}>♪</span>}
       </div>
-      {/* Progress bar */}
-      {track && (
-        <div style={{ height: 2, borderRadius: 1, background: 'rgba(255,255,255,0.08)', overflow: 'hidden' }}>
-          <div style={{ height: '100%', width: `${Math.min((track.progress / track.duration) * 100, 100)}%`, background: '#1db954', borderRadius: 1, transition: 'width 1s linear' }} />
-        </div>
-      )}
-    </Card>
+      <div style={{ flex: 1, minWidth: 0 }}>
+        {track ? (
+          <>
+            <div style={{ fontSize: 12, fontWeight: 500, color: 'var(--text-primary)', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{track.name}</div>
+            <div style={{ fontSize: 10, color: 'var(--text-muted)', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{track.artist}</div>
+          </>
+        ) : (
+          <div style={{ fontSize: 11.5, color: 'var(--text-muted)' }}>Nothing playing</div>
+        )}
+      </div>
+      <div style={{ display: 'flex', alignItems: 'center', gap: 2, flexShrink: 0 }}>
+        <Btn onClick={() => skipPrev()}>⏮</Btn>
+        <Btn onClick={toggle}>{loading ? '…' : playing ? '⏸' : '▶'}</Btn>
+        <Btn onClick={() => skipNext()}>⏭</Btn>
+      </div>
+    </div>
   );
 }
 
-//  Productivity Widget  Task tags donut + Focus time donut 
+function TodayPanel({ ai, peakState, onTabChange }) {
+  const sections = [
+    <DailyBriefSection key="brief" ai={ai} />,
+    peakState ? <PeakStateSection key="peak" peakState={peakState} onTabChange={onTabChange} /> : null,
+    <WorkoutSection key="workout" onTabChange={onTabChange} />,
+    <SpotifySection key="spotify" onTabChange={onTabChange} />,
+  ].filter(Boolean);
+
+  return (
+    <div className="glass-card" style={{ borderRadius: 12, display: 'flex', flexDirection: 'column', overflow: 'hidden', flex: '1 1 0', minWidth: 0, minHeight: 380 }}>
+      {sections.map((section, i) => (
+        <div key={section.key} style={{ display: 'flex', flexDirection: 'column' }}>
+          {i > 0 && <SectionDivider />}
+          {section}
+        </div>
+      ))}
+    </div>
+  );
+}
+
+// ── Secondary "More today" section — productivity breakdown + day ring ─────
 const TAG_COLOURS = [
   'var(--accent)', '#f59e0b', '#10b981', '#6366f1', '#ec4899',
   '#14b8a6', '#f97316', '#8b5cf6', '#06b6d4', '#84cc16',
 ];
 
-// SVG donut chart  segments defined by value array
 function DonutChart({ segments, size = 110, thickness = 18, emptyColor = 'var(--hover-bg)' }) {
   const r   = (size - thickness) / 2;
   const cx  = size / 2;
@@ -819,11 +680,9 @@ function DonutChart({ segments, size = 110, thickness = 18, emptyColor = 'var(--
 function ProductivityWidget({ onTabChange }) {
   const today = new Date().toISOString().split('T')[0];
 
-  //  A: Task completion by tag 
   const tasks    = storage.get(STORAGE_KEYS.TASKS, []);
-  const todayTasks = tasks; // tasks don't have a date field  show all pending/done
+  const todayTasks = tasks;
 
-  // Group by tag
   const tagMap = {};
   todayTasks.forEach(t => {
     const key = t.tag || 'Untagged';
@@ -842,11 +701,9 @@ function ProductivityWidget({ onTabChange }) {
   const totalTasks   = todayTasks.length;
   const doneTasks    = todayTasks.filter(t => t.done).length;
 
-  //  B: Focus session time by label 
   const allSessions = storage.get(STORAGE_KEYS.FOCUS_SESSIONS, []);
   const todaySessions = allSessions.filter(s => s.date === today);
 
-  // Group by taskLabel
   const focusMap = {};
   todaySessions.forEach(s => {
     const key = s.taskLabel || 'Focus';
@@ -865,22 +722,19 @@ function ProductivityWidget({ onTabChange }) {
   const focusM = totalFocusMin % 60;
 
   return (
-    <div className="glass-card" style={{ borderRadius: 12, padding: '16px 20px' }}>
+    <div className="glass-card" style={{ borderRadius: 12, padding: '16px 20px', flex: 1, minWidth: 0 }}>
       <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 14 }}>
         <div style={{ fontSize: 9.5, color: 'var(--text-muted)', letterSpacing: '0.08em' }}>PRODUCTIVITY</div>
         <button
           onClick={() => onTabChange?.('tasks')}
           style={{ fontSize: 10.5, color: 'var(--accent)', background: 'none', border: 'none', cursor: 'pointer', padding: 0 }}
-        >View tasks  </button>
+        >View tasks →</button>
       </div>
 
       <div style={{ display: 'flex', gap: 16 }}>
-
-        {/*  Donut A: Tasks by tag  */}
         <div style={{ display: 'flex', alignItems: 'center', gap: 10, flex: 1, minWidth: 0 }}>
           <div style={{ position: 'relative', flexShrink: 0 }}>
             <DonutChart segments={taskSegments} size={72} thickness={12} />
-            {/* Centre label */}
             <div style={{
               position: 'absolute', inset: 0,
               display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center',
@@ -893,13 +747,12 @@ function ProductivityWidget({ onTabChange }) {
             </div>
           </div>
 
-          {/* Legend */}
           <div style={{ display: 'flex', flexDirection: 'column', gap: 4, flex: 1, minWidth: 0 }}>
             <div style={{ fontSize: 10.5, fontWeight: 600, color: 'var(--text-primary)', marginBottom: 2 }}>By Category</div>
             {taskSegments.length === 0 && (
               <div style={{ fontSize: 10.5, color: 'var(--text-muted)' }}>No tasks yet</div>
             )}
-            {taskSegments.map((s, i) => (
+            {taskSegments.map((s) => (
               <div key={s.label} style={{ display: 'flex', alignItems: 'center', gap: 5 }}>
                 <div style={{ width: 7, height: 7, borderRadius: 2, background: s.color, flexShrink: 0 }} />
                 <span style={{
@@ -914,10 +767,8 @@ function ProductivityWidget({ onTabChange }) {
           </div>
         </div>
 
-        {/* Divider */}
         <div style={{ width: '0.5px', background: 'var(--card-border)', alignSelf: 'stretch' }} />
 
-        {/*  Donut B: Focus time  */}
         <div style={{ display: 'flex', alignItems: 'center', gap: 10, flex: 1, minWidth: 0 }}>
           <div style={{ position: 'relative', flexShrink: 0 }}>
             <DonutChart segments={focusSegments} size={72} thickness={12} />
@@ -964,171 +815,61 @@ function ProductivityWidget({ onTabChange }) {
             ))}
           </div>
         </div>
-
       </div>
     </div>
   );
 }
 
-//  Main Dashboard 
-//  Peak State Card 
-//  Today's Workout card 
-const DAY_KEYS_W = ['sun','mon','tue','wed','thu','fri','sat'];
-const SPLIT_COLOURS_W = { push:'#e25d7a', pull:'#4a9eff', legs:'#f4a642', rest:'rgba(255,255,255,0.2)', custom:'#9b5de5' };
-
-function TodayWorkoutCard({ onTabChange }) {
-  const { items: programs } = useCollection('programs', STORAGE_KEYS.PROGRAMS);
-  const { data: storedExercises } = useDocument('overload_exercises', STORAGE_KEYS.OVERLOAD_EXERCISES, null);
-  const exercises = (Array.isArray(storedExercises) && storedExercises.length) ? storedExercises : DEFAULT_OVERLOAD_EXERCISES;
-
-  const todayKey     = DAY_KEYS_W[new Date().getDay()];
-  const active       = programs.find(p => p.isActive) ?? null;
-  const todayData    = active?.days?.[todayKey] ?? null;
-  const splitType    = todayData?.splitType ?? null;
-  const label        = todayData?.label ?? 'Workout';
-  const isRest       = !splitType || splitType === 'rest';
-  const exCount      = isRest ? 0 : exercises.filter(e => e.day === splitType).length;
-  const colour       = SPLIT_COLOURS_W[splitType] ?? 'var(--accent)';
-
-  if (!active) return null;
-
-  return (
-    <div onClick={() => onTabChange?.('workout')} style={{
-      padding: '10px 14px', borderRadius: 12, cursor: 'pointer',
-      background: isRest ? 'rgba(255,255,255,0.03)' : `${colour}12`,
-      border: `0.5px solid ${isRest ? 'rgba(255,255,255,0.08)' : `${colour}35`}`,
-      display: 'flex', alignItems: 'center', justifyContent: 'space-between',
-      transition: 'all 0.15s ease',
-    }}>
-      <div>
-        <div style={{ fontSize: 9, fontWeight: 700, letterSpacing: '0.1em', color: isRest ? 'rgba(255,255,255,0.3)' : colour, textTransform: 'uppercase', marginBottom: 3 }}>Today</div>
-        <div style={{ fontSize: 13, fontWeight: 600, color: 'var(--text-primary)' }}>
-          {isRest ? 'Rest Day' : `${label} Day  ${exCount} exercise${exCount !== 1 ? 's' : ''}`}
-        </div>
-      </div>
-      <div style={{ fontSize: 11, color: isRest ? 'rgba(255,255,255,0.2)' : colour, opacity: 0.7 }}> </div>
-    </div>
-  );
-}
-
-function PeakStateCard({ peakState, onTabChange }) {
-  if (!peakState) return null;
-  const { score, color, suggestion, factors } = peakState;
-
-  return (
-    <Card style={{ gap: 0 }}>
-      {/* Header */}
-      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 12 }}>
-        <div style={{ fontSize: 9.5, color: 'var(--text-muted)', letterSpacing: '0.08em' }}>PEAK STATE</div>
-        <button onClick={() => onTabChange?.('health')}
-          style={{ fontSize: 10.5, color: 'var(--accent)', background: 'none', border: 'none', cursor: 'pointer', padding: 0 }}>
-          Health  
-        </button>
-      </div>
-
-      {/* Score + ring */}
-      <div style={{ display: 'flex', alignItems: 'center', gap: 16, marginBottom: 12 }}>
-        {/* Mini ring */}
-        <div style={{ position: 'relative', width: 72, height: 72, flexShrink: 0 }}>
-          <svg viewBox="0 0 72 72" width="72" height="72">
-            <defs>
-              <filter id="ps-glow">
-                <feGaussianBlur stdDeviation="1.5" result="b" />
-                <feMerge><feMergeNode in="b" /><feMergeNode in="SourceGraphic" /></feMerge>
-              </filter>
-            </defs>
-            <circle cx="36" cy="36" r="28" fill="none" stroke="rgba(255,255,255,0.06)" strokeWidth="6" />
-            <circle cx="36" cy="36" r="28" fill="none"
-              stroke={color} strokeWidth="6" strokeLinecap="round"
-              strokeDasharray={2 * Math.PI * 28}
-              strokeDashoffset={2 * Math.PI * 28 * (1 - score / 100)}
-              filter="url(#ps-glow)"
-              style={{ transform: 'rotate(-90deg)', transformOrigin: 'center', transition: 'stroke-dashoffset 0.8s cubic-bezier(0.22,1,0.36,1), stroke 0.5s' }}
-            />
-          </svg>
-          <div style={{ position: 'absolute', inset: 0, display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', pointerEvents: 'none' }}>
-            <div style={{ fontSize: 18, fontWeight: 800, color, lineHeight: 1, fontVariantNumeric: 'tabular-nums' }}>{score}</div>
-            <div style={{ fontSize: 8, color: 'var(--text-muted)', letterSpacing: '0.08em', marginTop: 1 }}>/ 100</div>
-          </div>
-        </div>
-
-        {/* Factor bars */}
-        <div style={{ flex: 1, display: 'flex', flexDirection: 'column', gap: 4 }}>
-          {Object.values(factors).map(f => (
-            <div key={f.label} style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
-              <div style={{ fontSize: 9, color: 'var(--text-muted)', width: 70, flexShrink: 0, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{f.label}</div>
-              <div style={{ flex: 1, height: 3, borderRadius: 2, background: 'rgba(255,255,255,0.06)' }}>
-                <div style={{ width: `${f.pct}%`, height: '100%', background: f.pct >= 80 ? '#4caf7d' : f.pct >= 50 ? '#f4a642' : '#e25d7a', borderRadius: 2, transition: 'width 0.6s' }} />
-              </div>
-              <div style={{ fontSize: 9, color: 'var(--text-muted)', minWidth: 22, textAlign: 'right', fontVariantNumeric: 'tabular-nums' }}>{f.pts}</div>
-            </div>
-          ))}
-        </div>
-      </div>
-
-      {/* Suggestion */}
-      <div style={{ fontSize: 11, color: 'var(--text-muted)', lineHeight: 1.5, paddingTop: 10, borderTop: '0.5px solid rgba(255,255,255,0.06)' }}>
-        <span style={{ color, fontWeight: 600 }}>  </span>{suggestion}
-      </div>
-    </Card>
-  );
-}
-
+// ── Main Dashboard ───────────────────────────────────────────────────────
 export default function Dashboard({ settings, onTabChange, ai, density = 'standard', peakState }) {
 
   const userName = storage.get(STORAGE_KEYS.USER, {})?.name
     ?? storage.get(STORAGE_KEYS.SETTINGS, {})?.userName
     ?? 'there';
 
-
   const pad  = density === 'compact' ? '14px 18px' : density === 'spacious' ? '32px 36px' : '22px 28px';
   const gap  = density === 'compact' ? 10 : density === 'spacious' ? 24 : 14;
 
   return (
-    // Fixed-height layout  everything fits the viewport, no scroll
-    <div style={{ height: '100%', padding: pad, display: 'flex', flexDirection: 'column', gap, boxSizing: 'border-box', overflow: 'hidden' }}>
+    // Page now scrolls — primary content (tasks + today panel) sits in the
+    // first screen; secondary content (reflection/productivity/day ring)
+    // is reachable below the fold instead of being crammed above it.
+    <div style={{ height: '100%', padding: pad, display: 'flex', flexDirection: 'column', gap: gap * 1.4, boxSizing: 'border-box', overflowY: 'auto' }}>
 
-      {/*  Greeting banner  */}
+      {/* Greeting banner */}
       <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexShrink: 0 }}>
         <div style={{ display: 'flex', alignItems: 'baseline', gap: 10 }}>
           <h1 style={{ fontSize: 22, fontWeight: 300, color: 'var(--text-primary)', letterSpacing: '0.03em', margin: 0 }}>
             {getGreeting()}, <span style={{ color: 'var(--accent)' }}>{userName}</span>.
           </h1>
-          <span style={{ fontSize: 12, color: 'var(--text-muted)' }}>{formatDate()}</span>
         </div>
         <InlineClock />
       </div>
 
-      {/*  Top strip  4 stat cards  */}
-      <div style={{ display: 'flex', gap, flexShrink: 0 }}>
-        <TasksCountCard />
-        <QuoteCard />
-        <VerseCard />
-        <WeatherCard />
+      {/* At-a-glance strip — replaces the old 4 heavy stat cards */}
+      <div style={{ flexShrink: 0 }}>
+        <GlanceStrip />
       </div>
 
-      {/*  Main body  fills remaining height  */}
-      <div style={{ flex: 1, minHeight: 0, display: 'flex', gap }}>
+      {/* Primary: Tasks + unified Today panel */}
+      <div style={{ display: 'flex', gap, flexShrink: 0, alignItems: 'stretch' }}>
+        <TasksPanel onTabChange={onTabChange} />
+        <TodayPanel ai={ai} peakState={peakState} onTabChange={onTabChange} />
+      </div>
 
-        {/* Left column: Tasks (grows) + Productivity (fixed bottom) */}
-        <div style={{ flex: '1.1 1 0', minWidth: 0, display: 'flex', flexDirection: 'column', gap }}>
-          <TasksPanel onTabChange={onTabChange} />
+      {/* Secondary — below the fold, reachable by scroll */}
+      <div style={{ display: 'flex', flexDirection: 'column', gap, flexShrink: 0 }}>
+        <div style={{ fontSize: 10, color: 'var(--text-muted)', letterSpacing: '0.1em', textTransform: 'uppercase', opacity: 0.6 }}>
+          More today
+        </div>
+        <div style={{ display: 'flex', gap, flexWrap: 'wrap' }}>
+          <ReflectionCard />
           <ProductivityWidget onTabChange={onTabChange} />
         </div>
-
-        {/* Right column: stacked cards fill same height, clipped to container */}
-        <div style={{ flex: '0.9 1 0', minWidth: 0, display: 'flex', flexDirection: 'column', gap: 10, minHeight: 0, overflow: 'hidden' }}>
-          <div style={{ flexShrink: 0 }}><DailyBriefCard ai={ai} /></div>
-          <div style={{ flexShrink: 0 }}><SpotifyCard /></div>
-          <div style={{ flexShrink: 0 }}><PeakStateCard peakState={peakState} onTabChange={onTabChange} /></div>
-          <div style={{ flexShrink: 0 }}><TodayWorkoutCard onTabChange={onTabChange} /></div>
-          <Card style={{ flex: 1, minHeight: 0, overflow: 'hidden', justifyContent: 'center' }}>
-            <DayRing />
-          </Card>
-        </div>
-
+        <Card>
+          <DayRing />
+        </Card>
       </div>
     </div>
   );
 }
-
