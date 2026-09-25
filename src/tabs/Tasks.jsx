@@ -6,6 +6,7 @@ import { useState, useCallback, useMemo } from 'react';
 import { useCollection } from '../supabase/useCollection.js';
 import { STORAGE_KEYS }  from '../utils/storage.js';
 import { toLocalDateKey } from '../utils/localDate.js';
+import { normalizeTasks } from '../domain/tasks.js';
 
 //  Helpers 
 const PRIORITY = {
@@ -404,7 +405,9 @@ const primaryBtnStyle = {
 
 //  Main Tasks component 
 export default function Tasks({ ai }) {
-  const { items: tasks, add, update, remove, synced } = useCollection('tasks', STORAGE_KEYS.TASKS);
+  const { items: rawTasks, add, update, remove, synced } = useCollection('tasks', STORAGE_KEYS.TASKS);
+  // Legacy assistant rows are {title, completed}; show them like UI rows.
+  const tasks = useMemo(() => normalizeTasks(rawTasks), [rawTasks]);
   const [filter, setFilter]     = useState('all');
   const [panel, setPanel]       = useState(null); // null | { mode:'add' } | { mode:'view'|'edit', task }
   const [voiceActive, setVoice] = useState(false);

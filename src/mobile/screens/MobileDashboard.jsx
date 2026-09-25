@@ -10,6 +10,8 @@ import { getXP, getRank, TIER_CONFIG, TIER_THRESHOLDS } from '../../utils/xp.js'
 import { DEFAULT_OVERLOAD_EXERCISES } from '../../tabs/Workout.jsx';
 import DayRing from '../../components/DayRing.jsx';
 import { toLocalDateKey } from '../../utils/localDate.js';
+import { useTasks } from '../../hooks/useTasks.js';
+import { normalizeTasks } from '../../domain/tasks.js';
 
 //  Shared components 
 function MCard({ children, style = {}, onClick }) {
@@ -176,7 +178,7 @@ function DailyBriefCard({ ai }) {
   const generate = useCallback(async () => {
     if (!ai || loading) return;
     setLoading(true);
-    const tasks   = storage.get(STORAGE_KEYS.TASKS, []);
+    const tasks   = normalizeTasks(storage.get(STORAGE_KEYS.TASKS, []));
     const pending = tasks.filter(t => !t.done);
     const prompt  = `${getGreeting()}. Today is ${formatDate()}. I have ${pending.length} pending task${pending.length !== 1 ? 's' : ''}.${pending.length > 0 ? ` Top items: ${pending.slice(0,3).map(t=>t.text).join(', ')}.` : ''} Give me a sharp, motivating daily brief in 2-3 sentences. No fluff.`;
     try {
@@ -342,16 +344,17 @@ function PeakStateCard({ peakState, onTabChange }) {
 //  Tasks panel (full, matching desktop) 
 const PRIORITY_COLOR = { high: '#e55', med: '#f90', low: '#5a9' };
 
-function TasksPanel({ onTabChange }) {
-  const [tasks,   setTasks]   = useState(() => storage.get(STORAGE_KEYS.TASKS, []));
+function TasksPanel({ onTabChange, tasks, toggle, addTask: addTaskToStore }) {
   const [newText, setNewText] = useState('');
+  const [adding,  setAdding]  = useState(false);
 
-  const save = next => { setTasks(next); storage.set(STORAGE_KEYS.TASKS, next); };
-  const toggle = i => { const n = [...tasks]; n[i] = { ...n[i], done: !n[i].done }; save(n); };
-  const addTask = () => {
-    if (!newText.trim()) return;
-    save([...tasks, { text: newText.trim(), done: false, priority: 'low', createdAt: Date.now() }]);
-    setNewText('');
+  const addTask = async () => {
+    const text = newText.trim();
+    if (!text || adding) return;
+    setAdding(true);
+    const id = await addTaskToStore(text, { priority: 'low' });
+    setAdding(false);
+    if (id) setNewText(''); // keep the text if the save failed
   };
 
   const pending = tasks.filter(t => !t.done);
@@ -374,11 +377,10 @@ function TasksPanel({ onTabChange }) {
           <div style={{ padding: '16px', fontSize: 13, color: 'var(--text-muted)' }}>
             All clear  you're on top of everything.
           </div>
-        ) : visible.map((t, i) => {
-          const realIdx = tasks.indexOf(pending[i]);
+        ) : visible.map((t) => {
           const pCol = PRIORITY_COLOR[t.priority] ?? PRIORITY_COLOR.low;
           return (
-            <div key={realIdx} onClick={() => toggle(realIdx)} style={{
+            <div key={t.id} onClick={() => toggle(t)} style={{
               display: 'flex', alignItems: 'center', gap: 10, padding: '11px 16px',
               borderBottom: '0.5px solid var(--card-border)', cursor: 'pointer',
               WebkitTapHighlightColor: 'transparent',
@@ -412,12 +414,13 @@ function TasksPanel({ onTabChange }) {
           style={{ flex: 1, background: 'var(--hover-bg)', border: '0.5px solid var(--card-border)',
             borderRadius: 8, padding: '8px 12px', fontSize: 13,
             color: 'var(--text-primary)', outline: 'none' }} />
-        <button onClick={addTask} style={{
+        <button onClick={addTask} disabled={adding} style={{
           padding: '8px 16px', borderRadius: 8, fontSize: 13, fontWeight: 600,
           background: 'var(--accent)', color: 'var(--bg-base)',
-          border: 'none', cursor: 'pointer', flexShrink: 0,
+          border: 'none', cursor: adding ? 'default' : 'pointer', flexShrink: 0,
+          opacity: adding ? 0.6 : 1,
           WebkitTapHighlightColor: 'transparent' }}>
-          Add
+          {adding ? 'Saving…' : 'Add'}
         </button>
       </div>
     </MCard>
@@ -459,9 +462,8 @@ function DonutChart({ segments, size = 88, thickness = 14 }) {
   );
 }
 
-function ProductivityWidget({ onTabChange }) {
+function ProductivityWidget({ onTabChange, tasks }) {
   const today = toLocalDateKey(new Date());
-  const tasks = storage.get(STORAGE_KEYS.TASKS, []);
   const tagMap = {};
   tasks.forEach(t => {
     const k = t.tag || 'Untagged';
@@ -558,7 +560,7 @@ function ProductivityWidget({ onTabChange }) {
 //  Main Dashboard 
 export default function MobileDashboard({ settings, ai, peakState, onTabChange }) {
   const userName = settings?.userName || 'Rob';
-  const tasks    = storage.get(STORAGE_KEYS.TASKS, []);
+  const { tasks, toggle, addTask } = useTasks();
 
   return (
     <div style={{ padding: '16px', display: 'flex', flexDirection: 'column', gap: 12 }}>
@@ -595,10 +597,10 @@ export default function MobileDashboard({ settings, ai, peakState, onTabChange }
       </MCard>
 
       {/*  Tasks Panel  */}
-      <TasksPanel onTabChange={onTabChange} />
+      <TasksPanel onTabChange={onTabChange} tasks={tasks} toggle={toggle} addTask={addTask} />
 
       {/*  Productivity  */}
-      <ProductivityWidget onTabChange={onTabChange} />
+      <ProductivityWidget onTabChange={onTabChange} tasks={tasks} />
     </div>
   );
 }

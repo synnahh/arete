@@ -26,6 +26,8 @@ import { useDocument }   from '../supabase/useDocument.js';
 import { getNowPlaying, pausePlayback, resumePlayback, skipNext, skipPrev, isSpotifyConnected } from '../utils/spotify.js';
 import { DEFAULT_OVERLOAD_EXERCISES } from './Workout.jsx';
 import { toLocalDateKey } from '../utils/localDate.js';
+import { useTasks } from '../hooks/useTasks.js';
+import { normalizeTasks } from '../domain/tasks.js';
 
 // ── Shared card (used only for the secondary, below-the-fold section) ──────
 function Card({ children, style = {}, className = '' }) {
@@ -154,8 +156,7 @@ function GlanceStat({ icon, value, label, last }) {
   );
 }
 
-function GlanceStrip() {
-  const tasks   = storage.get(STORAGE_KEYS.TASKS, []);
+function GlanceStrip({ tasks }) {
   const pending = tasks.filter(t => !t.done).length;
   const done    = tasks.filter(t => t.done).length;
   const streak  = storage.get(STORAGE_KEYS.PROGRESS, {}).streak ?? 0;
@@ -242,22 +243,17 @@ function ReflectionCard() {
 const PRIORITY_COLOR = { high: '#e55', med: '#f90', low: '#5a9' };
 
 // ── Left panel: Today's Tasks (unchanged — already well-scoped) ────────────
-function TasksPanel({ onTabChange }) {
-  const [tasks,    setTasks]    = useState(() => storage.get(STORAGE_KEYS.TASKS, []));
+function TasksPanel({ onTabChange, tasks, toggle, addTask: addTaskToStore }) {
   const [newText,  setNewText]  = useState('');
+  const [adding,   setAdding]   = useState(false);
 
-  const save = (next) => { setTasks(next); storage.set(STORAGE_KEYS.TASKS, next); };
-
-  const toggle = (i) => {
-    const next = [...tasks];
-    next[i] = { ...next[i], done: !next[i].done };
-    save(next);
-  };
-
-  const addTask = () => {
-    if (!newText.trim()) return;
-    save([...tasks, { text: newText.trim(), done: false, priority: 'low', createdAt: Date.now() }]);
-    setNewText('');
+  const addTask = async () => {
+    const text = newText.trim();
+    if (!text || adding) return;
+    setAdding(true);
+    const id = await addTaskToStore(text, { priority: 'low' });
+    setAdding(false);
+    if (id) setNewText(''); // keep the text if the save failed so nothing is lost
   };
 
   const pending = tasks.filter(t => !t.done);
@@ -293,13 +289,12 @@ function TasksPanel({ onTabChange }) {
           <div style={{ padding: '20px 18px', fontSize: 13, color: 'var(--text-muted)' }}>
             All clear — you're on top of everything.
           </div>
-        ) : visible.map((t, i) => {
-          const realIdx = tasks.indexOf(pending[i]);
+        ) : visible.map((t) => {
           const pCol = PRIORITY_COLOR[t.priority] ?? PRIORITY_COLOR.low;
           return (
             <div
-              key={realIdx}
-              onClick={() => toggle(realIdx)}
+              key={t.id}
+              onClick={() => toggle(t)}
               style={{
                 display: 'flex', alignItems: 'center', gap: 10,
                 padding: '9px 18px', cursor: 'pointer',
@@ -362,13 +357,15 @@ function TasksPanel({ onTabChange }) {
         />
         <button
           onClick={addTask}
+          disabled={adding}
           style={{
             padding: '7px 16px', borderRadius: 7, fontSize: 12.5,
             background: 'var(--accent)', color: '#fff',
-            border: 'none', cursor: 'pointer', fontWeight: 600, flexShrink: 0,
+            border: 'none', cursor: adding ? 'default' : 'pointer', fontWeight: 600, flexShrink: 0,
+            opacity: adding ? 0.6 : 1,
           }}
         >
-          Add
+          {adding ? 'Saving…' : 'Add'}
         </button>
       </div>
     </div>
@@ -388,7 +385,7 @@ function DailyBriefSection({ ai }) {
   const generateBrief = useCallback(async () => {
     if (!ai?.sendMessage || loading) return;
     setLoading(true);
-    const tasks   = storage.get(STORAGE_KEYS.TASKS, []);
+    const tasks   = normalizeTasks(storage.get(STORAGE_KEYS.TASKS, []));
     const pending = tasks.filter(t => !t.done);
     const greeting = getGreeting();
     const dateStr  = formatDate();
@@ -678,10 +675,9 @@ function DonutChart({ segments, size = 110, thickness = 18, emptyColor = 'var(--
   );
 }
 
-function ProductivityWidget({ onTabChange }) {
+function ProductivityWidget({ onTabChange, tasks }) {
   const today = toLocalDateKey(new Date());
 
-  const tasks    = storage.get(STORAGE_KEYS.TASKS, []);
   const todayTasks = tasks;
 
   const tagMap = {};
@@ -823,6 +819,7 @@ function ProductivityWidget({ onTabChange }) {
 
 // ── Main Dashboard ───────────────────────────────────────────────────────
 export default function Dashboard({ settings, onTabChange, ai, density = 'standard', peakState }) {
+  const { tasks, toggle, addTask } = useTasks();
 
   const userName = storage.get(STORAGE_KEYS.USER, {})?.name
     ?? storage.get(STORAGE_KEYS.SETTINGS, {})?.userName
@@ -849,12 +846,12 @@ export default function Dashboard({ settings, onTabChange, ai, density = 'standa
 
       {/* At-a-glance strip — replaces the old 4 heavy stat cards */}
       <div style={{ flexShrink: 0 }}>
-        <GlanceStrip />
+        <GlanceStrip tasks={tasks} />
       </div>
 
       {/* Primary: Tasks + unified Today panel */}
       <div style={{ display: 'flex', gap, flexShrink: 0, alignItems: 'stretch' }}>
-        <TasksPanel onTabChange={onTabChange} />
+        <TasksPanel onTabChange={onTabChange} tasks={tasks} toggle={toggle} addTask={addTask} />
         <TodayPanel ai={ai} peakState={peakState} onTabChange={onTabChange} />
       </div>
 
@@ -865,7 +862,7 @@ export default function Dashboard({ settings, onTabChange, ai, density = 'standa
         </div>
         <div style={{ display: 'flex', gap, flexWrap: 'wrap' }}>
           <ReflectionCard />
-          <ProductivityWidget onTabChange={onTabChange} />
+          <ProductivityWidget onTabChange={onTabChange} tasks={tasks} />
         </div>
         <Card>
           <DayRing />

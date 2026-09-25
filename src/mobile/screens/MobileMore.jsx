@@ -6,6 +6,7 @@ import { haptics }       from '../utils/haptics.js';
 import MobileWorkout     from './MobileWorkout.jsx';
 import MobileLM          from './MobileLM.jsx';
 import { toLocalDateKey } from '../../utils/localDate.js';
+import { normalizeTasks } from '../../domain/tasks.js';
 
 //  Shared card 
 function MCard({ children, style = {}, onClick }) {
@@ -97,7 +98,8 @@ function TasksScreen({ onBack }) {
   // Was raw localStorage (storage.get/set) — tasks added on the phone never
   // reached Supabase, so they never appeared on desktop. Same table/schema as
   // the desktop Tasks tab now.
-  const { items: tasks = [], add, update, remove: removeTask } = useCollection('tasks', STORAGE_KEYS.TASKS);
+  const { items: rawTasks = [], add, update, remove: removeTask } = useCollection('tasks', STORAGE_KEYS.TASKS);
+  const tasks = useMemo(() => normalizeTasks(rawTasks), [rawTasks]);
   const [input,  setInput]  = useState('');
   const [filter, setFilter] = useState('pending');
 
