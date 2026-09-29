@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest';
-import { recentFoods, yesterdayKey, copyMeals, quickEntry, appendMeals, mealFromPlan } from './foods.js';
+import { recentFoods, yesterdayKey, copyMeals, quickEntry, appendMeals, mealFromPlan, cleanIngredients } from './foods.js';
 
 const meal = (name, calories, extra = {}) => ({ name, calories, protein: 10, carbs: 20, fat: 5, ...extra });
 const logs = [
@@ -111,5 +111,17 @@ describe('mealFromPlan', () => {
     expect(mealFromPlan({ name: 'Snack', calories: 200 }, now)).not.toHaveProperty('ingredients');
     expect(mealFromPlan({ name: 'Nothing' }, now)).toBeNull();
     expect(mealFromPlan({ name: 'Huge', calories: 99999 }, now)).toBeNull();
+  });
+});
+
+describe('ingredients carried through', () => {
+  it('cleans an ingredient list', () => {
+    expect(cleanIngredients([{ name: ' Rice ', qty: '150', unit: 'g ' }, { name: '', qty: 3 }, { name: 'Salt', qty: 0 }, null])).toEqual([{ name: 'Rice', qty: 150, unit: 'g' }]);
+    expect(cleanIngredients(undefined)).toEqual([]);
+  });
+  it('recent foods keep the ingredients of the last time you had them', () => {
+    const logs = [{ date: '2026-09-28', meals: [{ name: 'Bowl', calories: 700, ingredients: [{ name: 'Rice', qty: 150, unit: 'g' }] }] }];
+    expect(recentFoods(logs, { today: '2026-09-30' })[0].ingredients).toEqual([{ name: 'Rice', qty: 150, unit: 'g' }]);
+    expect(recentFoods([{ date: '2026-09-28', meals: [{ name: 'Toast', calories: 200 }] }], { today: '2026-09-30' })[0].ingredients).toEqual([]);
   });
 });

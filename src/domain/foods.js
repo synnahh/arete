@@ -48,6 +48,7 @@ export function recentFoods(nutritionLogs = [], { today, limit = 8, windowDays =
       micros: entry.micros || {},
       qty: entry.qty ?? null,
       unit: entry.unit ?? null,
+      ingredients: cleanIngredients(entry.ingredients),
     }));
 }
 
@@ -98,6 +99,13 @@ export function appendMeals(existing, entries, date) {
   return { ...(existing || {}), date, meals, calories: sum('calories'), protein: sum('protein'), carbs: sum('carbs'), fat: sum('fat') };
 }
 
+/** Ingredient lists reduced to usable { name, qty, unit } rows (empty array when none). */
+export function cleanIngredients(list) {
+  return (Array.isArray(list) ? list : [])
+    .map(i => ({ name: String(i?.name || '').trim(), qty: Number(i?.qty) || 0, unit: String(i?.unit || '').trim() }))
+    .filter(i => i.name && i.qty > 0);
+}
+
 /**
  * A nutrition-log entry from a meal in the AI meal plan, keeping its
  * ingredients so logging it also uses up the matching pantry supplies.
@@ -107,9 +115,7 @@ export function mealFromPlan(meal, now = new Date()) {
   const calories = Math.round(Number(meal?.calories));
   if (!(calories >= 1 && calories <= 10000)) return null;
   const grams = (v) => Math.max(0, Math.round((Number(v) || 0) * 10) / 10);
-  const ingredients = (Array.isArray(meal.ingredients) ? meal.ingredients : [])
-    .map(i => ({ name: String(i?.name || '').trim(), qty: Number(i?.qty) || 0, unit: String(i?.unit || '').trim() }))
-    .filter(i => i.name && i.qty > 0);
+  const ingredients = cleanIngredients(meal.ingredients);
   return {
     id: `m_${now.getTime()}`,
     name: String(meal.name || 'Planned meal').trim().slice(0, 80),

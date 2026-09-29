@@ -13,7 +13,7 @@ import { currencySymbol as currencySym } from '../utils/currency.js';
 import { searchOpenFoodFacts, lookupBarcode, startBarcodeScan } from '../utils/openFoodFacts.js';
 import { toLocalDateKey } from '../utils/localDate.js';
 import { peekHealthSection, clearHealthSection, screenForHealthSection } from '../nav/healthSection.js';
-import { recentFoods, yesterdayKey, copyMeals, appendMeals, mealFromPlan } from '../domain/foods.js';
+import { recentFoods, yesterdayKey, copyMeals, appendMeals, mealFromPlan, cleanIngredients } from '../domain/foods.js';
 import FoodShortcuts from '../components/FoodShortcuts.jsx';
 import { weightCoach } from '../domain/weight.js';
 import { weeklyMicros, microCoach } from '../domain/micros.js';
@@ -684,6 +684,7 @@ function Nutrition({ nutritionLogs, addNutritionLog, updateNutritionLog, setting
       qty: null, unit: null,
       time: nowStr(),
       savedMealId: meal.id,
+      ...(cleanIngredients(meal.ingredients).length ? { ingredients: cleanIngredients(meal.ingredients) } : {}),
     };
     const newMeals = [...meals, entry];
     const newTotals = newMeals.reduce((s, m) => ({
@@ -720,7 +721,7 @@ function Nutrition({ nutritionLogs, addNutritionLog, updateNutritionLog, setting
   // One tap: log the food exactly as last time, with a short Undo.
   const quickLog = async (food) => {
     const prev = { meals, ...totals };
-    await logSavedMeal({ name: food.name, calories: food.calories, protein: food.protein, carbs: food.carbs, fat: food.fat, micros: food.micros });
+    await logSavedMeal({ name: food.name, calories: food.calories, protein: food.protein, carbs: food.carbs, fat: food.fat, micros: food.micros, ingredients: food.ingredients });
     window.dispatchEvent(new CustomEvent('valerie:toast', { detail: {
       message: `Logged ${food.name} · ${food.calories} kcal`, type: 'success',
       undo: async () => {
@@ -2289,7 +2290,8 @@ function MealPlanner({ settings, savedMeals = [], addSavedMeal, bodyMetrics = []
   };
 
   const saveMeal = async (meal) => {
-    await addSavedMeal({ name: meal.name, calories: meal.calories, protein: meal.protein, carbs: meal.carbs, fat: meal.fat });
+    const ingredients = cleanIngredients(meal.ingredients);
+    await addSavedMeal({ name: meal.name, calories: meal.calories, protein: meal.protein, carbs: meal.carbs, fat: meal.fat, ...(ingredients.length ? { ingredients } : {}) });
     setSaved(p => ({ ...p, [meal.name]: true }));
     setTimeout(() => setSaved(p => { const n = {...p}; delete n[meal.name]; return n; }), 2000);
   };
