@@ -5,6 +5,7 @@ import { STORAGE_KEYS }  from '../../utils/storage.js';
 import { currencySymbol as currencySym, DEFAULT_CURRENCY } from '../../utils/currency.js';
 import { toLocalDateKey } from '../../utils/localDate.js';
 import { projectedSpend } from '../../domain/ahead.js';
+import { suppliesWithUsage } from '../../utils/supplies.js';
 
 const CATEGORIES = [
   { id: 'food',          label: 'Food & Drink',   colour: '#f4a642', icon: '🍔' },
@@ -143,7 +144,7 @@ function OverviewTab({ transactions, subscriptions, purchases, settings }) {
 
   // Ahead: what restocking supplies will cost over the next 30 days
   const { items: supplies = [] } = useCollection('essentials', STORAGE_KEYS.ESSENTIALS);
-  const restocks = useMemo(() => projectedSpend(supplies, toLocalDateKey(new Date()), { days: 30 }), [supplies]);
+  const restocks = useMemo(() => projectedSpend(suppliesWithUsage(supplies, toLocalDateKey(new Date())), toLocalDateKey(new Date()), { days: 30 }), [supplies]);
 
   // Spending by category (this month)
   const catMap = {};

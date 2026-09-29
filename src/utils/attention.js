@@ -5,6 +5,7 @@
 import { storage, STORAGE_KEYS } from './storage.js';
 import { toLocalDateKey } from './localDate.js';
 import { forecast } from '../domain/ahead.js';
+import { suppliesWithUsage } from './supplies.js';
 
 const arr = (k) => { const v = storage.get(k, []); return Array.isArray(v) ? v : (v?.daily || []); };
 const dateStr = (offsetDays) => {
@@ -31,7 +32,7 @@ export function getAttentionTabs(dayOffset = 0) {
 
   // Supplies whose reorder-by date (Ahead engine) is today or earlier / tomorrow.
   const today = dateStr(0);
-  const dueRestock = arr(STORAGE_KEYS.ESSENTIALS).filter(it => {
+  const dueRestock = suppliesWithUsage(arr(STORAGE_KEYS.ESSENTIALS), today).filter(it => {
     const f = forecast(it, today);
     if (f.status === 'unknown') return false;
     return dayOffset === 0 ? f.daysToReorder <= 0 : f.daysToReorder === 1;

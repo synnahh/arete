@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest';
-import { scheduledDaysPerPack, daysPerPack, forecast, restock, dueItems, parseAsin, cartLinks, shoppingList, projectedSpend } from './ahead.js';
+import { scheduledDaysPerPack, daysPerPack, forecast, restock, dueItems, parseAsin, cartLinks, shoppingList, projectedSpend, toBase, isTracked, pantryUsage, applyUsage } from './ahead.js';
 
 // A 50 ml serum, 1 ml a use, twice a day → 25 days a pack.
 const serum = { name: 'Niacinamide serum', category: 'grooming', boughtDate: '2026-09-01', packQty: 50, unit: 'ml', dosePerUse: 1, usesPerDay: 2 };
@@ -135,5 +135,99 @@ describe('projected spend', () => {
     expect(p.lines.map(l => [l.name, l.dates[0]])).toEqual([['Toothpaste', '2026-09-10'], ['Niacinamide serum', '2026-09-21']]);
     expect(p.lines[0].dates).toEqual(['2026-09-10', '2026-10-10']);
     expect(p.total).toBe(32);   // toothpaste x2 (12) + serum (20)
+  });
+});
+
+describe('food log → pantry', () => {
+  const rice = { id: 'r', name: 'Rice', category: 'kitchen', boughtDate: '2026-09-01', packQty: 5, unit: 'kg', packsOnHand: 1 };
+  const chicken = { id: 'c', name: 'Chicken breast', category: 'kitchen', boughtDate: '2026-09-01', packQty: 1000, unit: 'g' };
+  const day = (date, ...meals) => ({ date, meals });
+  const eat = (name, qty, unit = 'g') => ({ name, qty, unit });
+
+  it('converts mass and volume units, and rejects the rest', () => {
+    expect(toBase(2, 'kg')).toMatchObject({ kind: 'mass', amount: 2000 });
+    expect(toBase(250, 'ml')).toMatchObject({ kind: 'vol', amount: 250 });
+    expect(toBase(1, 'serving')).toBeNull();
+    expect(toBase(0, 'g')).toBeNull();
+  });
+
+  it('only tracks Kitchen supplies with a measurable pack, unless switched off', () => {
+    expect(isTracked(rice)).toBe(true);
+    expect(isTracked({ ...rice, autoSubtract: false })).toBe(false);
+    expect(isTracked({ ...rice, category: 'grooming' })).toBe(false);
+    expect(isTracked({ ...rice, unit: 'x' })).toBe(false);
+  });
+
+  it('subtracts matching foods in the unit the supply is measured in', () => {
+    const logs = [day('2026-09-05', eat('Basmati rice, cooked', 300), eat('Whey', 30)), day('2026-09-06', eat('Rice', 0.5, 'kg'))];
+    const u = pantryUsage([rice], logs, '2026-09-10').get('r');
+    expect(u.consumed).toBe(0.8);
+    expect(u.left).toBe(4.2);
+  });
+
+  it('ignores food eaten before the pack was opened or after today', () => {
+    const logs = [day('2026-08-30', eat('Rice', 500)), day('2026-09-20', eat('Rice', 500))];
+    expect(pantryUsage([rice], logs, '2026-09-10').size).toBe(0);
+  });
+
+  it('needs every word of the supply name, and matching units', () => {
+    const logs = [day('2026-09-05', eat('Chicken thigh', 200), eat('Rice milk', 200, 'ml'))];
+    expect(pantryUsage([chicken, rice], logs, '2026-09-10').size).toBe(0);
+  });
+
+  it('prefers the most specific supply and refuses to guess between equals', () => {
+    const plain = { id: 'p', name: 'Rice', category: 'kitchen', boughtDate: '2026-09-01', packQty: 1000, unit: 'g' };
+    const brown = { id: 'b', name: 'Brown rice', category: 'kitchen', boughtDate: '2026-09-01', packQty: 1000, unit: 'g' };
+    const logs = [day('2026-09-05', eat('Brown rice cooked', 100))];
+    expect([...pantryUsage([plain, brown], logs, '2026-09-10').keys()]).toEqual(['b']);
+    const dup = { ...plain, id: 'p2' };
+    expect(pantryUsage([plain, dup], [day('2026-09-05', eat('Rice', 100))], '2026-09-10').size).toBe(0);
+  });
+
+  it('deleting a meal puts the stock back (it is derived, not stored)', () => {
+    const one = pantryUsage([chicken], [day('2026-09-05', eat('Chicken breast', 200))], '2026-09-10').get('c');
+    const none = pantryUsage([chicken], [day('2026-09-05')], '2026-09-10');
+    expect(one.left).toBe(800);
+    expect(none.size).toBe(0);
+  });
+
+  it('shows stock left but keeps the schedule until 3 days of use', () => {
+    const two = [day('2026-09-08', eat('Chicken breast', 200)), day('2026-09-09', eat('Chicken breast', 200))];
+    const [item] = applyUsage([chicken], two, '2026-09-10');
+    expect(item.stockLeft).toBe(600);
+    expect(item.usageDaysLeft).toBeUndefined();
+  });
+
+  it('forecasts run-out from real use once there are 3+ days of it', () => {
+    // 200 g on each of 5 days = 1000 g gone of 1000 → out.
+    const logs = ['05', '06', '07', '08', '09'].map(d => day(`2026-09-${d}`, eat('Chicken breast', 200)));
+    const [gone] = applyUsage([chicken], logs, '2026-09-10');
+    expect(forecast(gone, '2026-09-10').status).toBe('out');
+    // 100 g on each of 3 days over a 10-day span: 300 g used, 700 left, 30 g/day → ~23 days.
+    const light = ['07', '08', '09'].map(d => day(`2026-09-${d}`, eat('Chicken breast', 100)));
+    const [item] = applyUsage([{ ...chicken, lifespanDays: 200 }], light, '2026-09-10');
+    const f = forecast(item, '2026-09-10');
+    expect(f.source).toBe('usage');
+    expect(f.daysLeft).toBe(23);
+  });
+
+  it('never postpones a run-out the schedule already predicts', () => {
+    const logs = ['07', '08', '09'].map(d => day(`2026-09-${d}`, eat('Chicken breast', 10)));
+    const soon = { ...chicken, lifespanDays: 12 }; // schedule: out 2026-09-13
+    const [item] = applyUsage([soon], logs, '2026-09-10');
+    const f = forecast(item, '2026-09-10');
+    expect(f.source).toBe('manual');
+    expect(f.runOut).toBe('2026-09-13');
+  });
+
+  it('lets a supply with no schedule at all be forecast from use alone', () => {
+    const logs = ['07', '08', '09'].map(d => day(`2026-09-${d}`, eat('Chicken breast', 100)));
+    const [item] = applyUsage([chicken], logs, '2026-09-10');
+    expect(forecast(item, '2026-09-10')).toMatchObject({ source: 'usage' });
+  });
+
+  it('leaves untracked items and empty logs untouched', () => {
+    const items = [rice];
+    expect(applyUsage(items, [], '2026-09-10')).toBe(items);
   });
 });

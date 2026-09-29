@@ -9,6 +9,7 @@ import { normalizeTasks } from '../domain/tasks.js';
 import { dayScore, GOAL_TEMPLATES } from '../domain/goals.js';
 import { bests, detectPR, setsOf } from '../domain/training.js';
 import { dueItems } from '../domain/ahead.js';
+import { suppliesWithUsage } from '../utils/supplies.js';
 import { currentWaterGoal } from '../utils/waterGoal.js';
 
 //  buildContext 
@@ -205,7 +206,7 @@ export function buildContext({ activeTab = 'dashboard' } = {}) {
   try {
     const today = toLocalDateKey(now);
     const supplies = storage.get(STORAGE_KEYS.ESSENTIALS, []);
-    const due = dueItems(Array.isArray(supplies) ? supplies : [], today).slice(0, 5);
+    const due = dueItems(suppliesWithUsage(supplies, today), today).slice(0, 5);
     if (due.length) {
       lines.push(`Supplies due: ${due.map(({ item, f }) => `${item.name} (${f.status}, order by ${f.reorderBy}, runs out ${f.runOut})`).join('; ')}`);
     }

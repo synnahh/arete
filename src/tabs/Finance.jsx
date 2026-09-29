@@ -8,6 +8,7 @@ import { isGmailConnected, fetchEmailsSince, applyRulesToEmails, DEFAULT_EMAIL_R
 import { currencySymbol, DEFAULT_CURRENCY } from '../utils/currency.js';
 import { toLocalDateKey } from '../utils/localDate.js';
 import { projectedSpend } from '../domain/ahead.js';
+import { suppliesWithUsage } from '../utils/supplies.js';
 
 //  Categories 
 const CATEGORIES = [
@@ -359,7 +360,7 @@ function Overview({ transactions, goals, subscriptions, purchases = [], fmt, cur
 
   // Ahead: what restocking supplies will cost over the next 30 days
   const { items: supplies = [] } = useCollection('essentials', STORAGE_KEYS.ESSENTIALS);
-  const restocks = useMemo(() => projectedSpend(supplies, toLocalDateKey(new Date()), { days: 30 }), [supplies]);
+  const restocks = useMemo(() => projectedSpend(suppliesWithUsage(supplies, toLocalDateKey(new Date())), toLocalDateKey(new Date()), { days: 30 }), [supplies]);
 
   return (
     <div style={{ display: 'flex', flexDirection: 'column', gap: 0, padding: '20px 24px 32px' }}>

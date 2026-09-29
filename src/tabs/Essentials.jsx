@@ -10,7 +10,7 @@ import { STORAGE_KEYS }  from '../utils/storage.js';
 import { insertRow, deleteRow } from '../utils/quickWrite.js';
 import { toLocalDateKey } from '../utils/localDate.js';
 import { readCurrency, formatMoney, currencySymbol } from '../utils/currency.js';
-import { forecast, restock, dueItems, cartLinks, shoppingList, parseAsin, DEFAULT_LEAD_DAYS } from '../domain/ahead.js';
+import { forecast, restock, dueItems, cartLinks, shoppingList, parseAsin, applyUsage, DEFAULT_LEAD_DAYS } from '../domain/ahead.js';
 
 //  Categories
 const CATEGORIES = [
@@ -29,7 +29,7 @@ const STORE_BY_CURRENCY = { AUD: 'amazon.com.au', NZD: 'amazon.com.au', GBP: 'am
 //  Status
 const STATUS_COLOUR = { out: '#e55a5a', order: '#e55a5a', soon: '#f4a642', ok: '#4caf7d', unknown: 'var(--text-secondary)' };
 const STATUS_LABEL  = { out: 'Out', order: 'Order now', soon: 'Soon', ok: 'Stocked', unknown: 'Set usage' };
-const SOURCE_LABEL  = { schedule: 'your usage schedule', learned: 'your real restocks', manual: 'the days you entered' };
+const SOURCE_LABEL  = { schedule: 'your usage schedule', learned: 'your real restocks', usage: 'what your food log says is left', manual: 'the days you entered' };
 
 const todayISO = () => toLocalDateKey(new Date());
 const fmtDate = (key) => key ? new Date(`${key}T12:00:00`).toLocaleDateString('en-AU', { day: 'numeric', month: 'short' }) : '—';
@@ -80,6 +80,7 @@ function ItemForm({ initial, onSave, onCancel, currency }) {
   const [link,    setLink]    = useState(initial?.storeUrl ?? initial?.asin ?? '');
   const [price,   setPrice]   = useState(initial?.price ?? '');
   const [notes,   setNotes]   = useState(initial?.notes ?? '');
+  const [subtract, setSubtract] = useState(initial?.autoSubtract !== false);
 
   const num = (v) => (v === '' || v == null ? null : Number(v));
   const draft = {
@@ -87,7 +88,8 @@ function ItemForm({ initial, onSave, onCancel, currency }) {
     packsOnHand: num(packs) || 1, leadDays: num(lead), lifespanDays: num(days),
     learnedDaysPerPack: initial?.learnedDaysPerPack, learnCycles: initial?.learnCycles,
   };
-  const preview = forecast(draft, todayISO());
+  // Food-log usage (derived) so the preview matches the list; never saved with the form.
+  const preview = forecast({ ...draft, usageDaysLeft: initial?.usageDaysLeft, usageDaysPerPack: initial?.usageDaysPerPack }, todayISO());
 
   function handleSave() {
     if (!name.trim()) return;
@@ -99,6 +101,7 @@ function ItemForm({ initial, onSave, onCancel, currency }) {
       storeUrl: !asin && link.trim().startsWith('http') ? link.trim() : null,
       price: num(price),
       notes: notes.trim() || null,
+      autoSubtract: cat === 'kitchen' ? subtract : null,
     });
   }
 
@@ -142,6 +145,13 @@ function ItemForm({ initial, onSave, onCancel, currency }) {
           : <>Lasts <strong className="val-num">{preview.daysPerPack}</strong> days a pack · runs out <strong>{fmtDate(preview.runOut)}</strong> · order by <strong>{fmtDate(preview.reorderBy)}</strong></>}
       </div>
 
+      {cat === 'kitchen' && (
+        <label style={{ display: 'flex', gap: 8, alignItems: 'flex-start', fontSize: 12, color: 'var(--text-secondary)', lineHeight: 1.45, cursor: 'pointer' }}>
+          <input type="checkbox" checked={subtract} onChange={e => setSubtract(e.target.checked)} style={{ marginTop: 2, accentColor: 'var(--tab-accent)' }} />
+          <span>Subtract food I log. Entries in g or ml whose name contains “{name.trim() || 'this supply'}” use up this pack (needs a pack size in g, kg, ml or l).</span>
+        </label>
+      )}
+
       <div style={{ ...LABEL, marginTop: 6 }}>BUYING</div>
       <Field label="Amazon link or ASIN (optional)"><input placeholder="https://www.amazon.com.au/…/dp/B0…" value={link} onChange={e => setLink(e.target.value)} style={INPUT} /></Field>
       <Field label={`Price (${currencySymbol(currency)})`}><input inputMode="decimal" placeholder="Optional" value={price} onChange={e => setPrice(e.target.value)} style={INPUT} /></Field>
@@ -165,6 +175,7 @@ function DetailPanel({ item, f, currency, onRestock, onEdit, onDelete }) {
     ['Order by',  f.reorderBy ? fmtDate(f.reorderBy) : '—'],
     ['Per pack',  f.daysPerPack ? `${f.daysPerPack} days` : '—'],
     ['Pack',      item.packQty ? `${item.packQty} ${item.unit || ''} · ${item.dosePerUse ?? '?'} × ${item.usesPerDay ?? '?'} a day` : '—'],
+    ...(item.stockLeft != null ? [['Left (from food log)', `≈ ${item.stockLeft} ${item.stockUnit || ''}`]] : []),
     ['On hand',   `${item.packsOnHand || 1} pack${(item.packsOnHand || 1) > 1 ? 's' : ''}`],
     ['Opened',    fmtDate(item.boughtDate)],
     ['Price',     item.price ? formatMoney(item.price, currency) : '—'],
@@ -269,6 +280,7 @@ function WeekCart({ due, groceries, store }) {
 //  Main Supplies tab
 export default function Essentials() {
   const { items, add, update, remove } = useCollection('essentials', STORAGE_KEYS.ESSENTIALS);
+  const { items: nutritionLogs = [] } = useCollection('nutrition_logs', STORAGE_KEYS.MACROS);
   const { data: mealPlanDoc } = useDocument('meal_plan', STORAGE_KEYS.MEAL_PLANS, null);
   const currency = readCurrency();
   const store = STORE_BY_CURRENCY[currency] ?? 'amazon.com.au';
@@ -279,11 +291,13 @@ export default function Essentials() {
   const [selected,  setSelected]  = useState(null);
   const [mode,      setMode]      = useState('view'); // view | add | edit
 
-  const withF = useMemo(() => items.map(it => ({ ...it, _f: forecast(it, today) })), [items, today]);
-  const due = useMemo(() => dueItems(items, today), [items, today]);
+  // Kitchen stock follows the food log (derived on read, never saved).
+  const live = useMemo(() => applyUsage(items, nutritionLogs, today), [items, nutritionLogs, today]);
+  const withF = useMemo(() => live.map(it => ({ ...it, _f: forecast(it, today) })), [live, today]);
+  const due = useMemo(() => dueItems(live, today), [live, today]);
   const groceries = useMemo(
-    () => shoppingList(mealPlanDoc?.plan, items.filter(i => i.category === 'kitchen'), today),
-    [mealPlanDoc, items, today]
+    () => shoppingList(mealPlanDoc?.plan, live.filter(i => i.category === 'kitchen'), today),
+    [mealPlanDoc, live, today]
   );
 
   const order = { out: 0, order: 1, soon: 2, ok: 3, unknown: 4 };
@@ -390,7 +404,7 @@ export default function Essentials() {
                 <span aria-hidden="true" style={{ fontSize: 16, flexShrink: 0 }}>{cat.icon}</span>
                 <span style={{ flex: 1, minWidth: 0, display: 'flex', flexDirection: 'column' }}>
                   <span style={{ fontSize: 13, color: 'var(--text-primary)', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{it.name}</span>
-                  <span style={{ fontSize: 11.5, color: 'var(--text-secondary)' }}>{whenText(it._f)}</span>
+                  <span style={{ fontSize: 11.5, color: 'var(--text-secondary)' }}>{whenText(it._f)}{it.stockLeft != null ? ` · ≈ ${it.stockLeft} ${it.stockUnit || ''} left` : ''}</span>
                 </span>
                 <span style={{ fontSize: 10.5, fontWeight: 600, color: sc, flexShrink: 0 }}>{STATUS_LABEL[it._f.status]}</span>
               </button>

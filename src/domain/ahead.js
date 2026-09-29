@@ -6,7 +6,10 @@
 //   name, category, boughtDate (= opened), lifespanDays (legacy manual days),
 //   packQty, unit, dosePerUse, usesPerDay, packsOnHand (default 1),
 //   leadDays (default 3), bufferDays (default 2), asin, storeUrl, price,
-//   learnedDaysPerPack, learnCycles, restocks: [{ date, packs }]
+//   learnedDaysPerPack, learnCycles, restocks: [{ date, packs }],
+//   autoSubtract (false = don't subtract logged food from this Kitchen supply)
+// applyUsage() adds derived, never-saved fields: usageDaysLeft, usageDaysPerPack,
+// stockLeft, stockUnit.
 
 export const DEFAULT_LEAD_DAYS = 3;
 export const DEFAULT_BUFFER_DAYS = 2;
@@ -41,6 +44,7 @@ export function daysPerPack(item) {
   if (scheduled)              return { days: scheduled, source: 'schedule', confidence: 0.7 };
   if (learned)                return { days: learned, source: 'learned', confidence: 0.5 };
   if (Number(item.lifespanDays) > 0) return { days: Number(item.lifespanDays), source: 'manual', confidence: 0.4 };
+  if (Number(item.usageDaysPerPack) > 0) return { days: Number(item.usageDaysPerPack), source: 'usage', confidence: 0.6 };
   return null;
 }
 
@@ -61,14 +65,23 @@ export function forecast(item, today) {
   // Old/manual rows can contain free-text or impossible dates. One bad row
   // must not throw while Supplies maps every item to a forecast.
   if (start == null || t == null) return { status: 'unknown', source: per.source };
-  const runOutIdx = Math.floor(start + per.days * packs);
+  let runOutIdx = Math.floor(start + per.days * packs);
+  let source = per.source, confidence = per.confidence;
+  // What the food log says is left, when that runs out sooner than the schedule.
+  // Logging is never perfect, so the earlier date wins: a small early reorder
+  // costs less than running out.
+  const usageLeft = Number(item.usageDaysLeft);
+  if (item.usageDaysLeft != null && Number.isFinite(usageLeft) && usageLeft >= 0) {
+    const byUsage = t + Math.floor(usageLeft);
+    if (byUsage < runOutIdx) { runOutIdx = byUsage; source = 'usage'; confidence = 0.8; }
+  }
   const reorderIdx = runOutIdx - lead - buffer;
   const daysLeft = runOutIdx - t;
   const daysToReorder = reorderIdx - t;
   const status = daysLeft <= 0 ? 'out' : daysToReorder <= 0 ? 'order' : daysToReorder <= 7 ? 'soon' : 'ok';
 
   return {
-    status, source: per.source, confidence: per.confidence,
+    status, source, confidence,
     daysPerPack: +per.days.toFixed(1),
     runOut: keyOf(runOutIdx), reorderBy: keyOf(reorderIdx),
     daysLeft, daysToReorder,
@@ -193,4 +206,105 @@ export function projectedSpend(items, today, { days = 30 } = {}) {
   }
   lines.sort((a, b) => a.dates[0].localeCompare(b.dates[0]));
   return { total: +lines.reduce((s, l) => s + l.subtotal, 0).toFixed(2), lines };
+}
+
+// ── Food log → pantry ────────────────────────────────────────────────────────
+// Kitchen supplies that measure a pack in g/kg/ml/l lose stock as you log food:
+// each nutrition-log entry with a g/ml quantity whose name contains the supply's
+// name (Rice ⊂ "Basmati rice, cooked") counts against it. Everything is derived
+// from the log on read, so deleting a meal puts the stock back and nothing is
+// written or double-counted.
+
+const UNITS = { g: ['mass', 1], gram: ['mass', 1], grams: ['mass', 1], kg: ['mass', 1000], ml: ['vol', 1], l: ['vol', 1000], litre: ['vol', 1000], litres: ['vol', 1000], liter: ['vol', 1000], liters: ['vol', 1000] };
+
+/** A quantity in base units (g or ml), or null when the unit isn't a mass/volume. */
+export function toBase(qty, unit) {
+  const u = UNITS[String(unit || '').toLowerCase().trim()];
+  const q = Number(qty);
+  return u && q > 0 ? { kind: u[0], amount: q * u[1], factor: u[1] } : null;
+}
+
+const singular = (w) => (w.length > 3 && w.endsWith('s') && !w.endsWith('ss') ? w.slice(0, -1) : w);
+const tokens = (name) => norm(name).split(' ').filter(w => w.length > 1).map(singular);
+
+/** Kitchen supplies that can lose stock to logged food. */
+export function isTracked(item) {
+  return item?.category === 'kitchen' && item.autoSubtract !== false && !!toBase(item.packQty, item.unit) && tokens(item.name).length > 0;
+}
+
+// The tracked supply a food belongs to: every word of the supply's name is in
+// the food's name and the units are the same kind. The most specific supply
+// wins; a tie between different supplies matches nothing rather than guessing.
+function bestMatch(foodTokens, kind, tracked) {
+  let best = null, tie = false;
+  for (const t of tracked) {
+    if (t.kind !== kind || !t.toks.every(w => foodTokens.includes(w))) continue;
+    if (!best || t.toks.length > best.toks.length) { best = t; tie = false; }
+    else if (t.toks.length === best.toks.length) tie = true;
+  }
+  return tie ? null : best;
+}
+
+/**
+ * Per tracked supply, from the nutrition log since it was opened:
+ * { consumed, left, perDay, days } in the supply's own unit, perDay averaged
+ * over the last `windowDays` and days = distinct days with use in that window.
+ */
+export function pantryUsage(items = [], nutritionLogs = [], today, { windowDays = 14 } = {}) {
+  const t = dayIndex(today);
+  if (t == null) return new Map();
+  const tracked = items.filter(isTracked).map(item => {
+    const pack = toBase(item.packQty, item.unit);
+    const packs = Number(item.packsOnHand) > 0 ? Number(item.packsOnHand) : 1;
+    return { item, toks: tokens(item.name), kind: pack.kind, factor: pack.factor, total: pack.amount * packs, start: dayIndex(item.boughtDate), consumed: 0, window: 0, days: new Set() };
+  }).filter(x => x.start != null);
+
+  for (const log of nutritionLogs) {
+    const day = dayIndex(log?.date);
+    if (day == null || day > t) continue;
+    for (const meal of log.meals || []) {
+      const b = toBase(meal?.qty, meal?.unit);
+      if (!b) continue;
+      const m = bestMatch(tokens(meal.name), b.kind, tracked);
+      if (!m || day < m.start) continue;
+      m.consumed += b.amount;
+      if (day > t - windowDays) { m.window += b.amount; m.days.add(day); }
+    }
+  }
+
+  const out = new Map();
+  for (const m of tracked) {
+    if (!m.consumed) continue;
+    const spanDays = Math.min(windowDays, t - m.start + 1);
+    out.set(m.item.id ?? m.item.name, {
+      consumed: +(m.consumed / m.factor).toFixed(1),
+      left: +(Math.max(0, m.total - m.consumed) / m.factor).toFixed(1),
+      perDay: +(m.window / m.factor / Math.max(1, spanDays)).toFixed(2),
+      perDayBase: m.window / Math.max(1, spanDays),
+      leftBase: Math.max(0, m.total - m.consumed),
+      packBase: m.total / (Number(m.item.packsOnHand) > 0 ? Number(m.item.packsOnHand) : 1),
+      days: m.days.size,
+    });
+  }
+  return out;
+}
+
+/**
+ * Items with the food-log usage folded in (new objects; nothing is saved).
+ * The run-out date only follows the log once it has 3+ days of use in the last
+ * two weeks; before that the stock is shown but the schedule still forecasts.
+ */
+export function applyUsage(items = [], nutritionLogs = [], today, opts) {
+  const usage = pantryUsage(items, nutritionLogs, today, opts);
+  if (!usage.size) return items;
+  return items.map(item => {
+    const u = usage.get(item.id ?? item.name);
+    if (!u) return item;
+    const out = { ...item, stockLeft: u.left, stockUnit: item.unit };
+    if (u.days >= 3 && u.perDayBase > 0) {
+      out.usageDaysLeft = u.leftBase / u.perDayBase;
+      out.usageDaysPerPack = u.packBase / u.perDayBase;
+    }
+    return out;
+  });
 }

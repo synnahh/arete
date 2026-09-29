@@ -6,6 +6,7 @@ import { useState, useEffect } from 'react';
 import { storage, STORAGE_KEYS } from '../utils/storage.js';
 import { toLocalDateKey, isOnLocalDay } from '../utils/localDate.js';
 import { dueItems } from '../domain/ahead.js';
+import { suppliesWithUsage } from '../utils/supplies.js';
 
 const arr = (k) => { const v = storage.get(k, []); return Array.isArray(v) ? v : (v?.daily || []); };
 const todayStr = () => toLocalDateKey(new Date());
@@ -22,7 +23,7 @@ function gather() {
   const dueToday = tasksAll.filter(x => x.dueDate === t);
 
   // Supplies to reorder within a week (Ahead engine forecast)
-  const restock = dueItems(arr(STORAGE_KEYS.ESSENTIALS), t).map(({ item, f }) => ({ name: item.name, days: f.daysToReorder }));
+  const restock = dueItems(suppliesWithUsage(arr(STORAGE_KEYS.ESSENTIALS), t), t).map(({ item, f }) => ({ name: item.name, days: f.daysToReorder }));
 
   // Momentum
   const streaks = arr(STORAGE_KEYS.HABITS).filter(h => (h.streak || 0) > 0)
