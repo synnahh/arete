@@ -148,14 +148,14 @@ Arete is a rebuild, so the existing appearance system stays and is extended, not
 
 | Existing (kept) | Change |
 |---|---|
-| 6 themes (, CSS vars on ), Obsidian default, custom accent override | Unchanged. The theme owns ground, surfaces, text, the orb and global chrome. Secondary-text alphas rise slightly (0.50 → 0.55–0.68) and  is no longer used for readable text (it fails 4.5:1). |
-| Font picker (DM Sans default, Geist, Exo 2, Sora, Inter, Orbitron) sets  | Unchanged for body text. New: headings in Archivo Expanded (option "Match body font"), live numbers in Geist Mono. |
-| Orb () with 4 shapes | Becomes the Coach button, centre of the tab bar. |
+| 6 themes (`themes.js`, CSS vars on `data-theme`), Obsidian default, custom accent override | Unchanged. The theme owns ground, surfaces, text, the orb and global chrome. Secondary-text alphas rise slightly (0.50 → 0.55–0.68) and `--text-muted` is no longer used for readable text (it fails 4.5:1). |
+| Font picker (DM Sans default, Geist, Exo 2, Sora, Inter, Orbitron) sets `--font-family` | Unchanged for body text. New: headings in Archivo Expanded (option "Match body font"), live numbers in Geist Mono. |
+| Orb (`VaIerieOrb.jsx`) with 4 shapes | Becomes the Coach button, centre of the tab bar. |
 | Background style (time-of-day, animated, solid, noise) | Shown behind Home. |
 | Animation intensity (full, reduced, none) | Drives the motion system (§4.6): Reduced drops signatures, None is instant; OS reduce-motion forces Reduced. |
 | Hollow star logo | Stays as the mark; the V is dropped for Arete (new render needed). |
 
-**New layer: tab colours.**  is set per tab on top of any theme (Home laurel, Plan azure, Coach ember, Mind violet, Finance emerald; Settings uses the theme accent). Arctic gets darker variants for contrast. Setting: *Tab colours: Per tab / Theme accent only*. It is used only for the active tab, that screen's key number and its signature motion. HUD details: hairlines, corner ticks on live cards, glow only on live data.
+**New layer: tab colours.** `--tab-accent` is set per tab on top of any theme (Home laurel, Plan azure, Coach ember, Mind violet, Finance emerald; Settings uses the theme accent). Arctic gets darker variants for contrast. Setting: *Tab colours: Per tab / Theme accent only*. It is used only for the active tab, that screen's key number and its signature motion. HUD details: hairlines, corner ticks on live cards, glow only on live data.
 
 Orb shape, background style and animation intensity are currently saved but never applied anywhere in the code. The rebuild wires them up. Board: https://claude.ai/artifact/JKq8pJ95VLtKVSQtdcHxbM (approval: Q-VIS).
 
