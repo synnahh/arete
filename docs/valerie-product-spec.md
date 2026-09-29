@@ -331,7 +331,8 @@ Cross-cutting: build passes; tests pass; 60 fps on tab switch and list scroll on
 | Q-MIND | Mind as its own tab, or folded into Plan → Review? | Compact nav bar |
 | Q-COACH | Coach personality; voice on/off. | Coach prompt layer (default: calm expert, text) |
 | Q-USE | Features used daily vs never. | Removal list |
-| Q-VIS | Approve the visual board (fonts, per-tab accents, signature animations). | All screen restyling |
+| Q-VIS | ~~Approve the visual board~~ Approved 2026-09-29; tokens shipped in 886b1ad. | — |
+| Q-STANCE | Brief lists STANCE as an inspiration app: which of its features should Arete take? | Feature list for Coach / Plan |
 | Q-INFRA | Approve Supabase Edge Functions as the server layer. | AI proxy, SMS, reliable reminders |
 | Q-iOS | Is there any native iOS project? | Parity plan |
 | Q-SMS | SMS countries and sender status. | Twilio production setup |
