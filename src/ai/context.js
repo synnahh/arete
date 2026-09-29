@@ -10,6 +10,7 @@ import { dayScore, GOAL_TEMPLATES } from '../domain/goals.js';
 import { bests, detectPR, setsOf } from '../domain/training.js';
 import { dueItems } from '../domain/ahead.js';
 import { suppliesWithUsage } from '../utils/supplies.js';
+import { withLiveStreaks } from '../domain/habits.js';
 import { currentWaterGoal } from '../utils/waterGoal.js';
 
 //  buildContext 
@@ -61,7 +62,7 @@ export function buildContext({ activeTab = 'dashboard' } = {}) {
 
   //  Habits / streaks 
   try {
-    const habits = storage.get(STORAGE_KEYS.HABITS, []);
+    const habits = withLiveStreaks(storage.get(STORAGE_KEYS.HABITS, []), toLocalDateKey(now));
     if (habits.length) {
       const activeStreaks = habits
         .filter(h => (h.streak || 0) > 0)

@@ -7,6 +7,7 @@ import { useState, useEffect } from 'react';
 import { storage, STORAGE_KEYS } from '../utils/storage.js';
 import { askClaudeRaw } from '../utils/claudeRaw.js';
 import { toLocalDateKey } from '../utils/localDate.js';
+import { withLiveStreaks } from '../domain/habits.js';
 
 const arr = (k) => { const v = storage.get(k, []); return Array.isArray(v) ? v : (v?.daily || []); };
 const within = (dateStr, days) => { if (!dateStr) return false; const d = new Date(dateStr); return (Date.now() - d) <= days * 86400000 && d <= new Date(); };
@@ -68,7 +69,7 @@ function buildWeeklyContext() {
 
   // Habits / focus / mood
   try {
-    const habits = arr(STORAGE_KEYS.HABITS).filter(h => (h.streak || 0) > 0).sort((a, b) => (b.streak || 0) - (a.streak || 0)).slice(0, 4);
+    const habits = withLiveStreaks(arr(STORAGE_KEYS.HABITS), toLocalDateKey(new Date())).filter(h => (h.streak || 0) > 0).sort((a, b) => (b.streak || 0) - (a.streak || 0)).slice(0, 4);
     if (habits.length) L.push(`Habit streaks: ${habits.map(h => `${h.name} (${h.streak}d)`).join(', ')}`);
     const focus = arr(STORAGE_KEYS.FOCUS_SESSIONS).filter(s => within(s.completedAt || s.date, 7));
     if (focus.length) L.push(`Focus sessions this week: ${focus.length}`);

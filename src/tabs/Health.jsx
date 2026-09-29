@@ -17,6 +17,7 @@ import { recentFoods } from '../domain/foods.js';
 import { weightCoach } from '../domain/weight.js';
 import { weeklyMicros, microCoach } from '../domain/micros.js';
 import ProgressPhotos from '../components/ProgressPhotos.jsx';
+import { isDone, currentStreak, toggleDay } from '../domain/habits.js';
 import MicroCoachCard from '../components/MicroCoachCard.jsx';
 import { calcWaterGoal, waterAdvice, DEFAULT_WATER_PROFILE } from '../domain/water.js';
 import { currentWaterGoal, trainedToday, sleepWindow } from '../utils/waterGoal.js';
@@ -451,15 +452,8 @@ function Habits({ habits, addHabit, updateHabit, removeHabit }) {
   const [form, setForm]     = useState({ name: '', icon: '', frequency: 'daily' });
   const today = todayStr();
 
-  const toggle = async (habit) => {
-    const done = habit.lastCompleted === today;
-    const streak = done ? Math.max((habit.streak || 0) - 1, 0)
-                       : (habit.streak || 0) + 1;
-    await updateHabit(habit.id, {
-      lastCompleted: done ? '' : today,
-      streak: done ? streak : streak,
-    });
-  };
+  // Streak rules live in domain/habits.js: a missed day now breaks the streak.
+  const toggle = (habit) => updateHabit(habit.id, toggleDay(habit, today));
 
   const ICONS = ['','<','=','=','>','=','<','<','>W','=','','='];
 
@@ -515,7 +509,7 @@ function Habits({ habits, addHabit, updateHabit, removeHabit }) {
       ) : (
         <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
           {habits.map(h => {
-            const done = h.lastCompleted === today;
+            const done = isDone(h, today);
             return (
               <div key={h.id} style={{
                 ...cardSx, display: 'flex', alignItems: 'center', gap: 12,
@@ -529,7 +523,7 @@ function Habits({ habits, addHabit, updateHabit, removeHabit }) {
                     {h.name}
                   </div>
                   <div style={{ fontSize: 11, color: 'var(--text-muted)', marginTop: 2 }}>
-                    =% {h.streak || 0} day streak
+                    =% {currentStreak(h, today)} day streak
                   </div>
                 </div>
                 <button onClick={() => toggle(h)} style={{

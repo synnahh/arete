@@ -7,6 +7,7 @@ import { storage, STORAGE_KEYS } from '../utils/storage.js';
 import { toLocalDateKey, isOnLocalDay } from '../utils/localDate.js';
 import { dueItems } from '../domain/ahead.js';
 import { suppliesWithUsage } from '../utils/supplies.js';
+import { withLiveStreaks } from '../domain/habits.js';
 
 const arr = (k) => { const v = storage.get(k, []); return Array.isArray(v) ? v : (v?.daily || []); };
 const todayStr = () => toLocalDateKey(new Date());
@@ -26,7 +27,7 @@ function gather() {
   const restock = dueItems(suppliesWithUsage(arr(STORAGE_KEYS.ESSENTIALS), t), t).map(({ item, f }) => ({ name: item.name, days: f.daysToReorder }));
 
   // Momentum
-  const streaks = arr(STORAGE_KEYS.HABITS).filter(h => (h.streak || 0) > 0)
+  const streaks = withLiveStreaks(arr(STORAGE_KEYS.HABITS), t).filter(h => (h.streak || 0) > 0)
     .sort((a, b) => (b.streak || 0) - (a.streak || 0)).slice(0, 3);
   const focusToday = arr(STORAGE_KEYS.FOCUS_SESSIONS).filter(s => isOnLocalDay(s.date || s.completedAt, t)).length;
   const lmToday = arr('valerie_lm_daily').find(d => d.date === t);

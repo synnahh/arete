@@ -5,6 +5,7 @@ import { storage, STORAGE_KEYS } from '../utils/storage.js';
 import { ProgressBar, MilestoneLine } from '../components/Charts.jsx';
 import { getXP, addXP, getRank, awardActivityXP, TIER_CONFIG, TIER_THRESHOLDS, XP_SOURCES } from '../utils/xp.js';
 import { computeStreaks } from '../utils/streaks.js';
+import { withLiveStreaks, isDone } from '../domain/habits.js';
 import { AnimatedNumber } from '../components/Motion.jsx';
 import { toLocalDateKey, isOnLocalDay } from '../utils/localDate.js';
 
@@ -418,7 +419,7 @@ function Streaks({ habits, streaks }) {
           Add habits in the Health tab to see your streaks here.
         </div>
       ) : sorted.map(h => {
-        const active  = h.lastCompleted === today;
+        const active  = isDone(h, today);
         const streak  = h.streak || 0;
         return (
           <div key={h.id} style={{
@@ -831,7 +832,7 @@ export default function Progress() {
         {/*  STREAKS  */}
         <section>
           <GlassLabel>Streaks</GlassLabel>
-          <Streaks habits={habits.items} streaks={streaks} />
+          <Streaks habits={withLiveStreaks(habits.items, toLocalDateKey(new Date()))} streaks={streaks} />
         </section>
 
         {/*  GOALS  */}
@@ -848,7 +849,7 @@ export default function Progress() {
         {/*  STATS  */}
         <section>
           <GlassLabel>Stats</GlassLabel>
-          <Stats focusSessions={sessions.items} habits={habits.items} />
+          <Stats focusSessions={sessions.items} habits={withLiveStreaks(habits.items, toLocalDateKey(new Date()))} />
         </section>
 
       </div>
