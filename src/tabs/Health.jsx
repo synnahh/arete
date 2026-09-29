@@ -13,7 +13,7 @@ import { currencySymbol as currencySym } from '../utils/currency.js';
 import { searchOpenFoodFacts, lookupBarcode, startBarcodeScan } from '../utils/openFoodFacts.js';
 import { toLocalDateKey } from '../utils/localDate.js';
 import { peekHealthSection, clearHealthSection, screenForHealthSection } from '../nav/healthSection.js';
-import { recentFoods, yesterdayKey, copyMeals, appendMeals } from '../domain/foods.js';
+import { recentFoods, yesterdayKey, copyMeals, appendMeals, mealFromPlan } from '../domain/foods.js';
 import FoodShortcuts from '../components/FoodShortcuts.jsx';
 import { weightCoach } from '../domain/weight.js';
 import { weeklyMicros, microCoach } from '../domain/micros.js';
@@ -2228,6 +2228,26 @@ function MealPlanner({ settings, savedMeals = [], addSavedMeal, bodyMetrics = []
   const currencySymbol = currencySym(settings?.currency);
 
   const txn = useCollection('transactions', STORAGE_KEYS.TRANSACTIONS);
+  const nutrition = useCollection('nutrition_logs', STORAGE_KEYS.MACROS);
+
+  // Log a planned meal (with its ingredients, so the pantry follows) with an Undo.
+  const logPlanned = async (meal) => {
+    const entry = mealFromPlan(meal);
+    if (!entry) return;
+    const day = toLocalDateKey(new Date());
+    const existing = nutrition.items.find(l => l.date === day);
+    const prev = existing ? { meals: existing.meals, calories: existing.calories, protein: existing.protein, carbs: existing.carbs, fat: existing.fat } : { meals: [], calories: 0, protein: 0, carbs: 0, fat: 0 };
+    const row = appendMeals(existing, [entry], day);
+    const fields = { meals: row.meals, calories: row.calories, protein: row.protein, carbs: row.carbs, fat: row.fat };
+    if (existing?.id) await nutrition.update(existing.id, fields); else await nutrition.add({ date: day, ...fields });
+    window.dispatchEvent(new CustomEvent('valerie:toast', { detail: {
+      message: `Logged ${entry.name} · ${entry.calories} kcal`, type: 'success',
+      undo: async () => {
+        const saved = storage.get(STORAGE_KEYS.MACROS, []).find(l => l.date === day && !String(l.id).startsWith('local_'));
+        if (saved) await nutrition.update(saved.id, prev);
+      },
+    } }));
+  };
 
   // Editable targets  default from settings, overridable inline
   const [calorieGoal, setCalorieGoal] = useState(settings?.macroGoal ?? 2500);
@@ -2471,6 +2491,10 @@ function MealPlanner({ settings, savedMeals = [], addSavedMeal, bodyMetrics = []
                                 )}
                               </div>
                             </div>
+                            <button onClick={() => logPlanned(meal)} aria-label={`Log ${meal.name} to today`} style={{
+                              flexShrink: 0, padding: '5px 11px', borderRadius: 8, cursor: 'pointer', fontSize: 11, fontWeight: 600,
+                              border: '0.5px solid var(--tab-accent)', background: 'transparent', color: 'var(--tab-accent)',
+                            }}>Log now</button>
                             <button onClick={() => saveMeal(meal)} disabled={alreadySaved || isSaved} style={{
                               flexShrink: 0, padding: '5px 11px', borderRadius: 8, cursor: alreadySaved ? 'default' : 'pointer',
                               fontSize: 11, fontWeight: 500, transition: 'all 0.15s',

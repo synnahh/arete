@@ -259,3 +259,20 @@ describe('shelf life after opening', () => {
     expect(expiringItems(items, '2026-09-20').map(x => x.item.name)).toEqual(['Vitamin C serum', 'SPF']);
   });
 });
+
+describe('pantry: meals logged from the plan', () => {
+  const rice = { id: 'r', name: 'Rice', category: 'kitchen', boughtDate: '2026-09-01', packQty: 5, unit: 'kg' };
+  const chicken = { id: 'c', name: 'Chicken breast', category: 'kitchen', boughtDate: '2026-09-01', packQty: 1000, unit: 'g' };
+  it('counts each ingredient of a planned meal, not the meal as a lump', () => {
+    const logs = [{ date: '2026-09-05', meals: [{ name: 'Chicken and rice bowl', calories: 700, ingredients: [
+      { name: 'Chicken breast', qty: 200, unit: 'g' }, { name: 'Rice', qty: 200, unit: 'g' }, { name: 'Eggs', qty: 2, unit: '' },
+    ] }] }];
+    const u = pantryUsage([rice, chicken], logs, '2026-09-10');
+    expect(u.get('c').left).toBe(800);
+    expect(u.get('r').left).toBe(4.8);
+  });
+  it('ignores the meal name when ingredients are present (no double counting)', () => {
+    const logs = [{ date: '2026-09-05', meals: [{ name: 'Rice bowl', qty: 300, unit: 'g', ingredients: [{ name: 'Rice', qty: 100, unit: 'g' }] }] }];
+    expect(pantryUsage([rice], logs, '2026-09-10').get('r').consumed).toBe(0.1);
+  });
+});

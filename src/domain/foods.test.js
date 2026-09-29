@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest';
-import { recentFoods, yesterdayKey, copyMeals, quickEntry, appendMeals } from './foods.js';
+import { recentFoods, yesterdayKey, copyMeals, quickEntry, appendMeals, mealFromPlan } from './foods.js';
 
 const meal = (name, calories, extra = {}) => ({ name, calories, protein: 10, carbs: 20, fat: 5, ...extra });
 const logs = [
@@ -94,5 +94,22 @@ describe('appendMeals', () => {
   });
   it('creates the day when there is none', () => {
     expect(appendMeals(null, [{ calories: 100 }], '2026-09-30')).toMatchObject({ date: '2026-09-30', calories: 100, protein: 0 });
+  });
+});
+
+describe('mealFromPlan', () => {
+  const now = new Date(2026, 8, 30, 18, 45);
+  const meal = { name: 'Chicken rice bowl', calories: 702.4, protein: 51.26, carbs: 70, fat: 18, ingredients: [
+    { name: 'Chicken breast', qty: '200', unit: 'g' }, { name: 'Rice', qty: 150, unit: 'g' }, { name: '', qty: 5, unit: 'g' }, { name: 'Salt', qty: 0, unit: 'g' },
+  ] };
+  it('keeps macros and only the usable ingredients', () => {
+    const e = mealFromPlan(meal, now);
+    expect(e).toMatchObject({ name: 'Chicken rice bowl', calories: 702, protein: 51.3, time: '18:45', fromPlan: true });
+    expect(e.ingredients).toEqual([{ name: 'Chicken breast', qty: 200, unit: 'g' }, { name: 'Rice', qty: 150, unit: 'g' }]);
+  });
+  it('omits ingredients when there are none, and refuses a meal without calories', () => {
+    expect(mealFromPlan({ name: 'Snack', calories: 200 }, now)).not.toHaveProperty('ingredients');
+    expect(mealFromPlan({ name: 'Nothing' }, now)).toBeNull();
+    expect(mealFromPlan({ name: 'Huge', calories: 99999 }, now)).toBeNull();
   });
 });

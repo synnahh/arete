@@ -264,12 +264,17 @@ export function pantryUsage(items = [], nutritionLogs = [], today, { windowDays 
     const day = dayIndex(log?.date);
     if (day == null || day > t) continue;
     for (const meal of log.meals || []) {
-      const b = toBase(meal?.qty, meal?.unit);
-      if (!b) continue;
-      const m = bestMatch(tokens(meal.name), b.kind, tracked);
-      if (!m || day < m.start) continue;
-      m.consumed += b.amount;
-      if (day > t - windowDays) { m.window += b.amount; m.days.add(day); }
+      // A meal logged from the meal plan carries its ingredients: count each of
+      // those (2 eggs, 200 g chicken) rather than the meal as one lump.
+      const parts = Array.isArray(meal?.ingredients) && meal.ingredients.length ? meal.ingredients : [meal];
+      for (const part of parts) {
+        const b = toBase(part?.qty, part?.unit);
+        if (!b) continue;
+        const m = bestMatch(tokens(part.name), b.kind, tracked);
+        if (!m || day < m.start) continue;
+        m.consumed += b.amount;
+        if (day > t - windowDays) { m.window += b.amount; m.days.add(day); }
+      }
     }
   }
 
