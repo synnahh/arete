@@ -10,7 +10,7 @@ import { STORAGE_KEYS }  from '../utils/storage.js';
 import { insertRow, deleteRow } from '../utils/quickWrite.js';
 import { toLocalDateKey } from '../utils/localDate.js';
 import { readCurrency, formatMoney, currencySymbol } from '../utils/currency.js';
-import { forecast, restock, dueItems, cartLinks, shoppingList, parseAsin, applyUsage, DEFAULT_LEAD_DAYS } from '../domain/ahead.js';
+import { forecast, restock, dueItems, cartLinks, shoppingList, parseAsin, applyUsage, expiry, DEFAULT_LEAD_DAYS } from '../domain/ahead.js';
 
 //  Categories
 const CATEGORIES = [
@@ -80,6 +80,7 @@ function ItemForm({ initial, onSave, onCancel, currency }) {
   const [link,    setLink]    = useState(initial?.storeUrl ?? initial?.asin ?? '');
   const [price,   setPrice]   = useState(initial?.price ?? '');
   const [notes,   setNotes]   = useState(initial?.notes ?? '');
+  const [pao,     setPao]     = useState(initial?.paoMonths ?? '');
   const [subtract, setSubtract] = useState(initial?.autoSubtract !== false);
 
   const num = (v) => (v === '' || v == null ? null : Number(v));
@@ -101,6 +102,7 @@ function ItemForm({ initial, onSave, onCancel, currency }) {
       storeUrl: !asin && link.trim().startsWith('http') ? link.trim() : null,
       price: num(price),
       notes: notes.trim() || null,
+      paoMonths: num(pao) >= 1 ? num(pao) : null,
       autoSubtract: cat === 'kitchen' ? subtract : null,
     });
   }
@@ -152,6 +154,8 @@ function ItemForm({ initial, onSave, onCancel, currency }) {
         </label>
       )}
 
+      <Field label="Use within (months after opening, the jar symbol)"><input inputMode="numeric" placeholder="e.g. 6" value={pao} onChange={e => setPao(e.target.value)} style={INPUT} /></Field>
+
       <div style={{ ...LABEL, marginTop: 6 }}>BUYING</div>
       <Field label="Amazon link or ASIN (optional)"><input placeholder="https://www.amazon.com.au/…/dp/B0…" value={link} onChange={e => setLink(e.target.value)} style={INPUT} /></Field>
       <Field label={`Price (${currencySymbol(currency)})`}><input inputMode="decimal" placeholder="Optional" value={price} onChange={e => setPrice(e.target.value)} style={INPUT} /></Field>
@@ -178,6 +182,7 @@ function DetailPanel({ item, f, currency, onRestock, onEdit, onDelete }) {
     ...(item.stockLeft != null ? [['Left (from food log)', `≈ ${item.stockLeft} ${item.stockUnit || ''}`]] : []),
     ['On hand',   `${item.packsOnHand || 1} pack${(item.packsOnHand || 1) > 1 ? 's' : ''}`],
     ['Opened',    fmtDate(item.boughtDate)],
+    ...(expiry(item, todayISO()).useBy ? [['Use by', fmtDate(expiry(item, todayISO()).useBy)]] : []),
     ['Price',     item.price ? formatMoney(item.price, currency) : '—'],
   ];
 
@@ -293,7 +298,7 @@ export default function Essentials() {
 
   // Kitchen stock follows the food log (derived on read, never saved).
   const live = useMemo(() => applyUsage(items, nutritionLogs, today), [items, nutritionLogs, today]);
-  const withF = useMemo(() => live.map(it => ({ ...it, _f: forecast(it, today) })), [live, today]);
+  const withF = useMemo(() => live.map(it => ({ ...it, _f: forecast(it, today), _e: expiry(it, today) })), [live, today]);
   const due = useMemo(() => dueItems(live, today), [live, today]);
   const groceries = useMemo(
     () => shoppingList(mealPlanDoc?.plan, live.filter(i => i.category === 'kitchen'), today),
@@ -404,7 +409,7 @@ export default function Essentials() {
                 <span aria-hidden="true" style={{ fontSize: 16, flexShrink: 0 }}>{cat.icon}</span>
                 <span style={{ flex: 1, minWidth: 0, display: 'flex', flexDirection: 'column' }}>
                   <span style={{ fontSize: 13, color: 'var(--text-primary)', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{it.name}</span>
-                  <span style={{ fontSize: 11.5, color: 'var(--text-secondary)' }}>{whenText(it._f)}{it.stockLeft != null ? ` · ≈ ${it.stockLeft} ${it.stockUnit || ''} left` : ''}</span>
+                  <span style={{ fontSize: 11.5, color: 'var(--text-secondary)' }}>{whenText(it._f)}{it.stockLeft != null ? ` · ≈ ${it.stockLeft} ${it.stockUnit || ''} left` : ''}{it._e?.status === 'expired' ? ' · past use-by' : it._e?.status === 'soon' ? ` · use within ${it._e.daysLeft} days` : ''}</span>
                 </span>
                 <span style={{ fontSize: 10.5, fontWeight: 600, color: sc, flexShrink: 0 }}>{STATUS_LABEL[it._f.status]}</span>
               </button>

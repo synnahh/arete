@@ -7,7 +7,8 @@
 //   packQty, unit, dosePerUse, usesPerDay, packsOnHand (default 1),
 //   leadDays (default 3), bufferDays (default 2), asin, storeUrl, price,
 //   learnedDaysPerPack, learnCycles, restocks: [{ date, packs }],
-//   autoSubtract (false = don't subtract logged food from this Kitchen supply)
+//   autoSubtract (false = don't subtract logged food from this Kitchen supply),
+//   paoMonths (shelf life once opened, the jar-with-a-lid symbol: 6M, 12M …)
 // applyUsage() adds derived, never-saved fields: usageDaysLeft, usageDaysPerPack,
 // stockLeft, stockUnit.
 
@@ -307,4 +308,38 @@ export function applyUsage(items = [], nutritionLogs = [], today, opts) {
     }
     return out;
   });
+}
+
+// ── Shelf life after opening (PAO) ───────────────────────────────────────────
+
+const addMonths = (key, months) => {
+  const [y, m, d] = key.split('-').map(Number);
+  const total = (m - 1) + Math.round(months);
+  const yy = y + Math.floor(total / 12), mm = ((total % 12) + 12) % 12;
+  const last = new Date(Date.UTC(yy, mm + 1, 0)).getUTCDate(); // clamp 31 Jan + 1 month to 28/29 Feb
+  return keyOf(Date.UTC(yy, mm, Math.min(d, last)) / DAY);
+};
+
+/**
+ * When an opened product should be used by, from the day it was opened
+ * (`openedDate`, else `boughtDate`) plus `paoMonths`. status: 'expired',
+ * 'soon' (within `warnDays`), 'ok', or 'unknown' when either is missing.
+ * Guidance printed on the product wins over this; it is a prompt, not a test.
+ */
+export function expiry(item, today, { warnDays = 30 } = {}) {
+  const months = Number(item?.paoMonths);
+  const opened = item?.openedDate || item?.boughtDate;
+  const t = dayIndex(today);
+  if (!(months >= 1 && months <= 60) || dayIndex(opened) == null || t == null) return { status: 'unknown' };
+  const useBy = addMonths(opened, months);
+  const daysLeft = dayIndex(useBy) - t;
+  return { status: daysLeft < 0 ? 'expired' : daysLeft <= warnDays ? 'soon' : 'ok', useBy, daysLeft };
+}
+
+/** Items past or near their use-by date, soonest first. */
+export function expiringItems(items = [], today, { warnDays = 30 } = {}) {
+  return items
+    .map(item => ({ item, e: expiry(item, today, { warnDays }) }))
+    .filter(({ e }) => e.status === 'expired' || e.status === 'soon')
+    .sort((a, b) => a.e.daysLeft - b.e.daysLeft);
 }

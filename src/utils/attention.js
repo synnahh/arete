@@ -4,7 +4,7 @@
 
 import { storage, STORAGE_KEYS } from './storage.js';
 import { toLocalDateKey } from './localDate.js';
-import { forecast } from '../domain/ahead.js';
+import { forecast, expiringItems } from '../domain/ahead.js';
 import { suppliesWithUsage } from './supplies.js';
 
 const arr = (k) => { const v = storage.get(k, []); return Array.isArray(v) ? v : (v?.daily || []); };
@@ -38,6 +38,12 @@ export function getAttentionTabs(dayOffset = 0) {
     return dayOffset === 0 ? f.daysToReorder <= 0 : f.daysToReorder === 1;
   });
   if (dueRestock.length) { tabs.add('essentials'); count += dueRestock.length; }
+
+  // Opened products past (or within a week of) their use-by date; today only.
+  if (dayOffset === 0) {
+    const stale = expiringItems(arr(STORAGE_KEYS.ESSENTIALS), today, { warnDays: 7 });
+    if (stale.length) { tabs.add('essentials'); count += stale.length; }
+  }
 
   // Habits only make sense for "today" — can't pre-log tomorrow's habits.
   if (dayOffset === 0) {

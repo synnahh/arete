@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest';
-import { scheduledDaysPerPack, daysPerPack, forecast, restock, dueItems, parseAsin, cartLinks, shoppingList, projectedSpend, toBase, isTracked, pantryUsage, applyUsage } from './ahead.js';
+import { scheduledDaysPerPack, daysPerPack, forecast, restock, dueItems, parseAsin, cartLinks, shoppingList, projectedSpend, toBase, isTracked, pantryUsage, applyUsage, expiry, expiringItems } from './ahead.js';
 
 // A 50 ml serum, 1 ml a use, twice a day → 25 days a pack.
 const serum = { name: 'Niacinamide serum', category: 'grooming', boughtDate: '2026-09-01', packQty: 50, unit: 'ml', dosePerUse: 1, usesPerDay: 2 };
@@ -229,5 +229,33 @@ describe('food log → pantry', () => {
   it('leaves untracked items and empty logs untouched', () => {
     const items = [rice];
     expect(applyUsage(items, [], '2026-09-10')).toBe(items);
+  });
+});
+
+describe('shelf life after opening', () => {
+  const jar = { name: 'Vitamin C serum', boughtDate: '2026-04-01', paoMonths: 6 };
+  it('adds the months to the day it was opened', () => {
+    expect(expiry(jar, '2026-06-01')).toEqual({ status: 'ok', useBy: '2026-10-01', daysLeft: 122 });
+    expect(expiry({ ...jar, openedDate: '2026-05-15' }, '2026-06-01').useBy).toBe('2026-11-15');
+  });
+  it('warns inside 30 days and flags it once past', () => {
+    expect(expiry(jar, '2026-09-10')).toMatchObject({ status: 'soon', daysLeft: 21 });
+    expect(expiry(jar, '2026-10-01')).toMatchObject({ status: 'soon', daysLeft: 0 });
+    expect(expiry(jar, '2026-10-02')).toMatchObject({ status: 'expired', daysLeft: -1 });
+  });
+  it('clamps to the end of a short month', () => {
+    expect(expiry({ boughtDate: '2026-01-31', paoMonths: 1 }, '2026-01-31').useBy).toBe('2026-02-28');
+    expect(expiry({ boughtDate: '2027-12-31', paoMonths: 2 }, '2027-12-31').useBy).toBe('2028-02-29');
+  });
+  it('says nothing without a shelf life or a valid date', () => {
+    expect(expiry({ boughtDate: '2026-04-01' }, '2026-09-10').status).toBe('unknown');
+    expect(expiry({ paoMonths: 6 }, '2026-09-10').status).toBe('unknown');
+    expect(expiry({ boughtDate: 'soon', paoMonths: 6 }, '2026-09-10').status).toBe('unknown');
+    expect(expiry({ boughtDate: '2026-04-01', paoMonths: 0 }, '2026-09-10').status).toBe('unknown');
+    expect(expiry({ boughtDate: '2026-04-01', paoMonths: 99 }, '2026-09-10').status).toBe('unknown');
+  });
+  it('lists what to use up, soonest first', () => {
+    const items = [jar, { name: 'SPF', boughtDate: '2025-10-15', paoMonths: 12 }, { name: 'Cleanser', boughtDate: '2026-08-01', paoMonths: 12 }, { name: 'Rice' }];
+    expect(expiringItems(items, '2026-09-20').map(x => x.item.name)).toEqual(['Vitamin C serum', 'SPF']);
   });
 });

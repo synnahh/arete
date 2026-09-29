@@ -65,7 +65,7 @@ Skin Bliss scans products (barcode, search, shelf photo) for ingredient clashes,
 | Daily skin rating (1–5), weekly trend, and routine-vs-rating comparison | **Have** (2026-09-30, Look; no notes field) | — |
 | Product scanner (barcode → ingredients) | Missing. Open Beauty Facts is a free, open database like the one already used for food | P2 |
 | Score a product against your skin profile | Missing | P3 |
-| Opened-product expiry (period-after-opening) reminder | Missing — the Ahead engine tracks run-out, not shelf life | P2 |
+| Opened-product expiry (period-after-opening) reminder | **Have** (2026-09-30: "use within N months" on a supply; shown in Supplies, Today and the attention count). Not verified: the Today panel on screen | — |
 | Tiered routine builder (Essential → Complete → Power) | Missing | P3 |
 
 ## 4. Sleep, water and weight coaches

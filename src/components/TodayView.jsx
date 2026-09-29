@@ -5,7 +5,7 @@
 import { useState, useEffect } from 'react';
 import { storage, STORAGE_KEYS } from '../utils/storage.js';
 import { toLocalDateKey, isOnLocalDay } from '../utils/localDate.js';
-import { dueItems } from '../domain/ahead.js';
+import { dueItems, expiringItems } from '../domain/ahead.js';
 import { suppliesWithUsage } from '../utils/supplies.js';
 import { withLiveStreaks } from '../domain/habits.js';
 
@@ -26,13 +26,16 @@ function gather() {
   // Supplies to reorder within a week (Ahead engine forecast)
   const restock = dueItems(suppliesWithUsage(arr(STORAGE_KEYS.ESSENTIALS), t), t).map(({ item, f }) => ({ name: item.name, days: f.daysToReorder }));
 
+  // Opened products near or past their use-by date
+  const expiring = expiringItems(arr(STORAGE_KEYS.ESSENTIALS), t, { warnDays: 14 }).map(({ item, e }) => ({ name: item.name, days: e.daysLeft }));
+
   // Momentum
   const streaks = withLiveStreaks(arr(STORAGE_KEYS.HABITS), t).filter(h => (h.streak || 0) > 0)
     .sort((a, b) => (b.streak || 0) - (a.streak || 0)).slice(0, 3);
   const focusToday = arr(STORAGE_KEYS.FOCUS_SESSIONS).filter(s => isOnLocalDay(s.date || s.completedAt, t)).length;
   const lmToday = arr('valerie_lm_daily').find(d => d.date === t);
 
-  return { events, overdue, dueToday, restock, streaks, focusToday, lmPct: lmToday?.pct ?? null };
+  return { events, overdue, dueToday, restock, expiring, streaks, focusToday, lmPct: lmToday?.pct ?? null };
 }
 
 function Section({ title, accent, count, tab, onGo, children }) {
@@ -64,7 +67,7 @@ export default function TodayView({ onTabChange }) {
 
   if (!open || !data) return null;
   const go = (tab) => { onTabChange?.(tab); setOpen(false); };
-  const empty = !data.events.length && !data.overdue.length && !data.dueToday.length && !data.restock.length;
+  const empty = !data.events.length && !data.overdue.length && !data.dueToday.length && !data.restock.length && !data.expiring.length;
   const dateLabel = new Date().toLocaleDateString('en-GB', { weekday: 'long', day: 'numeric', month: 'long' });
 
   return (
@@ -114,6 +117,14 @@ export default function TodayView({ onTabChange }) {
             <Section title="Reorder soon" accent="#f4a642" count={`${data.restock.length}`} tab="essentials" onGo={go}>
               {data.restock.map((r, i) => (
                 <div key={i} style={itemRow}><span>{r.name}</span><span style={{ color: r.days <= 0 ? '#e55a5a' : '#f4a642', fontSize: 11 }}>{r.days <= 0 ? 'order now' : `order in ${r.days}d`}</span></div>
+              ))}
+            </Section>
+          )}
+
+          {data.expiring.length > 0 && (
+            <Section title="Use up soon" accent="#f4a642" count={`${data.expiring.length}`} tab="essentials" onGo={go}>
+              {data.expiring.map((r, i) => (
+                <div key={i} style={itemRow}><span>{r.name}</span><span style={{ color: r.days < 0 ? '#e55a5a' : '#f4a642', fontSize: 11 }}>{r.days < 0 ? 'past use-by' : r.days === 0 ? 'last day' : `${r.days}d left`}</span></div>
               ))}
             </Section>
           )}
