@@ -175,3 +175,9 @@ Rotate the Anthropic and ElevenLabs keys, then set `ANTHROPIC_API_KEY`/`ANTHROPI
 ### Update — Claude resumed again (HEAD `697c2e3`)
 - `8911f4f` micro coach on the phone (shared `components/MicroCoachCard.jsx`). `697c2e3` phone Plan/Mind screen entrances (`.m-screen` wrapper in `MobileShell.jsx`).
 - 136 tests, build and build:pwa pass; checked in browser at 375 px. Remaining gaps: progress photos, phone Habits/Style, confirmation cards, pantry subtraction, removal list. Rob-blocked items unchanged.
+
+### Update — progress photos (`cbf4a2f`)
+- Body > Photos (desktop) and Body tab (phone) now use `components/ProgressPhotos.jsx`: Front/Side/Back, on-device compression (1600 px full, 420 px thumb), private bucket `progress-photos` with signed URLs, before/after slider with days and weight change (nearest weigh-in within 7 days, else none), lightbox with delete.
+- **Rob must run `supabase/progress_photos.sql`** (table, RLS, realtime, private bucket, owner-only object policies). Until then uploads show "Photo storage isn't set up yet" and save nothing.
+- Old device-only photos (localStorage `valerie_photos`) show under "On this device only" with a Move to cloud button; each is removed locally only after upload + row succeed.
+- Verified in browser with in-memory Supabase/Storage stubs (desktop + 375 px): migrate, upload 4000x3000 -> 1600x1200, compare, delete, missing-bucket failure leaves no row or file. 148 tests; build and build:pwa pass. NOT verified: real Storage bucket/RLS, iPhone camera/EXIF, Tauri.
