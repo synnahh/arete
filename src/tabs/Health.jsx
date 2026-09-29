@@ -13,6 +13,7 @@ import { currencySymbol as currencySym } from '../utils/currency.js';
 import { searchOpenFoodFacts, lookupBarcode, startBarcodeScan } from '../utils/openFoodFacts.js';
 import { toLocalDateKey } from '../utils/localDate.js';
 import { peekHealthSection, clearHealthSection, screenForHealthSection } from '../nav/healthSection.js';
+import { recentFoods } from '../domain/foods.js';
 
 //  Helpers 
 const todayStr = () => toLocalDateKey(new Date());
@@ -678,6 +679,23 @@ function Nutrition({ nutritionLogs, addNutritionLog, updateNutritionLog, setting
     else await addNutritionLog({ date: today, meals: newMeals, ...newTotals });
   };
 
+  // Recent & frequent: your own most-eaten foods from the last two months.
+  const frequent = useMemo(() => recentFoods(nutritionLogs, { today, limit: 8 }), [nutritionLogs, today]);
+
+  // One tap: log the food exactly as last time, with a short Undo.
+  const quickLog = async (food) => {
+    const prev = { meals, ...totals };
+    await logSavedMeal({ name: food.name, calories: food.calories, protein: food.protein, carbs: food.carbs, fat: food.fat, micros: food.micros });
+    window.dispatchEvent(new CustomEvent('valerie:toast', { detail: {
+      message: `Logged ${food.name} · ${food.calories} kcal`, type: 'success',
+      undo: async () => {
+        // The row may have just been created, so find it in the local mirror.
+        const row = storage.get(STORAGE_KEYS.MACROS, []).find(l => l.date === today && !String(l.id).startsWith('local_'));
+        if (row) await updateNutritionLog(row.id, prev);
+      },
+    } }));
+  };
+
   const handleSaveMeal = async () => {
     const { name, calories, protein, carbs, fat } = saveMealForm;
     if (!name.trim() || !calories) return;
@@ -779,6 +797,27 @@ function Nutrition({ nutritionLogs, addNutritionLog, updateNutritionLog, setting
           </div>
         ))}
       </div>
+
+      {/* Recent & frequent: one-tap re-log */}
+      {frequent.length > 0 && (
+        <div style={{ marginBottom: 16 }}>
+          <div style={{ fontSize: 10, color: 'var(--text-muted)', letterSpacing: '0.07em', marginBottom: 8 }}>RECENT &amp; FREQUENT</div>
+          <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>
+            {frequent.map(f => (
+              <button key={f.name} type="button" onClick={() => quickLog(f)}
+                aria-label={`Log ${f.name}, ${f.calories} kilocalories`}
+                style={{
+                  display: 'flex', flexDirection: 'column', alignItems: 'flex-start', gap: 2, padding: '8px 12px',
+                  borderRadius: 10, cursor: 'pointer', fontFamily: 'inherit', textAlign: 'left', maxWidth: 200,
+                  background: 'var(--hover-bg)', border: '0.5px solid var(--card-border)',
+                }}>
+                <span style={{ fontSize: 12.5, color: 'var(--text-primary)', fontWeight: 500, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis', maxWidth: 176 }}>+ {f.name}</span>
+                <span className="val-num" style={{ fontSize: 10.5, color: 'var(--text-secondary)' }}>{f.calories} kcal · P{f.protein}</span>
+              </button>
+            ))}
+          </div>
+        </div>
+      )}
 
       {/* Micronutrients (food + supplements) */}
       <MicronutrientPanel micros={dailyMicros} />
