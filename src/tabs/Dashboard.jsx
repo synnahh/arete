@@ -21,6 +21,7 @@ import { askClaude } from '../ai/claude.js';
 import { askOllama } from '../ai/ollama.js';
 import { rateLimitClaude } from '../utils/rateLimit.js';
 import DayRing from '../components/DayRing.jsx';
+import GoalRing from '../components/GoalRing.jsx';
 import { useCollection } from '../supabase/useCollection.js';
 import { useDocument }   from '../supabase/useDocument.js';
 import { getNowPlaying, pausePlayback, resumePlayback, skipNext, skipPrev, isSpotifyConnected } from '../utils/spotify.js';
@@ -843,6 +844,9 @@ export default function Dashboard({ settings, onTabChange, ai, density = 'standa
         </div>
         <InlineClock />
       </div>
+
+      {/* Goal ring — today's score against the Coach goal */}
+      <GoalRing settings={settings} onTabChange={onTabChange} />
 
       {/* At-a-glance strip — replaces the old 4 heavy stat cards */}
       <div style={{ flexShrink: 0 }}>

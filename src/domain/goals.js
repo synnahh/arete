@@ -134,3 +134,22 @@ export function settingsForGoal(goal, currentMacros = {}) {
     macros: { ...currentMacros, calories: kcal, protein, carbs, fat },
   };
 }
+
+/**
+ * Today's score against the goal (Home goal ring): the average of how far
+ * each factor is toward its target, 0–100. Calories count as on-target when
+ * close to the goal in either direction; everything else caps at 100%.
+ * Missing data counts as 0 so the ring fills as the day is logged.
+ */
+export function dayScore({ targets, calories = 0, protein = 0, waterMl = 0, waterGoalMl = 2500, sleepHours = 0, trained = false }) {
+  const clamp = (x) => Math.max(0, Math.min(1, x));
+  const factors = [
+    { id: 'training', label: 'Training', pct: trained ? 1 : 0, value: trained ? 'Done' : 'Not yet' },
+    { id: 'protein',  label: 'Protein',  pct: clamp(protein / targets.protein), value: `${Math.round(protein)}/${targets.protein} g` },
+    { id: 'calories', label: 'Calories', pct: calories ? clamp(1 - Math.abs(calories - targets.kcal) / targets.kcal) : 0, value: `${Math.round(calories)}/${targets.kcal}` },
+    { id: 'water',    label: 'Water',    pct: clamp(waterMl / waterGoalMl), value: `${(waterMl / 1000).toFixed(1)}/${(waterGoalMl / 1000).toFixed(1)} L` },
+    { id: 'sleep',    label: 'Sleep',    pct: clamp(sleepHours / 8), value: sleepHours ? `${Math.floor(sleepHours)}h ${Math.round((sleepHours % 1) * 60)}m` : '—' },
+  ];
+  const score = Math.round((factors.reduce((s, f) => s + f.pct, 0) / factors.length) * 100);
+  return { score, factors };
+}

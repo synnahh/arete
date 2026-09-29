@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest';
-import { computeTargets, estimateMaintenance, adaptiveMaintenance, makeGoal, settingsForGoal, TEMPLATE_IDS } from './goals.js';
+import { computeTargets, estimateMaintenance, adaptiveMaintenance, makeGoal, settingsForGoal, dayScore, TEMPLATE_IDS } from './goals.js';
 
 describe('computeTargets', () => {
   it('cut: 20% deficit, 2.2 g/kg protein, energy adds up', () => {
@@ -81,5 +81,21 @@ describe('goal records', () => {
     expect(s.proteinGoal).toBe(175);
     expect(s.macros).toMatchObject({ calories: 2240, protein: 175, fibre: 30 });
     expect(s.coachGoal.template).toBe('cut');
+  });
+});
+
+describe('dayScore', () => {
+  const targets = { kcal: 2000, protein: 160 };
+  it('is 100 when every factor is on target', () => {
+    expect(dayScore({ targets, calories: 2000, protein: 160, waterMl: 2500, sleepHours: 8, trained: true }).score).toBe(100);
+  });
+  it('counts over- and under-eating the same and caps the rest', () => {
+    const over  = dayScore({ targets, calories: 2400, protein: 400, waterMl: 9000, sleepHours: 12, trained: true });
+    const under = dayScore({ targets, calories: 1600, protein: 400, waterMl: 9000, sleepHours: 12, trained: true });
+    expect(over.score).toBe(under.score);
+    expect(over.factors.find(f => f.id === 'calories').pct).toBeCloseTo(0.8);
+  });
+  it('starts the day at 0', () => {
+    expect(dayScore({ targets }).score).toBe(0);
   });
 });

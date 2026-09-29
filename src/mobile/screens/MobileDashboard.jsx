@@ -12,6 +12,7 @@ import DayRing from '../../components/DayRing.jsx';
 import { toLocalDateKey } from '../../utils/localDate.js';
 import { useTasks } from '../../hooks/useTasks.js';
 import { normalizeTasks } from '../../domain/tasks.js';
+import GoalRing from '../../components/GoalRing.jsx';
 
 //  Shared components 
 function MCard({ children, style = {}, onClick }) {
@@ -575,6 +576,9 @@ export default function MobileDashboard({ settings, ai, peakState, onTabChange }
         </div>
         <LiveClock />
       </div>
+
+      {/*  Goal ring — today's score against the Coach goal  */}
+      <GoalRing settings={settings} onTabChange={onTabChange} compact />
 
       {/*  Stat strip (horizontal scroll)  */}
       <StatStrip tasks={tasks} />
