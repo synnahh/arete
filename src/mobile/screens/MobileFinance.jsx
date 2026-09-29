@@ -144,7 +144,8 @@ function OverviewTab({ transactions, subscriptions, purchases, settings }) {
 
   // Ahead: what restocking supplies will cost over the next 30 days
   const { items: supplies = [] } = useCollection('essentials', STORAGE_KEYS.ESSENTIALS);
-  const restocks = useMemo(() => projectedSpend(suppliesWithUsage(supplies, toLocalDateKey(new Date())), toLocalDateKey(new Date()), { days: 30 }), [supplies]);
+  // Not memoised on `supplies` alone: it also reads the food log (via the mirror), and the sum is cheap.
+  const restocks = projectedSpend(suppliesWithUsage(supplies, toLocalDateKey(new Date())), toLocalDateKey(new Date()), { days: 30 });
 
   // Spending by category (this month)
   const catMap = {};

@@ -224,7 +224,7 @@ export function usePeakState(settings) {
   }, []); // eslint-disable-line react-hooks/exhaustive-deps
 
   // Recompute when settings change (macro goals etc.)
-  useEffect(() => { recompute(); }, [settings?.macroGoal, settings?.proteinGoal]); // eslint-disable-line react-hooks/exhaustive-deps
+  useEffect(() => { recompute(); }, [settings?.macroGoal, settings?.proteinGoal, settings?.dayCycle?.trainingBonusKcal]); // eslint-disable-line react-hooks/exhaustive-deps
 
   // Midnight reset  reschedules itself so it fires every night, not just the first
   useEffect(() => {
