@@ -53,7 +53,7 @@ Each tab has its own identity: accent colour, icon and one signature animation (
 | **Finance** | Money in, out, and ahead | Finance, Portfolio, Subscriptions, Gmail import, projected spend from Supplies |
 | **Settings** | Profile, integrations, privacy, advanced | Settings, Vault (hardened), Twilio SMS, webhooks, REST API (under **Advanced**) |
 
-Wide layout (≥ 768 px or Tauri): labelled rail that collapses to icons. Compact layout (iOS PWA): bottom bar with five slots: Home · Plan · **Coach** (centre, elevated) · Finance · Mind. Settings opens from the avatar in the Home header. If Q-MIND folds Mind into Plan, the fifth slot becomes Settings.
+Wide layout (≥ 768 px or Tauri): labelled rail that collapses to icons. Compact layout (iOS PWA): bottom bar with five slots: Home · Plan · **Coach** (centre: the existing Valerie orb, in the user's chosen shape; tap opens Coach, hold to talk) · Finance · Mind. On the wide layout the orb sits at the foot of the rail. Settings opens from the avatar in the Home header. If Q-MIND folds Mind into Plan, the fifth slot becomes Settings.
 
 The AI is not a tab. It lives where the work is: the Coach chat inside Coach, capture and command everywhere (§3.2), and briefs on Home.
 
@@ -142,11 +142,22 @@ The v1 tokens stay (`--dur-instant` 90 ms through `--dur-emphasis` 360 ms, the e
 - **Signature animations**: one per tab, ≤ 600 ms, on tab entry or completion only, never looping on screen except the Home goal ring's idle pulse.
 - **Shared-element transitions**: card → detail uses the View Transitions API where supported, and a 240 ms fade otherwise.
 
-### 4.7 Visual system
+### 4.7 Visual system — built on the existing theme engine
 
-A hybrid: Apple-level polish (type, spacing, restraint) with a Jarvis/HUD edge (fine rules, mono numerals, light glow on live data only). Dark-first, with a light pair. Each tab has one accent; everything else is neutral. Tokens live in `src/styles/tokens.css`; components never use raw hex, and Tailwind classes are literal (lookup maps, no interpolation).
+Arete is a rebuild, so the existing appearance system stays and is extended, not replaced:
 
-**Fonts and per-tab palette — Claude proposes, owner approves** (decided 2026-09-29). A visual board goes to the owner before any of it is built.
+| Existing (kept) | Change |
+|---|---|
+| 6 themes (, CSS vars on ), Obsidian default, custom accent override | Unchanged. The theme owns ground, surfaces, text, the orb and global chrome. Secondary-text alphas rise slightly (0.50 → 0.55–0.68) and  is no longer used for readable text (it fails 4.5:1). |
+| Font picker (DM Sans default, Geist, Exo 2, Sora, Inter, Orbitron) sets  | Unchanged for body text. New: headings in Archivo Expanded (option "Match body font"), live numbers in Geist Mono. |
+| Orb () with 4 shapes | Becomes the Coach button, centre of the tab bar. |
+| Background style (time-of-day, animated, solid, noise) | Shown behind Home. |
+| Animation intensity (full, reduced, none) | Drives the motion system (§4.6): Reduced drops signatures, None is instant; OS reduce-motion forces Reduced. |
+| Hollow star logo | Stays as the mark; the V is dropped for Arete (new render needed). |
+
+**New layer: tab colours.**  is set per tab on top of any theme (Home laurel, Plan azure, Coach ember, Mind violet, Finance emerald; Settings uses the theme accent). Arctic gets darker variants for contrast. Setting: *Tab colours: Per tab / Theme accent only*. It is used only for the active tab, that screen's key number and its signature motion. HUD details: hairlines, corner ticks on live cards, glow only on live data.
+
+Orb shape, background style and animation intensity are currently saved but never applied anywhere in the code. The rebuild wires them up. Board: https://claude.ai/artifact/JKq8pJ95VLtKVSQtdcHxbM (approval: Q-VIS).
 
 ---
 
