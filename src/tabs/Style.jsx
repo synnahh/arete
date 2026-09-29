@@ -6,59 +6,9 @@ import { useState, useEffect } from 'react';
 import { useCollection }        from '../supabase/useCollection.js';
 import { STORAGE_KEYS, storage } from '../utils/storage.js';
 
-//  Currency helper 
-function getCurrSymbol(currency) {
-  switch (currency) {
-    case 'GBP': return '£';
-    case 'EUR': return '';
-    case 'AUD': return 'A$';
-    default:    return '$';
-  }
-}
-
-//  Constants 
-
-const OCCASIONS = ['Smart Casual', 'Date Night', 'Work', 'Gym', 'Beach', 'Evening'];
-
-const CATEGORIES = ['Clothing', 'Jewellery', 'Footwear', 'Accessories', 'Outfits'];
-
-const STATUS_CONFIG = {
-  wishlist:  { label: 'Wishlist',  color: '#5b9cf6' },
-  purchased: { label: 'Purchased', color: '#4caf7d' },
-  pass:      { label: 'Pass',      color: '#888'    },
-};
-
-const AESTHETICS = [
-  'minimalist', 'bold', 'elegant', 'casual', 'chic',
-  'modern', 'classic', 'refined', 'edgy',
-];
-
-//  Pollinations.ai 
-
-function pollinationsUrl(prompt, seed) {
-  return `https://image.pollinations.ai/prompt/${encodeURIComponent(prompt)}?width=400&height=500&seed=${seed}&nologo=true`;
-}
-
-function buildResults(occasion, query) {
-  const base = [occasion, query].filter(Boolean).join(' ');
-  const fallback = 'fashion outfit';
-  return Array.from({ length: 9 }, (_, i) => {
-    const seed      = Math.floor(Math.random() * 50000) + i * 137;
-    const aesthetic = AESTHETICS[i % AESTHETICS.length];
-    const subject   = base || fallback;
-    const prompt    = `${aesthetic} ${subject} outfit, fashion editorial, soft studio background, full body shot, professional photography`;
-    return {
-      id:          `r_${seed}_${i}`,
-      title:       `${aesthetic.charAt(0).toUpperCase() + aesthetic.slice(1)} ${subject}`,
-      prompt,
-      imageUrl:    pollinationsUrl(prompt, seed),
-      occasion,
-      query,
-      fromGoogle:  false,
-      seed,
-    };
-  });
-}
+import {
+  OCCASIONS, CATEGORIES, STATUS_CONFIG, getCurrSymbol, pollinationsUrl, buildResults,
+} from '../domain/style.js';
 
 //  Google Custom Search 
 

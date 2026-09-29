@@ -16,6 +16,8 @@ import MobileSettings   from './screens/MobileSettings.jsx';
 import MobileAI         from './screens/MobileAI.jsx';
 import MobileMind       from './screens/MobileMind.jsx';
 import MobilePortfolio  from './screens/MobilePortfolio.jsx';
+import MobileHabits     from './screens/MobileHabits.jsx';
+import MobileStyle      from './screens/MobileStyle.jsx';
 import { haptics }     from './utils/haptics.js';
 import { storage, STORAGE_KEYS } from '../utils/storage.js';
 import SectionBar      from '../components/SectionBar.jsx';
@@ -253,6 +255,8 @@ const MOBILE_SCREENS = {
   fuel:      (p) => <MobileHealth {...p} tabs={['Nutrition', 'Water']} title={null} />,
   recover:   (p) => <MobileHealth {...p} tabs={['Sleep']} title={null} />,
   body:      (p) => <MobileHealth {...p} tabs={['Body']} title={null} />,
+  habits:    ()  => <MobileHabits />,
+  style:     (p) => <MobileStyle {...p} />,
   lm:        ()  => <MobileLM />,
   mind:      (p) => <MobileMind {...p} />,
   finance:   (p) => <MobileFinance {...p} />,
