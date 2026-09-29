@@ -25,10 +25,10 @@ MyFitnessPal's paid tiers add meal scan, barcode scan, voice logging, per-day-of
 | Recent & frequent foods, one-tap re-log with Undo | Have | — |
 | Micronutrients and a 7-day gap coach | Have | — |
 | AI meal plan → ingredients → grocery list → pantry aware | Have (and pantry subtraction is beyond MFP) | — |
-| Copy yesterday / copy a meal to another day | Missing | **P1** — cheapest logging speed-up |
-| Quick-add calories/macros with no food name | Missing | **P1** |
+| Copy yesterday | **Have** (2026-09-30, desktop + phone, with Undo) | — |
+| Quick-add calories/macros with no food name | **Have** (2026-09-30, desktop + phone, with Undo) | — |
 | Meal sections (breakfast / lunch / dinner / snacks) | Missing | P2 |
-| Different macro goals per weekday (training vs rest) | Missing (Goal HQ has one target set; water already has a training-day bonus) | **P1** — fits the cut/bulk goal |
+| Different macro goals for training vs rest days | **Have** (2026-09-30, Goal HQ: calories move in carbs only, weekly total holds, rest days keep at least half the carbs). Not arbitrary per-weekday goals: the schedule decides | — |
 | Voice logging ("two eggs and toast") | Partial — the orb has speech, but it logs calories only, no foods/quantities | P2 |
 | Photo meal scan (AI estimates macros) | Missing; needs the `ai-chat` gateway deployed first | P2 |
 | Fasting timer | Missing | P3 |
@@ -81,7 +81,7 @@ RISE centres on a daily sleep-debt score. Sleep Cycle adds a smart wake window a
 | Water goal from weight, +training day, pace advice, one-tap log | Have | — |
 | Drink types (coffee/tea count differently), weather adjustment | Missing | P3 |
 | Weight trend, weekly rate, pace vs goal | Have | — |
-| "You reach your goal weight around <date> at this rate" | Missing — one small function on `domain/weight.js` | **P1** |
+| "You reach your goal weight around <date> at this rate" | **Have** (2026-09-30, optional goal weight in Goal HQ; shown on Body and Goal HQ) | — |
 | Apple Health sync | Missing, **not possible from a PWA or Tauri desktop**; skip | Skip |
 
 ## 5. STANCE (AI workout coach, assumed) — the adaptive coach
@@ -119,8 +119,8 @@ The first six are small, pure-logic features on data the app already stores, and
 
 1. ~~Next-session load suggestion + plateau detection (Train)~~ done 2026-09-30
 2. ~~Sleep debt + readiness score~~ done 2026-09-30 (Home ring not wired)
-3. **Goal-weight ETA** and **per-weekday macro goals** (Body, Goal HQ, Fuel)
-4. **Copy yesterday + quick-add calories** (Fuel)
+3. ~~Goal-weight ETA and training/rest-day macro goals~~ done 2026-09-30
+4. ~~Copy yesterday + quick-add calories~~ done 2026-09-30
 5. **Face progress photos + daily skin rating** (Look)
 6. **Habit heatmap** (Habits)
 7. Approval cards for assistant actions (blocked on Q-CONFIRM)

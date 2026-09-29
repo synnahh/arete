@@ -13,7 +13,8 @@ import { currencySymbol as currencySym } from '../utils/currency.js';
 import { searchOpenFoodFacts, lookupBarcode, startBarcodeScan } from '../utils/openFoodFacts.js';
 import { toLocalDateKey } from '../utils/localDate.js';
 import { peekHealthSection, clearHealthSection, screenForHealthSection } from '../nav/healthSection.js';
-import { recentFoods } from '../domain/foods.js';
+import { recentFoods, yesterdayKey, copyMeals, appendMeals } from '../domain/foods.js';
+import FoodShortcuts from '../components/FoodShortcuts.jsx';
 import { weightCoach } from '../domain/weight.js';
 import { weeklyMicros, microCoach } from '../domain/micros.js';
 import ProgressPhotos from '../components/ProgressPhotos.jsx';
@@ -692,6 +693,26 @@ function Nutrition({ nutritionLogs, addNutritionLog, updateNutritionLog, setting
   // Recent & frequent: your own most-eaten foods from the last two months.
   const frequent = useMemo(() => recentFoods(nutritionLogs, { today, limit: 8 }), [nutritionLogs, today]);
 
+  // Copy yesterday / quick-add: append entries to today with a short Undo.
+  const yesterdayMeals = useMemo(() => copyMeals((nutritionLogs || []).find(l => l.date === yesterdayKey(today))), [nutritionLogs, today]);
+  const appendEntries = async (entries, message) => {
+    const prev = { meals, ...totals };
+    const row = appendMeals(todayLog, entries, today);
+    const fields = { meals: row.meals, calories: row.calories, protein: row.protein, carbs: row.carbs, fat: row.fat };
+    if (todayLog?.id) await updateNutritionLog(todayLog.id, fields);
+    else await addNutritionLog({ date: today, ...fields });
+    window.dispatchEvent(new CustomEvent('valerie:toast', { detail: {
+      message, type: 'success',
+      undo: async () => {
+        const saved = storage.get(STORAGE_KEYS.MACROS, []).find(l => l.date === today && !String(l.id).startsWith('local_'));
+        if (saved) await updateNutritionLog(saved.id, prev);
+      },
+    } }));
+  };
+  const copyYesterday = () => appendEntries(copyMeals((nutritionLogs || []).find(l => l.date === yesterdayKey(today))),
+    `Copied ${yesterdayMeals.length} item${yesterdayMeals.length === 1 ? '' : 's'} from yesterday`);
+  const quickAdd = (entry) => appendEntries([entry], `Added ${entry.calories} kcal`);
+
   // One tap: log the food exactly as last time, with a short Undo.
   const quickLog = async (food) => {
     const prev = { meals, ...totals };
@@ -807,6 +828,10 @@ function Nutrition({ nutritionLogs, addNutritionLog, updateNutritionLog, setting
           </div>
         ))}
       </div>
+
+      <FoodShortcuts
+        yesterday={yesterdayMeals.length ? { count: yesterdayMeals.length, kcal: Math.round(yesterdayMeals.reduce((s, m) => s + (Number(m.calories) || 0), 0)) } : null}
+        onCopy={copyYesterday} onQuickAdd={quickAdd} />
 
       {/* Recent & frequent: one-tap re-log */}
       {frequent.length > 0 && (

@@ -14,6 +14,9 @@ import ReadinessCard from '../../components/ReadinessCard.jsx';
 import GoalEta from '../../components/GoalEta.jsx';
 import { withTodaysTargets } from '../../utils/todaysTargets.js';
 import MicroCoachCard from '../../components/MicroCoachCard.jsx';
+import FoodShortcuts from '../../components/FoodShortcuts.jsx';
+import { yesterdayKey, copyMeals, appendMeals } from '../../domain/foods.js';
+import { storage } from '../../utils/storage.js';
 import { weeklyMicros, microCoach } from '../../domain/micros.js';
 
 const nowStr = () => new Date().toLocaleTimeString('en-AU', { hour: '2-digit', minute: '2-digit', hour12: false });
@@ -559,6 +562,23 @@ function NutritionTab({ settings, today }) {
     setShowAdd(false);
   }
 
+  // Copy yesterday / quick-add, with an Undo toast (the toast host now runs on the phone too).
+  const yesterdayMeals = useMemo(() => copyMeals(nutritionLogs.find(l => l.date === yesterdayKey(today))), [nutritionLogs, today]);
+  async function appendEntries(entries, message) {
+    const prev = { meals, calories: totCal, protein: totProt, carbs: totCarb, fat: totFat };
+    const row = appendMeals(todayLog, entries, today);
+    const fields = { meals: row.meals, calories: row.calories, protein: row.protein, carbs: row.carbs, fat: row.fat };
+    if (todayLog?.id) await updateNutritionLog(todayLog.id, fields);
+    else await addNutritionLog({ date: today, ...fields });
+    window.dispatchEvent(new CustomEvent('valerie:toast', { detail: {
+      message, type: 'success',
+      undo: async () => {
+        const saved = storage.get(STORAGE_KEYS.MACROS, []).find(l => l.date === today && !String(l.id).startsWith('local_'));
+        if (saved) await updateNutritionLog(saved.id, prev);
+      },
+    } }));
+  }
+
   async function removeMealEntry(id) {
     if (!todayLog?.id) return;
     const newMeals = meals.filter(m => m.id !== id);
@@ -587,6 +607,11 @@ function NutritionTab({ settings, today }) {
         <VitalCard label="Fat"      value={`${totFat}g`} sub={`of ${fatGoal}g`}
           color="#4caf7d" barValue={totFat} barMax={fatGoal} barColor="#4caf7d" />
       </div>
+
+      <FoodShortcuts
+        yesterday={yesterdayMeals.length ? { count: yesterdayMeals.length, kcal: Math.round(yesterdayMeals.reduce((s, m) => s + (Number(m.calories) || 0), 0)) } : null}
+        onCopy={() => appendEntries(yesterdayMeals, `Copied ${yesterdayMeals.length} item${yesterdayMeals.length === 1 ? '' : 's'} from yesterday`)}
+        onQuickAdd={(entry) => appendEntries([entry], `Added ${entry.calories} kcal`)} />
 
       {/* Log food button */}
       <button onClick={() => setShowAdd(true)} style={{

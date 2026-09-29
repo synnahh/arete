@@ -50,3 +50,50 @@ export function recentFoods(nutritionLogs = [], { today, limit = 8, windowDays =
       unit: entry.unit ?? null,
     }));
 }
+
+// ── Shortcuts: copy a day, quick-add ────────────────────────────────────────
+
+const clock = (now) => `${String(now.getHours()).padStart(2, '0')}:${String(now.getMinutes()).padStart(2, '0')}`;
+
+/** The local day before `today` ('YYYY-MM-DD'). */
+export function yesterdayKey(today) {
+  const t = dayIndex(today) - 1;
+  return new Date(t * 86400000).toISOString().slice(0, 10);
+}
+
+/** Fresh copies of a day's meals, ready to append to another day. */
+export function copyMeals(log, now = new Date()) {
+  const stamp = now.getTime();
+  return (log?.meals || [])
+    .filter(m => m && Number(m.calories) >= 0 && String(m.name || '').trim())
+    .map((m, i) => ({
+      ...m,
+      id: `m_${stamp}_${i}`,
+      time: clock(now),
+      ...(m.savedMealId ? { savedMealId: m.savedMealId } : {}),
+    }));
+}
+
+/**
+ * A quick-add entry from just calories (and optionally protein/carbs/fat and a
+ * name), for when you know the number but not the food. Null unless calories
+ * are between 1 and 10,000.
+ */
+export function quickEntry({ name = '', calories, protein = 0, carbs = 0, fat = 0 } = {}, now = new Date()) {
+  const kcal = Math.round(Number(calories));
+  if (!(kcal >= 1 && kcal <= 10000)) return null;
+  const grams = (v) => { const n = Math.round((Number(v) || 0) * 10) / 10; return n > 0 && n <= 1000 ? n : 0; };
+  return {
+    id: `m_${now.getTime()}`,
+    name: String(name).trim().slice(0, 60) || 'Quick add',
+    calories: kcal, protein: grams(protein), carbs: grams(carbs), fat: grams(fat),
+    micros: {}, qty: null, unit: null, time: clock(now), quick: true,
+  };
+}
+
+/** A day's row with `entries` appended and the totals recomputed from the meals. */
+export function appendMeals(existing, entries, date) {
+  const meals = [...(existing?.meals || []), ...entries];
+  const sum = (k) => Math.round(meals.reduce((s, m) => s + (Number(m[k]) || 0), 0) * 10) / 10;
+  return { ...(existing || {}), date, meals, calories: sum('calories'), protein: sum('protein'), carbs: sum('carbs'), fat: sum('fat') };
+}

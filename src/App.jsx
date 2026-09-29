@@ -4,6 +4,7 @@ import { handleSpotifyCallback }    from './utils/spotify.js';
 import { storage, STORAGE_KEYS }    from './utils/storage.js';
 import { supabase }                 from './supabase/supabase.js';
 import MobileShell                  from './mobile/MobileShell.jsx';
+import Toaster                      from './components/Toaster.jsx';
 import { applyTheme }            from './styles/themes.js';
 import { applyAppearance, setActiveGroup, backgroundClass } from './styles/appearance.js';
 import { stripLegacyClaudeKeys } from './utils/settingsSecurity.js';
@@ -223,22 +224,6 @@ export default function App() {
           window.history.replaceState({}, '', '/');
         });
     }
-  }, []);
-
-  //  Toast (supports an optional Undo action via detail.undo)
-  const [sleepToast, setSleepToast] = useState(null);
-  const toastTimerRef = useRef(null);
-  useEffect(() => {
-    const handler = (e) => {
-      const detail = e.detail || {};
-      if (!detail.message) return;
-      setSleepToast(detail);
-      if (toastTimerRef.current) clearTimeout(toastTimerRef.current);
-      // Give a longer window when there's an Undo to act on
-      toastTimerRef.current = setTimeout(() => setSleepToast(null), detail.undo ? 8000 : 5000);
-    };
-    window.addEventListener('valerie:toast', handler);
-    return () => { window.removeEventListener('valerie:toast', handler); if (toastTimerRef.current) clearTimeout(toastTimerRef.current); };
   }, []);
 
   //  WebView2 black-screen recovery on focus 
@@ -486,30 +471,7 @@ export default function App() {
         />
       )}
 
-      {/* Toast (message + optional Undo) */}
-      {sleepToast && (
-        <div style={{
-          position: 'fixed', bottom: 28, left: '50%', transform: 'translateX(-50%)',
-          background: 'rgba(8,12,20,0.96)', border: '0.5px solid rgba(74,158,255,0.3)',
-          borderRadius: 12, padding: '11px 18px', zIndex: 10000,
-          fontSize: 13, color: 'var(--text-primary)', whiteSpace: 'nowrap',
-          boxShadow: '0 4px 24px rgba(0,0,0,0.55)',
-          display: 'flex', alignItems: 'center', gap: 10,
-          animation: 'fadeIn 0.25s ease',
-        }}>
-          <span style={{ fontSize: 16 }}>
-            {sleepToast.type === 'sleep' ? '🌙' : sleepToast.type === 'success' ? '✓' : sleepToast.type === 'error' ? '⚠️' : 'ℹ️'}
-          </span>
-          {sleepToast.message}
-          {sleepToast.undo && (
-            <button
-              onClick={() => { try { sleepToast.undo(); } catch {} setSleepToast(null); }}
-              style={{ marginLeft: 4, background: 'var(--accent)', color: '#fff', border: 'none',
-                borderRadius: 8, padding: '4px 12px', fontSize: 12, fontWeight: 600, cursor: 'pointer' }}
-            >Undo</button>
-          )}
-        </div>
-      )}
+      <Toaster />
     </div>
   );
 }

@@ -17,6 +17,7 @@ import MobileAI         from './screens/MobileAI.jsx';
 import MobileMind       from './screens/MobileMind.jsx';
 import MobilePortfolio  from './screens/MobilePortfolio.jsx';
 import MobileHabits     from './screens/MobileHabits.jsx';
+import Toaster          from '../components/Toaster.jsx';
 import MobileStyle      from './screens/MobileStyle.jsx';
 import { haptics }     from './utils/haptics.js';
 import { storage, STORAGE_KEYS } from '../utils/storage.js';
@@ -403,6 +404,8 @@ export default function MobileShell({ settings, onSettingsChange }) {
             : <div style={{ padding: 16 }}><PlaceholderScreen title={SCREEN_LABELS[activeTab] ?? activeTab} /></div>}
         </div>
       </div>
+
+      <Toaster phone />
 
       {/*  VALERIE slide-up sheet (hold the Coach orb)  */}
       <VALERIESheet open={valOpen} onClose={() => setValOpen(false)} ai={ai} settings={settings} />
