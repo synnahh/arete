@@ -99,3 +99,48 @@ describe('dayScore', () => {
     expect(dayScore({ targets }).score).toBe(0);
   });
 });
+
+describe('cycleTargets', () => {
+  const base = { kcal: 2500, protein: 180, carbs: 250, fat: 70 };
+  it('is a no-op when off', async () => {
+    const { cycleTargets } = await import('./goals.js');
+    expect(cycleTargets(base, null, true)).toMatchObject({ ...base, kind: null, delta: 0 });
+    expect(cycleTargets(base, { trainingBonusKcal: 0, trainingDaysPerWeek: 4 }, false).kcal).toBe(2500);
+  });
+  it('adds the bonus in carbs on training days and keeps protein and fat', async () => {
+    const { cycleTargets } = await import('./goals.js');
+    const t = cycleTargets(base, { trainingBonusKcal: 250, trainingDaysPerWeek: 4 }, true);
+    expect(t).toMatchObject({ kcal: 2752, carbs: 313, protein: 180, fat: 70, kind: 'training' });
+  });
+  it('rest days give it back so the weekly average holds', async () => {
+    const { cycleTargets } = await import('./goals.js');
+    const cycle = { trainingBonusKcal: 300, trainingDaysPerWeek: 4 };
+    const train = cycleTargets(base, cycle, true), rest = cycleTargets(base, cycle, false);
+    expect(rest.kind).toBe('rest');
+    expect(Math.abs((train.kcal * 4 + rest.kcal * 3) / 7 - 2500)).toBeLessThan(8); // carbs round to whole grams
+  });
+  it('never drives carbs negative and ignores silly day counts', async () => {
+    const { cycleTargets } = await import('./goals.js');
+    expect(cycleTargets({ ...base, carbs: 20 }, { trainingBonusKcal: 900, trainingDaysPerWeek: 5 }, false).carbs).toBeGreaterThanOrEqual(10);
+    expect(cycleTargets(base, { trainingBonusKcal: 250, trainingDaysPerWeek: 7 }, true).kind).toBeNull();
+  });
+  it('caps the bonus so rest days keep at least half their carbs, and still balances the week', async () => {
+    const { cycleTargets } = await import('./goals.js');
+    const cycle = { trainingBonusKcal: 250, trainingDaysPerWeek: 5 };
+    const b = { kcal: 2150, protein: 185, carbs: 205, fat: 65 };
+    const rest = cycleTargets(b, cycle, false), train = cycleTargets(b, cycle, true);
+    expect(rest.capped).toBe(true);
+    expect(rest.carbs).toBeGreaterThanOrEqual(102);
+    expect(train.delta).toBeLessThan(250);
+    expect(Math.abs((train.kcal * 5 + rest.kcal * 2) / 7 - 2150)).toBeLessThan(8);
+  });
+  it('is off when the cap leaves nothing worth moving', async () => {
+    const { cycleTargets } = await import('./goals.js');
+    expect(cycleTargets({ kcal: 1800, protein: 150, carbs: 10, fat: 60 }, { trainingBonusKcal: 250, trainingDaysPerWeek: 4 }, true).kind).toBeNull();
+  });
+  it('makeGoal keeps an optional goal weight', async () => {
+    const { makeGoal } = await import('./goals.js');
+    expect(makeGoal({ template: 'cut', weightKg: 85, maintenanceKcal: 2800, startedOn: '2026-09-30', targetWeightKg: 78 }).targetWeightKg).toBe(78);
+    expect(makeGoal({ template: 'cut', weightKg: 85, maintenanceKcal: 2800, startedOn: '2026-09-30' })).not.toHaveProperty('targetWeightKg');
+  });
+});

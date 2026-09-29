@@ -7,6 +7,9 @@ import { useHealthData } from '../hooks/useHealthData.js';
 import { STORAGE_KEYS } from '../utils/storage.js';
 import { toLocalDateKey } from '../utils/localDate.js';
 import { updateSettings } from '../utils/settingsStore.js';
+import GoalEta from '../components/GoalEta.jsx';
+import { cycleFor, todaysTargets, scheduledTrainingDaysPerWeek } from '../utils/todaysTargets.js';
+import { cycleTargets } from '../domain/goals.js';
 import {
   GOAL_TEMPLATES, TEMPLATE_IDS, computeTargets, estimateMaintenance,
   adaptiveMaintenance, makeGoal, settingsForGoal,
@@ -84,6 +87,7 @@ function GoalEditor({ settings, latestWeight, adaptive, onDone, onCancel }) {
   const [weight, setWeight]     = useState(latestWeight ? String(latestWeight) : '');
   const suggested = adaptive?.kcal ?? estimateMaintenance(Number(weight));
   const [maint, setMaint]       = useState('');
+  const [targetWeight, setTargetWeight] = useState(current?.targetWeightKg ? String(current.targetWeightKg) : '');
   const maintenanceKcal = Number(maint) || suggested || 0;
   const maintenanceSource = maint ? 'manual' : adaptive ? 'adaptive' : 'estimate';
   const targets = computeTargets(template, { weightKg: Number(weight), maintenanceKcal });
@@ -92,7 +96,7 @@ function GoalEditor({ settings, latestWeight, adaptive, onDone, onCancel }) {
   function lockIn() {
     const goal = makeGoal({
       template, customText: custom ? customText : '', weightKg: Number(weight),
-      maintenanceKcal, maintenanceSource, startedOn: toLocalDateKey(new Date()),
+      maintenanceKcal, maintenanceSource, startedOn: toLocalDateKey(new Date()), targetWeightKg: Number(targetWeight) || null,
     });
     if (!goal) return;
     updateSettings(settingsForGoal(goal, settings?.macros));
@@ -153,6 +157,11 @@ function GoalEditor({ settings, latestWeight, adaptive, onDone, onCancel }) {
           <input inputMode="decimal" value={weight} onChange={e => setWeight(e.target.value)} placeholder="80" style={input} />
         </label>
         <label style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
+          <span style={label}>Goal weight (kg, optional)</span>
+          <input inputMode="decimal" value={targetWeight} onChange={e => setTargetWeight(e.target.value)} placeholder="78" style={input} />
+          <span style={{ fontSize: 12, color: 'var(--text-secondary)' }}>Adds a projected date to your weight trend.</span>
+        </label>
+        <label style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
           <span style={label}>Maintenance (kcal/day)</span>
           <input inputMode="numeric" value={maint} onChange={e => setMaint(e.target.value)} placeholder={suggested ? String(suggested) : '2600'} style={input} />
           <span style={{ fontSize: 12, color: 'var(--text-secondary)' }}>
@@ -189,6 +198,45 @@ function GoalEditor({ settings, latestWeight, adaptive, onDone, onCancel }) {
   );
 }
 
+//  Training days vs rest days: same weekly calories, moved toward the days you train
+function DayCycleCard({ goal, settings }) {
+  const cycle = cycleFor(settings);
+  const bonus = cycle?.trainingBonusKcal ?? 0;
+  const days = cycle?.trainingDaysPerWeek ?? scheduledTrainingDaysPerWeek() ?? 4;
+  const base = goal.targets;
+  const train = cycleTargets(base, { trainingBonusKcal: bonus, trainingDaysPerWeek: days }, true);
+  const rest = cycleTargets(base, { trainingBonusKcal: bonus, trainingDaysPerWeek: days }, false);
+  const today = todaysTargets(settings);
+  const set = (b) => updateSettings({ dayCycle: b ? { trainingBonusKcal: b } : null });
+  const chip = (on) => ({
+    minHeight: 40, padding: '0 14px', borderRadius: 999, cursor: 'pointer', fontFamily: 'inherit', fontSize: 14,
+    border: `0.5px solid ${on ? 'var(--tab-accent)' : 'var(--card-border)'}`,
+    background: on ? 'color-mix(in srgb, var(--tab-accent) 14%, transparent)' : 'transparent',
+    color: on ? 'var(--tab-accent)' : 'var(--text-secondary)', fontWeight: on ? 600 : 500,
+  });
+  return (
+    <div style={card}>
+      <div style={{ ...label, marginBottom: 8 }}>Training days vs rest days</div>
+      <div style={{ fontSize: 14, color: 'var(--text-secondary)', lineHeight: 1.5, marginBottom: 12 }}>
+        Eat more on the days you train and less on the days you don't, with the same weekly total. The difference is all carbs; protein and fat stay put.
+      </div>
+      <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>
+        {[0, 150, 250, 400].map(b => (
+          <button key={b} type="button" aria-pressed={bonus === b} onClick={() => set(b)} style={chip(bonus === b)}>{b ? `+${b} kcal` : 'Off'}</button>
+        ))}
+      </div>
+      {bonus > 0 && (
+        <div className="val-num" style={{ marginTop: 14, fontSize: 14, color: 'var(--text-primary)', lineHeight: 1.6 }}>
+          Training day ({days}/week): {train.kcal} kcal · {train.carbs} g carbs<br />
+          Rest day ({7 - days}/week): {rest.kcal} kcal · {rest.carbs} g carbs<br />
+          {train.capped && <span style={{ color: '#e8a13a' }}>Trimmed to +{train.delta} kcal so rest days keep at least half their carbs.<br /></span>}
+          {today.kind ? <span style={{ color: 'var(--text-secondary)' }}>Today is a {today.kind} day: {today.kcal} kcal.</span> : null}
+        </div>
+      )}
+    </div>
+  );
+}
+
 //  The locked goal, progress since starting, and the weekly target check
 function GoalCard({ goal, settings, latestWeight, coach, adaptive, onChange }) {
   const [dismissed, setDismissed] = useState(false);
@@ -203,11 +251,11 @@ function GoalCard({ goal, settings, latestWeight, coach, adaptive, onChange }) {
   // Weekly check: propose new targets when real maintenance has drifted.
   const drift = adaptive ? adaptive.kcal - goal.maintenanceKcal : 0;
   const proposal = adaptive && Math.abs(drift) >= 100 && !dismissed
-    ? makeGoal({ ...goal, weightKg: latestWeight || goal.startWeightKg, maintenanceKcal: adaptive.kcal, maintenanceSource: 'adaptive' })
+    ? makeGoal({ ...goal, weightKg: latestWeight || goal.startWeightKg, maintenanceKcal: adaptive.kcal, maintenanceSource: 'adaptive', targetWeightKg: goal.targetWeightKg })
     : null;
 
   function applyProposal() {
-    updateSettings(settingsForGoal({ ...proposal, startedOn: goal.startedOn, startWeightKg: goal.startWeightKg }, settings?.macros));
+    updateSettings(settingsForGoal({ ...proposal, startedOn: goal.startedOn, startWeightKg: goal.startWeightKg, targetWeightKg: goal.targetWeightKg }, settings?.macros));
   }
 
   return (
@@ -237,10 +285,25 @@ function GoalCard({ goal, settings, latestWeight, coach, adaptive, onChange }) {
         {coach?.pace && (
           <div role="status" style={{ marginTop: 14, fontSize: 14, lineHeight: 1.45, color: coach.pace.status === 'on-track' ? '#4caf7d' : '#e8a13a' }}>{coach.pace.message}</div>
         )}
+        <div style={{ marginTop: 10 }}><GoalEta eta={coach?.eta} targetKg={goal.targetWeightKg} /></div>
+        <label style={{ display: 'flex', alignItems: 'center', gap: 10, marginTop: 12, flexWrap: 'wrap' }}>
+          <span style={label}>Goal weight</span>
+          <input key={goal.targetWeightKg ?? 'none'} inputMode="decimal" defaultValue={goal.targetWeightKg ?? ''} placeholder="kg" aria-label="Goal weight in kilograms"
+            onBlur={e => {
+              const v = Number(e.target.value) || null;
+              if (v !== (goal.targetWeightKg ?? null)) {
+                const { targetWeightKg: _drop, ...rest } = goal;
+                updateSettings({ coachGoal: v ? { ...rest, targetWeightKg: v } : rest });
+              }
+            }}
+            style={{ ...input, width: 96, height: 36 }} />
+        </label>
         <div style={{ display: 'flex', gap: 10, marginTop: 16 }}>
           <button type="button" onClick={onChange} style={ghostBtn}>Change goal</button>
         </div>
       </div>
+
+      <DayCycleCard goal={goal} settings={settings} />
 
       {proposal && (
         <div role="status" style={{ ...card, borderColor: 'var(--tab-accent)' }}>
@@ -272,7 +335,7 @@ export default function GoalHQ({ settings, overview = null, compact = false }) {
     [bodyMetrics, nutritionLogs]
   );
   const goal = settings?.coachGoal;
-  const coach = useMemo(() => weightCoach(bodyMetrics, goal?.targets?.weeklyRateKg ?? null), [bodyMetrics, goal]);
+  const coach = useMemo(() => weightCoach(bodyMetrics, goal?.targets?.weeklyRateKg ?? null, goal?.targetWeightKg ?? null, toLocalDateKey(new Date())), [bodyMetrics, goal]);
   const showEditor = !goal || editing;
 
   return (

@@ -10,6 +10,7 @@ import { dayScore, GOAL_TEMPLATES } from '../domain/goals.js';
 import { bests, detectPR, setsOf } from '../domain/training.js';
 import { plateaus } from '../domain/progression.js';
 import { readiness, DEFAULT_SLEEP_NEED_H } from '../domain/recovery.js';
+import { todaysTargets } from '../utils/todaysTargets.js';
 import { dueItems } from '../domain/ahead.js';
 import { suppliesWithUsage } from '../utils/supplies.js';
 import { withLiveStreaks } from '../domain/habits.js';
@@ -167,8 +168,9 @@ export function buildContext({ activeTab = 'dashboard' } = {}) {
       const workouts = storage.get(STORAGE_KEYS.WORKOUT_LOGS, []);
       const todayNutrition = (Array.isArray(nutrition) ? nutrition : []).filter(x => x.date === today);
       const lastSleep = [...(Array.isArray(sleep) ? sleep : [])].sort((a, b) => (b.date ?? '').localeCompare(a.date ?? ''))[0];
+      const tt = todaysTargets(settings);
       const score = dayScore({
-        targets: goal.targets,
+        targets: { ...goal.targets, ...tt },
         calories: todayNutrition.reduce((sum, x) => sum + (Number(x.calories) || 0), 0),
         protein: todayNutrition.reduce((sum, x) => sum + (Number(x.protein) || 0), 0),
         waterMl: (Array.isArray(water) ? water : []).filter(x => x.date === today).reduce((sum, x) => sum + (Number(x.amount) || 0), 0),
@@ -178,7 +180,7 @@ export function buildContext({ activeTab = 'dashboard' } = {}) {
       });
       const goalName = GOAL_TEMPLATES[goal.template]?.label || goal.customText || goal.template;
       lines.push(`Active Coach goal: ${goalName}`);
-      lines.push(`Coach targets: ${goal.targets.kcal} kcal, ${goal.targets.protein}g protein, ${goal.targets.carbs}g carbs, ${goal.targets.fat}g fat`);
+      lines.push(`Coach targets: ${tt.kcal} kcal, ${tt.protein}g protein, ${tt.carbs}g carbs, ${tt.fat}g fat${tt.kind ? ` (${tt.kind} day, ${tt.delta > 0 ? '+' : ''}${tt.delta} kcal from base)` : ''}`);
       lines.push(`Today's Coach score: ${score.score}/100 (${score.factors.map(x => `${x.label} ${Math.round(x.pct * 100)}%`).join(', ')})`);
       lines.push(`Coach personality: ${settings.coachPersonality || 'calm expert'}`);
     }

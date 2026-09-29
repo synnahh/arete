@@ -83,3 +83,29 @@ describe('weightCoach', () => {
     expect(weightCoach([{ date: '2026-09-01', weight: '' }])).toBeNull();
   });
 });
+
+describe('goalEta', () => {
+  it('projects the date and weeks at the current rate', async () => {
+    const { goalEta } = await import('./weight.js');
+    expect(goalEta(84, -0.5, 80, '2026-09-30')).toMatchObject({ status: 'on-course', toGo: -4, weeks: 8, date: '2026-11-25' });
+  });
+  it('handles reached, wrong way, flat, unknown and far-off goals', async () => {
+    const { goalEta } = await import('./weight.js');
+    expect(goalEta(80.2, -0.5, 80, '2026-09-30').status).toBe('reached');
+    expect(goalEta(84, 0.4, 80, '2026-09-30').status).toBe('off-course');
+    expect(goalEta(84, 0.02, 80, '2026-09-30').status).toBe('off-course');
+    expect(goalEta(84, null, 80, '2026-09-30').status).toBe('unknown');
+    expect(goalEta(100, -0.15, 80, '2026-09-30').status).toBe('too-slow');
+    expect(goalEta(84, -0.5, null, '2026-09-30')).toBeNull();
+  });
+  it('a bulk works the other way round', async () => {
+    const { goalEta } = await import('./weight.js');
+    expect(goalEta(72, 0.25, 75, '2026-09-30')).toMatchObject({ status: 'on-course', weeks: 12 });
+  });
+  it('weightCoach only adds an eta when it has a target and a date', async () => {
+    const { weightCoach } = await import('./weight.js');
+    const entries = Array.from({ length: 21 }, (_, i) => ({ date: new Date(Date.UTC(2026, 8, 1 + i)).toISOString().slice(0, 10), weight: String(84 - i * 0.07) }));
+    expect(weightCoach(entries, -0.5).eta).toBeNull();
+    expect(weightCoach(entries, -0.5, 80, '2026-09-22').eta.status).toBe('on-course');
+  });
+});

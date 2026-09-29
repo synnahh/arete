@@ -8,6 +8,7 @@ import { supabase, getUserId, getUserIdSync } from '../supabase/supabase.js';
 import { storage, STORAGE_KEYS } from '../utils/storage.js';
 import { toLocalDateKey } from '../utils/localDate.js';
 import { currentWaterGoal } from '../utils/waterGoal.js';
+import { withTodaysTargets } from '../utils/todaysTargets.js';
 
 const TODAY = () => toLocalDateKey(new Date());
 const YESTERDAY = () => {
@@ -78,8 +79,9 @@ function computeScore(collections, settings) {
   if (totalSupps > 0 && takenSupps < totalSupps) actions.push({ priority: 4, text: `Take ${totalSupps - takenSupps} remaining supplement${totalSupps - takenSupps > 1 ? 's' : ''} (+${Math.round(((totalSupps - takenSupps) / totalSupps) * 10)} pts)` });
 
   //  5. Macros  10% 
-  const calGoal   = settings?.macroGoal    ?? 2500;
-  const protGoal  = settings?.proteinGoal  ?? 160;
+  const todays    = withTodaysTargets(settings);
+  const calGoal   = todays?.macroGoal    ?? 2500;
+  const protGoal  = todays?.proteinGoal  ?? 160;
   const todayNut  = (nutritionLogs || []).filter(l => l.date === today);
   const todayCal  = todayNut.reduce((s, l) => s + (l.calories || 0), 0);
   const todayProt = todayNut.reduce((s, l) => s + (l.protein || 0), 0);

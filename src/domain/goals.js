@@ -112,13 +112,38 @@ export function adaptiveMaintenance(weights = [], intakes = [], { minDays = 14, 
 }
 
 /** A goal record ready to store in settings.coachGoal. */
-export function makeGoal({ template, customText = '', weightKg, maintenanceKcal, maintenanceSource = 'estimate', startedOn }) {
+export function makeGoal({ template, customText = '', weightKg, maintenanceKcal, maintenanceSource = 'estimate', startedOn, targetWeightKg = null }) {
   const targets = computeTargets(template, { weightKg, maintenanceKcal });
   if (!targets) return null;
   return {
     template, customText: customText.trim(), startedOn,
     startWeightKg: weightKg, maintenanceKcal, maintenanceSource, targets,
+    ...(Number(targetWeightKg) > 0 ? { targetWeightKg: Number(targetWeightKg) } : {}),
   };
+}
+
+/**
+ * Training-day / rest-day targets ("carb cycling" without the jargon).
+ * `cycle` = { trainingBonusKcal, trainingDaysPerWeek }. Training days get the
+ * bonus, in carbs; rest days give up enough that the WEEKLY average stays on
+ * the base target. Protein and fat never move. Rest days never lose more than
+ * half of the base carbs: if the asked-for bonus would do that, the bonus is
+ * scaled down (`capped`) so the weekly total still balances. Off (base
+ * unchanged) when the bonus is 0 or there is no training/rest split.
+ */
+export function cycleTargets(base, cycle, trained) {
+  const asked = Number(cycle?.trainingBonusKcal) || 0;
+  const days = Math.round(Number(cycle?.trainingDaysPerWeek) || 4);
+  if (!base || asked <= 0 || days < 1 || days > 6) return { ...base, kind: null, delta: 0 };
+  const maxRestCut = (base.carbs || 0) * 4 * 0.5;
+  const bonus = Math.min(asked, (maxRestCut * (7 - days)) / days);
+  if (bonus < 25) return { ...base, kind: null, delta: 0 };
+  const capped = bonus < asked;
+  const rest = -Math.round((bonus * days) / (7 - days));
+  const delta = trained ? bonus : rest;
+  const carbs = Math.max(0, Math.round((base.carbs || 0) + delta / 4));
+  const applied = Math.round((carbs - (base.carbs || 0)) * 4);
+  return { ...base, carbs, kcal: base.kcal + applied, kind: trained ? 'training' : 'rest', delta: applied, capped };
 }
 
 /**

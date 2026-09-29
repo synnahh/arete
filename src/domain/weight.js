@@ -79,11 +79,35 @@ export function paceVsGoal(rate, target) {
   return { status: 'on-track', message: `${fmt(rate)} against a goal of ${fmt(target)}. On track.` };
 }
 
+const MAX_ETA_WEEKS = 104;
+const keyOfDay = (idx) => new Date(idx * DAY).toISOString().slice(0, 10);
+
+/**
+ * When will the trend reach the goal weight at the current rate?
+ * status: 'reached' (within 0.3 kg), 'on-course' (with weeks and date),
+ * 'too-slow' (more than two years out), 'off-course' (flat or moving the
+ * wrong way), or 'unknown' (no rate yet). Never a promise: the rate changes.
+ */
+export function goalEta(trend, rate, targetKg, today) {
+  const target = Number(targetKg);
+  if (!(target > 0) || !Number.isFinite(trend)) return null;
+  const toGo = +(target - trend).toFixed(1);
+  if (Math.abs(toGo) < 0.3) return { status: 'reached', toGo: 0 };
+  if (rate == null) return { status: 'unknown', toGo };
+  if (Math.abs(rate) < 0.05 || rate * toGo < 0) return { status: 'off-course', toGo };
+  const weeks = Math.abs(toGo / rate);
+  if (weeks > MAX_ETA_WEEKS) return { status: 'too-slow', toGo, weeks: Math.round(weeks) };
+  return { status: 'on-course', toGo, weeks: Math.max(1, Math.round(weeks)), date: keyOfDay(Math.round(dayIndex(today) + weeks * 7)) };
+}
+
 /** Everything the UI needs in one call. */
-export function weightCoach(entries, goalTargetKgPerWeek = null) {
+export function weightCoach(entries, goalTargetKgPerWeek = null, targetWeightKg = null, today = null) {
   const series = trendSeries(entries);
   if (!series.length) return null;
   const last = series[series.length - 1];
   const rate = weeklyRate(series);
-  return { series, latest: last.weight, trend: last.trend, rate, pace: paceVsGoal(rate, goalTargetKgPerWeek) };
+  return {
+    series, latest: last.weight, trend: last.trend, rate, pace: paceVsGoal(rate, goalTargetKgPerWeek),
+    eta: targetWeightKg && today ? goalEta(last.trend, rate, targetWeightKg, today) : null,
+  };
 }

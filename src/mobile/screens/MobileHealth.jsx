@@ -11,6 +11,8 @@ import { weightCoach } from '../../domain/weight.js';
 import WeightChart from '../../components/WeightChart.jsx';
 import ProgressPhotos from '../../components/ProgressPhotos.jsx';
 import ReadinessCard from '../../components/ReadinessCard.jsx';
+import GoalEta from '../../components/GoalEta.jsx';
+import { withTodaysTargets } from '../../utils/todaysTargets.js';
 import MicroCoachCard from '../../components/MicroCoachCard.jsx';
 import { weeklyMicros, microCoach } from '../../domain/micros.js';
 
@@ -157,10 +159,11 @@ function OverviewTab({ settings, today }) {
   [waterLogs, today]);
 
   //  Nutrition  one row per DAY (todayLog.meals[]), same schema as desktop
-  const calGoal    = settings?.macroGoal ?? 2500;
-  const protGoal   = settings?.proteinGoal ?? 160;
-  const carbGoal   = settings?.macros?.carbs ?? 250;
-  const fatGoal    = settings?.macros?.fat ?? 80;
+  const todays     = withTodaysTargets(settings);
+  const calGoal    = todays?.macroGoal ?? 2500;
+  const protGoal   = todays?.proteinGoal ?? 160;
+  const carbGoal   = todays?.macros?.carbs ?? 250;
+  const fatGoal    = todays?.macros?.fat ?? 80;
   const todayLog   = useMemo(() => nutritionLogs.find(l => l.date === today), [nutritionLogs, today]);
   const todayMeals = todayLog?.meals ?? [];
   const totCal  = todayMeals.reduce((s, m) => s + (m.calories || 0), 0);
@@ -524,10 +527,11 @@ function AddFoodSheet({ onAdd, onClose }) {
 //  Nutrition tab
 function NutritionTab({ settings, today }) {
   const { items: nutritionLogs = [], add: addNutritionLog, update: updateNutritionLog } = useCollection('nutrition_logs', STORAGE_KEYS.MACROS);
-  const calGoal  = settings?.macros?.calories ?? settings?.macroGoal ?? 2500;
-  const protGoal = settings?.macros?.protein  ?? settings?.proteinGoal ?? 160;
-  const carbGoal = settings?.macros?.carbs    ?? 250;
-  const fatGoal  = settings?.macros?.fat      ?? 80;
+  const todays   = withTodaysTargets(settings);
+  const calGoal  = todays?.macros?.calories ?? todays?.macroGoal ?? 2500;
+  const protGoal = todays?.macros?.protein  ?? todays?.proteinGoal ?? 160;
+  const carbGoal = todays?.macros?.carbs    ?? 250;
+  const fatGoal  = todays?.macros?.fat      ?? 80;
   const [showAdd, setShowAdd] = useState(false);
   const { items: supplements = [] } = useCollection('supplements', STORAGE_KEYS.SUPPLEMENTS);
   const { items: suppLogs = [] } = useCollection('supplement_logs', STORAGE_KEYS.SUPP_LOGS);
@@ -567,6 +571,11 @@ function NutritionTab({ settings, today }) {
 
   return (
     <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
+      {todays?.todayTargetKind && (
+        <div role="status" style={{ fontSize: 12.5, color: 'var(--text-secondary)' }}>
+          {todays.todayTargetKind === 'training' ? 'Training day' : 'Rest day'}: {todays.todayTargetDelta > 0 ? '+' : ''}{todays.todayTargetDelta} kcal today, all in carbs.
+        </div>
+      )}
       {/* Macro summary */}
       <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 8 }}>
         <VitalCard label="Calories" value={totCal} unit="kcal" sub={`of ${calGoal}`}
@@ -715,7 +724,7 @@ function BodyTab({ today, settings }) {
   [bodyMetrics]);
   const latest = sorted[0];
   // Weight coach: smoothed trend, weekly rate, pace vs the Coach goal
-  const coach = useMemo(() => weightCoach(bodyMetrics, settings?.coachGoal?.targets?.weeklyRateKg ?? null), [bodyMetrics, settings?.coachGoal]);
+  const coach = useMemo(() => weightCoach(bodyMetrics, settings?.coachGoal?.targets?.weeklyRateKg ?? null, settings?.coachGoal?.targetWeightKg ?? null, today), [bodyMetrics, settings?.coachGoal]);
   const [showAdd, setShowAdd] = useState(false);
   const [form, setForm] = useState({ weight: '', bodyFat: '', muscle: '' });
 
@@ -786,6 +795,7 @@ function BodyTab({ today, settings }) {
                 </div>
               </div>
               {coach.pace && <div role="status" style={{ fontSize: 13, lineHeight: 1.45, color: coach.pace.status === 'on-track' ? '#4caf7d' : '#e8a13a' }}>{coach.pace.message}</div>}
+              {coach.eta && <GoalEta eta={coach.eta} targetKg={settings?.coachGoal?.targetWeightKg} />}
               {coach.rate == null && <div style={{ fontSize: 12, color: 'var(--text-secondary)' }}>Log weight on a few days over a week or more to see your rate.</div>}
               <WeightChart series={coach.series} />
               <div style={{ fontSize: 11, color: 'var(--text-secondary)' }}>Dots are weigh-ins; the line is your trend. Judge progress by the line.</div>

@@ -18,6 +18,8 @@ import { weightCoach } from '../domain/weight.js';
 import { weeklyMicros, microCoach } from '../domain/micros.js';
 import ProgressPhotos from '../components/ProgressPhotos.jsx';
 import ReadinessCard from '../components/ReadinessCard.jsx';
+import GoalEta from '../components/GoalEta.jsx';
+import { withTodaysTargets } from '../utils/todaysTargets.js';
 import { isDone, currentStreak, toggleDay } from '../domain/habits.js';
 import MicroCoachCard from '../components/MicroCoachCard.jsx';
 import { calcWaterGoal, waterAdvice, DEFAULT_WATER_PROFILE } from '../domain/water.js';
@@ -827,6 +829,12 @@ function Nutrition({ nutritionLogs, addNutritionLog, updateNutritionLog, setting
         </div>
       )}
 
+      {settings?.todayTargetKind && (
+        <div role="status" style={{ marginBottom: 12, fontSize: 12.5, color: 'var(--text-secondary)' }}>
+          {settings.todayTargetKind === 'training' ? 'Training day' : 'Rest day'}: {settings.todayTargetDelta > 0 ? '+' : ''}{settings.todayTargetDelta} kcal today, all in carbs. Protein and fat stay put.
+        </div>
+      )}
+
       {/* Micro coach: 7-day gaps and what to eat */}
       <MicroCoachCard advice={microAdvice} style={{ ...cardSx, marginBottom: 16 }} />
 
@@ -1252,7 +1260,7 @@ function Body({ bodyMetrics, addBodyMetric, settings }) {
   const weightData = useMemo(()=>sorted.slice(0,30).reverse().map(m=>({value:parseFloat(m.weight)||0,label:m.date?m.date.slice(5):''})),[sorted]);
 
   // Weight coach: smoothed trend + weekly rate + pace against the Coach goal (real data only)
-  const coach = useMemo(() => (useBodyDemo ? null : weightCoach(rawSorted, settings?.coachGoal?.targets?.weeklyRateKg ?? null)), [useBodyDemo, rawSorted, settings?.coachGoal]);
+  const coach = useMemo(() => (useBodyDemo ? null : weightCoach(rawSorted, settings?.coachGoal?.targets?.weeklyRateKg ?? null, settings?.coachGoal?.targetWeightKg ?? null, todayStr())), [useBodyDemo, rawSorted, settings?.coachGoal]);
 
   const saveMeasures = (m) => { setMeasures(m); saveMeasuresDoc(m); };
   const MEASURE_FIELDS = [
@@ -1345,6 +1353,9 @@ function Body({ bodyMetrics, addBodyMetric, settings }) {
               </div>
               {coach.pace && (
                 <div role="status" style={{fontSize:12.5,lineHeight:1.45,marginBottom:10,color:coach.pace.status==='on-track'?'#4caf7d':'#e8a13a'}}>{coach.pace.message}</div>
+              )}
+              {coach.eta && (
+                <div style={{ marginBottom: 10 }}><GoalEta eta={coach.eta} targetKg={settings?.coachGoal?.targetWeightKg} /></div>
               )}
               {coach.rate==null && <div style={{fontSize:12,color:'var(--text-secondary)',marginBottom:10}}>Log weight on a few days over a week or more to see your rate.</div>}
               <WeightChart series={coach.series} />
@@ -2687,7 +2698,7 @@ export default function Health({ settings, onTabChange, peakState, sections = nu
   const appleHealth = useAppleHealth();
 
   const renderSection = () => {
-    const p = { settings: settings_ };
+    const p = { settings: withTodaysTargets(settings_) };
     switch (active) {
       case 'overview':    return <Overview {...p} onTabChange={onTabChange} habits={habits} waterLogs={waterLogs} nutritionLogs={nutritionLogs} sleepData={sleepData} supplements={supplements} suppLogs={suppLogs} stimLogs={stimLogs} workoutLogs={workoutLogs} bodyMetrics={bodyMetrics} onNav={goSection} appleHealth={appleHealth} />;
       case 'peakstate':   return <PeakStateSection stimLogs={stimLogs} sleepData={sleepData} peakState={peakState} />;
@@ -2698,7 +2709,7 @@ export default function Health({ settings, onTabChange, peakState, sections = nu
       case 'supplements': return <Supplements  supplements={supplements} suppLogs={suppLogs} addSupplement={addSupplement} removeSupplement={removeSupplement} addSuppLog={addSuppLog} />;
       case 'sleep':       return <Sleep        sleepData={sleepData} settings={p.settings} />;
       case 'stimulant':   return <Stimulant    {...p} stimLogs={stimLogs} addStimLog={addStimLog} removeStimLog={removeStimLog} />;
-      case 'mealplan':   return <MealPlanner {...p} savedMeals={savedMeals} addSavedMeal={addSavedMeal} bodyMetrics={bodyMetrics} supplements={supplements} />;
+      case 'mealplan':   return <MealPlanner {...p} settings={settings_} savedMeals={savedMeals} addSavedMeal={addSavedMeal} bodyMetrics={bodyMetrics} supplements={supplements} />;
       default:            return null;
     }
   };

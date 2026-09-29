@@ -8,6 +8,7 @@ import { STORAGE_KEYS } from '../utils/storage.js';
 import { toLocalDateKey } from '../utils/localDate.js';
 import { GOAL_TEMPLATES, dayScore } from '../domain/goals.js';
 import { currentWaterGoal } from '../utils/waterGoal.js';
+import { todaysTargets } from '../utils/todaysTargets.js';
 
 const R = 50;
 const CIRC = 2 * Math.PI * R;
@@ -31,14 +32,14 @@ export default function GoalRing({ settings, onTabChange, compact = false }) {
   const today = toLocalDateKey(new Date());
 
   const result = useMemo(() => goal && dayScore({
-    targets: goal.targets,
+    targets: { ...goal.targets, ...todaysTargets(settings) },
     calories: health.todayCalories ?? 0,
     protein: health.todayProtein ?? 0,
     waterMl: health.todayWaterMl ?? 0,
     waterGoalMl: currentWaterGoal(settings),
     sleepHours: health.lastSleepHours ?? 0,
     trained: workoutLogs.some(l => l.date === today),
-  }), [goal, health, settings?.waterGoal, workoutLogs, today]);
+  }), [goal, health, settings?.waterGoal, settings?.dayCycle, settings?.macros, workoutLogs, today]);
 
   const card = {
     position: 'relative', display: 'flex', alignItems: 'center', gap: compact ? 16 : 22,
