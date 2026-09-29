@@ -1,7 +1,17 @@
-# Valerie — Product Specification (Revamp)
+# Valerie — Product Specification (Revamp) · v2
 
-> Companion to `valerie-revamp-audit.md`. Status: **proposal**. Sections marked **[OWNER]** need a decision before they are built.
-> Central idea: **what matters now.** Valerie turns scattered records into a clear daily picture and a few useful next actions.
+> Companion to `valerie-revamp-audit.md`. Status: **v2 draft, 2026-09-29.** Sections marked **[OWNER]** need a decision before they are built.
+> v2 re-bases v1 on the owner's revamp brief (`D:\Work\Projects\Prompts\Valerie full revamp.txt`) and the decisions logged 2026-09-29. v1's navigation (Today/Ask/Plan/Life/Me), its assistant-first framing and its "editorial, no glow" visual system are **superseded**. §5–§11 (accessibility, data, AI server, memory, SMS, sync, privacy) carry over unchanged.
+>
+> Central idea: **a life-turnaround app with an AI that is ten steps ahead.** Gym, nutrition, body, looks and money are one system. The owner logs as little as possible; the app predicts, prepares and prompts. The product is renamed (see §0).
+>
+> Bar: each domain should stand beside the best single-purpose app: MyFitnessPal (food), Strong / Liftoff (lifting), Skinbliss (skin), plus sleep, water and weight coaches. Animation should feel like a pro app: fast, never laggy, never confusing.
+
+---
+
+## 0. Name — [OWNER] Q-NAME
+
+The app is renamed away from an assistant's name. Shortlist is in the session notes; the working name stays `Valerie` in code until the owner picks one. The rename is a single constant plus the Tauri, PWA and manifest metadata, so it is not a blocker.
 
 ---
 
@@ -13,6 +23,8 @@
 4. **Nothing consequential happens silently.** Writes proposed by the AI are previewed and confirmed.
 5. **Data is never deleted by a redesign.** Surfaces can move or hide; collections stay.
 6. **Local time is the only "today".** All day boundaries use the user's canonical timezone.
+7. **Predict before asking.** If the app can compute it (run-out dates, targets, shopping lists), it does, and asks only to confirm.
+8. **Fast beats fancy.** An animation that drops frames on the owner's iPhone is cut, however good it looks.
 
 ---
 
@@ -28,108 +40,113 @@ This replaces today's situation, where `src/mobile/screens/*` re-implements doma
 
 ## 3. Information architecture
 
-### 3.1 Primary navigation — five destinations
+### 3.1 Primary navigation — six tabs (decided 2026-09-29)
 
-| # | Destination | Purpose | Absorbs today's |
-|---|---|---|---|
-| 1 | **Today** | What matters now, and the next action | Dashboard, TodayView, NudgeStack, Daily Brief |
-| 2 | **Ask** | Conversation workspace | Assistant, orb, MobileAI |
-| 3 | **Plan** | Decide and schedule | Tasks, Calendar, Routines, Focus, Goals from Progress |
-| 4 | **Life** | Domain trackers, one hub | Health, Workout, Finance, Portfolio, Essentials, (LM, Style, Places, Lists per §3.4) |
-| 5 | **Me** | Profile, memory, settings, privacy | Settings, Vault, memory controls, integrations |
+Each tab has its own identity: accent colour, icon and one signature animation (§4.7). Tabs are split by *job*, not by data table.
 
-**Reflect** (Notes, Mind, Weekly Review) is the one judgement call. With five destinations already, Reflect lives as the second section of **Plan → Review** on compact screens and as a sixth rail item on wide screens. If it earns daily use it gets promoted.
+| Tab | Job | Absorbs today's |
+|---|---|---|
+| **Home** | Glanceable HUD: what's due, what's running low, how today is scoring | Dashboard, TodayView, NudgeStack, Daily Brief, DayRing, Peak State |
+| **Plan** | Decide and schedule | Tasks, Goals (from Progress), Routines, Places, Calendar, Focus, **Supplies** (Essentials + shopping) |
+| **Coach** | One AI coach locked to one goal (§4.3) | Health, Workout, Nutrition, Meal plans, Water, Sleep, Supplements, Body, LM (looksmaxxing), Style board |
+| **Mind** | Reflection and decisions — **[OWNER] Q-MIND:** keep as a tab, or fold into Plan → Review | Mind, Notes, Weekly Review, Lists (media) |
+| **Finance** | Money in, out, and ahead | Finance, Portfolio, Subscriptions, Gmail import, projected spend from Supplies |
+| **Settings** | Profile, integrations, privacy, advanced | Settings, Vault (hardened), Twilio SMS, webhooks, REST API (under **Advanced**) |
 
-Wide layout: a labelled rail (icon + word) that collapses to icons. Compact layout: a bottom bar with Today · Plan · Ask (centre, elevated) · Life · Me.
+Wide layout (≥ 768 px or Tauri): labelled rail that collapses to icons. Compact layout (iOS PWA): bottom bar with five slots: Home · Plan · **Coach** (centre, elevated) · Finance · Mind. Settings opens from the avatar in the Home header. If Q-MIND folds Mind into Plan, the fifth slot becomes Settings.
+
+The AI is not a tab. It lives where the work is: the Coach chat inside Coach, capture and command everywhere (§3.2), and briefs on Home.
 
 ### 3.2 Global, always available
 
-- **Capture** (`C` / long-press on the Ask button): one field that classifies input as task, event, note, reminder or question, then shows the classification for one-tap correction.
-- **Command & search** (`Ctrl/⌘ K` on wide, pull-down on Today on compact): navigation, actions and full-text search over tasks, notes, events and memories.
+- **Capture** (`C` on wide, long-press Coach on compact): one field that classifies input as task, event, food log, lift, weigh-in, note or question, and shows the classification for one-tap correction. "2 eggs and toast" logs food; "bench 80x8x3" logs a set.
+- **Command & search** (`Ctrl/⌘ K`): navigation, actions and full-text search.
 
-### 3.3 Life hub
+### 3.3 Hidden by default (data kept, one tap to restore)
 
-A single index page listing domain modules as rows with a one-line live status ("Water 1.2 / 2.5 L", "Spent $214 this week"). Each module opens in the same shell with consistent header, back behaviour and empty states. Modules can be pinned or hidden by the owner. Existing tab components are reused inside the shell first and restyled later, so no domain logic is rewritten up front.
-
-### 3.4 Style, Lists and Places — [OWNER] Q-SLP
-
-Current facts are in the audit §6. Proposed default, which is fully reversible and deletes no data:
-
-| Surface | Default proposal | Alternatives |
-|---|---|---|
-| **Style** | Merge the Style board into Looksmaxxing's Style section; hide the standalone tab. | Keep as a Life module · Retire (data kept, exportable) |
-| **Lists** (media backlog) | Keep, rename **Watch & Read**, place under Reflect. | Keep as a Life module · Hide |
-| **Places** | Hide by default; reachable from Life → "Hidden modules". | Keep as a Life module · Retire (data kept, exportable) |
-
-Nothing in this row is built until the owner answers.
-
-### 3.5 Hidden by default (data kept, one tap to restore)
-
-XP / rank display, Looksmaxxing (pending owner), Portfolio (pending owner), Places (pending owner).
+XP / rank display, Places (lives in Plan but collapsed until used), Portfolio (inside Finance, collapsed). Nothing is deleted by the move.
 
 ---
 
 ## 4. Screens and interaction model
 
-### 4.1 Today
+### 4.1 Home — the HUD
 
-Answers, top to bottom:
+Top to bottom; a module with nothing to say does not render.
 
-1. **Header**: greeting with the user's name from profile, local date, one-line status (e.g. "3 things need you · 2 events").
-2. **Brief**: two or three sentences generated from real context. Each fact is a link to its record. Suggestions are visually distinct (italic label "Suggestion") with *Why?*, *Snooze*, *Dismiss*.
-3. **Now & next**: a timeline of today's events and time-blocked tasks.
-4. **Needs you**: overdue, due today, at-risk commitments, restocks. Maximum five; "Show all" goes to Plan.
-5. **Routines**: only if one is scheduled today.
-6. **Ask bar**: one entry point to Ask, pre-seeded with context-aware suggestions.
+1. **Header**: greeting, local date, one status line ("3 things need you · protein 40 g short · creatine runs out Thu").
+2. **Goal ring**: today's score against the Coach goal (training done, calories and protein, water, sleep, routine).
+3. **Next up**: timeline of today's events, workouts and time-blocked tasks.
+4. **Needs you**: overdue, due today, restocks inside their lead time. Max five.
+5. **Coach nudge**: one sentence from the Coach, with *Why?*, *Snooze*, *Dismiss*.
 
-Modules with nothing to say do not render. First-run Today shows a three-item setup list instead of empty cards.
+### 4.2 Plan
 
-### 4.2 Ask
+Default **This week**: capacity per day, tasks under the day they're planned for, inbox at the side. Other views: Goals, Calendar, Routines, Places, **Supplies**. The v1 "Plan this with me" workflow (restate → ≤ 2 questions → draft → edit → diff → apply) carries over unchanged.
 
-- Streaming responses with a visible state: *thinking*, *using your calendar*, *drafting*. No fake progress bars.
-- Stop, retry, edit-and-resend, copy.
-- Conversation list with auto titles and search; synced across devices.
-- **Context used** disclosure under each answer: which records and memories were read.
-- **Action cards** for proposed writes (task, event, reminder, note, memory, setting). Each card shows a preview with *Confirm*, *Edit*, *Discard*. Read-only actions (navigate, open) run immediately.
-- Private mode per conversation: no memory reads or writes, history not saved.
+### 4.3 Coach — one goal, one coach
 
-### 4.3 Plan
+**Goal HQ** sets exactly one active goal. Picking a template writes a target set; custom goals get a target set drafted by the AI, which the owner confirms.
 
-Default view is **This week**: capacity bar per day (committed hours vs available hours, labelled "estimate"), tasks grouped under the day they are planned for, unplanned inbox on the side. Other views: **Projects/Goals**, **Calendar**, **Routines**. Focus mode starts from any task.
+| Template | Target set it writes |
+|---|---|
+| Cut | kcal deficit from adaptive TDEE, protein ≥ 2 g/kg, weekly loss rate 0.5–1 % BW, strength-preserving split |
+| Bulk | kcal surplus, protein ≥ 1.8 g/kg, gain rate 0.25–0.5 % BW/week, volume-focused split |
+| Recomp | kcal ≈ maintenance, high protein, progressive-overload priority |
+| Glow-up | Look section weighted highest: skin routine, grooming, posture, sleep, leanness targets |
+| Custom | AI-drafted, owner-confirmed |
 
-**Planning workflow** ("Plan this with me") from any task, goal, event or free text:
-1. Valerie restates the outcome and constraints it found, and marks each as *confirmed* or *assumed*.
-2. It asks at most two clarifying questions, and only if the answer changes the plan.
-3. It returns a draft: phases if warranted, 3–7 next actions with honest time estimates, dependencies, risks, deadlines, and proposed placement around real calendar events.
-4. The user edits conversationally or inline. Accepted edits persist in the draft.
-5. **Apply** shows a diff ("creates 5 tasks, 2 events, 1 reminder") and requires confirmation.
-6. The plan keeps a link to its created records; postponing or completing items updates the plan's status.
+Sections: **Goal HQ · Train · Fuel · Recover · Look · Body · Habits**.
 
-### 4.4 Reflect
+| Section | Benchmark | Built from |
+|---|---|---|
+| Train | Strong / Liftoff: fast set logging, previous-set ghosting, rest timer, PR detection, auto-progression | `Workout.jsx` overload coach, split planner, muscle ranking |
+| Fuel | MyFitnessPal: barcode and search logging, recent/frequent foods, macros and micros, meal plans that feed Supplies | Health nutrition, meal planner, `openFoodFacts.js`, `micronutrients.js`, water |
+| Recover | sleep and readiness | Sleep, Peak State, `useAppleHealth.js` |
+| Look | Skinbliss: AM/PM skin routine with product steps, ingredient conflicts, progress photos | `LM.jsx` (15 sections consolidated), Style board |
+| Body | weight coach: trend weight (smoothed), measurements, photos | body metrics, LM photos |
+| Habits | daily streaks tied to the goal | habits, streaks |
 
-Notes, Journal/check-ins, Decisions and Beliefs (from Mind), and **Weekly Review**: wins, slips, carry-overs, and up to three *pattern hypotheses* ("You postponed gym on 4 of 5 Mondays") each with *Confirm / Not true / Ignore*. Confirmed patterns become memories of type `pattern`.
+**Adaptive targets**: each week the Coach compares trend weight with intake and recomputes TDEE, then proposes new targets as an action card (never silently).
 
-### 4.5 Me
+**Coach personality — [OWNER] Q-COACH:** a swappable system-prompt layer (calm expert / drill sergeant / hype). Voice on or off per platform. The default until decided is calm expert, text only.
 
-Profile · **What Valerie knows** · Memory policy · Notifications & SMS · Integrations · Privacy & data (export, delete, activity log) · Appearance · Device lock.
+### 4.4 The Ahead engine (new, the signature feature)
+
+The app predicts what runs out and prepares the restock before the owner notices.
+
+**Item model** (extends `essentials`): `name, category, pack_qty, unit, dose_per_use, uses_per_day | schedule_ref, on_hand_packs, opened_local_date, price, store_url | asin, lead_time_days (default 3), buffer_days (default 2)`.
+
+**Consumption sources**, strongest first:
+1. **Schedules**: a skin-routine step (AM/PM), a supplement stack or a meal plan names the item and dose, so usage is exact.
+2. **Logged use**: food logs subtract pantry items.
+3. **Learned rate**: when a restock is logged, the observed interval updates the usage rate by EWMA (α = 0.3). Confidence rises with each cycle and is shown.
+
+**Maths**: `run_out = opened + (pack_qty × on_hand_packs) / (dose_per_use × uses_per_day)`; `reorder_by = run_out − lead_time − buffer`.
+
+**Outputs**:
+- Home → Needs you: items at or past `reorder_by`.
+- Plan → Supplies → **This week's cart**: due items plus the meal plan's shopping list minus pantry stock, grouped by store.
+- **Open cart**: one tap builds a store cart link (Amazon add-to-cart URL with ASIN and quantity where known, search link otherwise). **The app never checks out**: the owner reviews and pays in the store. The Amazon AU add-to-cart URL format needs verification before build.
+- Finance: projected spend for the next 30 days.
+
+### 4.5 Mind and Finance
+
+Mind keeps its v1.2 sections (Constitution, Advisors, Ledger, Beliefs, Memory Vault, Insights) plus Notes and Weekly Review. Weekly Review now includes the Coach week (adherence, trend weight, PRs). Finance keeps its current sections and gains *Ahead*: upcoming subscriptions and projected restock spend.
 
 ### 4.6 Motion language
 
-| Token | Value | Use |
-|---|---|---|
-| `--dur-instant` | 90 ms | press feedback, toggles |
-| `--dur-quick` | 160 ms | hover, small reveals |
-| `--dur-standard` | 240 ms | view transitions, sheet open |
-| `--dur-emphasis` | 360 ms | first-load reveal, completion |
-| `--ease-out` | `cubic-bezier(.2,.8,.2,1)` | entrances |
-| `--ease-in-out` | `cubic-bezier(.4,0,.2,1)` | moves |
-| `--distance-sm` / `--distance-md` | 4 px / 12 px | translate distances |
+The v1 tokens stay (`--dur-instant` 90 ms through `--dur-emphasis` 360 ms, the ease curves, 4/12 px distances, reduced-motion fallback). Additions:
 
-Rules: transform and opacity only; interruptible; stagger only for lists of ≤ 6 items, ≤ 40 ms apart; first-load reveal is ≤ 360 ms and never blocks input; `prefers-reduced-motion` replaces all motion with ≤ 90 ms opacity fades. Task completion gets a short check-draw plus haptic on iOS where supported.
+- **Performance budget**: 60 fps on the owner's iPhone. Animate `transform` and `opacity` only. `backdrop-filter` is limited to the nav bar and sheets (it is expensive on iOS WebKit). No animation blocks input.
+- **Signature animations**: one per tab, ≤ 600 ms, on tab entry or completion only, never looping on screen except the Home goal ring's idle pulse.
+- **Shared-element transitions**: card → detail uses the View Transitions API where supported, and a 240 ms fade otherwise.
 
 ### 4.7 Visual system
 
-Editorial and calm: a neutral near-black and warm off-white theme pair, one accent colour, type-led hierarchy (a serif display face for headings, a humanist sans for UI), hairline dividers instead of boxes, cards only when they group. No glow, no glassmorphism by default, no gradient backgrounds. Tokens live in one CSS file (`src/styles/tokens.css`); components consume tokens, never raw hex. Existing theme names in `themes.js` map onto the new tokens so user theme choices survive.
+A hybrid: Apple-level polish (type, spacing, restraint) with a Jarvis/HUD edge (fine rules, mono numerals, light glow on live data only). Dark-first, with a light pair. Each tab has one accent; everything else is neutral. Tokens live in `src/styles/tokens.css`; components never use raw hex, and Tailwind classes are literal (lookup maps, no interpolation).
+
+**Fonts and per-tab palette — Claude proposes, owner approves** (decided 2026-09-29). A visual board goes to the owner before any of it is built.
 
 ---
 
@@ -226,7 +243,7 @@ memories(
 - Contradiction guard: a candidate conflicting with an active memory is shown as "Update this?" rather than saved.
 - Sensitive categories (health conditions, relationships, finances, beliefs) are never inferred. They are saved only when stated explicitly and confirmed.
 
-### 8.3 Policy (user-selectable in Me)
+### 8.3 Policy (user-selectable in Settings)
 
 `Ask me every time` (default) · `Save as suggestions for me to review` · `Learning off`. Private conversations bypass memory entirely.
 
@@ -267,7 +284,7 @@ The 20-fact `valerie_memory` list in each device's `localStorage` is imported as
 
 ## 11. Privacy and trust
 
-Export produces a zip of JSON per collection plus memories and conversations. Deletion removes all rows for the user across every table and the auth user, after a typed confirmation. The activity log lists assistant actions, memory changes and reminder sends. Data sent to Anthropic is limited to the assembled prompt; this is documented in Me → Privacy.
+Export produces a zip of JSON per collection plus memories and conversations. Deletion removes all rows for the user across every table and the auth user, after a typed confirmation. The activity log lists assistant actions, memory changes and reminder sends. Data sent to Anthropic is limited to the assembled prompt; this is documented in Settings → Privacy.
 
 ---
 
@@ -275,7 +292,7 @@ Export produces a zip of JSON per collection plus memories and conversations. De
 
 | # | Journey | Done when |
 |---|---|---|
-| J1 | First run | Sign-in → 3-question optional intro → Today with a setup list, in under 60 seconds, every step skippable. |
+| J1 | First run | Sign-in → 3-question optional intro → Home with a setup list, in under 60 seconds, every step skippable. |
 | J2 | Capture | Typing "dentist thurs 2:30" produces a proposed event for the correct local Thursday; one tap confirms. |
 | J3 | Personal question | Answer lists the records and memories used; asking about something absent yields an explicit "I don't have that". |
 | J4 | Memory proposal | Candidate appears as a card; confirm, edit, reject and "change policy" all work and persist. |
@@ -285,8 +302,13 @@ Export produces a zip of JSON per collection plus memories and conversations. De
 | J8 | Export/delete | Export contains every collection; delete leaves zero rows (integration-tested). |
 | J9 | Plan parity | A plan applied on wide layout appears identically on compact layout after sync. |
 | J10 | SMS | Reminder scheduled for 15:00 local sends once at 15:00 local (mocked clock across a DST boundary); edit, cancel and disable work from either layout. |
+| J11 | Goal | Picking "Cut" writes a target set; a week of logs later the Coach proposes adjusted targets as an action card, never silently. |
+| J12 | Log a lift | A set logs in ≤ 2 taps from Train with the previous set pre-filled; a PR is detected and celebrated. |
+| J13 | Log food | A barcode or recent food logs in ≤ 3 taps; macros and micros update on Home within one frame. |
+| J14 | Ahead | A skincare item with pack size and AM/PM dose shows the correct run-out date (unit-tested); a logged restock updates the learned rate. |
+| J15 | Cart | This week's cart merges due restocks with the meal-plan list minus pantry; Open cart opens the store with those items, and nothing is ever purchased by the app. |
 
-Cross-cutting: build passes; tests pass; no `VITE_*` secret in `dist`; keyboard-only path works; reduced-motion path verified; screenshots at 390, 768, 1280 and 1600 px wide.
+Cross-cutting: build passes; tests pass; 60 fps on tab switch and list scroll on the owner's iPhone; no `VITE_*` secret in `dist`; keyboard-only path works; reduced-motion path verified; screenshots at 390, 768, 1280 and 1600 px wide.
 
 ---
 
@@ -295,7 +317,11 @@ Cross-cutting: build passes; tests pass; no `VITE_*` secret in `dist`; keyboard-
 | Id | Question | Blocks |
 |---|---|---|
 | Q-KEYS | Rotate the Anthropic and ElevenLabs keys (audit §0.1). Confirm when done. | Any new deployment |
-| Q-SLP | Style, Lists, Places: which option in §3.4 for each? | Life/Reflect placement of those three |
+| Q-NAME | New app name (shortlist in session notes). | Branding pass only |
+| Q-MIND | Mind as its own tab, or folded into Plan → Review? | Compact nav bar |
+| Q-COACH | Coach personality; voice on/off. | Coach prompt layer (default: calm expert, text) |
+| Q-USE | Features used daily vs never. | Removal list |
+| Q-VIS | Approve the visual board (fonts, per-tab accents, signature animations). | All screen restyling |
 | Q-INFRA | Approve Supabase Edge Functions as the server layer. | AI proxy, SMS, reliable reminders |
 | Q-iOS | Is there any native iOS project? | Parity plan |
 | Q-SMS | SMS countries and sender status. | Twilio production setup |
