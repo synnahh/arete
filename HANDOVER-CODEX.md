@@ -215,3 +215,12 @@ Rotate the Anthropic and ElevenLabs keys, then set `ANTHROPIC_API_KEY`/`ANTHROPI
 - **Habits:** 12-week heatmap (`domain/habits.js heatmap`, `HabitHeatmap.jsx`), desktop + phone.
 - **Assistant safety (Q-CONFIRM decided):** setting changes now need an Apply card (`ai/confirm.js`, `ActionConfirm.jsx`); secret-like keys (`key|token|secret|password|pin|auth|api|...`) and non-plain values are refused; logging stays instant.
 - Verified: 254 tests; both builds; browser (desktop and 375 px) with stub data. Not verified against real Supabase.
+
+### Update — batch 2 2026-09-30 (sleep, supplies, meal plan, Train polish, review)
+- **Sleep logger** (`components/SleepLogger.jsx`, Recover desktop + phone): bed/wake or "about N h", updates the same night. Readiness needs logged sleep and nothing else in the app could create it.
+- **useCollection**: instances of one collection now share changes instantly (in-memory peer bus), and each gets its **own realtime channel topic** (supabase.channel returns the existing channel for a repeated topic: a second hook threw and the first unmount killed it for all).
+- **Supplies shelf life** (`paoMonths`, `expiry()`/`expiringItems()` in `domain/ahead.js`): use-by shown in Supplies, Today ("Use up soon", not visually verified) and the attention count.
+- **Meal plan**: "Log now" logs a planned meal with its ingredients (Undo); pantry usage counts a meal's ingredients instead of the meal as a lump. Saved meals and recents keep ingredients. Meal sections (Breakfast/Lunch/Dinner/Snacks) with subtotals; desktop log can now remove entries (it could not before).
+- **Train**: per-lift e1RM chart (History button), warm-up ramp and per-side plate breakdown for barbell lifts (`domain/plates.js`, fixed 20 kg bar and standard plates, not yet configurable).
+- **Code review (high)** of everything since 91ddfb5: fixed the channel-topic bug, Netlify CSP (no Supabase in connect-src, camera blocked), `fetch(data:)` in photo migration, duplicate sleep rows summed, stale spend projection / Peak State deps, toast replacing an Undo. **Left as is:** TrainSession readiness dependency (needs a re-plan-untouched-rows design), 8 copies of a day-index helper, N fetches/channels per screen (a shared collection store), duplicated inline style constants.
+- Verified: 279 tests; both builds; browser (desktop and 375 px, stub data). **Netlify CSP change is untested and undeployed.** Not verified: real Supabase, camera, skincare barcode scan, voice/photo food logging (not built).
