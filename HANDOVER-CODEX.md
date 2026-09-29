@@ -148,7 +148,10 @@ Reviewed and committed Codex's dirty tree, then continued. HEAD is now `0d31c02`
 | `de47099` | Weight coach (`domain/weight.js`, `components/WeightChart.jsx`): smoothed trend, weekly rate, pace vs the goal's weekly target; shown in Coach > Body > Weight and Goal HQ. Phone Body tab not yet |
 | `1e8a145` | Finance overview: "Supplies · next 30 days" projected spend (`projectedSpend()` in `domain/ahead.js`). Phone Finance not yet |
 
-HEAD is now `1e8a145`, **117 tests**, tree clean.
+| `a5145b4` | Water coach: one shared goal (`domain/water.js`, `utils/waterGoal.js`) used by the Water screen, overview, Home ring, Peak State, reminders, phone and assistant (four formulas before; the profile formula also ignored kg/lb); +500 ml on training days; pace advice with a one-tap log on the Water screen. Phone has the goal but no coaching line |
+| `72c3904` | Plan "time snap" and Mind "ink bloom" screen entrances (CSS only; Reduced/None safe). Phone shell has no entrance animations yet |
+
+HEAD is now `72c3904`, **128 tests**, tree clean.
 
 ### Gotchas found this session
 - LM data keys carry a doubled prefix in localStorage (`valerie_valerie_lm_profile`, `valerie_valerie_lm_daily`) because the hooks pass `'valerie_lm_*'` as the storage key. Harmless, but remember it when seeding data.
