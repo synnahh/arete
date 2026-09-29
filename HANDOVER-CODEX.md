@@ -145,6 +145,11 @@ Reviewed and committed Codex's dirty tree, then continued. HEAD is now `0d31c02`
 | `3b05923` | Fuel: one-tap "Recent & frequent" foods with Undo (`domain/foods.js`) |
 | `0d31c02` | Look: structured skin routine (`tabs/SkinRoutine.jsx`, `domain/skin.js`): today's AM/PM checklist stored on the `lm_daily` row (`skin` field), weekday scheduling, ingredient-conflict warnings, steps linked to Supplies so the routine sets `usesPerDay` and the Ahead engine forecasts run-outs; imports the old free text (kept). Phone uses the same component |
 
+| `de47099` | Weight coach (`domain/weight.js`, `components/WeightChart.jsx`): smoothed trend, weekly rate, pace vs the goal's weekly target; shown in Coach > Body > Weight and Goal HQ. Phone Body tab not yet |
+| `1e8a145` | Finance overview: "Supplies · next 30 days" projected spend (`projectedSpend()` in `domain/ahead.js`). Phone Finance not yet |
+
+HEAD is now `1e8a145`, **117 tests**, tree clean.
+
 ### Gotchas found this session
 - LM data keys carry a doubled prefix in localStorage (`valerie_valerie_lm_profile`, `valerie_valerie_lm_daily`) because the hooks pass `'valerie_lm_*'` as the storage key. Harmless, but remember it when seeding data.
 - A dev server Codex left on port 1420 (this repo, sandboxed, cannot be stopped from a Claude session) serves **stale** files after edits. Start your own on another port (`npx vite --port 1421 --strictPort`).
@@ -156,7 +161,7 @@ Rotate the Anthropic and ElevenLabs keys, then set `ANTHROPIC_API_KEY`/`ANTHROPI
 ### Best next order (revised)
 1. (Rob) apply SQL, rotate + deploy, two-device sync test. Without these the server AI reports unavailable off desktop.
 2. Assistant actions should be proposals with confirmation cards (spec §7.3); today they still execute immediately (now to the right tables).
-3. Fuel: weight coach (trend weight), water coach, micro coach on the phone; barcode on the phone.
+3. Fuel/Body: water coach, micro coach; phone parity for the weight coach (`MobileHealth` BodyTab), the Finance supplies card (`MobileFinance`) and barcode.
 4. Look: progress photos; feed `skinSteps` into the coach context; ingredient warnings for more families.
-5. Ahead: food logs subtracting pantry items; Finance 30-day projected supply spend.
+5. Ahead: food logs subtracting pantry items (Finance projection is done).
 6. Signature motion for Plan/Mind/Finance; phone Habits/Style; delete dead phone code; removal list once Q-USE is answered.
