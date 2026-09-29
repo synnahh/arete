@@ -126,7 +126,7 @@ function VitalCard({ label, value, unit, sub, color = 'var(--text-primary)', bar
 function OverviewTab({ settings, today }) {
   const { items: waterLogs     = [] } = useCollection('water_logs',      'valerie_water_logs');
   const { items: nutritionLogs = [] } = useCollection('nutrition_logs',  'valerie_nutrition_logs');
-  const { items: sleepData     = [] } = useCollection('sleep_logs',      'valerie_sleep_logs');
+  const { items: sleepData     = [] } = useCollection('sleep_data',      STORAGE_KEYS.SLEEP);
   const { items: supplements   = [] } = useCollection('supplements',     'valerie_supplements');
   const { items: habits        = [] } = useCollection('habits',          STORAGE_KEYS.HABITS);
   const { items: bodyMetrics   = [] } = useCollection('body_metrics',    STORAGE_KEYS.BODY);
@@ -137,10 +137,10 @@ function OverviewTab({ settings, today }) {
   const lastSleep = useMemo(() =>
     [...sleepData].sort((a, b) => (b.date || '').localeCompare(a.date || ''))[0],
   [sleepData]);
-  const sleepHours = lastSleep?.duration || 0;
+  const sleepHours = (lastSleep?.duration || 0) / 60; // sleep_data stores minutes
   const sleepH     = Math.floor(sleepHours);
   const sleepM     = Math.round((sleepHours % 1) * 60);
-  const sleepQ     = lastSleep?.quality || 0;
+  const sleepQ     = Number(lastSleep?.efficiency ?? lastSleep?.quality) || 0;
 
   //  Water
   const waterGoal  = settings?.waterGoal || 2500;
@@ -309,7 +309,7 @@ function OverviewTab({ settings, today }) {
 
 //  Sleep tab 
 function SleepTab({ today }) {
-  const { items: sleepData = [] } = useCollection('sleep_logs', 'valerie_sleep_logs');
+  const { items: sleepData = [] } = useCollection('sleep_data', STORAGE_KEYS.SLEEP);
   const sorted = useMemo(() =>
     [...sleepData].sort((a, b) => (b.date || '').localeCompare(a.date || '')).slice(0, 7),
   [sleepData]);
@@ -323,12 +323,14 @@ function SleepTab({ today }) {
           </div>
         </MCard>
       ) : sorted.map((s, i) => {
-        const h = Math.floor(s.duration || 0);
-        const m = Math.round(((s.duration || 0) % 1) * 60);
-        const color = (s.quality || 0) >= 80 ? '#4caf7d' : (s.quality || 0) >= 60 ? '#f59e0b' : '#e05555';
+        const mins  = s.duration || 0; // minutes
+        const h = Math.floor(mins / 60);
+        const m = Math.round(mins % 60);
+        const score = Number(s.efficiency ?? s.quality) || 0;
+        const color = score >= 80 ? '#4caf7d' : score >= 60 ? '#f59e0b' : '#e05555';
         return (
           <MCard key={i} style={{ display: 'flex', alignItems: 'center', gap: 14 }}>
-            <SleepRing pct={s.quality || 0} size={60} thickness={6} />
+            <SleepRing pct={score} size={60} thickness={6} />
             <div style={{ flex: 1 }}>
               <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 4 }}>
                 <span style={{ fontSize: 12, color: 'var(--text-muted)' }}>{s.date}</span>

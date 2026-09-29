@@ -9,6 +9,7 @@ import { toLocalDateKey } from '../utils/localDate.js';
 import { makeTask } from '../domain/tasks.js';
 import { NAV_TARGETS } from '../nav/groups.js';
 import { updateSettings } from '../utils/settingsStore.js';
+import { waterRow, sleepRow, nutritionDay } from '../domain/dayLogs.js';
 
 //  Callback registry 
 // Components register handlers here so VALERIE can trigger UI actions.
@@ -36,6 +37,37 @@ async function insertActionRow(table, storageKey, payload) {
   }
   const local = storage.get(storageKey, []);
   storage.set(storageKey, [{ id: `local_${Date.now()}`, ...payload }, ...local]);
+}
+
+// Update today's row for a once-a-day table (nutrition, sleep) or insert it.
+// `build(existingData | null)` returns the new row data (or null to skip).
+// Matches by date against the local mirror, ignoring unsynced local_* rows.
+async function upsertDayRow(table, storageKey, date, build) {
+  const mirror = storage.get(storageKey, []);
+  const rows = Array.isArray(mirror) ? mirror : [];
+  const existing = rows.find(r => r.date === date && !String(r.id).startsWith('local_'));
+  const { id, ...existingData } = existing || {};
+  const built = build(existing ? existingData : null);
+  if (!built) return;
+  const data = sanitizePayload(built);
+
+  if (!existing) { await insertActionRow(table, storageKey, data); return; }
+
+  const userId = await getUserId();
+  let synced = false;
+  if (userId) {
+    const { error } = await supabase.from(table).update({ data }).eq('id', id);
+    synced = !error;
+    if (error) {
+      console.error(`[VALERIE action] update failed on "${table}":`, error.message);
+      window.dispatchEvent(new CustomEvent('valerie:toast', { detail: { message: `⚠️ Couldn't sync — ${error.message}. Saved on this device only.`, type: 'error' } }));
+    }
+  } else {
+    console.error(`[VALERIE action] update failed on "${table}": not signed in`);
+    window.dispatchEvent(new CustomEvent('valerie:toast', { detail: { message: '⚠️ Not signed in — saved on this device only', type: 'error' } }));
+  }
+  storage.set(storageKey, rows.map(r => (r.id === id ? { id, ...data } : r)));
+  return synced;
 }
 
 //  parseResponse 
@@ -128,31 +160,14 @@ async function _executeOne(action) {
     case 'logMood': {
       const value = Math.min(10, Math.max(1, Number(action.value) || 5));
       const today = toLocalDateKey(new Date());
-      const entry = { date: today, value, note: action.note || '', ts: Date.now() };
-      const existing = storage.get(STORAGE_KEYS.MOOD_LOGS, []);
-      const updated  = [entry, ...existing.filter(m => m.date !== today)].slice(0, 90);
-      storage.set(STORAGE_KEYS.MOOD_LOGS, updated);
-      const moodUserId = await getUserId();
-      if (moodUserId) {
-        const { error } = await supabase.from('mood_logs').insert({ user_id: moodUserId, data: entry });
-        if (error) {
-          console.error('[VALERIE action] insert failed on "mood_logs":', error.message);
-          window.dispatchEvent(new CustomEvent('valerie:toast', { detail: { message: `⚠️ Couldn't sync mood log — ${error.message}`, type: 'error' } }));
-        }
-      } else {
-        console.error('[VALERIE action] insert failed on "mood_logs": not signed in');
-      }
+      await upsertDayRow('mood_logs', STORAGE_KEYS.MOOD_LOGS, today, () => ({ date: today, value, note: action.note || '', ts: Date.now() }));
       break;
     }
 
     //  Log water 
     case 'logWater': {
-      const amount = Math.min(2000, Math.max(50, Number(action.amount) || 250));
-      const today  = toLocalDateKey(new Date());
-      // Water is stored as a flat array by useCollection  keep that format consistent
-      const existing = storage.get(STORAGE_KEYS.WATER, []);
-      const logs = Array.isArray(existing) ? existing : (existing?.daily || []);
-      storage.set(STORAGE_KEYS.WATER, [...logs, { date: today, amount, ts: Date.now(), createdAt: Date.now() }].slice(-200));
+      const today = toLocalDateKey(new Date());
+      await insertActionRow('water_logs', STORAGE_KEYS.WATER, sanitizePayload(waterRow({ date: today, amountMl: action.amount })));
       break;
     }
 
@@ -191,28 +206,21 @@ async function _executeOne(action) {
       break;
     }
 
-    //  Log calories
+    //  Log calories: adds a meal to today's nutrition row, as Fuel does
     case 'logCalories': {
-      const cal   = Math.abs(Number(action.calories));
-      if (!cal) break;
       const today = toLocalDateKey(new Date());
-      const health = storage.get(STORAGE_KEYS.HEALTH, {});
-      const logs   = health.calorieLogs || [];
-      const entry  = { date: today, calories: cal, meal: action.meal || '', ts: Date.now() };
-      health.calorieLogs = [entry, ...logs.filter(l => l.date !== today || l.meal !== entry.meal)].slice(0, 200);
-      storage.set(STORAGE_KEYS.HEALTH, health);
+      await upsertDayRow('nutrition_logs', STORAGE_KEYS.MACROS, today,
+        (existing) => nutritionDay({ date: today, existing, entry: {
+          calories: action.calories, protein: action.protein, carbs: action.carbs, fat: action.fat, meal: action.meal,
+        } }));
       break;
     }
 
-    //  Log sleep 
+    //  Log sleep: one row per date in sleep_data, keeping any stages already there
     case 'logSleep': {
-      const hours = Number(action.hours);
-      if (!hours) break;
       const today = toLocalDateKey(new Date());
-      const sleep = storage.get(STORAGE_KEYS.SLEEP, { logs: [] });
-      sleep.logs  = [{ date: today, hours, quality: action.quality || null, ts: Date.now() },
-                     ...(sleep.logs || []).filter(l => l.date !== today)].slice(0, 90);
-      storage.set(STORAGE_KEYS.SLEEP, sleep);
+      await upsertDayRow('sleep_data', STORAGE_KEYS.SLEEP, today,
+        (existing) => sleepRow({ date: today, hours: action.hours, quality: action.quality, existing }));
       break;
     }
 
