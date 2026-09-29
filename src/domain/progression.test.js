@@ -124,3 +124,18 @@ describe('plateau detection', () => {
     expect(list[0].status).toBe('regressing');
   });
 });
+
+describe('applyReadiness', () => {
+  it('turns an ADD WEIGHT into a HOLD on a go-easy day, and touches nothing else', async () => {
+    const { applyReadiness } = await import('./progression.js');
+    const add = suggestNext(ex, [log(30, [[60, 12], [60, 12]])], TODAY);
+    expect(add.action).toBe('ADD WEIGHT');
+    const held = applyReadiness(add, { status: 'ok', band: 'go-easy', score: 41 });
+    expect(held).toMatchObject({ action: 'HOLD', nextWeight: 60, heldByReadiness: true });
+    expect(held.hint).toMatch(/41/);
+    expect(applyReadiness(add, { status: 'ok', band: 'normal', score: 60 })).toBe(add);
+    expect(applyReadiness(add, { status: 'no-data' })).toBe(add);
+    const drop = suggestNext(ex, [log(27, [[60, 8], [60, 6]]), log(30, [[60, 7], [60, 6]])], TODAY);
+    expect(applyReadiness(drop, { status: 'ok', band: 'go-easy', score: 30 })).toBe(drop);
+  });
+});

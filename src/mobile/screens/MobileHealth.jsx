@@ -10,6 +10,7 @@ import { waterAdvice } from '../../domain/water.js';
 import { weightCoach } from '../../domain/weight.js';
 import WeightChart from '../../components/WeightChart.jsx';
 import ProgressPhotos from '../../components/ProgressPhotos.jsx';
+import ReadinessCard from '../../components/ReadinessCard.jsx';
 import MicroCoachCard from '../../components/MicroCoachCard.jsx';
 import { weeklyMicros, microCoach } from '../../domain/micros.js';
 
@@ -323,6 +324,7 @@ function SleepTab({ today }) {
 
   return (
     <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
+      <ReadinessCard compact />
       {sorted.length === 0 ? (
         <MCard>
           <div style={{ fontSize: 13, color: 'var(--text-muted)' }}>

@@ -17,6 +17,7 @@ import { recentFoods } from '../domain/foods.js';
 import { weightCoach } from '../domain/weight.js';
 import { weeklyMicros, microCoach } from '../domain/micros.js';
 import ProgressPhotos from '../components/ProgressPhotos.jsx';
+import ReadinessCard from '../components/ReadinessCard.jsx';
 import { isDone, currentStreak, toggleDay } from '../domain/habits.js';
 import MicroCoachCard from '../components/MicroCoachCard.jsx';
 import { calcWaterGoal, waterAdvice, DEFAULT_WATER_PROFILE } from '../domain/water.js';
@@ -1731,6 +1732,7 @@ function Sleep({ sleepData, settings }) {
 
   return (
     <Section title="Sleep">
+      <div style={{ marginBottom: 16 }}><ReadinessCard /></div>
       {!latest && (
         <div style={{
           padding: '8px 14px', borderRadius: 8, marginBottom: 14,

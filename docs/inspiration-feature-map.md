@@ -43,8 +43,8 @@ Strong is the clean set logger. Liftoff wraps logging in a game: XP, ranks per e
 | Pre-filled sets, previous-set ghost, one-tap log, rest timer | Have | — |
 | PR detection (Epley e1RM + heaviest) | Have | — |
 | XP / level system | Partial — XP exists (Progress) but is not tied to lifts | P2 |
-| **Next-session suggestion** ("add 2.5 kg", "repeat", "deload") from your own history | Missing | **P1** — this is the "ahead of me" feature; pure logic on data already stored |
-| Plateau / stall detection on a lift | Missing | **P1** |
+| **Next-session suggestion** ("add 2.5 kg", "repeat", "deload") from your own history | **Have** (2026-09-30, `domain/progression.js`: judged on all working sets, no drop after one bad day, layoff restart) | — |
+| Plateau / stall detection on a lift | **Have** (no new best in 4+ sessions over 2+ weeks → STALLED chip, banner, deload suggestion, assistant context) | — |
 | Per-exercise progress chart (e1RM over time) | Missing | **P1** |
 | Warm-up set generator, plate calculator | Missing | P2 |
 | Supersets, RPE per set | Missing | P2 |
@@ -75,8 +75,8 @@ RISE centres on a daily sleep-debt score. Sleep Cycle adds a smart wake window a
 | Feature | Arete | Priority |
 |---|---|---|
 | Sleep log, window from settings | Have (Recover) | — |
-| **Sleep debt** (needed − slept over the last 14 nights) | Missing | **P1** — data already logged |
-| **Readiness score** (sleep + recent training load + soreness) | Missing (also a STANCE Elite feature) | **P1** |
+| **Sleep debt** (needed − slept over the last 14 nights) | **Have** (2026-09-30, `domain/recovery.js`; only logged nights count; sleep-need setting) | — |
+| **Readiness score** (sleep + recent training load) | **Have** (Recover screen desktop + phone, a line in Train, assistant context; low readiness holds a weight instead of adding one). No soreness input yet | — |
 | Smart wake window / alarm | Missing; a PWA can't reliably alarm, so **suggest a bedtime instead of an alarm** | P3 |
 | Water goal from weight, +training day, pace advice, one-tap log | Have | — |
 | Drink types (coffee/tea count differently), weather adjustment | Missing | P3 |
@@ -94,9 +94,9 @@ Stance builds workouts and meals from a goal and training days, adjusts weights 
 | Coach chat that knows your goal, score, PRs and due supplies | Have, coded — not deployed until the key is rotated | — |
 | **Approval before the coach changes anything** | Missing — assistant actions still save immediately (Q-CONFIRM) | **P1** |
 | AI-built weekly workout plan from goal, days and equipment | Missing (there is a program editor, no generator) | P2 |
-| Auto-adjusted loads | Same as "next-session suggestion" above | **P1** |
-| Pre-session advice ("sleep was short, keep it lighter") | Missing; needs readiness | P2 |
-| Plateau detection and intervention | Same as above | **P1** |
+| Auto-adjusted loads | **Have** as suggestions the lifter can override (see section 2) | — |
+| Pre-session advice ("sleep was short, keep it lighter") | **Have** (readiness line at the top of Train) | — |
+| Plateau detection and intervention | **Have** (section 2) | — |
 | Crews, challenges, "Winter Arc" seasons | Missing — skip (single user) | Skip |
 
 ## 6. Lock In – Reset Your Life — habits and self-improvement
@@ -117,8 +117,8 @@ Reference features: daily habits with tags (Gym, Health, Focus), an overall rati
 
 The first six are small, pure-logic features on data the app already stores, and together they are what makes the AI "ten steps ahead":
 
-1. **Next-session load suggestion + plateau detection** (Train)
-2. **Sleep debt + readiness score** (Recover → Home ring and coach context)
+1. ~~Next-session load suggestion + plateau detection (Train)~~ done 2026-09-30
+2. ~~Sleep debt + readiness score~~ done 2026-09-30 (Home ring not wired)
 3. **Goal-weight ETA** and **per-weekday macro goals** (Body, Goal HQ, Fuel)
 4. **Copy yesterday + quick-add calories** (Fuel)
 5. **Face progress photos + daily skin rating** (Look)

@@ -9,6 +9,7 @@ import { normalizeTasks } from '../domain/tasks.js';
 import { dayScore, GOAL_TEMPLATES } from '../domain/goals.js';
 import { bests, detectPR, setsOf } from '../domain/training.js';
 import { plateaus } from '../domain/progression.js';
+import { readiness, DEFAULT_SLEEP_NEED_H } from '../domain/recovery.js';
 import { dueItems } from '../domain/ahead.js';
 import { suppliesWithUsage } from '../utils/supplies.js';
 import { withLiveStreaks } from '../domain/habits.js';
@@ -202,6 +203,19 @@ export function buildContext({ activeTab = 'dashboard' } = {}) {
       processed.push(log);
     }
     if (prs.length) lines.push(`Recent training PRs: ${prs.slice(-5).join('; ')}`);
+  } catch {}
+
+  //  Readiness and sleep debt (domain/recovery.js)
+  try {
+    const settings = storage.get(STORAGE_KEYS.SETTINGS, {}) || {};
+    const need = Number(settings.sleepNeedHours) >= 5 ? Number(settings.sleepNeedHours) : DEFAULT_SLEEP_NEED_H;
+    const sleepRows = storage.get(STORAGE_KEYS.SLEEP, []);
+    const workouts = storage.get(STORAGE_KEYS.WORKOUT_LOGS, []);
+    const r = readiness({ sleepRows: Array.isArray(sleepRows) ? sleepRows : [], workoutLogs: Array.isArray(workouts) ? workouts : [], today: toLocalDateKey(now), need });
+    if (r.status === 'ok') {
+      const debt = r.debt.status !== 'insufficient' ? `; sleep debt ${r.debt.debtHours}h over ${r.debt.nights} logged nights` : '';
+      lines.push(`Readiness today: ${r.score}/100 (${r.label})${debt}. Advice: ${r.advice}`);
+    }
   } catch {}
 
   //  Stalled lifts and the next-session plan (domain/progression.js)

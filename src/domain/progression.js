@@ -172,3 +172,17 @@ export function plateaus(exercises = [], logs = [], today) {
   }
   return out.sort((a, b) => (a.status === b.status ? b.sessions - a.sessions : a.status === 'regressing' ? -1 : 1));
 }
+
+/**
+ * On a low-readiness day, hold the weight instead of adding some. Only ever
+ * softens an ADD WEIGHT suggestion; it never lowers a weight or blocks logging.
+ * `r` is the result of readiness() in recovery.js.
+ */
+export function applyReadiness(prog, r) {
+  if (!r || r.status !== 'ok' || r.band !== 'go-easy' || prog.action !== 'ADD WEIGHT') return prog;
+  return {
+    ...prog,
+    action: 'HOLD', nextWeight: prog.currentWeight, targetReps: null, heldByReadiness: true,
+    hint: `Readiness is ${r.score} today, so hold ${prog.currentWeight}kg rather than adding weight. Take the increase next session.`,
+  };
+}

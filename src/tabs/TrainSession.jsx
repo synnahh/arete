@@ -8,7 +8,8 @@ import { toLocalDateKey } from '../utils/localDate.js';
 import {
   bests, detectPR, plannedRows, previousSets, restSeconds, setsOf, todaysLog, topSetOf, volume,
 } from '../domain/training.js';
-import { plateaus } from '../domain/progression.js';
+import { plateaus, applyReadiness } from '../domain/progression.js';
+import { useRecovery } from '../hooks/useRecovery.js';
 
 const today = () => toLocalDateKey(new Date());
 const fmt = (s) => `${Math.floor(s / 60)}:${String(Math.max(0, s) % 60).padStart(2, '0')}`;
@@ -192,6 +193,8 @@ export default function TrainSession({
   const setGym = (g) => { setGymState(g); writePref('valerie_train_gym', g); };
   const onRestDone = useCallback(() => toast('Rest done — next set'), []);
 
+  const recovery = useRecovery();
+
   const todays = useMemo(() => {
     const base = exercises.filter(e => (e.gym === gym || e.gym === 'both') && e.day === day);
     const extra = exercises.filter(e => extraIds.includes(e.id) && !base.includes(e));
@@ -205,7 +208,7 @@ export default function TrainSession({
       const next = { ...prev };
       for (const ex of todays) {
         if (next[ex.id]) continue;
-        const prog = progression(ex, workoutLogs.filter(l => l.date < date));
+        const prog = applyReadiness(progression(ex, workoutLogs.filter(l => l.date < date)), recovery);
         const rows = plannedRows(ex, prog, previousSets(workoutLogs, ex.name, date));
         const existing = todaysLog(workoutLogs, ex.name, date);
         if (existing) {
@@ -223,7 +226,7 @@ export default function TrainSession({
     });
   }, [todays, workoutLogs, date, progression, setPlan]);
 
-  const progFor = (ex) => progression(ex, workoutLogs.filter(l => l.date < date));
+  const progFor = (ex) => applyReadiness(progression(ex, workoutLogs.filter(l => l.date < date)), recovery);
   // Lifts (any day) with no new best for weeks: one place to see what needs a deload.
   const stalled = useMemo(() => plateaus(exercises, workoutLogs.filter(l => l.date < date), date), [exercises, workoutLogs, date]);
 
@@ -322,6 +325,13 @@ export default function TrainSession({
             </button>
           </div>
         </div>
+
+        {recovery.status === 'ok' && (
+          <div role="status" style={{ display: 'flex', alignItems: 'center', gap: 10, fontSize: 13, lineHeight: 1.45, color: 'var(--text-secondary)' }}>
+            <span className="val-num" style={{ fontSize: 15, fontWeight: 600, color: recovery.band === 'push' ? '#4caf7d' : recovery.band === 'go-easy' ? '#e25d7a' : '#e8a13a' }}>{recovery.score}</span>
+            <span><strong style={{ color: 'var(--text-primary)' }}>{recovery.label}.</strong> {recovery.advice}</span>
+          </div>
+        )}
 
         {stalled.length > 0 && (
           <div role="status" style={{ padding: '10px 14px', borderRadius: 14, border: '0.5px solid #e8a13a', background: 'color-mix(in srgb, #e8a13a 8%, transparent)', fontSize: 13, lineHeight: 1.5, color: 'var(--text-primary)' }}>
