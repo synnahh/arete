@@ -115,3 +115,40 @@ export function todayProgress(habits = [], today) {
 export function withLiveStreaks(habits = [], today) {
   return habits.map(h => ({ ...h, streak: currentStreak(h, today) }));
 }
+
+/**
+ * A calendar heatmap of how much of your habit list you did each day, in weeks
+ * (Monday first) ending with the week that contains `today`. A day counts
+ * habits that had started by then (their first recorded day is on or before
+ * it), so adding a habit today does not retroactively make last month a miss.
+ * level: null before you had any habit, 0 none done, 1-3 partly, 4 all.
+ */
+export function heatmap(habits = [], today, { weeks = 12 } = {}) {
+  const t = dayIndex(today);
+  if (t == null) return { weeks: [], perfectDays: 0, activeDays: 0, trackedDays: 0 };
+  const starts = habits.map(h => { const hist = habitHistory(h); return { hist: new Set(hist), first: hist.length ? dayIndex(hist[0]) : null }; })
+    .filter(h => h.first != null);
+  const weekday = (t + 3) % 7; // 0 = Monday (day 0 of the epoch was a Thursday)
+  const firstMonday = t - weekday - (weeks - 1) * 7;
+  const grid = [];
+  let perfectDays = 0, activeDays = 0, trackedDays = 0;
+  for (let w = 0; w < weeks; w++) {
+    const col = [];
+    for (let d = 0; d < 7; d++) {
+      const idx = firstMonday + w * 7 + d;
+      const date = keyOf(idx);
+      if (idx > t) { col.push({ date, level: null, done: 0, total: 0, future: true }); continue; }
+      const started = starts.filter(h => h.first <= idx);
+      const done = started.filter(h => h.hist.has(date)).length;
+      if (!started.length) { col.push({ date, level: null, done: 0, total: 0, future: false }); continue; }
+      const n = started.length;
+      const level = done === 0 ? 0 : done === n ? 4 : done * 3 >= n * 2 ? 3 : done * 3 >= n ? 2 : 1;
+      trackedDays += 1;
+      if (done > 0) activeDays += 1;
+      if (level === 4) perfectDays += 1;
+      col.push({ date, level, done, total: started.length, future: false });
+    }
+    grid.push(col);
+  }
+  return { weeks: grid, perfectDays, activeDays, trackedDays };
+}

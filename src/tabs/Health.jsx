@@ -20,6 +20,7 @@ import { weeklyMicros, microCoach } from '../domain/micros.js';
 import ProgressPhotos from '../components/ProgressPhotos.jsx';
 import ReadinessCard from '../components/ReadinessCard.jsx';
 import GoalEta from '../components/GoalEta.jsx';
+import HabitHeatmap from '../components/HabitHeatmap.jsx';
 import { withTodaysTargets } from '../utils/todaysTargets.js';
 import { isDone, currentStreak, toggleDay } from '../domain/habits.js';
 import MicroCoachCard from '../components/MicroCoachCard.jsx';
@@ -503,6 +504,8 @@ function Habits({ habits, addHabit, updateHabit, removeHabit }) {
           </div>
         </div>
       )}
+
+      <div style={{ marginBottom: 16 }}><HabitHeatmap habits={habits} /></div>
 
       {/* Habit list */}
       {habits.length === 0 && !adding ? (

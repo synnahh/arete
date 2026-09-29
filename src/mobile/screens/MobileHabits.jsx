@@ -6,6 +6,7 @@ import { STORAGE_KEYS } from '../../utils/storage.js';
 import { toLocalDateKey } from '../../utils/localDate.js';
 import { haptics } from '../utils/haptics.js';
 import Sheet from '../Sheet.jsx';
+import HabitHeatmap from '../../components/HabitHeatmap.jsx';
 import { isDone, currentStreak, bestStreak, toggleDay, weekDots, completionRate, todayProgress } from '../../domain/habits.js';
 
 const ICONS = ['💧', '🏋️', '🥗', '📖', '🧘', '😴', '🚶', '🧴', '💊', '☕', '🎯', '✅'];
@@ -141,6 +142,8 @@ export default function MobileHabits() {
           </div>
         );
       })}
+
+      <HabitHeatmap habits={habits} />
 
       <button type="button" onClick={() => setSheet('new')} style={primary}>+ Add habit</button>
 

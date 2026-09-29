@@ -106,7 +106,7 @@ Reference features: daily habits with tags (Gym, Health, Focus), an overall rati
 | Feature | Arete | Priority |
 |---|---|---|
 | Daily habits, streaks that break correctly | Have (fixed this session; desktop + phone) | — |
-| Habit heatmap | Missing — the new completion history makes it cheap | **P1** |
+| Habit heatmap | **Have** (2026-09-30, 12 weeks, desktop + phone) | — |
 | One overall rating that rises with what you do | Partial — the Home goal ring scores today; there is no long-run OVR | P2 |
 | Journal, breathing | Partial — Mind has notes; no breathing tool | P3 |
 | Focus timer / blocking | Have (Focus tab); blocking apps is impossible in a web app | — |
@@ -122,7 +122,7 @@ The first six are small, pure-logic features on data the app already stores, and
 3. ~~Goal-weight ETA and training/rest-day macro goals~~ done 2026-09-30
 4. ~~Copy yesterday + quick-add calories~~ done 2026-09-30
 5. ~~Face progress photos + daily skin rating~~ done 2026-09-30
-6. **Habit heatmap** (Habits)
+6. ~~Habit heatmap~~ done 2026-09-30
 7. Approval cards for assistant actions (blocked on Q-CONFIRM)
 8. Product barcode scanner via Open Beauty Facts, opened-product expiry
 9. Voice and photo food logging (photo needs the gateway deployed)

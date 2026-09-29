@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest';
-import { habitHistory, isDone, currentStreak, bestStreak, toggleDay, weekDots, completionRate, todayProgress } from './habits.js';
+import { habitHistory, isDone, currentStreak, bestStreak, toggleDay, weekDots, completionRate, todayProgress, heatmap } from './habits.js';
 
 const run = (from, n) => Array.from({ length: n }, (_, i) => new Date(Date.UTC(2026, 8, from + i)).toISOString().slice(0, 10));
 
@@ -94,5 +94,53 @@ describe('withLiveStreaks', () => {
     const { withLiveStreaks } = await import('./habits.js');
     const out = withLiveStreaks([{ name: 'a', lastCompleted: '2026-08-01', streak: 40 }, { name: 'b', history: ['2026-09-09', '2026-09-10'], streak: 0 }], '2026-09-10');
     expect(out.map(h => h.streak)).toEqual([0, 2]);
+  });
+});
+
+describe('heatmap', () => {
+  // 2026-09-30 is a Wednesday.
+  const flat = (g) => g.weeks.flat();
+  const at = (g, date) => flat(g).find(c => c.date === date);
+
+  it('lays out Monday-first weeks ending with this week, future days blank', () => {
+    const g = heatmap([{ history: ['2026-09-29'] }], '2026-09-30', { weeks: 4 });
+    expect(g.weeks).toHaveLength(4);
+    expect(g.weeks.every(w => w.length === 7)).toBe(true);
+    expect(g.weeks[3][0].date).toBe('2026-09-28'); // Monday of this week
+    expect(g.weeks[3][2].date).toBe('2026-09-30');
+    expect(g.weeks[3][3].future).toBe(true);
+    expect(g.weeks[3][6].level).toBeNull();
+  });
+
+  it('leaves days before your first habit blank rather than counting them as misses', () => {
+    const g = heatmap([{ history: ['2026-09-20'] }], '2026-09-30', { weeks: 4 });
+    expect(at(g, '2026-09-10').level).toBeNull();
+    expect(at(g, '2026-09-20').level).toBe(4);
+    expect(at(g, '2026-09-21').level).toBe(0);
+  });
+
+  it('grades a day by the share of started habits done', () => {
+    const habits = [
+      { history: ['2026-09-01', '2026-09-10', '2026-09-11'] },
+      { history: ['2026-09-01', '2026-09-10'] },
+      { history: ['2026-09-01', '2026-09-10'] },
+    ];
+    const g = heatmap(habits, '2026-09-30', { weeks: 6 });
+    expect(at(g, '2026-09-10')).toMatchObject({ done: 3, total: 3, level: 4 });
+    expect(at(g, '2026-09-11')).toMatchObject({ done: 1, total: 3, level: 2 });
+    expect(at(g, '2026-09-12')).toMatchObject({ done: 0, level: 0 });
+  });
+
+  it('a habit added later does not turn earlier days into misses', () => {
+    const g = heatmap([{ history: ['2026-09-01', '2026-09-02'] }, { history: ['2026-09-15'] }], '2026-09-30', { weeks: 6 });
+    expect(at(g, '2026-09-02')).toMatchObject({ done: 1, total: 1, level: 4 });
+    expect(at(g, '2026-09-15')).toMatchObject({ done: 1, total: 2, level: 2 });
+  });
+
+  it('counts perfect and active days, and copes with no data or a bad date', () => {
+    const g = heatmap([{ history: ['2026-09-28', '2026-09-29'] }], '2026-09-30', { weeks: 2 });
+    expect(g).toMatchObject({ perfectDays: 2, activeDays: 2 });
+    expect(heatmap([], '2026-09-30').weeks.flat().every(c => c.level === null)).toBe(true);
+    expect(heatmap([{ history: ['2026-09-28'] }], 'nope').weeks).toEqual([]);
   });
 });
