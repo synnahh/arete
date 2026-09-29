@@ -9,6 +9,7 @@ import { currentWaterGoal, sleepWindow } from '../../utils/waterGoal.js';
 import { waterAdvice } from '../../domain/water.js';
 import { weightCoach } from '../../domain/weight.js';
 import WeightChart from '../../components/WeightChart.jsx';
+import ProgressPhotos from '../../components/ProgressPhotos.jsx';
 import MicroCoachCard from '../../components/MicroCoachCard.jsx';
 import { weeklyMicros, microCoach } from '../../domain/micros.js';
 
@@ -809,6 +810,11 @@ function BodyTab({ today, settings }) {
           </MCard>
         </>
       )}
+
+      <MCard style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
+        <span style={{ fontSize: 13, fontWeight: 600, color: 'var(--text-primary)' }}>Progress photos</span>
+        <ProgressPhotos bodyMetrics={bodyMetrics} />
+      </MCard>
     </div>
   );
 }

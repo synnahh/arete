@@ -16,6 +16,7 @@ import { peekHealthSection, clearHealthSection, screenForHealthSection } from '.
 import { recentFoods } from '../domain/foods.js';
 import { weightCoach } from '../domain/weight.js';
 import { weeklyMicros, microCoach } from '../domain/micros.js';
+import ProgressPhotos from '../components/ProgressPhotos.jsx';
 import MicroCoachCard from '../components/MicroCoachCard.jsx';
 import { calcWaterGoal, waterAdvice, DEFAULT_WATER_PROFILE } from '../domain/water.js';
 import { currentWaterGoal, trainedToday, sleepWindow } from '../utils/waterGoal.js';
@@ -1235,12 +1236,9 @@ function Body({ bodyMetrics, addBodyMetric, settings }) {
   const [adding,   setAdding]   = useState(false);
   const { data: measuresDoc, save: saveMeasuresDoc } = useDocument('measurements', STORAGE_KEYS.MEASUREMENTS, {});
   const [measures, setMeasures] = useState(() => measuresDoc || {});
-  const [photos,   setPhotos]   = useState(() => { try { return JSON.parse(localStorage.getItem('valerie_photos')||'[]'); } catch { return []; } });
 
   // Sync measurements from Firestore cross-device
   useEffect(() => { if (measuresDoc) setMeasures(measuresDoc); }, [measuresDoc]);
-  const [compare,  setCompare]  = useState([null,null]);
-  const fileRef = useRef(null);
 
   const rawSorted = useMemo(()=>[...(bodyMetrics||[])].sort((a,b)=>(b.date??'').localeCompare(a.date??'')),[bodyMetrics]);
   const useBodyDemo = rawSorted.length === 0;
@@ -1262,19 +1260,6 @@ function Body({ bodyMetrics, addBodyMetric, settings }) {
   const coach = useMemo(() => (useBodyDemo ? null : weightCoach(rawSorted, settings?.coachGoal?.targets?.weeklyRateKg ?? null)), [useBodyDemo, rawSorted, settings?.coachGoal]);
 
   const saveMeasures = (m) => { setMeasures(m); saveMeasuresDoc(m); };
-  const savePhotos   = (p) => { setPhotos(p);   localStorage.setItem('valerie_photos',JSON.stringify(p)); };
-
-  const addPhoto = (e) => {
-    const file = e.target.files?.[0];
-    if (!file) return;
-    const reader = new FileReader();
-    reader.onload = (ev) => {
-      const entry = { id: Date.now(), date: todayStr(), src: ev.target.result, note:'' };
-      savePhotos([entry, ...photos]);
-    };
-    reader.readAsDataURL(file);
-  };
-
   const MEASURE_FIELDS = [
     { key:'waist',  label:'Waist',  unit:'cm' },
     { key:'chest',  label:'Chest',  unit:'cm' },
@@ -1287,10 +1272,8 @@ function Body({ bodyMetrics, addBodyMetric, settings }) {
   return (
     <Section title="Body" action={
       bodyTab==='weight'?<button onClick={()=>setAdding(v=>!v)} style={btnPrimary}>{adding?' Close':'+ Log'}</button>:
-      bodyTab==='photos'?<button onClick={()=>fileRef.current?.click()} style={btnPrimary}>= Add photo</button>:null
+      null
     }>
-      <input ref={fileRef} type="file" accept="image/*" style={{display:'none'}} onChange={addPhoto}/>
-
       {/* Sub-tab bar */}
       <div style={{display:'flex',gap:4,marginBottom:14,background:'rgba(255,255,255,0.03)',padding:4,borderRadius:10,border:'0.5px solid rgba(255,255,255,0.07)'}}>
         {BODY_TABS.map(t=>(
@@ -1422,55 +1405,7 @@ function Body({ bodyMetrics, addBodyMetric, settings }) {
       )}
 
       {/*  Photos tab  */}
-      {bodyTab==='photos'&&(
-        <>
-          {photos.length===0?(
-            <div style={{textAlign:'center',padding:40,opacity:0.4}}>
-              <div style={{fontSize:36}}>=</div>
-              <p style={{fontSize:13,color:'var(--text-muted)',marginTop:8}}>No progress photos yet.</p>
-              <button onClick={()=>fileRef.current?.click()} style={{...btnPrimary,marginTop:10}}>Add first photo</button>
-            </div>
-          ):(
-            <>
-              {/* Compare mode: pick 2 */}
-              {photos.length>=2&&(
-                <div style={{marginBottom:12}}>
-                  <GlassLabel>Side-by-side comparison</GlassLabel>
-                  <div style={{display:'flex',gap:8}}>
-                    {[0,1].map(idx=>(
-                      <div key={idx} style={{flex:1}}>
-                        <select value={compare[idx]??''} onChange={e=>{const c=[...compare];c[idx]=e.target.value;setCompare(c);}}
-                          style={{...inputSx,marginBottom:6,fontSize:11}}>
-                          <option value=""> pick photo </option>
-                          {photos.map(p=><option key={p.id} value={p.id}>{p.date} {p.note&&` ${p.note}`}</option>)}
-                        </select>
-                        {compare[idx]&&(()=>{
-                          const p=photos.find(ph=>String(ph.id)===String(compare[idx]));
-                          return p?<img src={p.src} alt={p.date} style={{width:'100%',borderRadius:8,border:'0.5px solid var(--card-border)',objectFit:'cover',maxHeight:220}}/>:null;
-                        })()}
-                      </div>
-                    ))}
-                  </div>
-                </div>
-              )}
-
-              {/* Photo grid */}
-              <GlassLabel>All photos ({photos.length})</GlassLabel>
-              <div style={{display:'grid',gridTemplateColumns:'repeat(auto-fill,minmax(140px,1fr))',gap:8}}>
-                {photos.map(p=>(
-                  <div key={p.id} style={{borderRadius:8,overflow:'hidden',border:'0.5px solid var(--card-border)',position:'relative',cursor:'pointer'}}>
-                    <img src={p.src} alt={p.date} style={{width:'100%',aspectRatio:'3/4',objectFit:'cover',display:'block'}}/>
-                    <div style={{padding:'6px 8px',background:'rgba(0,0,0,0.7)',position:'absolute',bottom:0,left:0,right:0,display:'flex',justifyContent:'space-between',alignItems:'center'}}>
-                      <span style={{fontSize:10,color:'rgba(255,255,255,0.7)',fontFamily:'ui-monospace,monospace'}}>{p.date}</span>
-                      <button onClick={()=>savePhotos(photos.filter(ph=>ph.id!==p.id))} style={{background:'none',border:'none',cursor:'pointer',color:'rgba(255,100,100,0.7)',fontSize:12,padding:0}}></button>
-                    </div>
-                  </div>
-                ))}
-              </div>
-            </>
-          )}
-        </>
-      )}
+      {bodyTab==='photos'&&<ProgressPhotos bodyMetrics={bodyMetrics} />}
     </Section>
   );
 }
