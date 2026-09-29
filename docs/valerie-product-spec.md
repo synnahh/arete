@@ -153,7 +153,7 @@ Arete is a rebuild, so the existing appearance system stays and is extended, not
 | Orb (`VaIerieOrb.jsx`) with 4 shapes | Becomes the Coach button, centre of the tab bar. |
 | Background style (time-of-day, animated, solid, noise) | Shown behind Home. |
 | Animation intensity (full, reduced, none) | Drives the motion system (§4.6): Reduced drops signatures, None is instant; OS reduce-motion forces Reduced. |
-| Hollow star logo | Stays as the mark; the V is dropped for Arete (new render needed). |
+| Valerie star logo | Replaced by the owner's Arete logo (laurelled bust, A with 4-point sparkles, halo) in three metals: silver for Obsidian, Midnight and Crimson; violet for Phantom; gold for Ember. Screen titles use Cinzel to echo its lettering, and the ✦ sparkle becomes a UI motif. Needs transparent-background exports (Arctic, app icons) and a simplified emblem for sizes under 48 px. |
 
 **New layer: tab colours.** `--tab-accent` is set per tab on top of any theme (Home laurel, Plan azure, Coach ember, Mind violet, Finance emerald; Settings uses the theme accent). Arctic gets darker variants for contrast. Setting: *Tab colours: Per tab / Theme accent only*. It is used only for the active tab, that screen's key number and its signature motion. HUD details: hairlines, corner ticks on live cards, glow only on live data.
 
