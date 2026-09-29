@@ -9,6 +9,7 @@ import { isTauri } from '../utils/platform.js';
 import { sendSMS } from '../utils/twilio.js';
 import { currencySymbol as currencySym } from '../utils/currency.js';
 import { toLocalDateKey } from '../utils/localDate.js';
+import { currentWaterGoal } from '../utils/waterGoal.js';
 
 const todayStr    = () => toLocalDateKey(new Date());
 const currentHour = () => new Date().getHours();
@@ -99,7 +100,7 @@ export function useNotifications(settings) {
           const waterLogs = storage.get(STORAGE_KEYS.WATER, []);
           const logs      = Array.isArray(waterLogs) ? waterLogs : (waterLogs?.daily || []);
           const todayML   = logs.filter(l => l.date === today).reduce((a, l) => a + (l.amount || 0), 0);
-          const goal      = s.waterGoal ?? 2500;
+          const goal      = currentWaterGoal(s);
           if (todayML < goal * 0.5) {
             setFlag('water');
             const msg = resolveMsg(water.message || 'VALERIE: Only {value}ml logged. Goal is {goal}ml.', { value: todayML, goal });

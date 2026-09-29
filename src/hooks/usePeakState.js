@@ -7,6 +7,7 @@ import { useState, useEffect, useRef } from 'react';
 import { supabase, getUserId, getUserIdSync } from '../supabase/supabase.js';
 import { storage, STORAGE_KEYS } from '../utils/storage.js';
 import { toLocalDateKey } from '../utils/localDate.js';
+import { currentWaterGoal } from '../utils/waterGoal.js';
 
 const TODAY = () => toLocalDateKey(new Date());
 const YESTERDAY = () => {
@@ -15,15 +16,10 @@ const YESTERDAY = () => {
 
 function clamp(v, lo = 0, hi = 100) { return Math.max(lo, Math.min(hi, v)); }
 
+// One shared goal (utils/waterGoal.js). This used to read field names the
+// profile never has, so it always assumed an 80 kg person.
 function waterGoalMl() {
-  try {
-    const p = JSON.parse(localStorage.getItem('valerie_water_profile') || '{}');
-    const kg = p.unit === 'lbs' ? (p.weight || 176) * 0.4536 : (p.weight || 80);
-    const base = kg * (p.sex === 'female' ? 31 : 35);
-    const act  = ((p.trainingHoursPerWeek || 0) / 7) * 500;
-    const caf  = Math.max(0, ((p.dailyCaffeineMg || 0) - 200) * 1.5);
-    return Math.round((base + act + caf) / 50) * 50 || 2500;
-  } catch { return 2500; }
+  try { return currentWaterGoal() || 2500; } catch { return 2500; }
 }
 
 function scoreColor(s) {

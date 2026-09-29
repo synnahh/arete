@@ -9,6 +9,7 @@ import { normalizeTasks } from '../domain/tasks.js';
 import { dayScore, GOAL_TEMPLATES } from '../domain/goals.js';
 import { bests, detectPR, setsOf } from '../domain/training.js';
 import { dueItems } from '../domain/ahead.js';
+import { currentWaterGoal } from '../utils/waterGoal.js';
 
 //  buildContext 
 /**
@@ -167,7 +168,7 @@ export function buildContext({ activeTab = 'dashboard' } = {}) {
         calories: todayNutrition.reduce((sum, x) => sum + (Number(x.calories) || 0), 0),
         protein: todayNutrition.reduce((sum, x) => sum + (Number(x.protein) || 0), 0),
         waterMl: (Array.isArray(water) ? water : []).filter(x => x.date === today).reduce((sum, x) => sum + (Number(x.amount) || 0), 0),
-        waterGoalMl: settings.waterGoal || 2500,
+        waterGoalMl: currentWaterGoal(settings),
         sleepHours: lastSleep?.duration ? Number(lastSleep.duration) / 60 : Number(lastSleep?.hours) || 0,
         trained: (Array.isArray(workouts) ? workouts : []).some(x => x.date === today),
       });

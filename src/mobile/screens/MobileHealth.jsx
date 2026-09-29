@@ -5,6 +5,7 @@ import { STORAGE_KEYS }  from '../../utils/storage.js';
 import { searchOpenFoodFacts, lookupBarcode, startBarcodeScan } from '../../utils/openFoodFacts.js';
 import { scaleMicros } from '../../utils/micronutrients.js';
 import { toLocalDateKey } from '../../utils/localDate.js';
+import { currentWaterGoal } from '../../utils/waterGoal.js';
 
 const nowStr = () => new Date().toLocaleTimeString('en-AU', { hour: '2-digit', minute: '2-digit', hour12: false });
 
@@ -143,7 +144,7 @@ function OverviewTab({ settings, today }) {
   const sleepQ     = Number(lastSleep?.efficiency ?? lastSleep?.quality) || 0;
 
   //  Water
-  const waterGoal  = settings?.waterGoal || 2500;
+  const waterGoal  = currentWaterGoal(settings);
   const todayWater = useMemo(() =>
     waterLogs.filter(l => l.date === today).reduce((s, l) => s + (l.amount || 0), 0),
   [waterLogs, today]);

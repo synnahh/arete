@@ -15,6 +15,8 @@ import { toLocalDateKey } from '../utils/localDate.js';
 import { peekHealthSection, clearHealthSection, screenForHealthSection } from '../nav/healthSection.js';
 import { recentFoods } from '../domain/foods.js';
 import { weightCoach } from '../domain/weight.js';
+import { calcWaterGoal, waterAdvice, DEFAULT_WATER_PROFILE } from '../domain/water.js';
+import { currentWaterGoal, trainedToday, sleepWindow } from '../utils/waterGoal.js';
 import WeightChart from '../components/WeightChart.jsx';
 
 //  Helpers 
@@ -144,7 +146,7 @@ const DEMO_WATER = 1850;
 function Overview({ habits, waterLogs, nutritionLogs, sleepData, settings, supplements, suppLogs, stimLogs, workoutLogs, bodyMetrics, onNav, onTabChange, appleHealth }) {
   const today = todayStr();
 
-  const waterGoal   = settings?.waterGoal ?? 2500;
+  const waterGoal   = currentWaterGoal(settings);
   const calGoal     = settings?.macroGoal ?? 2500;
   const protGoal    = settings?.proteinGoal ?? 160;
   const carbGoal    = settings?.macros?.carbs ?? 250;
@@ -1041,17 +1043,7 @@ async function fetchExercisesFromDB(apiKey) {
 // 5. WATER
 // PPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPP
 // Water goal formula: weight(kg)35 + activity bonus + caffeine bonus
-function calcWaterGoal(profile) {
-  const { weight=75, activityHours=0, caffeineMg=0, sex='male' } = profile;
-  let base = weight * 35; // ml
-  if (sex === 'female') base = weight * 31;
-  const activityBonus  = (activityHours / 7) * 500;
-  const caffBonus      = Math.max(0, (caffeineMg - 200) * 1.5);
-  return Math.round((base + activityBonus + caffBonus) / 50) * 50; // round to 50ml
-}
 
-
-const DEFAULT_WATER_PROFILE = { weight:75, age:25, sex:'male', activityHours:5, caffeineMg:200, unit:'ml' };
 
 function Water({ waterLogs, addWaterLog, settings }) {
   const today     = todayStr();
@@ -1062,7 +1054,8 @@ function Water({ waterLogs, addWaterLog, settings }) {
 
   const saveProfile = (p) => { saveProfileDoc(p); };
 
-  const goal = calcWaterGoal(profile);
+  const trained = trainedToday();
+  const goal = calcWaterGoal(profile, { trainedToday: trained });
 
   const todayLogs = useMemo(() =>
     [...(waterLogs||[]).filter(l=>l.date===today)].sort((a,b)=>(a.time??'').localeCompare(b.time??'')),
@@ -1076,6 +1069,9 @@ function Water({ waterLogs, addWaterLog, settings }) {
   const fmtWater = (ml) => profile.unit==='L'&&ml>=1000?`${(ml/1000).toFixed(1)}L`:`${ml}ml`;
 
   const QUICK = [250, 330, 500, 750, 1000];
+
+  // Coaching: are you on pace for this hour of your day?
+  const advice = waterAdvice({ totalMl: total, goalMl: goal, now: new Date(), ...sleepWindow() });
 
   return (
     <Section title="Water" action={
@@ -1155,6 +1151,13 @@ function Water({ waterLogs, addWaterLog, settings }) {
         </div>
         <div style={{fontSize:14,color:colour,fontWeight:500}}>{Math.round(pct)}% complete</div>
         {pct<100&&<div style={{fontSize:11.5,color:'rgba(255,255,255,0.35)'}}>{fmtWater(goal-total)} remaining</div>}
+        {trained&&<div style={{fontSize:11,color:'var(--text-secondary)'}}>Goal includes +500 ml for today's training</div>}
+        {advice&&(
+          <div role="status" style={{fontSize:13,marginTop:4,textAlign:'center',maxWidth:320,lineHeight:1.45,color:advice.status==='behind'?'#e8a13a':advice.status==='done'||advice.status==='ahead'?'#4caf7d':'var(--text-secondary)'}}>{advice.message}</div>
+        )}
+        {advice?.sipMl>0&&(
+          <button type="button" onClick={()=>log(advice.sipMl)} style={{...btnPrimary,marginTop:4}}>Log {advice.sipMl} ml</button>
+        )}
       </div>
 
       {/*  Quick log + entry  */}

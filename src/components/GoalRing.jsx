@@ -7,6 +7,7 @@ import { useCollection } from '../supabase/useCollection.js';
 import { STORAGE_KEYS } from '../utils/storage.js';
 import { toLocalDateKey } from '../utils/localDate.js';
 import { GOAL_TEMPLATES, dayScore } from '../domain/goals.js';
+import { currentWaterGoal } from '../utils/waterGoal.js';
 
 const R = 50;
 const CIRC = 2 * Math.PI * R;
@@ -34,7 +35,7 @@ export default function GoalRing({ settings, onTabChange, compact = false }) {
     calories: health.todayCalories ?? 0,
     protein: health.todayProtein ?? 0,
     waterMl: health.todayWaterMl ?? 0,
-    waterGoalMl: settings?.waterGoal ?? 2500,
+    waterGoalMl: currentWaterGoal(settings),
     sleepHours: health.lastSleepHours ?? 0,
     trained: workoutLogs.some(l => l.date === today),
   }), [goal, health, settings?.waterGoal, workoutLogs, today]);
