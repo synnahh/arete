@@ -132,3 +132,31 @@ Commit small, one concern each, message ending with the attribution line the har
 3. Run a real same-account two-client sync test, then record the result.
 4. Rotate/configure the Anthropic secret and deploy/test `ai-chat`.
 5. Continue Fuel → Look → Ahead/Finance once the data foundation is proven.
+
+## Update — Claude resumed (2026-09-29, after Codex)
+Reviewed and committed Codex's dirty tree, then continued. HEAD is now `0d31c02`; tree clean; **102 tests**, build and build:pwa pass; every item below was also exercised in a browser (writes against an in-memory Supabase stub, never Rob's data).
+
+| Commit | What |
+|---|---|
+| `4527dac` | Codex review fixes (bad supply dates, numeric set compare, Train write recovery) |
+| `cb372f1` | Server AI gateway. **Added by Claude:** `ai-chat` now requires a signed-in user's token (`role=authenticated`). Supabase's default JWT check also accepts the public anon key that ships in every bundle, which would have let anyone spend the Anthropic budget. Still not deployed |
+| `bd3ad22` | `supabase/user_meta.sql` (additive, idempotent, never touches rows; **not applied anywhere yet — Rob runs it in the SQL editor**) and a hardened `useDocument` (no null-UID query, keeps local on failed fetch, `save()` returns success) |
+| `e02e1e2` | Assistant water/calories/sleep/mood now write the real tables via `domain/dayLogs.js` (before: device-local only; `logSleep` even replaced the `sleep_data` mirror list with an object). **Also fixed the phone:** `MobileHealth` read a nonexistent `sleep_logs` table and treated `duration` as hours (it is minutes) |
+| `3b05923` | Fuel: one-tap "Recent & frequent" foods with Undo (`domain/foods.js`) |
+| `0d31c02` | Look: structured skin routine (`tabs/SkinRoutine.jsx`, `domain/skin.js`): today's AM/PM checklist stored on the `lm_daily` row (`skin` field), weekday scheduling, ingredient-conflict warnings, steps linked to Supplies so the routine sets `usesPerDay` and the Ahead engine forecasts run-outs; imports the old free text (kept). Phone uses the same component |
+
+### Gotchas found this session
+- LM data keys carry a doubled prefix in localStorage (`valerie_valerie_lm_profile`, `valerie_valerie_lm_daily`) because the hooks pass `'valerie_lm_*'` as the storage key. Harmless, but remember it when seeding data.
+- A dev server Codex left on port 1420 (this repo, sandboxed, cannot be stopped from a Claude session) serves **stale** files after edits. Start your own on another port (`npx vite --port 1421 --strictPort`).
+- The browser-pane tool sometimes denies `navigate`; `preview_start` with the URL works.
+
+### Still blocked on Rob (unchanged, plus new)
+Rotate the Anthropic and ElevenLabs keys, then set `ANTHROPIC_API_KEY`/`ANTHROPIC_MODEL` secrets and deploy `ai-chat`; run `supabase/user_meta.sql` and confirm `sync_all_tables.sql` has run; a same-account two-device sync test; Q-COACH, Q-MIND, Q-USE, Q-STANCE; logo exports; installer productName.
+
+### Best next order (revised)
+1. (Rob) apply SQL, rotate + deploy, two-device sync test. Without these the server AI reports unavailable off desktop.
+2. Assistant actions should be proposals with confirmation cards (spec §7.3); today they still execute immediately (now to the right tables).
+3. Fuel: weight coach (trend weight), water coach, micro coach on the phone; barcode on the phone.
+4. Look: progress photos; feed `skinSteps` into the coach context; ingredient warnings for more families.
+5. Ahead: food logs subtracting pantry items; Finance 30-day projected supply spend.
+6. Signature motion for Plan/Mind/Finance; phone Habits/Style; delete dead phone code; removal list once Q-USE is answered.
