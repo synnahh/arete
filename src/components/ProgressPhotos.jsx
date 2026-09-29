@@ -8,7 +8,7 @@ import { useEffect, useMemo, useRef, useState } from 'react';
 import { useCollection } from '../supabase/useCollection.js';
 import { toLocalDateKey } from '../utils/localDate.js';
 import { uploadPhoto, removePhotoFiles, signedUrls } from '../utils/photoStore.js';
-import { POSES, byPose, defaultPair, comparison, formatDay, normalisePose } from '../domain/photos.js';
+import { POSES, BODY_POSES, byPose, defaultPair, comparison, formatDay, normalisePose } from '../domain/photos.js';
 
 const LEGACY_KEY = 'valerie_photos';
 
@@ -82,9 +82,12 @@ function Compare({ before, after, urls, summary }) {
   );
 }
 
-export default function ProgressPhotos({ bodyMetrics = [] }) {
+// `poses`: which poses this screen offers (body poses by default, ['face'] in Look).
+// `legacy`: offer to move the old device-only body photos (not for Face).
+export default function ProgressPhotos({ bodyMetrics = [], poses = BODY_POSES, legacy: allowLegacy = true }) {
   const photos = useCollection('progress_photos', 'progress_photos');
-  const [pose, setPose] = useState('front');
+  const poseList = POSES.filter(p => poses.includes(p.id));
+  const [pose, setPose] = useState(poseList[0]?.id ?? 'front');
   const [busy, setBusy] = useState(false);
   const [open, setOpen] = useState(null);
   const [beforeId, setBeforeId] = useState('');
@@ -161,11 +164,11 @@ export default function ProgressPhotos({ bodyMetrics = [] }) {
       <input ref={fileRef} type="file" accept="image/*" multiple style={{ display: 'none' }} onChange={onPick} />
 
       <div style={{ display: 'flex', gap: 8, alignItems: 'center', flexWrap: 'wrap' }}>
-        {POSES.map(p => (
+        {poseList.length > 1 && poseList.map(p => (
           <button key={p.id} type="button" aria-pressed={pose === p.id} onClick={() => setPose(p.id)} style={pill(pose === p.id)}>{p.label}</button>
         ))}
         <button type="button" onClick={() => fileRef.current?.click()} disabled={busy} style={{ ...primaryBtn, marginLeft: 'auto', opacity: busy ? 0.6 : 1 }}>
-          {busy ? 'Saving…' : `+ ${POSES.find(p => p.id === pose).label} photo`}
+          {busy ? 'Saving…' : `+ ${poseList.find(p => p.id === pose)?.label ?? 'New'} photo`}
         </button>
       </div>
 
@@ -212,7 +215,7 @@ export default function ProgressPhotos({ bodyMetrics = [] }) {
         </div>
       )}
 
-      {legacy.length > 0 && (
+      {allowLegacy && legacy.length > 0 && (
         <div style={card}>
           <div style={label}>On this device only</div>
           <div style={{ fontSize: 12.5, color: 'var(--text-secondary)', lineHeight: 1.5 }}>

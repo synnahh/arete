@@ -61,8 +61,8 @@ Skin Bliss scans products (barcode, search, shelf photo) for ingredient clashes,
 | AM/PM checklist, weekday scheduling | Have | — |
 | Ingredient clash warnings | Partial — a few families only (`domain/skin.js`) | P2 |
 | Routine linked to Supplies so run-out is forecast | Have (beyond Skin Bliss) | — |
-| Progress photos with before/after slider | Have for the body (front/side/back). Not yet for the face | **P1** — add "Face" poses to the same component |
-| Daily skin rating (1–5) + notes, trend over time | Missing | **P1** |
+| Progress photos with before/after slider | **Have** for the body (front/side/back) and the face (Look, 2026-09-30) | — |
+| Daily skin rating (1–5), weekly trend, and routine-vs-rating comparison | **Have** (2026-09-30, Look; no notes field) | — |
 | Product scanner (barcode → ingredients) | Missing. Open Beauty Facts is a free, open database like the one already used for food | P2 |
 | Score a product against your skin profile | Missing | P3 |
 | Opened-product expiry (period-after-opening) reminder | Missing — the Ahead engine tracks run-out, not shelf life | P2 |
@@ -121,7 +121,7 @@ The first six are small, pure-logic features on data the app already stores, and
 2. ~~Sleep debt + readiness score~~ done 2026-09-30 (Home ring not wired)
 3. ~~Goal-weight ETA and training/rest-day macro goals~~ done 2026-09-30
 4. ~~Copy yesterday + quick-add calories~~ done 2026-09-30
-5. **Face progress photos + daily skin rating** (Look)
+5. ~~Face progress photos + daily skin rating~~ done 2026-09-30
 6. **Habit heatmap** (Habits)
 7. Approval cards for assistant actions (blocked on Q-CONFIRM)
 8. Product barcode scanner via Open Beauty Facts, opened-product expiry

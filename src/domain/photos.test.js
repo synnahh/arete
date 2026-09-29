@@ -25,6 +25,15 @@ describe('fitWithin', () => {
   });
 });
 
+describe('poses', () => {
+  it('knows the face pose and keeps body poses separate', async () => {
+    const { POSES, BODY_POSES } = await import('./photos.js');
+    expect(POSES.map(p => p.id)).toContain('face');
+    expect(BODY_POSES).toEqual(['front', 'side', 'back']);
+    expect(normalisePose('face')).toBe('face');
+  });
+});
+
 describe('photoPath', () => {
   it('puts the user id first and sanitises the nonce', () => {
     const p = photoPath('u-1', { date: '2026-09-29', pose: 'side', nonce: 'a/b..c' });

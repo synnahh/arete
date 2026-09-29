@@ -6,8 +6,9 @@ import { useMemo, useRef, useState } from 'react';
 import { useCollection } from '../supabase/useCollection.js';
 import { STORAGE_KEYS } from '../utils/storage.js';
 import { toLocalDateKey } from '../utils/localDate.js';
+import ProgressPhotos from '../components/ProgressPhotos.jsx';
 import {
-  ALL_DAYS, WHEN_LABEL, newStep, usesPerDay, supplyUsage, stepsFor, completion, routineWarnings,
+  ALL_DAYS, WHEN_LABEL, RATING_LABELS, newStep, usesPerDay, supplyUsage, stepsFor, completion, routineWarnings, ratingTrend, routineInsight,
 } from '../domain/skin.js';
 
 const DAY_LETTERS = ['S', 'M', 'T', 'W', 'T', 'F', 'S'];
@@ -116,6 +117,19 @@ export default function SkinRoutine({ profile, saveProfile, daily }) {
     } finally { busy.current = false; }
   }
 
+  // Daily skin rating (1-5). Tapping the chosen number again clears it.
+  async function rate(n) {
+    if (busy.current) return;
+    busy.current = true;
+    try {
+      const next = todayRow?.skinRating === n ? null : n;
+      if (todayRow) await daily.update(todayRow.id, { skinRating: next });
+      else await daily.add({ date: todayKey, items: {}, pct: 0, skinRating: next });
+    } finally { busy.current = false; }
+  }
+  const trend = useMemo(() => ratingTrend(daily.items, todayKey), [daily.items, todayKey]);
+  const insight = useMemo(() => routineInsight(daily.items, steps, todayKey), [daily.items, steps, todayKey]);
+
   const linkedSupply = (s) => supplies.items.find(x => x.id === s.supplyId);
 
   return (
@@ -130,6 +144,41 @@ export default function SkinRoutine({ profile, saveProfile, daily }) {
               <Checklist title="Night" steps={steps} ticks={skinTicks.pm || {}} weekday={weekday} period="pm" onToggle={toggle} />
             </div>
           )}
+      </div>
+
+      <div style={card}>
+        <span style={label}>How does your skin look today?</span>
+        <div style={{ display: 'flex', gap: 8 }} role="group" aria-label="Skin rating">
+          {[1, 2, 3, 4, 5].map(n => {
+            const on = todayRow?.skinRating === n;
+            return (
+              <button key={n} type="button" aria-pressed={on} aria-label={`${n} of 5, ${RATING_LABELS[n]}`} onClick={() => rate(n)} style={{
+                flex: 1, minHeight: 52, borderRadius: 12, cursor: 'pointer', fontFamily: 'inherit', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', gap: 2,
+                border: `0.5px solid ${on ? 'var(--tab-accent)' : 'var(--card-border)'}`,
+                background: on ? 'color-mix(in srgb, var(--tab-accent) 16%, transparent)' : 'transparent',
+                color: on ? 'var(--tab-accent)' : 'var(--text-primary)', WebkitTapHighlightColor: 'transparent',
+              }}>
+                <span className="val-num" style={{ fontSize: 18, fontWeight: 600 }}>{n}</span>
+                <span style={{ fontSize: 10.5, color: on ? 'var(--tab-accent)' : 'var(--text-secondary)' }}>{RATING_LABELS[n]}</span>
+              </button>
+            );
+          })}
+        </div>
+        {trend.status === 'ok' ? (
+          <div role="status" style={{ fontSize: 13, lineHeight: 1.5, color: 'var(--text-secondary)' }}>
+            This week averages <strong className="val-num" style={{ color: 'var(--text-primary)' }}>{trend.avg}</strong> of 5
+            {trend.delta != null && Math.abs(trend.delta) >= 0.2 && <> ({trend.delta > 0 ? 'up' : 'down'} {Math.abs(trend.delta)} on last week)</>}.
+          </div>
+        ) : (
+          <div style={{ fontSize: 12.5, color: 'var(--text-secondary)' }}>Rate a few days and Arete shows how your skin is trending.</div>
+        )}
+        {insight && (
+          <div role="status" style={{ fontSize: 13, lineHeight: 1.5, color: 'var(--text-secondary)' }}>
+            Days you did most of your routine averaged <strong className="val-num" style={{ color: 'var(--text-primary)' }}>{insight.high.avg}</strong> ({insight.high.days} days);
+            days you did little averaged <strong className="val-num" style={{ color: 'var(--text-primary)' }}>{insight.low.avg}</strong> ({insight.low.days} days).
+            That is a pattern in your ratings, not proof the routine caused it.
+          </div>
+        )}
       </div>
 
       {warnings.length > 0 && (
@@ -189,6 +238,12 @@ export default function SkinRoutine({ profile, saveProfile, daily }) {
             Import {importable.length} step{importable.length > 1 ? 's' : ''} from your written routine
           </button>
         )}
+      </div>
+
+      <div style={card}>
+        <span style={label}>Face progress</span>
+        <div style={{ fontSize: 13, lineHeight: 1.5, color: 'var(--text-secondary)' }}>Same spot, same light, no filters. Compare your first photo with your latest.</div>
+        <ProgressPhotos poses={['face']} legacy={false} />
       </div>
 
       {(legacy.morning || legacy.night) && (

@@ -90,3 +90,76 @@ export function routineWarnings(steps) {
   if (steps.length && !hasSpf) add('tip', 'No SPF in your morning routine. Sunscreen is the single most effective anti-ageing and tone-evening step.');
   return out;
 }
+
+// ── Daily skin rating ───────────────────────────────────────────────────────
+// `lm_daily` rows carry an optional `skinRating` (1 rough … 5 great) next to the
+// day's `skin` ticks. Ratings are subjective, so this only reports what the
+// numbers show and never claims the routine caused a change.
+
+export const RATING_LABELS = { 1: 'Rough', 2: 'Meh', 3: 'Okay', 4: 'Good', 5: 'Great' };
+
+const DAY_MS = 86400000;
+const dayIdx = (key) => {
+  const m = /^(\d{4})-(\d{2})-(\d{2})$/.exec(String(key));
+  if (!m) return null;
+  const t = Date.UTC(+m[1], +m[2] - 1, +m[3]);
+  return new Date(t).getUTCDate() === +m[3] ? t / DAY_MS : null;
+};
+const validRating = (v) => (Number.isInteger(Number(v)) && Number(v) >= 1 && Number(v) <= 5 ? Number(v) : null);
+const mean = (xs) => xs.reduce((s, x) => s + x, 0) / xs.length;
+
+/** Rated days as [{ date, idx, rating, row }], oldest first. */
+function rated(rows = []) {
+  return rows
+    .map(r => ({ date: r?.date, idx: dayIdx(r?.date), rating: validRating(r?.skinRating), row: r }))
+    .filter(x => x.idx != null && x.rating != null)
+    .sort((a, b) => a.idx - b.idx);
+}
+
+/**
+ * This week's average rating against the week before. Needs 3+ ratings in the
+ * last 7 days to say anything; the change needs 3+ in the week before too.
+ */
+export function ratingTrend(rows, today) {
+  const t = dayIdx(today);
+  const all = rated(rows);
+  const thisWeek = all.filter(x => x.idx > t - 7 && x.idx <= t).map(x => x.rating);
+  if (t == null || thisWeek.length < 3) return { status: 'insufficient', count: thisWeek.length };
+  const before = all.filter(x => x.idx > t - 14 && x.idx <= t - 7).map(x => x.rating);
+  const avg = +mean(thisWeek).toFixed(1);
+  const prevAvg = before.length >= 3 ? +mean(before).toFixed(1) : null;
+  return { status: 'ok', avg, count: thisWeek.length, prevAvg, delta: prevAvg == null ? null : +(avg - prevAvg).toFixed(1) };
+}
+
+/** Share of the day's scheduled steps that were ticked (both periods), or null when nothing was scheduled. */
+export function dayAdherence(steps, row) {
+  const idx = dayIdx(row?.date);
+  if (idx == null) return null;
+  const weekday = new Date(idx * DAY_MS).getUTCDay();
+  let done = 0, total = 0;
+  for (const period of ['am', 'pm']) {
+    const c = completion(steps, row?.skin?.[period] || {}, period, weekday);
+    done += c.done; total += c.total;
+  }
+  return total ? done / total : null;
+}
+
+/**
+ * Do days you stuck to the routine get better ratings? Compares days with 80%+
+ * of steps done against days under 50%, over the last 30 days. Needs 10+ rated
+ * days with 4+ in each group; otherwise null. A correlation, not a proof.
+ */
+export function routineInsight(rows, steps, today, { days = 30 } = {}) {
+  const t = dayIdx(today);
+  if (t == null || !steps?.length) return null;
+  const hi = [], lo = [];
+  const window = rated(rows).filter(x => x.idx > t - days && x.idx <= t);
+  for (const x of window) {
+    const a = dayAdherence(steps, x.row);
+    if (a == null) continue;
+    if (a >= 0.8) hi.push(x.rating); else if (a < 0.5) lo.push(x.rating);
+  }
+  if (window.length < 10 || hi.length < 4 || lo.length < 4) return null;
+  const high = +mean(hi).toFixed(1), low = +mean(lo).toFixed(1);
+  return { high: { avg: high, days: hi.length }, low: { avg: low, days: lo.length }, diff: +(high - low).toFixed(1) };
+}

@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest';
-import { newStep, usesPerDay, supplyUsage, stepsFor, completion, tagsFor, routineWarnings, ALL_DAYS } from './skin.js';
+import { newStep, usesPerDay, supplyUsage, stepsFor, completion, tagsFor, routineWarnings, ALL_DAYS, ratingTrend, dayAdherence, routineInsight } from './skin.js';
 
 const step = (name, when = 'both', days = ALL_DAYS, supplyId = null) => ({ ...newStep(name, when, supplyId), days });
 
@@ -65,5 +65,46 @@ describe('routine warnings', () => {
     expect(routineWarnings([step('Cleanser')]).some(x => x.level === 'tip' && /No SPF/.test(x.text))).toBe(true);
     expect(routineWarnings([])).toEqual([]);
     expect(routineWarnings([step('Cleanser'), step('Sunscreen', 'am')])).toEqual([]);
+  });
+});
+
+describe('skin rating', () => {
+  const day = (back) => new Date(Date.UTC(2026, 8, 30 - back)).toISOString().slice(0, 10);
+  const row = (back, skinRating, skin) => ({ date: day(back), skinRating, ...(skin ? { skin } : {}) });
+
+  it('averages the last 7 days and compares with the week before', () => {
+    const rows = [row(0, 4), row(1, 5), row(3, 4), row(8, 2), row(9, 3), row(11, 3)];
+    expect(ratingTrend(rows, day(0))).toEqual({ status: 'ok', avg: 4.3, count: 3, prevAvg: 2.7, delta: 1.6 });
+  });
+  it('needs 3 ratings this week, and 3 last week for a change', () => {
+    expect(ratingTrend([row(0, 4), row(1, 4)], day(0)).status).toBe('insufficient');
+    const t = ratingTrend([row(0, 4), row(1, 4), row(2, 5), row(9, 3)], day(0));
+    expect(t.status).toBe('ok');
+    expect(t.delta).toBeNull();
+  });
+  it('ignores junk ratings and bad dates', () => {
+    const rows = [row(0, 9), row(1, 0), row(2, 'x'), { date: 'nope', skinRating: 4 }, row(3, 3.5), row(4, 4), row(5, 4), row(6, 4)];
+    expect(ratingTrend(rows, day(0))).toMatchObject({ status: 'ok', count: 3, avg: 4 });
+  });
+
+  const steps = [{ ...newStep('Cleanser', 'both'), days: ALL_DAYS }, { ...newStep('SPF', 'am'), days: ALL_DAYS }];
+  const all = { am: { [steps[0].id]: true, [steps[1].id]: true }, pm: { [steps[0].id]: true } };
+  it('measures how much of the day\'s routine was done', () => {
+    expect(dayAdherence(steps, { date: day(0), skin: all })).toBe(1);
+    expect(dayAdherence(steps, { date: day(0), skin: { am: { [steps[0].id]: true } } })).toBeCloseTo(1 / 3, 3);
+    expect(dayAdherence(steps, { date: day(0) })).toBe(0);
+    expect(dayAdherence([], { date: day(0) })).toBeNull();
+  });
+
+  it('compares rated days with a full routine against days with little of it', () => {
+    const good = Array.from({ length: 5 }, (_, i) => row(i, 5, all));
+    const bad = Array.from({ length: 5 }, (_, i) => row(i + 5, 2, {}));
+    expect(routineInsight([...good, ...bad], steps, day(0))).toEqual({ high: { avg: 5, days: 5 }, low: { avg: 2, days: 5 }, diff: 3 });
+  });
+  it('stays quiet without enough data in both groups', () => {
+    const good = Array.from({ length: 8 }, (_, i) => row(i, 5, all));
+    expect(routineInsight(good, steps, day(0))).toBeNull();
+    expect(routineInsight([], steps, day(0))).toBeNull();
+    expect(routineInsight(good, [], day(0))).toBeNull();
   });
 });

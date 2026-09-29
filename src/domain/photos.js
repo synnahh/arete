@@ -8,7 +8,10 @@ export const POSES = [
   { id: 'front', label: 'Front' },
   { id: 'side',  label: 'Side' },
   { id: 'back',  label: 'Back' },
+  { id: 'face',  label: 'Face' },
 ];
+// Body screens show the first three; the Look section shows Face on its own.
+export const BODY_POSES = ['front', 'side', 'back'];
 const POSE_IDS = new Set(POSES.map(p => p.id));
 
 export const normalisePose = (pose) => (POSE_IDS.has(pose) ? pose : 'front');
