@@ -187,3 +187,10 @@ Rotate the Anthropic and ElevenLabs keys, then set `ANTHROPIC_API_KEY`/`ANTHROPI
 - Run-out follows the log after 3+ days of use in 14, and is never later than the schedule. Feeds Supplies, cart, grocery list, Today, attention, assistant context, projected spend.
 - Limits: needs g/ml quantities (search/scan entries have them; saved meals, recents and assistant-logged calories do not) and a pack size in g/kg/ml/l. Planned-meal ingredients are not yet logged with quantities.
 - Verified: 160 tests; both builds; browser with seeded stub (5 kg rice, 6 days x 400 g -> 2.6 kg left, 10 days). Not verified: real data, phone Supplies view (none).
+
+### Update — phone Habits and Style, feature map (692ec39)
+- Phone Habits (`mobile/screens/MobileHabits.jsx`) and Style (`MobileStyle.jsx`, board + wishlist totals + outfit ideas) replace the "available on desktop" placeholders. Shared `mobile/Sheet.jsx`.
+- Streaks were count-only (never broke). `domain/habits.js` now derives them from a stored `history`; legacy rows are backfilled from lastCompleted+streak. `streak`/`lastCompleted` are still written for other readers; Today, Progress, weekly review and assistant context use `withLiveStreaks`. Remaining stored-streak readers not changed: XP award loop (`utils/xp.js`, uses lastCompleted only), notifications.
+- Style constants/helpers moved to `domain/style.js`. Desktop Google image search is not on the phone (needs a key in the client).
+- `docs/inspiration-feature-map.md`: per-app gaps and a recommended build order. Q-STANCE still open (name matches several apps).
+- 183 tests; both builds; browser at 375 px and desktop against a stub.
