@@ -11,6 +11,7 @@ import { weightCoach } from '../../domain/weight.js';
 import WeightChart from '../../components/WeightChart.jsx';
 import ProgressPhotos from '../../components/ProgressPhotos.jsx';
 import ReadinessCard from '../../components/ReadinessCard.jsx';
+import SleepLogger from '../../components/SleepLogger.jsx';
 import GoalEta from '../../components/GoalEta.jsx';
 import { withTodaysTargets } from '../../utils/todaysTargets.js';
 import MicroCoachCard from '../../components/MicroCoachCard.jsx';
@@ -331,10 +332,11 @@ function SleepTab({ today }) {
   return (
     <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
       <ReadinessCard compact />
+      <SleepLogger />
       {sorted.length === 0 ? (
         <MCard>
           <div style={{ fontSize: 13, color: 'var(--text-muted)' }}>
-            No sleep logged yet. Log from desktop or sync via Health Auto Export.
+            No sleep logged yet. Log it above, or sync via Health Auto Export.
           </div>
         </MCard>
       ) : sorted.map((s, i) => {
@@ -345,7 +347,7 @@ function SleepTab({ today }) {
         const color = score >= 80 ? '#4caf7d' : score >= 60 ? '#f59e0b' : '#e05555';
         return (
           <MCard key={i} style={{ display: 'flex', alignItems: 'center', gap: 14 }}>
-            <SleepRing pct={score} size={60} thickness={6} />
+            {score > 0 && <SleepRing pct={score} size={60} thickness={6} />}
             <div style={{ flex: 1 }}>
               <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 4 }}>
                 <span style={{ fontSize: 12, color: 'var(--text-muted)' }}>{s.date}</span>

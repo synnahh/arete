@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest';
-import { recentNights, sleepDebt, lastNight, trainingLoad, readiness } from './recovery.js';
+import { recentNights, sleepDebt, lastNight, trainingLoad, readiness, sleepHoursBetween } from './recovery.js';
 
 const TODAY = '2026-09-30';
 const day = (back) => new Date(Date.UTC(2026, 8, 30 - back)).toISOString().slice(0, 10);
@@ -89,5 +89,20 @@ describe('readiness', () => {
     const rows = nights([7, 7, 7, 7, 7, 7]);
     expect(readiness({ sleepRows: rows, today: TODAY, need: 7 }).score).toBe(100);
     expect(readiness({ sleepRows: rows, today: TODAY, need: 9 }).score).toBeLessThan(80);
+  });
+});
+
+describe('sleepHoursBetween', () => {
+  it('handles going to bed before and after midnight', () => {
+    expect(sleepHoursBetween('22:30', '06:30')).toBe(8);
+    expect(sleepHoursBetween('00:30', '07:00')).toBe(6.5);
+    expect(sleepHoursBetween('23:15', '06:10')).toBe(7); // 6h55 rounds to the nearest quarter hour
+  });
+  it('rejects invalid, equal and implausible times', () => {
+    expect(sleepHoursBetween('25:00', '06:00')).toBeNull();
+    expect(sleepHoursBetween('22:00', '')).toBeNull();
+    expect(sleepHoursBetween('07:00', '07:00')).toBeNull();
+    expect(sleepHoursBetween('06:00', '23:00')).toBeNull(); // 17 h
+    expect(sleepHoursBetween(undefined, undefined)).toBeNull();
   });
 });

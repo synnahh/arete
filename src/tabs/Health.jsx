@@ -19,6 +19,7 @@ import { weightCoach } from '../domain/weight.js';
 import { weeklyMicros, microCoach } from '../domain/micros.js';
 import ProgressPhotos from '../components/ProgressPhotos.jsx';
 import ReadinessCard from '../components/ReadinessCard.jsx';
+import SleepLogger from '../components/SleepLogger.jsx';
 import GoalEta from '../components/GoalEta.jsx';
 import HabitHeatmap from '../components/HabitHeatmap.jsx';
 import { withTodaysTargets } from '../utils/todaysTargets.js';
@@ -1772,6 +1773,7 @@ function Sleep({ sleepData, settings }) {
   return (
     <Section title="Sleep">
       <div style={{ marginBottom: 16 }}><ReadinessCard /></div>
+      <div style={{ marginBottom: 16 }}><SleepLogger /></div>
       {!latest && (
         <div style={{
           padding: '8px 14px', borderRadius: 8, marginBottom: 14,
@@ -1784,14 +1786,16 @@ function Sleep({ sleepData, settings }) {
 
       {displayLatest && (
         <div style={{ display: 'flex', gap: 16, marginBottom: 20, flexWrap: 'wrap' }}>
-          <RingChart
-            value={displayLatest.efficiency ?? 0} max={100}
-            size={120} thickness={10}
-            colour={effColour(displayLatest.efficiency ?? 0)}
-            label={`${displayLatest.efficiency ?? ''}%`}
-            sublabel="efficiency"
-            labelSize={20}
-          />
+          {displayLatest.efficiency != null && (
+            <RingChart
+              value={displayLatest.efficiency} max={100}
+              size={120} thickness={10}
+              colour={effColour(displayLatest.efficiency)}
+              label={`${displayLatest.efficiency}%`}
+              sublabel="efficiency"
+              labelSize={20}
+            />
+          )}
           <div style={{ flex: 1, display: 'flex', flexDirection: 'column', gap: 8, justifyContent: 'center', minWidth: 140 }}>
             <div style={{ fontSize: 24, fontWeight: 300, color: 'var(--text-primary)' }}>
               {Math.floor((displayLatest.duration ?? 0) / 60)}h{' '}

@@ -133,3 +133,19 @@ export function readiness({ sleepRows = [], workoutLogs = [], today, need = DEFA
     night, debt, load,
   };
 }
+
+const TIME_RE = /^([01]?\d|2[0-3]):([0-5]\d)$/;
+const minutesOf = (hhmm) => { const m = TIME_RE.exec(String(hhmm || '').trim()); return m ? +m[1] * 60 + +m[2] : null; };
+
+/**
+ * Hours between going to bed and waking ('HH:MM' each), across midnight when
+ * the wake time is earlier. Rounded to a quarter hour. Null for invalid times,
+ * identical times, or more than 16 hours (almost certainly a typo).
+ */
+export function sleepHoursBetween(bed, wake) {
+  const b = minutesOf(bed), w = minutesOf(wake);
+  if (b == null || w == null || b === w) return null;
+  const mins = w > b ? w - b : w + 24 * 60 - b;
+  const hours = Math.round((mins / 60) * 4) / 4;
+  return hours > 0 && hours <= 16 ? hours : null;
+}

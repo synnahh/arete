@@ -20,6 +20,12 @@ function reportDataError(collection, op, message) {
   } catch {}
 }
 
+// Every component that calls useCollection('x') has its own state. A save in one
+// (say the sleep logger) used to reach the others (say the readiness card) only
+// via the realtime refetch, so offline or before that arrived they showed stale
+// data. Instances of the same collection now tell each other about each change.
+const peers = new Set();
+
 export function useCollection(collectionName, storageKey) {
   const [items,  setItems]  = useState(() => storage.get(storageKey, []));
   const [synced, setSynced] = useState(false);
@@ -29,6 +35,31 @@ export function useCollection(collectionName, storageKey) {
   // the last render, so an update right after an add silently did nothing.
   const itemsRef  = useRef(items);
   itemsRef.current = items;
+  const peerRef   = useRef(null);
+
+  // Apply another instance's change to this one (idempotent).
+  useEffect(() => {
+    const peer = {
+      name: collectionName,
+      apply(op) {
+        const next = op.type === 'add'
+          ? (itemsRef.current.some(i => i.id === op.item.id) ? itemsRef.current : [...itemsRef.current, op.item])
+          : op.type === 'update'
+            ? itemsRef.current.map(i => (i.id === op.item.id ? op.item : i))
+            : itemsRef.current.filter(i => i.id !== op.id);
+        itemsRef.current = next;
+        setItems(next);
+        storage.set(storageKey, next);
+      },
+    };
+    peerRef.current = peer;
+    peers.add(peer);
+    return () => { peers.delete(peer); };
+  }, [collectionName, storageKey]);
+
+  const tellPeers = useCallback((op) => {
+    for (const p of peers) if (p !== peerRef.current && p.name === collectionName) p.apply(op);
+  }, [collectionName]);
 
   //  Helpers 
   function rowToItem(row) {
@@ -122,8 +153,9 @@ export function useCollection(collectionName, storageKey) {
       storage.set(storageKey, next);
       return next;
     });
+    tellPeers({ type: 'add', item: newItem });
     return newItem.id;
-  }, [collectionName, storageKey]);
+  }, [collectionName, storageKey, tellPeers]);
 
   const update = useCallback(async (id, patch) => {
     // Merge patch into existing data
@@ -144,8 +176,9 @@ export function useCollection(collectionName, storageKey) {
       storage.set(storageKey, next);
       return next;
     });
+    tellPeers({ type: 'update', item: { id, ...merged } });
     return true;
-  }, [collectionName, storageKey]);
+  }, [collectionName, storageKey, tellPeers]);
 
   const remove = useCallback(async (id) => {
     const { error } = await supabase
@@ -160,8 +193,9 @@ export function useCollection(collectionName, storageKey) {
       storage.set(storageKey, next);
       return next;
     });
+    tellPeers({ type: 'remove', id });
     return true;
-  }, [collectionName, storageKey]);
+  }, [collectionName, storageKey, tellPeers]);
 
   return { items, add, update, remove, synced };
 }
