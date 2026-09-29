@@ -9,6 +9,8 @@ import { currentWaterGoal, sleepWindow } from '../../utils/waterGoal.js';
 import { waterAdvice } from '../../domain/water.js';
 import { weightCoach } from '../../domain/weight.js';
 import WeightChart from '../../components/WeightChart.jsx';
+import MicroCoachCard from '../../components/MicroCoachCard.jsx';
+import { weeklyMicros, microCoach } from '../../domain/micros.js';
 
 const nowStr = () => new Date().toLocaleTimeString('en-AU', { hour: '2-digit', minute: '2-digit', hour12: false });
 
@@ -524,6 +526,12 @@ function NutritionTab({ settings, today }) {
   const carbGoal = settings?.macros?.carbs    ?? 250;
   const fatGoal  = settings?.macros?.fat      ?? 80;
   const [showAdd, setShowAdd] = useState(false);
+  const { items: supplements = [] } = useCollection('supplements', STORAGE_KEYS.SUPPLEMENTS);
+  const { items: suppLogs = [] } = useCollection('supplement_logs', STORAGE_KEYS.SUPP_LOGS);
+  const microAdvice = useMemo(
+    () => microCoach(weeklyMicros({ nutritionLogs, supplements, suppLogs, today })),
+    [nutritionLogs, supplements, suppLogs, today]
+  );
 
   const todayLog = useMemo(() => nutritionLogs.find(l => l.date === today), [nutritionLogs, today]);
   const meals    = todayLog?.meals ?? [];
@@ -604,6 +612,10 @@ function NutritionTab({ settings, today }) {
           </div>
         ))}
       </MCard>
+
+      {microAdvice.status !== 'no-data' && (
+        <MCard><MicroCoachCard advice={microAdvice} /></MCard>
+      )}
 
       {showAdd && <AddFoodSheet onAdd={addMealEntry} onClose={() => setShowAdd(false)} />}
     </div>
