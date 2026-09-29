@@ -5,6 +5,7 @@ import { storage, STORAGE_KEYS }    from './utils/storage.js';
 import { supabase }                 from './supabase/supabase.js';
 import MobileShell                  from './mobile/MobileShell.jsx';
 import { applyTheme }            from './styles/themes.js';
+import { applyAppearance, setActiveGroup, backgroundClass } from './styles/appearance.js';
 import { getTimeOfDay }          from './utils/time.js';
 import { useAI }                 from './ai/useAI.js';
 import { useSupabaseStatus }    from './supabase/useSupabaseStatus.js';
@@ -260,8 +261,9 @@ export default function App() {
     ai.registerCallback('navigate', goTo);
   }, [ai.registerCallback]); // eslint-disable-line react-hooks/exhaustive-deps
 
-  //  Keep VALERIE's context aware of the active tab 
+  //  Keep VALERIE's context aware of the active tab; tab colour follows the group
   useEffect(() => {
+    setActiveGroup(groupOf(activeTab).id);
     ai.setActiveTab(activeTab);
   }, [activeTab, ai.setActiveTab]); // eslint-disable-line react-hooks/exhaustive-deps
 
@@ -291,23 +293,14 @@ export default function App() {
       if (s.theme === 'phantom') { s.theme = 'obsidian'; s.accentColorHex = ''; }
       setSettings(s);
       storage.set(STORAGE_KEYS.SETTINGS, s);
-      applyTheme(s.theme || 'obsidian');
-      document.documentElement.style.removeProperty('--accent');
-      document.documentElement.style.removeProperty('--accent-solid');
-      if (s.accentColorHex) {
-        document.documentElement.style.setProperty('--accent',       s.accentColorHex);
-        document.documentElement.style.setProperty('--accent-solid', s.accentColorHex);
-      }
-      if (s.fontFamily) document.documentElement.style.setProperty('--font-family', s.fontFamily);
+      applyAppearance(s);
     }
 
     const local = storage.get(STORAGE_KEYS.SETTINGS);
     if (local) {
       applyAndSet(local);
     } else {
-      applyTheme('obsidian');
-      document.documentElement.style.removeProperty('--accent');
-      document.documentElement.style.removeProperty('--accent-solid');
+      applyAppearance({});
     }
 
     // If no local settings (e.g. first launch on iOS PWA), pull from Supabase
@@ -339,14 +332,8 @@ export default function App() {
     const handler = (e) => {
       const updated = e.detail ?? storage.get(STORAGE_KEYS.SETTINGS, {});
       setSettings(updated);
-      // Re-apply theme + clear/restore accent so CSS vars always match saved state
-      if (updated.theme) applyTheme(updated.theme);
-      document.documentElement.style.removeProperty('--accent');
-      document.documentElement.style.removeProperty('--accent-solid');
-      if (updated.accentColorHex) {
-        document.documentElement.style.setProperty('--accent',       updated.accentColorHex);
-        document.documentElement.style.setProperty('--accent-solid', updated.accentColorHex);
-      }
+      // Re-apply every appearance choice so CSS always matches saved state
+      applyAppearance(updated);
     };
     window.addEventListener('valerie:settings-changed', handler);
     return () => window.removeEventListener('valerie:settings-changed', handler);
@@ -417,7 +404,7 @@ export default function App() {
   return (
     <div
       style={{ width: '100%', height: '100%', display: 'flex', overflow: 'hidden' }}
-      className={`bg-${tod}`}
+      className={backgroundClass(settings?.backgroundStyle, tod)}
     >
       {/* Sidebar */}
       <Sidebar

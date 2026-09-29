@@ -317,6 +317,8 @@ export function AppearanceSection({ settings, onSave }) {
   const [bgStyle,     setBgStyle]     = useState(settings.backgroundStyle    || 'time-of-day');
   const [fontFamily,  setFontFamily]  = useState(settings.fontFamily         || "'DM Sans', sans-serif");
   const [accentColor, setAccentColor] = useState(settings.accentColorHex     || '');
+  const [tabColours,  setTabColours]  = useState(settings.tabColours         || 'per-tab');
+  const [headingFont, setHeadingFont] = useState(settings.headingFont        || 'classical');
   const [saved, setSaved] = useState(false);
 
   const handleTheme = (key) => {
@@ -442,6 +444,31 @@ export function AppearanceSection({ settings, onSave }) {
             </button>
           ))}
         </div>
+      </Row>
+
+      {/* Headings */}
+      <Row label="Headings" hint="Font for screen titles  body text keeps the font above">
+        <PillGroup
+          value={headingFont}
+          onChange={(v) => { setHeadingFont(v); onSave({ headingFont: v }); }}
+          options={[
+            { value: 'classical', label: 'Classical' },
+            { value: 'expanded',  label: 'Expanded'  },
+            { value: 'body',      label: 'Match body font' },
+          ]}
+        />
+      </Row>
+
+      {/* Tab colours */}
+      <Row label="Tab colours" hint="Each tab marks itself in its own colour, over any theme">
+        <PillGroup
+          value={tabColours}
+          onChange={(v) => { setTabColours(v); onSave({ tabColours: v }); }}
+          options={[
+            { value: 'per-tab', label: 'Per tab' },
+            { value: 'theme',   label: 'Theme accent only' },
+          ]}
+        />
       </Row>
 
       {/* Orb shape */}

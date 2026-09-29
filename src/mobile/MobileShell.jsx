@@ -19,6 +19,8 @@ import { haptics }     from './utils/haptics.js';
 import { storage, STORAGE_KEYS } from '../utils/storage.js';
 import SectionBar      from '../components/SectionBar.jsx';
 import { groupOf, groupScreens, resolveTarget, DEFAULT_SCREEN, SCREEN_LABELS } from '../nav/groups.js';
+import { setActiveGroup, backgroundClass } from '../styles/appearance.js';
+import { getTimeOfDay } from '../utils/time.js';
 
 //  Bottom bar: Home · Plan · Coach (the orb) · Finance · Mind
 // Settings opens from the gear in the section row. Screen ids are unchanged;
@@ -76,7 +78,24 @@ const BAR = [
 //  Coach button: the VALERIE orb, centre of the bar
 // Tap opens Coach; hold (450 ms) opens the VALERIE conversation sheet.
 const HOLD_MS = 450;
-function CoachOrb({ active, orbState, onTap, onHold }) {
+
+// Orb shapes, matching Settings → Appearance → Orb shape
+function orbShapeStyle(shape, color, active) {
+  const fill = `radial-gradient(circle at 35% 30%, #ffffff 0%, ${color} 40%, var(--bg-base) 100%)`;
+  const glow = `0 0 20px var(--orb-glow)${active ? ', 0 0 0 2px var(--tab-accent)' : ''}`;
+  if (shape === 'ring') {
+    return { borderRadius: '50%', boxSizing: 'border-box', border: `4px solid ${color}`, background: 'var(--bg-sidebar)', boxShadow: glow };
+  }
+  if (shape === 'diamond') {
+    return { width: 42, height: 42, marginTop: -14, marginBottom: 6, transform: 'rotate(45deg)', borderRadius: 8, background: fill, boxShadow: glow };
+  }
+  if (shape === 'cube') {
+    return { clipPath: 'polygon(50% 0, 93% 25%, 93% 75%, 50% 100%, 7% 75%, 7% 25%)', background: fill, filter: 'drop-shadow(0 0 8px var(--orb-glow))' };
+  }
+  return { borderRadius: '50%', background: fill, boxShadow: glow };
+}
+
+function CoachOrb({ active, orbState, shape = 'sphere', onTap, onHold }) {
   const timer = useRef(null);
   const held  = useRef(false);
   const color = orbState === 'listening' ? '#4a9eff'
@@ -106,16 +125,12 @@ function CoachOrb({ active, orbState, onTap, onHold }) {
       style={{
         flex: 1, display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'flex-start',
         gap: 4, background: 'none', border: 'none', cursor: 'pointer', paddingTop: 0,
-        color: active ? 'var(--accent)' : 'var(--text-muted)',
+        color: active ? 'var(--tab-accent)' : 'var(--text-muted)',
         WebkitTapHighlightColor: 'transparent', WebkitUserSelect: 'none', userSelect: 'none',
         touchAction: 'manipulation',
       }}
     >
-      <span style={{
-        position: 'relative', width: 54, height: 54, marginTop: -20, borderRadius: '50%',
-        background: `radial-gradient(circle at 35% 30%, #ffffff 0%, ${color} 40%, var(--bg-base) 100%)`,
-        boxShadow: `0 0 20px var(--orb-glow)${active ? ', 0 0 0 2px var(--accent)' : ''}`,
-      }}>
+      <span style={{ position: 'relative', width: 54, height: 54, marginTop: -20, ...orbShapeStyle(shape, color, active) }}>
         {pulse && (
           <span style={{
             position: 'absolute', inset: -8, borderRadius: '50%',
@@ -272,7 +287,10 @@ export default function MobileShell({ settings, onSettingsChange }) {
     return () => clearTimeout(t);
   }, []);
 
-  useEffect(() => { ai.setActiveTab?.(activeTab); }, [activeTab]);
+  useEffect(() => {
+    setActiveGroup(groupOf(activeTab).id);
+    ai.setActiveTab?.(activeTab);
+  }, [activeTab]); // eslint-disable-line react-hooks/exhaustive-deps
 
   const navOpts = () => ({
     hidden: [...(settings?.hiddenTabs ?? []), ...MOBILE_EXCLUDED],
@@ -303,10 +321,9 @@ export default function MobileShell({ settings, onSettingsChange }) {
   const render      = MOBILE_SCREENS[activeTab];
 
   return (
-    <div style={{
+    <div className={backgroundClass(settings?.backgroundStyle, getTimeOfDay())} style={{
       width: '100%', height: '100%',
       display: 'flex', flexDirection: 'column',
-      background: 'var(--bg-base)',
       overflow: 'hidden',
       paddingTop: 'env(safe-area-inset-top)',
     }}>
@@ -396,7 +413,7 @@ export default function MobileShell({ settings, onSettingsChange }) {
           const active = activeGroup.id === tab.id;
           if (tab.orb) {
             return (
-              <CoachOrb key={tab.id} active={active} orbState={ai?.orbState || 'idle'}
+              <CoachOrb key={tab.id} active={active} orbState={ai?.orbState || 'idle'} shape={settings?.orbShape}
                 onTap={() => switchTab('coach')} onHold={() => setValOpen(true)} />
             );
           }
@@ -412,7 +429,7 @@ export default function MobileShell({ settings, onSettingsChange }) {
                 alignItems: 'center', justifyContent: 'center',
                 gap: 4,
                 background: 'none', border: 'none', cursor: 'pointer',
-                color: active ? 'var(--accent)' : 'var(--text-muted)',
+                color: active ? 'var(--tab-accent)' : 'var(--text-muted)',
                 transition: 'color 0.15s ease',
                 WebkitTapHighlightColor: 'transparent',
                 minHeight: 72,
@@ -422,7 +439,7 @@ export default function MobileShell({ settings, onSettingsChange }) {
               <span style={{
                 fontSize: 10, fontWeight: active ? 600 : 400,
                 letterSpacing: '0.02em',
-                color: active ? 'var(--accent)' : 'var(--text-muted)',
+                color: active ? 'var(--tab-accent)' : 'var(--text-muted)',
               }}>
                 {tab.label}
               </span>

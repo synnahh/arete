@@ -97,10 +97,11 @@ function TabButton({ tab, active, onClick }) {
           cursor: 'pointer',
           transition: 'all 0.18s cubic-bezier(0.4, 0, 0.2, 1)',
           background: active ? 'var(--active-bg)' : tooltipPos ? 'var(--hover-bg)' : 'transparent',
-          color: active ? 'var(--accent)' : tooltipPos ? 'var(--accent)' : 'var(--text-secondary)',
+          color: active ? 'var(--tab-accent)' : tooltipPos ? 'var(--accent)' : 'var(--text-secondary)',
           opacity: active ? 1 : tooltipPos ? 0.9 : 0.65,
         }}
         aria-label={tab.label}
+        aria-current={active ? 'page' : undefined}
       >
         <Icon d={ICONS[tab.id]} size={18} />
       </button>

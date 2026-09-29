@@ -18,8 +18,8 @@ export default function SectionBar({ group, screens, active, onPick, compact = f
     >
       {!compact && (
         <span style={{
-          fontSize: 10.5, fontWeight: 700, letterSpacing: '0.14em', textTransform: 'uppercase',
-          color: 'var(--text-secondary)', marginRight: 8,
+          fontFamily: 'var(--font-display)', fontSize: 12, fontWeight: 700, letterSpacing: '0.16em', textTransform: 'uppercase',
+          color: 'var(--tab-accent)', marginRight: 8,
         }}>
           {group.label}
         </span>
@@ -37,9 +37,9 @@ export default function SectionBar({ group, screens, active, onPick, compact = f
               minHeight: compact ? 36 : 30,
               padding: compact ? '0 14px' : '0 12px',
               borderRadius: 999,
-              border: `0.5px solid ${on ? 'var(--accent)' : 'var(--card-border)'}`,
-              background: on ? 'var(--active-bg)' : 'transparent',
-              color: on ? 'var(--accent)' : 'var(--text-secondary)',
+              border: `0.5px solid ${on ? 'var(--tab-accent)' : 'var(--card-border)'}`,
+              background: on ? 'color-mix(in srgb, var(--tab-accent) 14%, transparent)' : 'transparent',
+              color: on ? 'var(--tab-accent)' : 'var(--text-secondary)',
               fontSize: compact ? 13 : 12, fontWeight: on ? 600 : 500,
               fontFamily: 'inherit', cursor: 'pointer',
               transition: 'background 0.16s ease, color 0.16s ease, border-color 0.16s ease',

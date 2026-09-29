@@ -1,5 +1,5 @@
 /* ─── Google Fonts — must be first ──────────────────── */
-@import url('https://fonts.googleapis.com/css2?family=Exo+2:wght@300;400;500;600;700&family=DM+Sans:wght@300;400;500;600;700&family=Orbitron:wght@400;500;600;700&family=Sora:wght@300;400;500;600;700&family=Inter:wght@300;400;500;600;700&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=Exo+2:wght@300;400;500;600;700&family=DM+Sans:wght@300;400;500;600;700&family=Orbitron:wght@400;500;600;700&family=Sora:wght@300;400;500;600;700&family=Inter:wght@300;400;500;600;700&family=Cinzel:wght@400..700&family=Archivo:wdth,wght@62..125,400..800&family=Geist+Mono:wght@400..600&display=swap');
 /* Geist via CDN (Vercel's clean minimal font) */
 @import url('https://fonts.cdnfonts.com/css/geist-sans');
 
@@ -28,7 +28,7 @@
   --active-bg:        rgba(255, 255, 255, 0.08);
   --hover-bg:         rgba(255, 255, 255, 0.04);
   --text-primary:     rgba(255, 255, 255, 0.92);
-  --text-secondary:   rgba(255, 255, 255, 0.50);
+  --text-secondary:   rgba(255, 255, 255, 0.55);
   --text-muted:       rgba(255, 255, 255, 0.25);
   --orb-glow:         rgba(210, 210, 210, 0.35);
   --orb-glow-active:  rgba(210, 210, 210, 0.65);
@@ -55,7 +55,7 @@
   --active-bg:        rgba(100, 160, 255, 0.1);
   --hover-bg:         rgba(100, 160, 255, 0.05);
   --text-primary:     rgba(220, 235, 255, 0.92);
-  --text-secondary:   rgba(180, 210, 255, 0.50);
+  --text-secondary:   rgba(180, 210, 255, 0.58);
   --text-muted:       rgba(140, 180, 255, 0.28);
   --orb-glow:         rgba(100, 160, 255, 0.35);
   --orb-glow-active:  rgba(100, 160, 255, 0.7);
@@ -82,7 +82,7 @@
   --active-bg:        rgba(230, 150, 40, 0.1);
   --hover-bg:         rgba(230, 150, 40, 0.05);
   --text-primary:     rgba(255, 245, 225, 0.92);
-  --text-secondary:   rgba(220, 190, 140, 0.52);
+  --text-secondary:   rgba(220, 190, 140, 0.60);
   --text-muted:       rgba(190, 160, 100, 0.28);
   --orb-glow:         rgba(230, 150, 40, 0.35);
   --orb-glow-active:  rgba(230, 150, 40, 0.7);
@@ -109,7 +109,7 @@
   --active-bg:        rgba(160, 100, 230, 0.1);
   --hover-bg:         rgba(160, 100, 230, 0.05);
   --text-primary:     rgba(235, 220, 255, 0.92);
-  --text-secondary:   rgba(200, 170, 240, 0.52);
+  --text-secondary:   rgba(200, 170, 240, 0.60);
   --text-muted:       rgba(160, 120, 200, 0.28);
   --orb-glow:         rgba(160, 100, 230, 0.35);
   --orb-glow-active:  rgba(160, 100, 230, 0.7);
@@ -136,7 +136,7 @@
   --active-bg:        rgba(60, 120, 200, 0.1);
   --hover-bg:         rgba(60, 120, 200, 0.05);
   --text-primary:     rgba(20, 30, 60, 0.92);
-  --text-secondary:   rgba(40, 60, 100, 0.55);
+  --text-secondary:   rgba(40, 60, 100, 0.68);
   --text-muted:       rgba(80, 100, 140, 0.4);
   --orb-glow:         rgba(60, 120, 200, 0.3);
   --orb-glow-active:  rgba(60, 120, 200, 0.6);
@@ -163,7 +163,7 @@
   --active-bg:        rgba(220, 70, 70, 0.1);
   --hover-bg:         rgba(220, 70, 70, 0.05);
   --text-primary:     rgba(255, 235, 235, 0.92);
-  --text-secondary:   rgba(230, 180, 180, 0.52);
+  --text-secondary:   rgba(230, 180, 180, 0.60);
   --text-muted:       rgba(200, 140, 140, 0.28);
   --orb-glow:         rgba(220, 70, 70, 0.35);
   --orb-glow-active:  rgba(220, 70, 70, 0.7);
@@ -241,11 +241,57 @@ html, body, #root {
 .bg-sidebar     { background: var(--bg-sidebar); }
 .bg-panel       { background: var(--bg-panel); }
 
-/* ─── Time-of-Day Background ────────────────────────── */
-.bg-dawn  { background: var(--bg-base); }
-.bg-day   { background: var(--bg-base); }
-.bg-dusk  { background: var(--bg-base); }
-.bg-night { background: var(--bg-base); }
+/* ─── Background styles (Settings → Appearance → Background) ─────
+   Time of day (default): a faint glow from the top that shifts with the
+   day. Animated: two soft accent glows drifting, transform-only on one
+   fixed layer. Solid: flat. Noise: a static grain tile. */
+.bg-dawn  { background: radial-gradient(120% 60% at 50% -10%, rgba(255, 170, 110, 0.09), transparent 62%), var(--bg-base); }
+.bg-day   { background: radial-gradient(120% 60% at 50% -10%, rgba(150, 190, 255, 0.07), transparent 62%), var(--bg-base); }
+.bg-dusk  { background: radial-gradient(120% 60% at 50% -10%, rgba(210, 120, 170, 0.09), transparent 62%), var(--bg-base); }
+.bg-night { background: radial-gradient(120% 60% at 50% -10%, rgba(90, 110, 230, 0.08), transparent 62%), var(--bg-base); }
+.bg-solid { background: var(--bg-base); }
+.bg-noise {
+  background:
+    url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='160' height='160'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='2' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)' opacity='0.06'/%3E%3C/svg%3E"),
+    var(--bg-base);
+}
+.bg-animated { background: var(--bg-base); isolation: isolate; }
+.bg-animated::before {
+  content: ''; position: fixed; inset: -40%; z-index: -1; pointer-events: none;
+  background:
+    radial-gradient(35% 35% at 30% 30%, color-mix(in srgb, var(--accent-solid) 10%, transparent), transparent 70%),
+    radial-gradient(30% 30% at 70% 65%, color-mix(in srgb, var(--accent-solid) 7%, transparent), transparent 70%);
+  animation: val-bg-drift 40s ease-in-out infinite alternate;
+  will-change: transform;
+}
+@keyframes val-bg-drift { from { transform: translate3d(-5%, -4%, 0); } to { transform: translate3d(5%, 4%, 0); } }
+
+/* ─── Arete tokens: tab colours, display + mono fonts ─────────────
+   --tab-accent marks where you are (active group, section, key number,
+   signature motion). It is layered over the theme: <html data-group>
+   comes from the active group, <html data-tab-colours="theme"> turns it
+   off. Settings uses the theme accent. Arctic gets darker variants. */
+:root {
+  --tab-accent:    var(--accent-solid);
+  --on-tab-accent: var(--bg-base);
+  --font-display:  'Cinzel', serif;
+  --font-mono:     'Geist Mono', ui-monospace, monospace;
+}
+html[data-tab-colours="per-tab"][data-group="home"]    { --tab-accent: #D8B26E; }
+html[data-tab-colours="per-tab"][data-group="plan"]    { --tab-accent: #6FA8F2; }
+html[data-tab-colours="per-tab"][data-group="coach"]   { --tab-accent: #F2784B; }
+html[data-tab-colours="per-tab"][data-group="mind"]    { --tab-accent: #A98FF2; }
+html[data-tab-colours="per-tab"][data-group="finance"] { --tab-accent: #52CC9C; }
+html[data-theme="arctic"] { --on-tab-accent: #ffffff; }
+html[data-theme="arctic"][data-tab-colours="per-tab"][data-group="home"]    { --tab-accent: #9A6B1F; }
+html[data-theme="arctic"][data-tab-colours="per-tab"][data-group="plan"]    { --tab-accent: #2F6FC4; }
+html[data-theme="arctic"][data-tab-colours="per-tab"][data-group="coach"]   { --tab-accent: #C24E22; }
+html[data-theme="arctic"][data-tab-colours="per-tab"][data-group="mind"]    { --tab-accent: #6B4FCB; }
+html[data-theme="arctic"][data-tab-colours="per-tab"][data-group="finance"] { --tab-accent: #1F8A5F; }
+
+/* Screen titles use the display face; live numbers use tabular mono. */
+h1, h2, .val-title { font-family: var(--font-display); letter-spacing: 0.02em; }
+.val-num { font-family: var(--font-mono); font-variant-numeric: tabular-nums; }
 
 /* ─── Transition Defaults ───────────────────────────── */
 .transition-premium {
@@ -433,4 +479,17 @@ html[data-reduce-motion="true"] *::after {
   animation-duration: 0.001ms !important;
   animation-iteration-count: 1 !important;
   transition-duration: 0.001ms !important;
+}
+
+/* Animation intensity: Reduced keeps short fades, drops signature moments
+   and the drifting background. (None sets data-reduce-motion above.) */
+html[data-motion="reduced"] {
+  --dur-fast: 0.09s;
+  --dur-med:  0.16s;
+  --dur-slow: 0.16s;
+}
+html[data-motion="reduced"] .val-signature,
+html[data-motion="reduced"] .bg-animated::before { animation: none !important; }
+@media (prefers-reduced-motion: reduce) {
+  .val-signature, .bg-animated::before { animation: none !important; }
 }
