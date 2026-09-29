@@ -4,6 +4,7 @@ import { useCollection } from '../../supabase/useCollection.js';
 import { STORAGE_KEYS }  from '../../utils/storage.js';
 import { currencySymbol as currencySym, DEFAULT_CURRENCY } from '../../utils/currency.js';
 import { toLocalDateKey } from '../../utils/localDate.js';
+import { projectedSpend } from '../../domain/ahead.js';
 
 const CATEGORIES = [
   { id: 'food',          label: 'Food & Drink',   colour: '#f4a642', icon: '🍔' },
@@ -43,6 +44,11 @@ const SUB_CATS = [
 const SUB_TABS = ['Overview', 'Spending', 'Subscriptions', 'Purchases'];
 
 function todayISO() { return toLocalDateKey(new Date()); }
+
+// Income is marked by `type` (desktop, assistant, Gmail import) or, on older phone
+// rows, by category. Reading only the category counted assistant and Gmail income
+// (category "Income") as spending.
+const isIncomeTx = (t) => (t.type ? t.type === 'income' : String(t.category).toLowerCase() === 'income');
 
 function fmtDate(str) {
   if (!str) return '';
@@ -128,16 +134,20 @@ function OverviewTab({ transactions, subscriptions, purchases, settings }) {
 
   const thisMonth = toLocalDateKey(new Date()).slice(0, 7);
   const monthTx   = transactions.filter(t => (t.date || '').startsWith(thisMonth));
-  const income    = monthTx.filter(t => t.category === 'income').reduce((s, t) => s + (t.amount || 0), 0);
-  const expenses  = monthTx.filter(t => t.category !== 'income').reduce((s, t) => s + (t.amount || 0), 0);
+  const income    = monthTx.filter(isIncomeTx).reduce((s, t) => s + (t.amount || 0), 0);
+  const expenses  = monthTx.filter(t => !isIncomeTx(t)).reduce((s, t) => s + (t.amount || 0), 0);
   const balance   = income - expenses;
 
   const subTotal  = subscriptions.reduce((s, sub) => s + toMonthly(sub.amount, sub.cycle), 0);
   const pendingP  = purchases.filter(p => p.status !== 'bought').length;
 
+  // Ahead: what restocking supplies will cost over the next 30 days
+  const { items: supplies = [] } = useCollection('essentials', STORAGE_KEYS.ESSENTIALS);
+  const restocks = useMemo(() => projectedSpend(supplies, toLocalDateKey(new Date()), { days: 30 }), [supplies]);
+
   // Spending by category (this month)
   const catMap = {};
-  monthTx.filter(t => t.category !== 'income').forEach(t => {
+  monthTx.filter(t => !isIncomeTx(t)).forEach(t => {
     catMap[t.category] = (catMap[t.category] || 0) + (t.amount || 0);
   });
   const segments = Object.entries(catMap).map(([id, value]) => ({
@@ -197,6 +207,22 @@ function OverviewTab({ transactions, subscriptions, purchases, settings }) {
         </MCard>
       </div>
 
+      {/* Ahead: supply restocks over the next 30 days */}
+      {restocks.lines.length > 0 && (
+        <MCard style={{ padding: '14px 16px' }}>
+          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'baseline' }}>
+            <MLabel>Supplies · next 30 days</MLabel>
+            <span className="val-num" style={{ fontSize: 16, fontWeight: 600, color: 'var(--text-primary)' }}>{fmt(restocks.total)}</span>
+          </div>
+          {restocks.lines.map(l => (
+            <div key={l.name} style={{ display: 'flex', justifyContent: 'space-between', gap: 10, marginTop: 6, fontSize: 12.5 }}>
+              <span style={{ color: 'var(--text-primary)' }}>{l.name}{l.dates.length > 1 ? ` ×${l.dates.length}` : ''}</span>
+              <span className="val-num" style={{ color: 'var(--text-secondary)', whiteSpace: 'nowrap' }}>{l.dates[0] <= todayISO() ? 'now' : fmtDate(l.dates[0])} · {fmt(l.subtotal)}</span>
+            </div>
+          ))}
+        </MCard>
+      )}
+
       {/* Recent transactions */}
       <MCard style={{ padding: 0 }}>
         <div style={{ padding: '12px 16px', borderBottom: '0.5px solid var(--card-border)' }}>
@@ -204,7 +230,7 @@ function OverviewTab({ transactions, subscriptions, purchases, settings }) {
         </div>
         {[...transactions].sort((a, b) => (b.date || '').localeCompare(a.date || '')).slice(0, 5).map((t, i, arr) => {
           const cat = CAT_MAP[t.category] || CAT_MAP.other;
-          const isIncome = t.category === 'income';
+          const isIncome = isIncomeTx(t);
           return (
             <div key={t.id || i} style={{
               display: 'flex', alignItems: 'center', gap: 12, padding: '12px 16px',
@@ -327,13 +353,13 @@ function SpendingTab({ transactions, settings, onAdd }) {
   });
 
   const byDay = {};
-  filt.filter(t => t.category !== 'income').forEach(t => {
+  filt.filter(t => !isIncomeTx(t)).forEach(t => {
     byDay[t.date] = (byDay[t.date] || 0) + (t.amount || 0);
   });
   const days = Object.entries(byDay).sort((a, b) => b[0].localeCompare(a[0])).slice(0, 14);
 
   const catMap = {};
-  filt.filter(t => t.category !== 'income').forEach(t => {
+  filt.filter(t => !isIncomeTx(t)).forEach(t => {
     catMap[t.category] = (catMap[t.category] || 0) + (t.amount || 0);
   });
   const segments = Object.entries(catMap).map(([id, value]) => ({

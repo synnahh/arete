@@ -5,7 +5,10 @@ import { STORAGE_KEYS }  from '../../utils/storage.js';
 import { searchOpenFoodFacts, lookupBarcode, startBarcodeScan } from '../../utils/openFoodFacts.js';
 import { scaleMicros } from '../../utils/micronutrients.js';
 import { toLocalDateKey } from '../../utils/localDate.js';
-import { currentWaterGoal } from '../../utils/waterGoal.js';
+import { currentWaterGoal, sleepWindow } from '../../utils/waterGoal.js';
+import { waterAdvice } from '../../domain/water.js';
+import { weightCoach } from '../../domain/weight.js';
+import WeightChart from '../../components/WeightChart.jsx';
 
 const nowStr = () => new Date().toLocaleTimeString('en-AU', { hour: '2-digit', minute: '2-digit', hour12: false });
 
@@ -610,11 +613,12 @@ function NutritionTab({ settings, today }) {
 //  Water tab 
 function WaterTab({ settings, today }) {
   const { items: waterLogs = [], add: addWaterLog, remove: removeWaterLog } = useCollection('water_logs', STORAGE_KEYS.WATER);
-  const goalMl     = settings?.waterGoal || 2500;
+  const goalMl     = currentWaterGoal(settings);
   const todayWater = useMemo(() =>
     waterLogs.filter(l => l.date === today).reduce((s, l) => s + (l.amount || 0), 0),
   [waterLogs, today]);
   const pct = Math.min(100, Math.round(todayWater / goalMl * 100));
+  const advice = waterAdvice({ totalMl: todayWater, goalMl, now: new Date(), ...sleepWindow() });
   const [custom, setCustom] = useState('');
 
   const log = (ml) => addWaterLog({ date: today, amount: ml, time: nowStr() });
@@ -629,6 +633,12 @@ function WaterTab({ settings, today }) {
           of {(goalMl/1000).toFixed(1)}L goal · {pct}%
         </div>
         <ProgressBar value={todayWater} max={goalMl} color="#4a9eff" />
+        {advice && (
+          <div role="status" style={{ marginTop: 14, fontSize: 13.5, lineHeight: 1.45, color: advice.status === 'behind' ? '#e8a13a' : advice.status === 'done' || advice.status === 'ahead' ? '#4caf7d' : 'var(--text-secondary)' }}>{advice.message}</div>
+        )}
+        {advice?.sipMl > 0 && (
+          <button onClick={() => log(advice.sipMl)} style={{ marginTop: 10, minHeight: 44, padding: '0 20px', borderRadius: 12, border: 'none', background: '#4a9eff', color: '#fff', fontSize: 14, fontWeight: 600, cursor: 'pointer', WebkitTapHighlightColor: 'transparent' }}>Log {advice.sipMl} ml</button>
+        )}
       </MCard>
 
       {/* Quick-log buttons */}
@@ -683,12 +693,14 @@ function WaterTab({ settings, today }) {
 }
 
 //  Body tab 
-function BodyTab({ today }) {
+function BodyTab({ today, settings }) {
   const { items: bodyMetrics = [], add: addBodyMetric } = useCollection('body_metrics', STORAGE_KEYS.BODY);
   const sorted = useMemo(() =>
     [...bodyMetrics].sort((a, b) => (b.date || '').localeCompare(a.date || '')),
   [bodyMetrics]);
   const latest = sorted[0];
+  // Weight coach: smoothed trend, weekly rate, pace vs the Coach goal
+  const coach = useMemo(() => weightCoach(bodyMetrics, settings?.coachGoal?.targets?.weeklyRateKg ?? null), [bodyMetrics, settings?.coachGoal]);
   const [showAdd, setShowAdd] = useState(false);
   const [form, setForm] = useState({ weight: '', bodyFat: '', muscle: '' });
 
@@ -746,6 +758,25 @@ function BodyTab({ today }) {
             {latest.muscle && <VitalCard label="Muscle"   value={latest.muscle} unit="%" color="#4caf7d" />}
           </div>
 
+          {coach && coach.series.length > 1 && (
+            <MCard style={{ padding: 16, display: 'flex', flexDirection: 'column', gap: 10 }}>
+              <div style={{ display: 'flex', gap: 22, alignItems: 'flex-end', flexWrap: 'wrap' }}>
+                <div>
+                  <div style={{ fontSize: 9.5, color: 'var(--text-muted)', letterSpacing: '0.1em', marginBottom: 4 }}>TREND WEIGHT</div>
+                  <div className="val-num" style={{ fontSize: 30, fontWeight: 500, color: 'var(--tab-accent)', lineHeight: 1 }}>{coach.trend}<span style={{ fontSize: 12, color: 'var(--text-secondary)', marginLeft: 3 }}>kg</span></div>
+                </div>
+                <div>
+                  <div style={{ fontSize: 9.5, color: 'var(--text-muted)', letterSpacing: '0.1em', marginBottom: 4 }}>RATE</div>
+                  <div className="val-num" style={{ fontSize: 20, color: 'var(--text-primary)', lineHeight: 1.1 }}>{coach.rate == null ? '—' : (coach.rate > 0 ? '+' : '') + coach.rate}<span style={{ fontSize: 11, color: 'var(--text-secondary)', marginLeft: 3 }}>kg/week</span></div>
+                </div>
+              </div>
+              {coach.pace && <div role="status" style={{ fontSize: 13, lineHeight: 1.45, color: coach.pace.status === 'on-track' ? '#4caf7d' : '#e8a13a' }}>{coach.pace.message}</div>}
+              {coach.rate == null && <div style={{ fontSize: 12, color: 'var(--text-secondary)' }}>Log weight on a few days over a week or more to see your rate.</div>}
+              <WeightChart series={coach.series} />
+              <div style={{ fontSize: 11, color: 'var(--text-secondary)' }}>Dots are weigh-ins; the line is your trend. Judge progress by the line.</div>
+            </MCard>
+          )}
+
           <MCard style={{ padding: 0 }}>
             <div style={{ padding: '12px 16px', borderBottom: '0.5px solid var(--card-border)' }}>
               <span style={{ fontSize: 13, fontWeight: 600, color: 'var(--text-primary)' }}>History</span>
@@ -800,7 +831,7 @@ export default function MobileHealth({ settings, tabs = SUB_TABS, title = 'Healt
       {sub === 'Sleep'      && <SleepTab      today={today} />}
       {sub === 'Nutrition'  && <NutritionTab  settings={settings} today={today} />}
       {sub === 'Water'      && <WaterTab      settings={settings} today={today} />}
-      {sub === 'Body'       && <BodyTab today={today} />}
+      {sub === 'Body'       && <BodyTab today={today} settings={settings} />}
     </div>
   );
 }
