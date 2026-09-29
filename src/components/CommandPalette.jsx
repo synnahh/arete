@@ -25,7 +25,7 @@ function buildStaticCommands(onTabChange, ai) {
     { id: 'nav-finance',    label: 'Go to Finance',     category: 'Navigate', icon: '=', action: () => onTabChange('finance')    },
     { id: 'nav-progress',   label: 'Go to Progress',    category: 'Navigate', icon: 'P', action: () => onTabChange('progress')   },
     { id: 'nav-style',      label: 'Go to Style',       category: 'Navigate', icon: '=W', action: () => onTabChange('style')      },
-    { id: 'nav-essentials', label: 'Go to Essentials',  category: 'Navigate', icon: '=', action: () => onTabChange('essentials') },
+    { id: 'nav-essentials', label: 'Go to Supplies',    category: 'Navigate', icon: '=', action: () => onTabChange('essentials') },
     { id: 'nav-lists',      label: 'Go to Lists',       category: 'Navigate', icon: '=', action: () => onTabChange('lists')      },
     { id: 'nav-focus',      label: 'Go to Focus',       category: 'Navigate', icon: '', action: () => onTabChange('focus')      },
     { id: 'nav-vault',      label: 'Go to Vault',       category: 'Navigate', icon: '=', action: () => onTabChange('vault')      },
@@ -118,7 +118,7 @@ function searchAppData(query, onTabChange) {
       .forEach(i => results.push({
         id: `ess-${i.id}`,
         label: i.name,
-        category: 'Essential',
+        category: 'Supply',
         icon: '=',
         action: () => onTabChange('essentials'),
       }));

@@ -2120,7 +2120,7 @@ const MEAL_TYPES = ['breakfast','lunch','dinner','snack'];
 const MEAL_TYPE_COLOUR = { breakfast:'#f4a642', lunch:'#4caf7d', dinner:'#4a9eff', snack:'#9b5de5' };
 const DAYS = ['Monday','Tuesday','Wednesday','Thursday','Friday','Saturday','Sunday'];
 
-async function generateMealPlan({ calorieGoal, proteinGoal, carbGoal, fatGoal, weight, mealsPerDay, dietaryNotes, supplements, apiKey }) {
+async function generateMealPlan({ calorieGoal, proteinGoal, carbGoal, fatGoal, weight, mealsPerDay, dietaryNotes, supplements, apiKey, currency = 'AUD' }) {
   const suppList = supplements.length ? supplements.map(s => s.name).join(', ') : 'none';
   const prompt = `Generate a detailed personalised 7-day meal plan.
 
@@ -2145,7 +2145,8 @@ Return ONLY a valid JSON object (no markdown, no explanation) with this exact st
           "protein": 38,
           "carbs": 52,
           "fat": 14,
-          "estimatedCost": 4.50
+          "estimatedCost": 4.50,
+          "ingredients": [{ "name": "Chicken breast", "qty": 200, "unit": "g" }, { "name": "Eggs", "qty": 2, "unit": "" }]
         }
       ],
       "totals": { "calories": 2400, "protein": 172, "carbs": 245, "fat": 78, "cost": 18.50 }
@@ -2160,7 +2161,8 @@ Rules:
 - Descriptions should be practical and appetising
 - Vary meals across the week  no repeated meals
 - Adjust protein timing around workouts where relevant
-- Include realistic estimatedCost per meal in GBP (typical UK supermarket prices)
+- Include realistic estimatedCost per meal in ${currency} (typical local supermarket prices)
+- List every ingredient with qty and unit (g or ml; unit "" for whole items like eggs); use the same plain ingredient names across the week so they add up into one shopping list
 - Include daily cost total in totals.cost`;
 
   const res = await tauriFetch('https://api.anthropic.com/v1/messages', {
@@ -2201,7 +2203,11 @@ function MealPlanner({ settings, savedMeals = [], addSavedMeal, bodyMetrics = []
 
   const [mealsPerDay, setMealsPerDay] = useState(4);
   const [dietaryNotes, setDietaryNotes] = useState('');
-  const [plan, setPlan] = useState(null);
+  // The latest plan is kept (it used to vanish on leaving the screen) and
+  // Plan → Supplies turns its ingredients into this week's grocery list.
+  const { data: savedPlan, save: savePlanDoc } = useDocument('meal_plan', STORAGE_KEYS.MEAL_PLANS, null);
+  const [plan, setPlan] = useState(() => savedPlan?.plan ?? null);
+  useEffect(() => { if (!plan && savedPlan?.plan) setPlan(savedPlan.plan); }, [savedPlan]); // eslint-disable-line react-hooks/exhaustive-deps
   const [generating, setGenerating] = useState(false);
   const [error, setError] = useState('');
   const [activeDay, setActiveDay] = useState(0);
@@ -2216,10 +2222,12 @@ function MealPlanner({ settings, savedMeals = [], addSavedMeal, bodyMetrics = []
         calorieGoal, proteinGoal, carbGoal, fatGoal,
         weight: latestBody?.weight,
         mealsPerDay, dietaryNotes,
-        supplements, apiKey,
+        supplements, apiKey, currency: settings?.currency || 'AUD',
       });
-      setPlan(result.plan ?? result);
+      const newPlan = result.plan ?? result;
+      setPlan(newPlan);
       setActiveDay(0);
+      savePlanDoc({ generatedOn: toLocalDateKey(new Date()), plan: newPlan });
     } catch (err) {
       setError(err.message || 'Generation failed  try again.');
     } finally {

@@ -5,6 +5,7 @@
 import { useState, useEffect } from 'react';
 import { storage, STORAGE_KEYS } from '../utils/storage.js';
 import { toLocalDateKey, isOnLocalDay } from '../utils/localDate.js';
+import { dueItems } from '../domain/ahead.js';
 
 const arr = (k) => { const v = storage.get(k, []); return Array.isArray(v) ? v : (v?.daily || []); };
 const todayStr = () => toLocalDateKey(new Date());
@@ -20,12 +21,8 @@ function gather() {
   const overdue = tasksAll.filter(x => x.dueDate && x.dueDate < t);
   const dueToday = tasksAll.filter(x => x.dueDate === t);
 
-  // Essentials due/low (name, boughtDate, lifespanDays)
-  const restock = arr(STORAGE_KEYS.ESSENTIALS).map(it => {
-    if (!it.boughtDate || !it.lifespanDays) return null;
-    const days = Math.ceil((new Date(it.boughtDate).getTime() + it.lifespanDays * 86400000 - Date.now()) / 86400000);
-    return days <= 7 ? { name: it.name, days } : null;
-  }).filter(Boolean).sort((a, b) => a.days - b.days);
+  // Supplies to reorder within a week (Ahead engine forecast)
+  const restock = dueItems(arr(STORAGE_KEYS.ESSENTIALS), t).map(({ item, f }) => ({ name: item.name, days: f.daysToReorder }));
 
   // Momentum
   const streaks = arr(STORAGE_KEYS.HABITS).filter(h => (h.streak || 0) > 0)
@@ -112,9 +109,9 @@ export default function TodayView({ onTabChange }) {
           )}
 
           {data.restock.length > 0 && (
-            <Section title="Restock soon" accent="#f4a642" count={`${data.restock.length}`} tab="essentials" onGo={go}>
+            <Section title="Reorder soon" accent="#f4a642" count={`${data.restock.length}`} tab="essentials" onGo={go}>
               {data.restock.map((r, i) => (
-                <div key={i} style={itemRow}><span>{r.name}</span><span style={{ color: r.days <= 0 ? '#e55a5a' : '#f4a642', fontSize: 11 }}>{r.days <= 0 ? 'due now' : `${r.days}d left`}</span></div>
+                <div key={i} style={itemRow}><span>{r.name}</span><span style={{ color: r.days <= 0 ? '#e55a5a' : '#f4a642', fontSize: 11 }}>{r.days <= 0 ? 'order now' : `order in ${r.days}d`}</span></div>
               ))}
             </Section>
           )}

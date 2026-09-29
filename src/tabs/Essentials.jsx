@@ -1,11 +1,18 @@
-//  VALERIE  Essentials / Restock Tracker 
-import { useState } from 'react';
+//  Plan · Supplies  the Ahead engine: every supply's run-out and reorder
+//  date from its pack size and how you use it, learned from real restocks,
+//  plus this week's cart (due supplies + the meal plan's shopping list).
+//  Logic: src/domain/ahead.js. Nothing is ever bought from here: the cart
+//  opens in the store for you to review and check out.
+import { useMemo, useState } from 'react';
 import { useCollection } from '../supabase/useCollection.js';
+import { useDocument }   from '../supabase/useDocument.js';
 import { STORAGE_KEYS }  from '../utils/storage.js';
 import { insertRow, deleteRow } from '../utils/quickWrite.js';
 import { toLocalDateKey } from '../utils/localDate.js';
+import { readCurrency, formatMoney, currencySymbol } from '../utils/currency.js';
+import { forecast, restock, dueItems, cartLinks, shoppingList, parseAsin, DEFAULT_LEAD_DAYS } from '../domain/ahead.js';
 
-//  Categories 
+//  Categories
 const CATEGORIES = [
   { id: 'grooming',    label: 'Grooming',    icon: '🪒' },
   { id: 'health',      label: 'Health',      icon: '💊' },
@@ -16,246 +23,298 @@ const CATEGORIES = [
 ];
 const CAT_MAP = Object.fromEntries(CATEGORIES.map(c => [c.id, c]));
 
-//  Status helpers 
-function daysLeft(item) {
-  if (!item.boughtDate || !item.lifespanDays) return null;
-  const bought = new Date(item.boughtDate);
-  const expire = new Date(bought.getTime() + item.lifespanDays * 86400000);
-  return Math.ceil((expire - new Date()) / 86400000);
-}
+// Which Amazon store to open, from the app currency.
+const STORE_BY_CURRENCY = { AUD: 'amazon.com.au', NZD: 'amazon.com.au', GBP: 'amazon.co.uk', USD: 'amazon.com', CAD: 'amazon.ca', EUR: 'amazon.de' };
 
-function getStatus(days) {
-  if (days === null) return 'unknown';
-  if (days <= 0)  return 'red';
-  if (days <= 7)  return 'amber';
-  return 'green';
-}
-
-const STATUS_COLOUR = { green: '#4caf7d', amber: '#f4a642', red: '#e55a5a', unknown: '#555' };
-const STATUS_LABEL  = { green: 'Stocked', amber: 'Low',    red: 'Due now', unknown: '' };
+//  Status
+const STATUS_COLOUR = { out: '#e55a5a', order: '#e55a5a', soon: '#f4a642', ok: '#4caf7d', unknown: 'var(--text-secondary)' };
+const STATUS_LABEL  = { out: 'Out', order: 'Order now', soon: 'Soon', ok: 'Stocked', unknown: 'Set usage' };
+const SOURCE_LABEL  = { schedule: 'your usage schedule', learned: 'your real restocks', manual: 'the days you entered' };
 
 const todayISO = () => toLocalDateKey(new Date());
+const fmtDate = (key) => key ? new Date(`${key}T12:00:00`).toLocaleDateString('en-AU', { day: 'numeric', month: 'short' }) : '—';
+const whenText = (f) => {
+  if (f.status === 'unknown') return 'Add pack size and usage';
+  if (f.status === 'out') return 'Run out';
+  if (f.status === 'order') return `Order now · runs out ${fmtDate(f.runOut)}`;
+  return `${f.daysLeft} days left · order by ${fmtDate(f.reorderBy)}`;
+};
 
-//  Shared styles 
+//  Shared styles
 const INPUT = {
-  flex: 1, padding: '8px 12px', borderRadius: 8,
-  background: 'rgba(255,255,255,0.06)', border: '0.5px solid var(--card-border)',
-  color: 'var(--text-primary)', fontSize: 13, outline: 'none',
+  width: '100%', boxSizing: 'border-box', padding: '8px 12px', borderRadius: 8,
+  background: 'var(--input-bg)', border: '0.5px solid var(--input-border)',
+  color: 'var(--text-primary)', fontSize: 13, outline: 'none', fontFamily: 'inherit',
 };
 const BTN_ACCENT = {
   padding: '8px 16px', borderRadius: 8, border: 'none', cursor: 'pointer',
-  background: 'var(--accent)', color: '#fff', fontSize: 13, fontWeight: 500,
+  background: 'var(--tab-accent)', color: 'var(--on-tab-accent)', fontSize: 13, fontWeight: 600, fontFamily: 'inherit',
 };
 const BTN_GHOST = {
-  padding: '7px 13px', borderRadius: 8, border: 'none', cursor: 'pointer',
-  background: 'rgba(255,255,255,0.06)', color: 'var(--text-secondary)', fontSize: 13,
+  padding: '7px 13px', borderRadius: 8, border: '0.5px solid var(--card-border)', cursor: 'pointer',
+  background: 'transparent', color: 'var(--text-secondary)', fontSize: 13, fontFamily: 'inherit',
 };
+const LABEL = { fontSize: 10.5, color: 'var(--text-secondary)', marginBottom: 3, letterSpacing: '0.04em' };
 
-//  Add / Edit Panel 
-function ItemForm({ initial, onSave, onCancel }) {
-  const [name,     setName]     = useState(initial?.name       || '');
-  const [cat,      setCat]      = useState(initial?.category   || 'grooming');
-  const [bought,   setBought]   = useState(initial?.boughtDate || todayISO());
-  const [days,     setDays]     = useState(initial?.lifespanDays ?? '');
-  const [price,    setPrice]    = useState(initial?.price      ?? '');
-  const [notes,    setNotes]    = useState(initial?.notes      || '');
+function Field({ label, children, flex = 1 }) {
+  return (
+    <label style={{ flex, display: 'flex', flexDirection: 'column', minWidth: 0 }}>
+      <span style={LABEL}>{label}</span>
+      {children}
+    </label>
+  );
+}
+
+//  Add / Edit form
+function ItemForm({ initial, onSave, onCancel, currency }) {
+  const [name,    setName]    = useState(initial?.name ?? '');
+  const [cat,     setCat]     = useState(initial?.category ?? 'grooming');
+  const [bought,  setBought]  = useState(initial?.boughtDate ?? todayISO());
+  const [packQty, setPackQty] = useState(initial?.packQty ?? '');
+  const [unit,    setUnit]    = useState(initial?.unit ?? '');
+  const [dose,    setDose]    = useState(initial?.dosePerUse ?? '');
+  const [uses,    setUses]    = useState(initial?.usesPerDay ?? '');
+  const [packs,   setPacks]   = useState(initial?.packsOnHand ?? 1);
+  const [lead,    setLead]    = useState(initial?.leadDays ?? '');
+  const [days,    setDays]    = useState(initial?.lifespanDays ?? '');
+  const [link,    setLink]    = useState(initial?.storeUrl ?? initial?.asin ?? '');
+  const [price,   setPrice]   = useState(initial?.price ?? '');
+  const [notes,   setNotes]   = useState(initial?.notes ?? '');
+
+  const num = (v) => (v === '' || v == null ? null : Number(v));
+  const draft = {
+    boughtDate: bought, packQty: num(packQty), dosePerUse: num(dose), usesPerDay: num(uses),
+    packsOnHand: num(packs) || 1, leadDays: num(lead), lifespanDays: num(days),
+    learnedDaysPerPack: initial?.learnedDaysPerPack, learnCycles: initial?.learnCycles,
+  };
+  const preview = forecast(draft, todayISO());
 
   function handleSave() {
     if (!name.trim()) return;
+    const asin = parseAsin(link);
     onSave({
-      name: name.trim(),
-      category: cat,
-      boughtDate: bought,
-      lifespanDays: parseInt(days) || null,
-      price: parseFloat(price) || null,
+      name: name.trim(), category: cat, ...draft,
+      unit: unit.trim() || null,
+      asin: asin || null,
+      storeUrl: !asin && link.trim().startsWith('http') ? link.trim() : null,
+      price: num(price),
       notes: notes.trim() || null,
     });
   }
 
   return (
     <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
-      <div style={{ fontSize: 11, color: 'var(--text-muted)', letterSpacing: '0.06em', marginBottom: 4 }}>
-        {initial ? 'EDIT ITEM' : 'NEW ITEM'}
-      </div>
+      <div style={{ fontSize: 11, color: 'var(--text-secondary)', letterSpacing: '0.08em' }}>{initial ? 'EDIT SUPPLY' : 'NEW SUPPLY'}</div>
+      <input aria-label="Name" placeholder="e.g. Niacinamide serum" value={name} onChange={e => setName(e.target.value)} style={INPUT} autoFocus />
 
-      <input placeholder="Item name" value={name} onChange={e => setName(e.target.value)}
-        style={INPUT} autoFocus />
-
-      {/* Category */}
       <div style={{ display: 'flex', flexWrap: 'wrap', gap: 5 }}>
         {CATEGORIES.map(c => (
-          <button key={c.id} onClick={() => setCat(c.id)} style={{
-            padding: '4px 10px', borderRadius: 7, border: 'none', cursor: 'pointer', fontSize: 12,
-            background: cat === c.id ? 'var(--accent)33' : 'rgba(255,255,255,0.05)',
-            color: cat === c.id ? 'var(--accent)' : 'var(--text-secondary)',
-            outline: cat === c.id ? '0.5px solid var(--accent)55' : '0.5px solid transparent',
-          }}>
-            {c.icon} {c.label}
-          </button>
+          <button key={c.id} type="button" aria-pressed={cat === c.id} onClick={() => setCat(c.id)} style={{
+            padding: '4px 10px', borderRadius: 7, cursor: 'pointer', fontSize: 12, fontFamily: 'inherit',
+            border: `0.5px solid ${cat === c.id ? 'var(--tab-accent)' : 'transparent'}`,
+            background: cat === c.id ? 'color-mix(in srgb, var(--tab-accent) 16%, transparent)' : 'var(--hover-bg)',
+            color: cat === c.id ? 'var(--tab-accent)' : 'var(--text-secondary)',
+          }}>{c.icon} {c.label}</button>
         ))}
       </div>
 
-      <div style={{ display: 'flex', gap: 10 }}>
-        <div style={{ flex: 1 }}>
-          <div style={{ fontSize: 10, color: 'var(--text-muted)', marginBottom: 3 }}>Bought date</div>
-          <input type="date" value={bought} onChange={e => setBought(e.target.value)} style={INPUT} />
-        </div>
-        <div style={{ flex: 1 }}>
-          <div style={{ fontSize: 10, color: 'var(--text-muted)', marginBottom: 3 }}>Lasts (days)</div>
-          <input type="number" placeholder="e.g. 21" value={days}
-            onChange={e => setDays(e.target.value)} style={INPUT} />
-        </div>
+      <div style={{ ...LABEL, marginTop: 6 }}>HOW YOU USE IT</div>
+      <div style={{ display: 'flex', gap: 8 }}>
+        <Field label="Pack size"><input inputMode="decimal" placeholder="50" value={packQty} onChange={e => setPackQty(e.target.value)} style={INPUT} /></Field>
+        <Field label="Unit"><input placeholder="ml" value={unit} onChange={e => setUnit(e.target.value)} style={INPUT} /></Field>
+      </div>
+      <div style={{ display: 'flex', gap: 8 }}>
+        <Field label="Per use"><input inputMode="decimal" placeholder="1" value={dose} onChange={e => setDose(e.target.value)} style={INPUT} /></Field>
+        <Field label="Uses / day"><input inputMode="decimal" placeholder="2" value={uses} onChange={e => setUses(e.target.value)} style={INPUT} /></Field>
+      </div>
+      <div style={{ display: 'flex', gap: 8 }}>
+        <Field label="Opened / bought"><input type="date" value={bought} onChange={e => setBought(e.target.value)} style={INPUT} /></Field>
+        <Field label="Packs on hand"><input inputMode="numeric" value={packs} onChange={e => setPacks(e.target.value)} style={INPUT} /></Field>
+      </div>
+      <div style={{ display: 'flex', gap: 8 }}>
+        <Field label={`Delivery days (default ${DEFAULT_LEAD_DAYS})`}><input inputMode="numeric" placeholder={String(DEFAULT_LEAD_DAYS)} value={lead} onChange={e => setLead(e.target.value)} style={INPUT} /></Field>
+        <Field label="Or: lasts (days)"><input inputMode="numeric" placeholder="—" value={days} onChange={e => setDays(e.target.value)} style={INPUT} /></Field>
       </div>
 
-      <div style={{ display: 'flex', gap: 10 }}>
-        <div style={{ flex: 1 }}>
-          <div style={{ fontSize: 10, color: 'var(--text-muted)', marginBottom: 3 }}>Price (£)</div>
-          <input type="number" placeholder="Optional" value={price}
-            onChange={e => setPrice(e.target.value)} style={INPUT} />
-        </div>
+      <div style={{ fontSize: 12, color: 'var(--text-secondary)', lineHeight: 1.45 }}>
+        {preview.status === 'unknown'
+          ? 'Add pack size, amount per use and uses a day (or how many days it lasts) to predict the run-out date.'
+          : <>Lasts <strong className="val-num">{preview.daysPerPack}</strong> days a pack · runs out <strong>{fmtDate(preview.runOut)}</strong> · order by <strong>{fmtDate(preview.reorderBy)}</strong></>}
       </div>
 
-      <textarea placeholder="Notes (optional)" value={notes} onChange={e => setNotes(e.target.value)}
-        rows={2} style={{ ...INPUT, resize: 'vertical', fontFamily: 'inherit' }} />
+      <div style={{ ...LABEL, marginTop: 6 }}>BUYING</div>
+      <Field label="Amazon link or ASIN (optional)"><input placeholder="https://www.amazon.com.au/…/dp/B0…" value={link} onChange={e => setLink(e.target.value)} style={INPUT} /></Field>
+      <Field label={`Price (${currencySymbol(currency)})`}><input inputMode="decimal" placeholder="Optional" value={price} onChange={e => setPrice(e.target.value)} style={INPUT} /></Field>
+      <textarea aria-label="Notes" placeholder="Notes (optional)" value={notes} onChange={e => setNotes(e.target.value)} rows={2} style={{ ...INPUT, resize: 'vertical' }} />
 
       <div style={{ display: 'flex', gap: 8, justifyContent: 'flex-end', marginTop: 4 }}>
-        <button onClick={onCancel} style={BTN_GHOST}>Cancel</button>
-        <button onClick={handleSave} style={BTN_ACCENT}>{initial ? 'Save' : 'Add Item'}</button>
+        <button type="button" onClick={onCancel} style={BTN_GHOST}>Cancel</button>
+        <button type="button" onClick={handleSave} style={BTN_ACCENT}>{initial ? 'Save' : 'Add supply'}</button>
       </div>
     </div>
   );
 }
 
-//  Detail Panel 
-function DetailPanel({ item, onRestock, onEdit, onDelete }) {
-  const days   = daysLeft(item);
-  const status = getStatus(days);
-  const cat    = CAT_MAP[item.category] || { icon: '📦', label: 'Other' };
-
-  const expire = item.boughtDate && item.lifespanDays
-    ? new Date(new Date(item.boughtDate).getTime() + item.lifespanDays * 86400000)
-        .toLocaleDateString('en-GB', { day: 'numeric', month: 'short', year: 'numeric' })
-    : '';
+//  Detail panel
+function DetailPanel({ item, f, currency, onRestock, onEdit, onDelete }) {
+  const [packs, setPacks] = useState(1);
+  const cat = CAT_MAP[item.category] || CAT_MAP.other;
+  const sc  = STATUS_COLOUR[f.status];
+  const rows = [
+    ['Runs out',  f.runOut ? fmtDate(f.runOut) : '—'],
+    ['Order by',  f.reorderBy ? fmtDate(f.reorderBy) : '—'],
+    ['Per pack',  f.daysPerPack ? `${f.daysPerPack} days` : '—'],
+    ['Pack',      item.packQty ? `${item.packQty} ${item.unit || ''} · ${item.dosePerUse ?? '?'} × ${item.usesPerDay ?? '?'} a day` : '—'],
+    ['On hand',   `${item.packsOnHand || 1} pack${(item.packsOnHand || 1) > 1 ? 's' : ''}`],
+    ['Opened',    fmtDate(item.boughtDate)],
+    ['Price',     item.price ? formatMoney(item.price, currency) : '—'],
+  ];
 
   return (
     <div style={{ display: 'flex', flexDirection: 'column', gap: 14 }}>
-      {/* Header */}
       <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
-        <div style={{
-          width: 36, height: 36, borderRadius: 9,
-          background: STATUS_COLOUR[status] + '22',
-          display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 18,
-        }}>{cat.icon}</div>
+        <div aria-hidden="true" style={{ width: 36, height: 36, borderRadius: 9, background: 'var(--hover-bg)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 18 }}>{cat.icon}</div>
         <div>
-          <div style={{ fontSize: 15, color: 'var(--text-primary)', fontWeight: 400 }}>{item.name}</div>
-          <div style={{ fontSize: 11, color: 'var(--text-muted)' }}>{cat.label}</div>
+          <div style={{ fontSize: 15, color: 'var(--text-primary)' }}>{item.name}</div>
+          <div style={{ fontSize: 11, color: 'var(--text-secondary)' }}>{cat.label}</div>
         </div>
       </div>
 
-      {/* Status badge */}
-      <div style={{
-        display: 'inline-flex', alignItems: 'center', gap: 6,
-        padding: '5px 12px', borderRadius: 20,
-        background: STATUS_COLOUR[status] + '22',
-        border: `0.5px solid ${STATUS_COLOUR[status]}44`,
-        alignSelf: 'flex-start',
-      }}>
-        <div style={{ width: 7, height: 7, borderRadius: '50%', background: STATUS_COLOUR[status] }} />
-        <span style={{ fontSize: 12, color: STATUS_COLOUR[status] }}>
-          {status === 'red' ? 'Overdue for restock'
-            : status === 'amber' ? `${days} day${days !== 1 ? 's' : ''} left`
-            : days !== null ? `${days} days left`
-            : 'No lifespan set'}
-        </span>
+      <div style={{ display: 'inline-flex', alignItems: 'center', gap: 6, padding: '5px 12px', borderRadius: 20, alignSelf: 'flex-start', border: `0.5px solid ${sc}` }}>
+        <span style={{ width: 7, height: 7, borderRadius: '50%', background: sc }} />
+        <span style={{ fontSize: 12, color: sc }}>{whenText(f)}</span>
       </div>
 
-      {/* Info rows */}
-      {[
-        ['Bought',    item.boughtDate ? new Date(item.boughtDate).toLocaleDateString('en-GB', { day: 'numeric', month: 'short', year: 'numeric' }) : ''],
-        ['Lifespan',  item.lifespanDays ? `${item.lifespanDays} days` : ''],
-        ['Runs out',  expire],
-        ['Price',     item.price ? `£${item.price.toFixed(2)}` : ''],
-      ].map(([label, val]) => (
-        <div key={label} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center',
-          borderBottom: '0.5px solid var(--card-border)', paddingBottom: 8 }}>
-          <span style={{ fontSize: 12, color: 'var(--text-muted)' }}>{label}</span>
-          <span style={{ fontSize: 12, color: 'var(--text-primary)' }}>{val}</span>
-        </div>
-      ))}
-
-      {item.notes && (
-        <div style={{ fontSize: 12, color: 'var(--text-muted)', fontStyle: 'italic', lineHeight: 1.5 }}>
-          {item.notes}
+      {f.source && (
+        <div style={{ fontSize: 12, color: 'var(--text-secondary)', lineHeight: 1.45 }}>
+          Based on {SOURCE_LABEL[f.source]}{item.learnCycles ? ` · ${item.learnCycles} restock${item.learnCycles > 1 ? 's' : ''} learned` : ''}.
         </div>
       )}
 
-      {/* Actions */}
-      <button onClick={onRestock} style={{
-        ...BTN_ACCENT, width: '100%',
-        background: '#4caf7d',
-        padding: '10px 16px',
-      }}>
-        S Mark as Restocked
-      </button>
+      {rows.map(([l, v]) => (
+        <div key={l} style={{ display: 'flex', justifyContent: 'space-between', gap: 10, borderBottom: '0.5px solid var(--card-border)', paddingBottom: 8 }}>
+          <span style={{ fontSize: 12, color: 'var(--text-secondary)' }}>{l}</span>
+          <span className="val-num" style={{ fontSize: 12, color: 'var(--text-primary)', textAlign: 'right' }}>{v}</span>
+        </div>
+      ))}
+
+      {item.notes && <div style={{ fontSize: 12, color: 'var(--text-secondary)', fontStyle: 'italic', lineHeight: 1.5 }}>{item.notes}</div>}
+
+      <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+        <span style={{ fontSize: 12, color: 'var(--text-secondary)' }}>Bought</span>
+        {[1, 2, 3].map(n => (
+          <button key={n} type="button" aria-pressed={packs === n} onClick={() => setPacks(n)} style={{
+            ...BTN_GHOST, padding: '4px 10px',
+            borderColor: packs === n ? 'var(--tab-accent)' : 'var(--card-border)', color: packs === n ? 'var(--tab-accent)' : 'var(--text-secondary)',
+          }}>{n}</button>
+        ))}
+      </div>
+      <button type="button" onClick={() => onRestock(packs)} style={{ ...BTN_ACCENT, width: '100%', padding: '10px 16px' }}>Mark as restocked</button>
       <div style={{ display: 'flex', gap: 8 }}>
-        <button onClick={onEdit} style={{ ...BTN_GHOST, flex: 1 }}>Edit</button>
-        <button onClick={onDelete} style={{ ...BTN_GHOST, flex: 1, color: '#e55a5a' }}>Delete</button>
+        <button type="button" onClick={onEdit} style={{ ...BTN_GHOST, flex: 1 }}>Edit</button>
+        <button type="button" onClick={onDelete} style={{ ...BTN_GHOST, flex: 1, color: '#e55a5a' }}>Delete</button>
       </div>
     </div>
   );
 }
 
-//  Main Essentials Tab 
+//  This week's cart
+function WeekCart({ due, groceries, store }) {
+  const [open, setOpen] = useState(true);
+  if (!due.length && !groceries.length) return null;
+  const links = cartLinks(due.map(({ item }) => ({ name: item.name, asin: item.asin, storeUrl: item.storeUrl, qty: 1 })), { domain: store });
+
+  return (
+    <section aria-label="This week's cart" style={{ padding: '14px 16px', borderBottom: '0.5px solid var(--card-border)', display: 'flex', flexDirection: 'column', gap: 10 }}>
+      <button type="button" onClick={() => setOpen(o => !o)} aria-expanded={open}
+        style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', background: 'none', border: 'none', padding: 0, cursor: 'pointer', fontFamily: 'inherit' }}>
+        <span style={{ fontFamily: 'var(--font-display)', fontSize: 16, fontWeight: 700, color: 'var(--tab-accent)' }}>This week's cart</span>
+        <span className="val-num" style={{ fontSize: 12, color: 'var(--text-secondary)' }}>{due.length} supplies · {groceries.length} groceries</span>
+      </button>
+      {open && (
+        <>
+          {due.map(({ item, f }) => (
+            <div key={item.id} style={{ display: 'flex', justifyContent: 'space-between', gap: 10, fontSize: 13 }}>
+              <span style={{ color: 'var(--text-primary)' }}>{item.name}</span>
+              <span className="val-num" style={{ color: STATUS_COLOUR[f.status], whiteSpace: 'nowrap' }}>{f.status === 'out' ? 'out' : f.daysToReorder <= 0 ? 'order now' : `order by ${fmtDate(f.reorderBy)}`}</span>
+            </div>
+          ))}
+          {groceries.length > 0 && (
+            <details>
+              <summary style={{ fontSize: 13, color: 'var(--text-secondary)', cursor: 'pointer' }}>Meal plan groceries ({groceries.length})</summary>
+              <ul style={{ margin: '8px 0 0', paddingLeft: 18, display: 'flex', flexDirection: 'column', gap: 3 }}>
+                {groceries.map(g => (
+                  <li key={`${g.name}|${g.unit}`} style={{ fontSize: 13, color: 'var(--text-primary)' }}>
+                    {g.name} <span className="val-num" style={{ color: 'var(--text-secondary)' }}>{g.qty ? `${g.qty}${g.unit ? ` ${g.unit}` : ''}` : ''}</span>
+                  </li>
+                ))}
+              </ul>
+            </details>
+          )}
+          <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap', alignItems: 'center' }}>
+            {links.cart && (
+              <a href={links.cart} target="_blank" rel="noopener noreferrer" style={{ ...BTN_ACCENT, textDecoration: 'none' }}>Open Amazon cart</a>
+            )}
+            {links.searches.map(s => (
+              <a key={s.name} href={s.url} target="_blank" rel="noopener noreferrer" style={{ ...BTN_GHOST, textDecoration: 'none' }}>Find {s.name}</a>
+            ))}
+          </div>
+          <div style={{ fontSize: 11.5, color: 'var(--text-secondary)' }}>Opens the store for you to review. Nothing is bought until you check out.</div>
+        </>
+      )}
+    </section>
+  );
+}
+
+//  Main Supplies tab
 export default function Essentials() {
   const { items, add, update, remove } = useCollection('essentials', STORAGE_KEYS.ESSENTIALS);
+  const { data: mealPlanDoc } = useDocument('meal_plan', STORAGE_KEYS.MEAL_PLANS, null);
+  const currency = readCurrency();
+  const store = STORE_BY_CURRENCY[currency] ?? 'amazon.com.au';
+  const today = todayISO();
 
-  const [filter,    setFilter]    = useState('all');  // all | due_soon | stocked | category
+  const [filter,    setFilter]    = useState('all');  // all | due | stocked | category
   const [catFilter, setCatFilter] = useState(null);
-  const [selected,  setSelected]  = useState(null);   // id of selected item
+  const [selected,  setSelected]  = useState(null);
   const [mode,      setMode]      = useState('view'); // view | add | edit
 
-  // Compute status for all items
-  const withStatus = items.map(it => ({
-    ...it,
-    _days:   daysLeft(it),
-    _status: getStatus(daysLeft(it)),
-  }));
+  const withF = useMemo(() => items.map(it => ({ ...it, _f: forecast(it, today) })), [items, today]);
+  const due = useMemo(() => dueItems(items, today), [items, today]);
+  const groceries = useMemo(
+    () => shoppingList(mealPlanDoc?.plan, items.filter(i => i.category === 'kitchen'), today),
+    [mealPlanDoc, items, today]
+  );
 
-  // Apply filter
-  const filtered = withStatus.filter(it => {
-    if (filter === 'due_soon') return it._status === 'amber' || it._status === 'red';
-    if (filter === 'stocked')  return it._status === 'green';
+  const order = { out: 0, order: 1, soon: 2, ok: 3, unknown: 4 };
+  const filtered = withF.filter(it => {
+    if (filter === 'due') return ['out', 'order', 'soon'].includes(it._f.status);
+    if (filter === 'stocked') return it._f.status === 'ok';
     if (filter === 'category' && catFilter) return it.category === catFilter;
     return true;
-  }).sort((a, b) => (a._days ?? 9999) - (b._days ?? 9999));
+  }).sort((a, b) => (order[a._f.status] - order[b._f.status]) || ((a._f.daysToReorder ?? 9999) - (b._f.daysToReorder ?? 9999)));
 
-  const selectedItem = withStatus.find(it => it.id === selected);
+  const selectedItem = withF.find(it => it.id === selected);
 
-  function handleAdd(data) {
-    add({ ...data, createdAt: new Date().toISOString() });
-    setMode('view');
-  }
+  function handleAdd(data) { add({ ...data, createdAt: new Date().toISOString() }); setMode('view'); }
+  function handleUpdate(data) { update(selected, data); setMode('view'); }
 
-  function handleUpdate(data) {
-    update(selected, data);
-    setMode('view');
-  }
-
-  function handleRestock(id) {
+  function handleRestock(id, packs) {
     const item = items.find(it => it.id === id);
-    update(id, { boughtDate: todayISO() });
-    // Restocking with a known price logs an expense in Finance (instant correspondence),
-    // with an Undo that removes it if it was a mistake.
-    if (item?.price) {
+    if (!item) return;
+    update(id, restock(item, today, packs));
+    // Restocking with a known price logs an expense in Finance, with Undo.
+    if (item.price) {
+      const amount = +(item.price * packs).toFixed(2);
       const payload = {
-        type: 'expense', amount: item.price, category: 'Essentials',
-        description: `Restocked ${item.name}`, date: todayISO(),
+        type: 'expense', amount, category: 'Essentials',
+        description: `Restocked ${item.name}${packs > 1 ? ` ×${packs}` : ''}`, date: today,
         createdAt: Date.now(), updatedAt: Date.now(),
       };
       insertRow('transactions', STORAGE_KEYS.TRANSACTIONS, payload).then(txnId => {
         window.dispatchEvent(new CustomEvent('valerie:toast', {
           detail: {
-            message: `Logged $${item.price} ${item.name} restock to Finance`,
+            message: `Logged ${formatMoney(amount, currency)} ${item.name} restock to Finance`,
             type: 'success',
             undo: () => {
               deleteRow('transactions', STORAGE_KEYS.TRANSACTIONS, txnId);
@@ -267,172 +326,91 @@ export default function Essentials() {
     }
   }
 
-  function handleDelete(id) {
-    remove(id);
-    setSelected(null);
-    setMode('view');
-  }
+  function handleDelete(id) { remove(id); setSelected(null); setMode('view'); }
 
-  // Summary counts
-  const redCount   = withStatus.filter(it => it._status === 'red').length;
-  const amberCount = withStatus.filter(it => it._status === 'amber').length;
+  const dueCount  = withF.filter(it => ['out', 'order'].includes(it._f.status)).length;
+  const soonCount = withF.filter(it => it._f.status === 'soon').length;
 
   return (
     <div style={{ display: 'flex', height: '100%', overflow: 'hidden' }}>
-
-      {/*  Left  list  */}
-      <div style={{
-        flex: 1, display: 'flex', flexDirection: 'column',
-        borderRight: '0.5px solid var(--card-border)',
-        overflow: 'hidden',
-      }}>
-        {/* Toolbar */}
-        <div style={{
-          padding: '14px 16px', borderBottom: '0.5px solid var(--card-border)',
-          display: 'flex', alignItems: 'center', gap: 10, flexWrap: 'wrap',
-        }}>
-          {/* Status summary */}
+      <div style={{ flex: 1, display: 'flex', flexDirection: 'column', borderRight: '0.5px solid var(--card-border)', overflow: 'hidden' }}>
+        <div style={{ padding: '14px 16px', borderBottom: '0.5px solid var(--card-border)', display: 'flex', alignItems: 'center', gap: 10, flexWrap: 'wrap' }}>
           <div style={{ display: 'flex', gap: 8, flex: 1 }}>
-            {redCount > 0 && (
-              <span style={{ fontSize: 11, color: '#e55a5a', background: '#e55a5a22',
-                padding: '3px 8px', borderRadius: 20 }}>
-                {redCount} due now
-              </span>
-            )}
-            {amberCount > 0 && (
-              <span style={{ fontSize: 11, color: '#f4a642', background: '#f4a64222',
-                padding: '3px 8px', borderRadius: 20 }}>
-                {amberCount} running low
-              </span>
-            )}
-            {redCount === 0 && amberCount === 0 && items.length > 0 && (
-              <span style={{ fontSize: 11, color: '#4caf7d' }}>All stocked S</span>
-            )}
+            {dueCount > 0 && <span style={{ fontSize: 11.5, color: STATUS_COLOUR.order, border: `0.5px solid ${STATUS_COLOUR.order}`, padding: '3px 9px', borderRadius: 20 }}>{dueCount} to order</span>}
+            {soonCount > 0 && <span style={{ fontSize: 11.5, color: STATUS_COLOUR.soon, border: `0.5px solid ${STATUS_COLOUR.soon}`, padding: '3px 9px', borderRadius: 20 }}>{soonCount} soon</span>}
+            {dueCount === 0 && soonCount === 0 && items.length > 0 && <span style={{ fontSize: 11.5, color: STATUS_COLOUR.ok }}>All stocked</span>}
           </div>
-          <button onClick={() => { setMode('add'); setSelected(null); }} style={BTN_ACCENT}>
-            + Add
-          </button>
+          <button type="button" onClick={() => { setMode('add'); setSelected(null); }} style={BTN_ACCENT}>+ Add</button>
         </div>
 
-        {/* Filter pills */}
-        <div style={{
-          padding: '10px 16px', borderBottom: '0.5px solid var(--card-border)',
-          display: 'flex', gap: 6, flexWrap: 'wrap',
-        }}>
-          {[['all','All'],['due_soon','Due Soon'],['stocked','Stocked']].map(([v,l]) => (
-            <button key={v} onClick={() => { setFilter(v); setCatFilter(null); }} style={{
-              padding: '4px 12px', borderRadius: 20, border: 'none', cursor: 'pointer', fontSize: 11,
-              background: filter === v && !catFilter ? 'var(--accent)' : 'rgba(255,255,255,0.06)',
-              color: filter === v && !catFilter ? '#fff' : 'var(--text-secondary)',
-            }}>{l}</button>
-          ))}
-          {CATEGORIES.map(c => (
-            <button key={c.id} onClick={() => { setFilter('category'); setCatFilter(c.id); }} style={{
-              padding: '4px 10px', borderRadius: 20, border: 'none', cursor: 'pointer', fontSize: 11,
-              background: filter === 'category' && catFilter === c.id ? 'var(--accent)' : 'rgba(255,255,255,0.06)',
-              color: filter === 'category' && catFilter === c.id ? '#fff' : 'var(--text-secondary)',
-            }}>{c.icon} {c.label}</button>
-          ))}
+        <WeekCart due={due} groceries={groceries} store={store} />
+
+        <div style={{ padding: '10px 16px', borderBottom: '0.5px solid var(--card-border)', display: 'flex', gap: 6, flexWrap: 'wrap' }}>
+          {[['all', 'All'], ['due', 'Due soon'], ['stocked', 'Stocked']].map(([v, l]) => {
+            const on = filter === v && !catFilter;
+            return (
+              <button key={v} type="button" aria-pressed={on} onClick={() => { setFilter(v); setCatFilter(null); }} style={{
+                padding: '4px 12px', borderRadius: 20, cursor: 'pointer', fontSize: 11.5, fontFamily: 'inherit',
+                border: `0.5px solid ${on ? 'var(--tab-accent)' : 'var(--card-border)'}`, background: 'transparent',
+                color: on ? 'var(--tab-accent)' : 'var(--text-secondary)',
+              }}>{l}</button>
+            );
+          })}
+          {CATEGORIES.map(c => {
+            const on = filter === 'category' && catFilter === c.id;
+            return (
+              <button key={c.id} type="button" aria-pressed={on} onClick={() => { setFilter('category'); setCatFilter(c.id); }} style={{
+                padding: '4px 10px', borderRadius: 20, cursor: 'pointer', fontSize: 11.5, fontFamily: 'inherit',
+                border: `0.5px solid ${on ? 'var(--tab-accent)' : 'var(--card-border)'}`, background: 'transparent',
+                color: on ? 'var(--tab-accent)' : 'var(--text-secondary)',
+              }}>{c.icon} {c.label}</button>
+            );
+          })}
         </div>
 
-        {/* List */}
         <div style={{ flex: 1, overflowY: 'auto' }}>
           {filtered.length === 0 ? (
-            <div style={{ padding: 32, textAlign: 'center' }}>
-              <div style={{ fontSize: 32, marginBottom: 10 }}>📦</div>
-              <div style={{ color: 'var(--text-muted)', fontSize: 13 }}>
-                {items.length === 0
-                  ? 'No essentials tracked yet. Add your first item.'
-                  : 'No items match this filter.'}
-              </div>
+            <div style={{ padding: 32, textAlign: 'center', color: 'var(--text-secondary)', fontSize: 13, lineHeight: 1.6 }}>
+              {items.length === 0
+                ? 'No supplies yet. Add one with its pack size and how much you use, and Arete will tell you when to reorder.'
+                : 'No supplies match this filter.'}
             </div>
           ) : filtered.map(it => {
-            const isSelected = it.id === selected;
-            const sc = STATUS_COLOUR[it._status];
-            const cat = CAT_MAP[it.category] || { icon: '📦' };
-
+            const sc = STATUS_COLOUR[it._f.status];
+            const cat = CAT_MAP[it.category] || CAT_MAP.other;
             return (
-              <div key={it.id}
-                onClick={() => { setSelected(it.id); setMode('view'); }}
+              <button key={it.id} type="button" onClick={() => { setSelected(it.id); setMode('view'); }}
+                aria-current={it.id === selected ? 'true' : undefined}
                 style={{
-                  display: 'flex', alignItems: 'center', gap: 12,
-                  padding: '11px 16px',
-                  borderBottom: '0.5px solid var(--card-border)',
-                  background: isSelected ? 'var(--active-bg)' : 'transparent',
-                  cursor: 'pointer',
-                  transition: 'background 0.15s',
-                  borderLeft: `3px solid ${sc}`,
-                }}
-              >
-                {/* Status dot */}
-                <div style={{ width: 8, height: 8, borderRadius: '50%', background: sc,
-                  flexShrink: 0, boxShadow: `0 0 5px ${sc}66` }} />
-
-                <div style={{ fontSize: 16, flexShrink: 0 }}>{cat.icon}</div>
-
-                <div style={{ flex: 1, minWidth: 0 }}>
-                  <div style={{ fontSize: 13, color: 'var(--text-primary)', whiteSpace: 'nowrap',
-                    overflow: 'hidden', textOverflow: 'ellipsis' }}>
-                    {it.name}
-                  </div>
-                  <div style={{ fontSize: 11, color: 'var(--text-muted)' }}>
-                    {CAT_MAP[it.category]?.label || 'Other'}
-                    {it._days !== null && ` · ${it._days <= 0 ? 'Overdue' : `${it._days}d left`}`}
-                  </div>
-                </div>
-
-                <div style={{
-                  fontSize: 10, fontWeight: 500, color: sc,
-                  padding: '2px 7px', borderRadius: 20,
-                  background: sc + '18',
-                  flexShrink: 0,
+                  width: '100%', display: 'flex', alignItems: 'center', gap: 12, padding: '11px 16px', textAlign: 'left',
+                  border: 'none', borderBottom: '0.5px solid var(--card-border)', cursor: 'pointer', fontFamily: 'inherit',
+                  background: it.id === selected ? 'var(--active-bg)' : 'transparent',
                 }}>
-                  {STATUS_LABEL[it._status]}
-                </div>
-              </div>
+                <span aria-hidden="true" style={{ width: 8, height: 8, borderRadius: '50%', background: sc, flexShrink: 0 }} />
+                <span aria-hidden="true" style={{ fontSize: 16, flexShrink: 0 }}>{cat.icon}</span>
+                <span style={{ flex: 1, minWidth: 0, display: 'flex', flexDirection: 'column' }}>
+                  <span style={{ fontSize: 13, color: 'var(--text-primary)', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{it.name}</span>
+                  <span style={{ fontSize: 11.5, color: 'var(--text-secondary)' }}>{whenText(it._f)}</span>
+                </span>
+                <span style={{ fontSize: 10.5, fontWeight: 600, color: sc, flexShrink: 0 }}>{STATUS_LABEL[it._f.status]}</span>
+              </button>
             );
           })}
         </div>
       </div>
 
-      {/*  Right  detail / form panel  */}
-      <div style={{
-        width: 260, flexShrink: 0,
-        padding: '20px 16px',
-        overflowY: 'auto',
-        background: 'var(--bg-panel)',
-      }}>
-        {mode === 'add' && (
-          <ItemForm
-            onSave={handleAdd}
-            onCancel={() => setMode('view')}
-          />
-        )}
-        {mode === 'edit' && selectedItem && (
-          <ItemForm
-            initial={selectedItem}
-            onSave={handleUpdate}
-            onCancel={() => setMode('view')}
-          />
-        )}
+      <div style={{ width: 280, flexShrink: 0, padding: '20px 16px', overflowY: 'auto', background: 'var(--bg-panel)' }}>
+        {mode === 'add' && <ItemForm currency={currency} onSave={handleAdd} onCancel={() => setMode('view')} />}
+        {mode === 'edit' && selectedItem && <ItemForm currency={currency} initial={selectedItem} onSave={handleUpdate} onCancel={() => setMode('view')} />}
         {mode === 'view' && selectedItem && (
-          <DetailPanel
-            item={selectedItem}
-            onRestock={() => handleRestock(selectedItem.id)}
-            onEdit={() => setMode('edit')}
-            onDelete={() => handleDelete(selectedItem.id)}
-          />
+          <DetailPanel key={selectedItem.id} item={selectedItem} f={selectedItem._f} currency={currency}
+            onRestock={(packs) => handleRestock(selectedItem.id, packs)}
+            onEdit={() => setMode('edit')} onDelete={() => handleDelete(selectedItem.id)} />
         )}
         {mode === 'view' && !selectedItem && (
-          <div style={{ textAlign: 'center', paddingTop: 40 }}>
-            <div style={{ fontSize: 28, marginBottom: 8, opacity: 0.3 }}>✅</div>
-            <div style={{ fontSize: 12, color: 'var(--text-muted)' }}>
-              Select an item to view details
-            </div>
-          </div>
+          <div style={{ textAlign: 'center', paddingTop: 40, fontSize: 12, color: 'var(--text-secondary)' }}>Select a supply to see its forecast</div>
         )}
       </div>
     </div>
   );
 }
-
