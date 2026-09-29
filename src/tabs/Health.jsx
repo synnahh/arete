@@ -12,6 +12,7 @@ import { MICRONUTRIENTS, MICRO_BY_KEY, MICRO_GROUPS, extractMicrosFromOFF, scale
 import { currencySymbol as currencySym } from '../utils/currency.js';
 import { searchOpenFoodFacts, lookupBarcode, startBarcodeScan } from '../utils/openFoodFacts.js';
 import { toLocalDateKey } from '../utils/localDate.js';
+import { peekHealthSection, clearHealthSection, screenForHealthSection } from '../nav/healthSection.js';
 
 //  Helpers 
 const todayStr = () => toLocalDateKey(new Date());
@@ -2654,9 +2655,26 @@ const SUB_SECTIONS = [
   { id:'mealplan',    label:'Meal Plan',   icon:'🍽️' },
 ];
 
-export default function Health({ settings, onTabChange, peakState }) {
-  const [active, setActive] = useState('overview');
+// Coach screens (Fuel, Recover, Body, Habits, Goal HQ) each show a slice of
+// Health, chosen by `sections`. A queued section (src/nav/healthSection.js)
+// opens first when it belongs to this slice.
+export default function Health({ settings, onTabChange, peakState, sections = null }) {
+  const shown = sections
+    ? sections.map(id => SUB_SECTIONS.find(s => s.id === id)).filter(Boolean)
+    : SUB_SECTIONS;
+  const [active, setActive] = useState(() => {
+    const queued = peekHealthSection();
+    return shown.some(s => s.id === queued) ? queued : shown[0].id;
+  });
+  useEffect(() => { if (shown.some(s => s.id === peekHealthSection())) clearHealthSection(); }, []); // eslint-disable-line react-hooks/exhaustive-deps
   const settings_ = settings ?? storage.get(STORAGE_KEYS.SETTINGS, {});
+
+  // Open a section here, or on the Coach screen that owns it.
+  const goSection = (id) => {
+    if (shown.some(s => s.id === id)) { setActive(id); return; }
+    const screen = screenForHealthSection(id);
+    if (screen && onTabChange) onTabChange(screen);
+  };
 
   const { items: habits,     add: addHabit,     update: updateHabit,     remove: removeHabit }     = useCollection('habits',          STORAGE_KEYS.HABITS);
   const { items: waterLogs,  add: addWaterLog  }                                                    = useCollection('water_logs',      STORAGE_KEYS.WATER);
@@ -2673,7 +2691,7 @@ export default function Health({ settings, onTabChange, peakState }) {
   const renderSection = () => {
     const p = { settings: settings_ };
     switch (active) {
-      case 'overview':    return <Overview {...p} onTabChange={onTabChange} habits={habits} waterLogs={waterLogs} nutritionLogs={nutritionLogs} sleepData={sleepData} supplements={supplements} suppLogs={suppLogs} stimLogs={stimLogs} workoutLogs={workoutLogs} bodyMetrics={bodyMetrics} onNav={setActive} appleHealth={appleHealth} />;
+      case 'overview':    return <Overview {...p} onTabChange={onTabChange} habits={habits} waterLogs={waterLogs} nutritionLogs={nutritionLogs} sleepData={sleepData} supplements={supplements} suppLogs={suppLogs} stimLogs={stimLogs} workoutLogs={workoutLogs} bodyMetrics={bodyMetrics} onNav={goSection} appleHealth={appleHealth} />;
       case 'peakstate':   return <PeakStateSection stimLogs={stimLogs} sleepData={sleepData} peakState={peakState} />;
       case 'habits':      return <Habits       habits={habits} addHabit={addHabit} updateHabit={updateHabit} removeHabit={removeHabit} />;
       case 'nutrition':   return <Nutrition    {...p} nutritionLogs={nutritionLogs} addNutritionLog={addNutritionLog} updateNutritionLog={updateNutritionLog} savedMeals={savedMeals} addSavedMeal={addSavedMeal} removeSavedMeal={removeSavedMeal} supplements={supplements} suppLogs={suppLogs} />;
@@ -2687,6 +2705,10 @@ export default function Health({ settings, onTabChange, peakState }) {
     }
   };
 
+  if (shown.length === 1) {
+    return <div style={{ height: '100%', overflow: 'hidden' }}>{renderSection()}</div>;
+  }
+
   return (
     <div style={{ display: 'flex', height: '100%', overflow: 'hidden' }}>
       {/* Left nav */}
@@ -2696,12 +2718,12 @@ export default function Health({ settings, onTabChange, peakState }) {
         display: 'flex', flexDirection: 'column',
         padding: '16px 0', gap: 2, overflowY: 'auto',
       }}>
-        {SUB_SECTIONS.map(s => (
+        {shown.map(s => (
           <button key={s.id} onClick={() => setActive(s.id)} style={{
             display: 'flex', alignItems: 'center', gap: 8,
             padding: '8px 16px', border: 'none', cursor: 'pointer',
-            borderLeft: `2px solid ${active === s.id ? 'var(--accent)' : 'transparent'}`,
-            color: active === s.id ? 'var(--accent)' : 'var(--text-secondary)',
+            borderLeft: `2px solid ${active === s.id ? 'var(--tab-accent)' : 'transparent'}`,
+            color: active === s.id ? 'var(--tab-accent)' : 'var(--text-secondary)',
             fontSize: 13, fontWeight: active === s.id ? 500 : 400,
             transition: 'all 0.15s ease', textAlign: 'left',
             background: active === s.id ? 'var(--active-bg)' : 'transparent',

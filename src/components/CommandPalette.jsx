@@ -6,6 +6,7 @@ import { useState, useEffect, useRef, useCallback } from 'react';
 import { storage, STORAGE_KEYS } from '../utils/storage.js';
 import { applyTheme } from '../styles/themes.js';
 import { exportBackup, importBackup } from '../utils/backup.js';
+import { screenForHealthSection } from '../nav/healthSection.js';
 
 const toast = (message, type = 'success') =>
   window.dispatchEvent(new CustomEvent('valerie:toast', { detail: { message, type } }));
@@ -19,7 +20,8 @@ function buildStaticCommands(onTabChange, ai) {
     { id: 'nav-tasks',      label: 'Go to Tasks',       category: 'Navigate', icon: '',  action: () => onTabChange('tasks')      },
     { id: 'nav-calendar',   label: 'Go to Calendar',    category: 'Navigate', icon: '=', action: () => onTabChange('calendar')   },
     { id: 'nav-notes',      label: 'Go to Notes',       category: 'Navigate', icon: '=', action: () => onTabChange('notes')      },
-    { id: 'nav-health',     label: 'Go to Health',      category: 'Navigate', icon: 'd', action: () => onTabChange('health')     },
+    { id: 'nav-health',     label: 'Go to Coach',       category: 'Navigate', icon: 'd', action: () => onTabChange('coach')      },
+    { id: 'nav-goal',       label: 'Go to Goal HQ',     category: 'Navigate', icon: 'd', action: () => onTabChange('goal')       },
     { id: 'nav-finance',    label: 'Go to Finance',     category: 'Navigate', icon: '=', action: () => onTabChange('finance')    },
     { id: 'nav-progress',   label: 'Go to Progress',    category: 'Navigate', icon: 'P', action: () => onTabChange('progress')   },
     { id: 'nav-style',      label: 'Go to Style',       category: 'Navigate', icon: '=W', action: () => onTabChange('style')      },
@@ -33,7 +35,7 @@ function buildStaticCommands(onTabChange, ai) {
     { id: 'action-brief',   label: 'Daily brief',             category: 'Action', icon: '=', action: () => { onTabChange('assistant'); ai?.sendMessage('Give me my daily brief.'); }           },
     { id: 'action-focus',   label: 'Start focus session',     category: 'Action', icon: '', action: () => onTabChange('focus')                                                                  },
     { id: 'action-mood',    label: 'Log mood',                category: 'Action', icon: '=', action: () => { onTabChange('progress'); }                                                          },
-    { id: 'action-water',   label: 'Log water',               category: 'Action', icon: '=', action: () => { onTabChange('health'); }                                                            },
+    { id: 'action-water',   label: 'Log water',               category: 'Action', icon: '=', action: () => { onTabChange(screenForHealthSection('water')); }                                                          },
     { id: 'action-howamdoing', label: 'How am I doing?',      category: 'Action', icon: '=', action: () => { onTabChange('assistant'); ai?.sendMessage('How am I doing overall?'); }            },
     { id: 'action-weekly',  label: 'Weekly Review (whole life)', category: 'Action', icon: 'review', action: () => window.dispatchEvent(new CustomEvent('valerie:weekly-review')) },
     { id: 'action-today',   label: "Today — everything due today", category: 'Action', icon: 'today', action: () => window.dispatchEvent(new CustomEvent('valerie:today')) },

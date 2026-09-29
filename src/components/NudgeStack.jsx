@@ -4,6 +4,7 @@
 
 import { useState, useEffect } from 'react';
 import { computeNudges } from '../hooks/useNudges.js';
+import { requestHealthSection } from '../nav/healthSection.js';
 
 const SEVERITY = {
   info:  { dot: '#4a9eff', border: 'rgba(74,158,255,0.35)' },
@@ -46,7 +47,7 @@ export default function NudgeStack({ onTabChange }) {
         const s = SEVERITY[n.severity] || SEVERITY.info;
         return (
           <div key={n.id}
-            onClick={() => { onTabChange?.(n.tab); dismiss(n.id); }}
+            onClick={() => { if (n.section) requestHealthSection(n.section); onTabChange?.(n.tab); dismiss(n.id); }}
             style={{
               display: 'flex', alignItems: 'center', gap: 10,
               padding: '10px 12px', borderRadius: 12, cursor: 'pointer',

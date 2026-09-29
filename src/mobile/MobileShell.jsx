@@ -10,6 +10,7 @@ import MobileHealth     from './screens/MobileHealth.jsx';
 import { TasksScreen, PlaceholderScreen } from './screens/MobileMore.jsx';
 import MobileWorkout    from './screens/MobileWorkout.jsx';
 import MobileLM         from './screens/MobileLM.jsx';
+import GoalHQ           from '../tabs/GoalHQ.jsx';
 import MobileFinance    from './screens/MobileFinance.jsx';
 import MobileSettings   from './screens/MobileSettings.jsx';
 import MobileAI         from './screens/MobileAI.jsx';
@@ -247,8 +248,11 @@ function usePullToRefresh(scrollRef, onRefresh) {
 const MOBILE_SCREENS = {
   dashboard: (p) => <MobileDashboard {...p} />,
   tasks:     ()  => <TasksScreen />,
+  goal:      (p) => <GoalHQ {...p} compact overview={<MobileHealth {...p} tabs={['Overview']} title={null} />} />,
   workout:   ()  => <MobileWorkout />,
-  health:    (p) => <MobileHealth {...p} />,
+  fuel:      (p) => <MobileHealth {...p} tabs={['Nutrition', 'Water']} title={null} />,
+  recover:   (p) => <MobileHealth {...p} tabs={['Sleep']} title={null} />,
+  body:      (p) => <MobileHealth {...p} tabs={['Body']} title={null} />,
   lm:        ()  => <MobileLM />,
   mind:      (p) => <MobileMind {...p} />,
   finance:   (p) => <MobileFinance {...p} />,

@@ -38,7 +38,7 @@ export function getAttentionTabs(dayOffset = 0) {
   // Habits only make sense for "today" — can't pre-log tomorrow's habits.
   if (dayOffset === 0) {
     const incompleteHabits = arr(STORAGE_KEYS.HABITS).filter(h => (h.lastCompleted || '').slice(0, 10) !== t);
-    if (incompleteHabits.length) { tabs.add('health'); count += incompleteHabits.length; }
+    if (incompleteHabits.length) { tabs.add('habits'); count += incompleteHabits.length; }
   }
 
   return { tabs, count };

@@ -3,7 +3,7 @@ import { createPortal } from 'react-dom';
 import { storage, STORAGE_KEYS } from '../utils/storage.js';
 import { supabase, getUserId, getUserIdSync } from '../supabase/supabase.js';
 import { getAttentionTabs, FOCUS_ALWAYS_VISIBLE } from '../utils/attention.js';
-import { GROUPS, groupScreens } from '../nav/groups.js';
+import { GROUPS, groupScreens, groupOf, ALL_SCREENS, SCREEN_LABELS } from '../nav/groups.js';
 
 //  Icons (inline SVG  no external dep needed for now) 
 const Icon = ({ d, size = 20 }) => (
@@ -43,26 +43,8 @@ const ICONS = {
 };
 
 //  All reorderable tabs in default order 
-export const ALL_TABS = [
-  { id: 'dashboard',  label: 'Dashboard',  desc: 'Your daily command centre'           },
-  { id: 'assistant',  label: 'Assistant',  desc: 'Chat with VALERIE'                   },
-  { id: 'tasks',      label: 'Tasks',      desc: 'To-dos, priorities & projects'       },
-  { id: 'calendar',   label: 'Calendar',   desc: 'Schedule & upcoming events'          },
-  { id: 'notes',      label: 'Notes',      desc: 'Markdown notes & quick capture'      },
-  { id: 'health',     label: 'Health',     desc: 'Sleep · Nutrition · Water · Body'    },
-  { id: 'workout',    label: 'Workout',    desc: 'Overload coach · Splits · Exercises' },
-  { id: 'finance',    label: 'Finance',    desc: 'Budget · Transactions · Goals'       },
-  { id: 'portfolio',  label: 'Portfolio',  desc: 'Stocks · Holdings · AI Advisor'      },
-  { id: 'progress',   label: 'Progress',   desc: 'XP · Rank · Streaks · Goals'        },
-  { id: 'style',      label: 'Style',      desc: 'Wardrobe & outfit planning'          },
-  { id: 'essentials', label: 'Essentials', desc: 'Subscriptions & recurring items'     },
-  { id: 'lists',      label: 'Lists',      desc: 'Shopping, reading & custom lists'    },
-  { id: 'focus',      label: 'Focus',      desc: 'Pomodoro & deep work sessions'       },
-  { id: 'routines',   label: 'Routines',   desc: 'Morning, evening & custom routines'  },
-  { id: 'mind',       label: 'Mind',       desc: 'Constitution · Advisors · Vault'     },
-  { id: 'places',    label: 'Places',     desc: 'Alone time · destinations · explore'  },
-  { id: 'lm',         label: 'LM',         desc: 'Looksmaxxing'                         },
-];
+// Every screen, labelled by group (Settings uses this for hiding and ordering).
+export const ALL_TABS = ALL_SCREENS.map(id => ({ id, label: `${groupOf(id).label} · ${SCREEN_LABELS[id] ?? id}` }));
 
 
 //  Single tab button 

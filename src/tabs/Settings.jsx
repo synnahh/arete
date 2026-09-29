@@ -51,6 +51,7 @@ import { ALL_TABS }              from '../components/Sidebar.jsx';
 import { supabase, getUserIdSync, signOut as supabaseSignOut, getAuthUser } from '../supabase/supabase.js';
 import { currencySymbol as currencySym } from '../utils/currency.js';
 import { toLocalDateKey } from '../utils/localDate.js';
+import { updateSettings } from '../utils/settingsStore.js';
 
 //  Sections 
 const SECTIONS = [
@@ -2197,26 +2198,8 @@ export function ProgressSection({ settings, onSave }) {
 }
 
 //  Section: Platforms 
-const PLATFORM_TABS = [
-  { id: 'dashboard',  label: 'Dashboard'  },
-  { id: 'assistant',  label: 'Assistant'  },
-  { id: 'tasks',      label: 'Tasks'      },
-  { id: 'calendar',   label: 'Calendar'   },
-  { id: 'notes',      label: 'Notes'      },
-  { id: 'health',     label: 'Health'     },
-  { id: 'workout',    label: 'Workout'    },
-  { id: 'finance',    label: 'Finance'    },
-  { id: 'portfolio',  label: 'Portfolio'  },
-  { id: 'progress',   label: 'Progress'   },
-  { id: 'style',      label: 'Style'      },
-  { id: 'mind',       label: 'Mind'       },
-  { id: 'places',     label: 'Places'     },
-  { id: 'routines',   label: 'Routines'   },
-  { id: 'essentials', label: 'Essentials' },
-  { id: 'lists',      label: 'Lists'      },
-  { id: 'focus',      label: 'Focus'      },
-  { id: 'vault',      label: 'Vault'      },
-];
+// Every screen except Settings (never hideable), labelled by group.
+const PLATFORM_TABS = ALL_TABS.filter(t => t.id !== 'settings');
 
 const LAYOUT_OPTIONS = [
   { value: 'standard', label: 'Standard' },
@@ -2926,30 +2909,9 @@ export default function SettingsTab({ settings: settingsProp }) {
   // Persist partial updates to localStorage + Firestore and notify App in real time
   const handleSave = useCallback((updates) => {
     try {
-      // Strip any non-serialisable data before merging (prevents localStorage QuotaExceededError)
-      const safeUpdates = JSON.parse(JSON.stringify(updates));
-      const merged = { ...settings, ...safeUpdates };
+      const merged = updateSettings(updates, settings);
       setSettings(merged);
-      try { storage.set(STORAGE_KEYS.SETTINGS, merged); } catch {}
-
-      // Sync full settings to Supabase so iOS PWA can pull them on first launch.
-      // This is a single-user personal app — keys are safe in the user's own row.
-      const userId = getUserIdSync();
-      if (!userId) {
-        console.error('[Settings sync] not signed in — saved locally only');
-        window.dispatchEvent(new CustomEvent('valerie:toast', { detail: { message: '⚠️ Not signed in — settings saved on this device only', type: 'error' } }));
-      } else {
-        supabase.from('user_meta').upsert({ user_id: userId, key: 'settings', value: merged }, { onConflict: 'user_id,key' }).then(({ error }) => {
-          if (error) {
-            console.error('[Settings sync]', error.message);
-            window.dispatchEvent(new CustomEvent('valerie:toast', { detail: { message: `⚠️ Couldn't sync settings — ${error.message}`, type: 'error' } }));
-          }
-        });
-      }
-
       if (updates.theme) applyTheme(updates.theme);
-
-      window.dispatchEvent(new CustomEvent('valerie:settings-changed', { detail: merged }));
     } catch (err) {
       console.error('[Settings] handleSave error:', err);
     }

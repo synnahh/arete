@@ -768,19 +768,20 @@ function BodyTab({ today }) {
 }
 
 //  Main 
-export default function MobileHealth({ settings }) {
-  const [sub, setSub] = useState('Overview');
+// Coach screens on the phone show a subset of these tabs (MobileShell).
+export default function MobileHealth({ settings, tabs = SUB_TABS, title = 'Health' }) {
+  const [sub, setSub] = useState(tabs[0]);
   const today = toLocalDateKey(new Date());
 
   return (
     <div style={{ padding: '16px', paddingTop: 20, display: 'flex', flexDirection: 'column', gap: 0 }}>
 
-      <div style={{ fontSize: 22, fontWeight: 300, color: 'var(--text-primary)', marginBottom: 14 }}>Health</div>
+      {title && <div style={{ fontSize: 22, fontWeight: 300, color: 'var(--text-primary)', marginBottom: 14 }}>{title}</div>}
 
       {/* Sub-nav */}
-      <div style={{ display: 'flex', gap: 8, overflowX: 'auto', paddingBottom: 14,
+      {tabs.length > 1 && <div style={{ display: 'flex', gap: 8, overflowX: 'auto', paddingBottom: 14,
         scrollbarWidth: 'none', WebkitOverflowScrolling: 'touch' }}>
-        {SUB_TABS.map(t => (
+        {tabs.map(t => (
           <button key={t} onClick={() => setSub(t)} style={{
             flexShrink: 0, padding: '6px 16px', borderRadius: 20,
             fontSize: 13, fontWeight: sub === t ? 600 : 400, cursor: 'pointer',
@@ -790,7 +791,7 @@ export default function MobileHealth({ settings }) {
             WebkitTapHighlightColor: 'transparent',
           }}>{t}</button>
         ))}
-      </div>
+      </div>}
 
       {sub === 'Overview'   && <OverviewTab   settings={settings} today={today} />}
       {sub === 'Sleep'      && <SleepTab      today={today} />}

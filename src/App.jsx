@@ -27,7 +27,7 @@ import Assistant  from './tabs/Assistant.jsx';
 import Tasks      from './tabs/Tasks.jsx';
 import Calendar   from './tabs/Calendar.jsx';
 import Notes      from './tabs/Notes.jsx';
-import Health     from './tabs/Health.jsx';
+import { Goal, Fuel, Recover, Body, Habits } from './tabs/Coach.jsx';
 import Workout    from './tabs/Workout.jsx';
 import Finance    from './tabs/Finance.jsx';
 import Portfolio  from './tabs/Portfolio.jsx';
@@ -52,8 +52,12 @@ const TAB_MAP = {
   tasks:      Tasks,
   calendar:   Calendar,
   notes:      Notes,
-  health:     Health,
+  goal:       Goal,
   workout:    Workout,
+  fuel:       Fuel,
+  recover:    Recover,
+  body:       Body,
+  habits:     Habits,
   finance:    Finance,
   portfolio:  Portfolio,
   progress:   Progress,

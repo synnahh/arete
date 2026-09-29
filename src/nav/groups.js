@@ -7,7 +7,7 @@
 export const GROUPS = [
   { id: 'home',     label: 'Home',     desc: 'Today at a glance',                 screens: ['dashboard', 'assistant'] },
   { id: 'plan',     label: 'Plan',     desc: 'Tasks · Calendar · Routines · Supplies', screens: ['tasks', 'calendar', 'routines', 'focus', 'progress', 'essentials', 'places'] },
-  { id: 'coach',    label: 'Coach',    desc: 'Train · Health · Look · Style',     screens: ['workout', 'health', 'lm', 'style'] },
+  { id: 'coach',    label: 'Coach',    desc: 'Goal · Train · Fuel · Recover · Look · Body · Habits', screens: ['goal', 'workout', 'fuel', 'recover', 'lm', 'body', 'habits', 'style'] },
   { id: 'mind',     label: 'Mind',     desc: 'Mind · Notes · Lists',              screens: ['mind', 'notes', 'lists'] },
   { id: 'finance',  label: 'Finance',  desc: 'Money · Portfolio',                 screens: ['finance', 'portfolio'] },
   { id: 'settings', label: 'Settings', desc: 'Settings · Vault',                  screens: ['settings', 'vault'] },
@@ -18,13 +18,18 @@ export const SCREEN_LABELS = {
   dashboard: 'Today',    assistant: 'Ask',
   tasks: 'Tasks',        calendar: 'Calendar',  routines: 'Routines', focus: 'Focus',
   progress: 'Progress',  essentials: 'Supplies', places: 'Places',
-  workout: 'Train',      health: 'Health',      lm: 'Look',           style: 'Style',
+  goal: 'Goal HQ',       workout: 'Train',      fuel: 'Fuel',         recover: 'Recover',
+  lm: 'Look',            body: 'Body',          habits: 'Habits',     style: 'Style',
   mind: 'Mind',          notes: 'Notes',        lists: 'Lists',
   finance: 'Money',      portfolio: 'Portfolio',
   settings: 'Settings',  vault: 'Vault',
 };
 
 export const DEFAULT_SCREEN = 'dashboard';
+
+// Old ids that now open a newer screen. Health was split across Coach;
+// its overview lives on Goal HQ.
+export const SCREEN_ALIASES = { health: 'goal' };
 
 // Settings can never be hidden, or there would be no way to unhide anything.
 const NEVER_HIDDEN = new Set(['settings']);
@@ -35,11 +40,12 @@ const GROUP_BY_SCREEN = new Map(GROUPS.flatMap(g => g.screens.map(s => [s, g])))
 export const ALL_SCREENS = GROUPS.flatMap(g => g.screens);
 
 export function isScreen(id) { return GROUP_BY_SCREEN.has(id); }
+const unalias = (id) => SCREEN_ALIASES[id] ?? id;
 export function isGroup(id)  { return GROUP_BY_ID.has(id); }
 
 /** The group a screen belongs to (Home for anything unknown). */
 export function groupOf(screenId) {
-  return GROUP_BY_SCREEN.get(screenId) ?? GROUPS[0];
+  return GROUP_BY_SCREEN.get(unalias(screenId)) ?? GROUPS[0];
 }
 
 /**
@@ -58,7 +64,8 @@ export function groupScreens(groupId, { hidden = [], order = null } = {}) {
       .sort((a, b) => a.r - b.r)
       .map(x => x.id);
   }
-  return screens.filter(id => NEVER_HIDDEN.has(id) || !hidden.includes(id));
+  const hiddenSet = new Set(hidden.map(unalias)); // a hidden 'health' hides Goal HQ
+  return screens.filter(id => NEVER_HIDDEN.has(id) || !hiddenSet.has(id));
 }
 
 /**
@@ -67,6 +74,7 @@ export function groupScreens(groupId, { hidden = [], order = null } = {}) {
  * Returns null for anything unrecognised so callers can ignore bad targets.
  */
 export function resolveTarget(target, { hidden = [], order = null, lastByGroup = {} } = {}) {
+  target = unalias(target);
   if (isScreen(target)) return target;
   if (!isGroup(target)) return null;
   const visible = groupScreens(target, { hidden, order });
@@ -75,5 +83,18 @@ export function resolveTarget(target, { hidden = [], order = null, lastByGroup =
   return visible[0] ?? null;
 }
 
+// Coach splits the old Health screen: each Coach screen shows these Health
+// sections (ids from Health.jsx SUB_SECTIONS), in this order.
+export const HEALTH_SECTIONS_BY_SCREEN = {
+  goal:    ['overview'],
+  fuel:    ['nutrition', 'mealplan', 'water', 'supplements', 'stimulant'],
+  recover: ['sleep', 'peakstate'],
+  body:    ['body'],
+  habits:  ['habits'],
+};
+export const SCREEN_FOR_HEALTH_SECTION = Object.fromEntries(
+  Object.entries(HEALTH_SECTIONS_BY_SCREEN).flatMap(([screen, secs]) => secs.map(s => [s, screen]))
+);
+
 /** Every target the AI may navigate to: screens and groups. */
-export const NAV_TARGETS = [...ALL_SCREENS, ...GROUPS.map(g => g.id)];
+export const NAV_TARGETS = [...ALL_SCREENS, ...Object.keys(SCREEN_ALIASES), ...GROUPS.map(g => g.id)];

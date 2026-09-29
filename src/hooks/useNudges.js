@@ -21,7 +21,7 @@ export function computeNudges() {
     const last  = [...sleep].sort((a, b) => (b.date ?? '').localeCompare(a.date ?? ''))[0];
     if (sleep.length) {
       const days = Math.floor((now - new Date(last.date)) / 86400000);
-      if (days >= 2) out.push({ id: 'sleep', icon: '😴', text: `No sleep logged in ${days} days`, tab: 'health', severity: 'warn' });
+      if (days >= 2) out.push({ id: 'sleep', icon: '😴', text: `No sleep logged in ${days} days`, tab: 'recover', section: 'sleep', severity: 'warn' });
     }
   } catch {}
 
@@ -45,7 +45,7 @@ export function computeNudges() {
     const goalP = storage.get(STORAGE_KEYS.WATER_PROFILE, {});
     const goalMl = (goalP.weight || 80) * 35;
     const todayMl = arr(STORAGE_KEYS.WATER).filter(w => w.date === t).reduce((s, w) => s + (w.amount || 0), 0);
-    if (hour >= 14 && todayMl < goalMl * 0.4) out.push({ id: 'water', icon: '💧', text: 'Hydration low today', tab: 'health', severity: 'warn' });
+    if (hour >= 14 && todayMl < goalMl * 0.4) out.push({ id: 'water', icon: '💧', text: 'Hydration low today', tab: 'fuel', section: 'water', severity: 'warn' });
   } catch {}
 
   // 5 — Spending up vs last week
