@@ -13,7 +13,7 @@ import { currencySymbol as currencySym } from '../utils/currency.js';
 import { searchOpenFoodFacts, lookupBarcode, startBarcodeScan } from '../utils/openFoodFacts.js';
 import { toLocalDateKey } from '../utils/localDate.js';
 import { peekHealthSection, clearHealthSection, screenForHealthSection } from '../nav/healthSection.js';
-import { recentFoods, yesterdayKey, copyMeals, appendMeals, mealFromPlan, cleanIngredients } from '../domain/foods.js';
+import { recentFoods, yesterdayKey, copyMeals, appendMeals, mealFromPlan, cleanIngredients, groupBySection } from '../domain/foods.js';
 import FoodShortcuts from '../components/FoodShortcuts.jsx';
 import { weightCoach } from '../domain/weight.js';
 import { weeklyMicros, microCoach } from '../domain/micros.js';
@@ -714,6 +714,16 @@ function Nutrition({ nutritionLogs, addNutritionLog, updateNutritionLog, setting
       },
     } }));
   };
+  const removeMeal = async (id) => {
+    if (!todayLog?.id) return;
+    const prev = { meals, ...totals };
+    const row = appendMeals({ ...todayLog, meals: [] }, meals.filter(m => m.id !== id), today);
+    await updateNutritionLog(todayLog.id, { meals: row.meals, calories: row.calories, protein: row.protein, carbs: row.carbs, fat: row.fat });
+    window.dispatchEvent(new CustomEvent('valerie:toast', { detail: {
+      message: 'Removed from today', type: 'info',
+      undo: async () => { await updateNutritionLog(todayLog.id, prev); },
+    } }));
+  };
   const copyYesterday = () => appendEntries(copyMeals((nutritionLogs || []).find(l => l.date === yesterdayKey(today))),
     `Copied ${yesterdayMeals.length} item${yesterdayMeals.length === 1 ? '' : 's'} from yesterday`);
   const quickAdd = (entry) => appendEntries([entry], `Added ${entry.calories} kcal`);
@@ -1016,21 +1026,30 @@ function Nutrition({ nutritionLogs, addNutritionLog, updateNutritionLog, setting
         {meals.length === 0 ? (
           <p style={{ fontSize: 12.5, color: 'var(--text-muted)', margin: 0 }}>Nothing logged yet today.</p>
         ) : (
-          meals.map((m, i) => (
-            <div key={m.id || i} style={{
-              display: 'flex', justifyContent: 'space-between', alignItems: 'center',
-              padding: '7px 0', borderBottom: i < meals.length - 1 ? '0.5px solid var(--sidebar-divider)' : 'none',
-            }}>
-              <div>
-                <div style={{ fontSize: 12.5, color: 'var(--text-primary)' }}>{m.name}</div>
-                <div style={{ fontSize: 10.5, color: 'var(--text-muted)', marginTop: 2 }}>
-                  {m.time}  {m.qty}{m.unit}
+          groupBySection(meals).map(sec => (
+            <div key={sec.id} style={{ marginBottom: 10 }}>
+              <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: 10, letterSpacing: '0.07em', color: 'var(--text-muted)', textTransform: 'uppercase', padding: '4px 0' }}>
+                <span>{sec.label}</span><span>{sec.kcal} kcal</span>
+              </div>
+              {sec.meals.map((m, i) => (
+                <div key={m.id || i} style={{
+                  display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: 8,
+                  padding: '7px 0', borderBottom: i < sec.meals.length - 1 ? '0.5px solid var(--sidebar-divider)' : 'none',
+                }}>
+                  <div style={{ minWidth: 0, flex: 1 }}>
+                    <div style={{ fontSize: 12.5, color: 'var(--text-primary)' }}>{m.name}</div>
+                    <div style={{ fontSize: 10.5, color: 'var(--text-muted)', marginTop: 2 }}>
+                      {m.time}{m.qty ? `  ${m.qty}${m.unit || ''}` : ''}
+                    </div>
+                  </div>
+                  <div style={{ fontSize: 12, color: 'var(--text-secondary)', textAlign: 'right' }}>
+                    <div>{m.calories} kcal</div>
+                    <div style={{ fontSize: 10, color: 'var(--text-muted)' }}>P{m.protein} C{m.carbs} F{m.fat}</div>
+                  </div>
+                  <button type="button" onClick={() => removeMeal(m.id)} aria-label={`Remove ${m.name}`}
+                    style={{ width: 32, height: 32, flexShrink: 0, background: 'none', border: 'none', color: 'var(--text-muted)', fontSize: 16, cursor: 'pointer' }}>×</button>
                 </div>
-              </div>
-              <div style={{ fontSize: 12, color: 'var(--text-secondary)', textAlign: 'right' }}>
-                <div>{m.calories} kcal</div>
-                <div style={{ fontSize: 10, color: 'var(--text-muted)' }}>P{m.protein} C{m.carbs} F{m.fat}</div>
-              </div>
+              ))}
             </div>
           ))
         )}

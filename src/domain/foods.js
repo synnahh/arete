@@ -124,3 +124,41 @@ export function mealFromPlan(meal, now = new Date()) {
     ...(ingredients.length ? { ingredients } : {}),
   };
 }
+
+// ── Meal sections ───────────────────────────────────────────────────────────
+
+export const SECTIONS = [
+  { id: 'breakfast', label: 'Breakfast' },
+  { id: 'lunch', label: 'Lunch' },
+  { id: 'dinner', label: 'Dinner' },
+  { id: 'snacks', label: 'Snacks' },
+];
+
+/** Which section a logged time falls in: 4-11 breakfast, 11-15 lunch, 17-22 dinner, otherwise snacks. */
+export function mealSection(time) {
+  const m = /^(\d{1,2}):(\d{2})$/.exec(String(time || '').trim());
+  if (!m || +m[1] > 23) return 'snacks';
+  const h = +m[1];
+  if (h >= 4 && h < 11) return 'breakfast';
+  if (h >= 11 && h < 15) return 'lunch';
+  if (h >= 17 && h < 22) return 'dinner';
+  return 'snacks';
+}
+
+/** Non-empty sections in day order, each with its meals (by time) and calorie subtotal. */
+export function groupBySection(meals = []) {
+  const order = new Map(SECTIONS.map((s, i) => [s.id, i]));
+  const groups = new Map();
+  for (const m of meals) {
+    const id = mealSection(m?.time);
+    if (!groups.has(id)) groups.set(id, []);
+    groups.get(id).push(m);
+  }
+  return [...groups.entries()]
+    .sort((a, b) => order.get(a[0]) - order.get(b[0]))
+    .map(([id, list]) => ({
+      id, label: SECTIONS.find(s => s.id === id).label,
+      meals: [...list].sort((a, b) => String(a.time || '').localeCompare(String(b.time || ''))),
+      kcal: Math.round(list.reduce((s, m) => s + (Number(m.calories) || 0), 0)),
+    }));
+}

@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest';
-import { recentFoods, yesterdayKey, copyMeals, quickEntry, appendMeals, mealFromPlan, cleanIngredients } from './foods.js';
+import { recentFoods, yesterdayKey, copyMeals, quickEntry, appendMeals, mealFromPlan, cleanIngredients, mealSection, groupBySection } from './foods.js';
 
 const meal = (name, calories, extra = {}) => ({ name, calories, protein: 10, carbs: 20, fat: 5, ...extra });
 const logs = [
@@ -123,5 +123,26 @@ describe('ingredients carried through', () => {
     const logs = [{ date: '2026-09-28', meals: [{ name: 'Bowl', calories: 700, ingredients: [{ name: 'Rice', qty: 150, unit: 'g' }] }] }];
     expect(recentFoods(logs, { today: '2026-09-30' })[0].ingredients).toEqual([{ name: 'Rice', qty: 150, unit: 'g' }]);
     expect(recentFoods([{ date: '2026-09-28', meals: [{ name: 'Toast', calories: 200 }] }], { today: '2026-09-30' })[0].ingredients).toEqual([]);
+  });
+});
+
+describe('meal sections', () => {
+  it('places a time in a section', () => {
+    expect(['07:30', '11:00', '14:59', '15:00', '17:00', '21:59', '22:00', '03:30', '', undefined, '25:00', 'noon'].map(mealSection))
+      .toEqual(['breakfast', 'lunch', 'lunch', 'snacks', 'dinner', 'dinner', 'snacks', 'snacks', 'snacks', 'snacks', 'snacks', 'snacks']);
+  });
+  it('groups in day order with subtotals, skipping empty sections', () => {
+    const g = groupBySection([
+      { id: 'd', name: 'Steak', calories: 800, time: '19:00' },
+      { id: 'a', name: 'Oats', calories: 350, time: '07:30' },
+      { id: 'c', name: 'Bar', calories: 200, time: '16:00' },
+      { id: 'b', name: 'Coffee', calories: 50, time: '07:00' },
+    ]);
+    expect(g.map(x => x.id)).toEqual(['breakfast', 'dinner', 'snacks']);
+    expect(g[0].meals.map(m => m.id)).toEqual(['b', 'a']);
+    expect(g.map(x => x.kcal)).toEqual([400, 800, 200]);
+  });
+  it('handles an empty day', () => {
+    expect(groupBySection([])).toEqual([]);
   });
 });

@@ -16,7 +16,7 @@ import GoalEta from '../../components/GoalEta.jsx';
 import { withTodaysTargets } from '../../utils/todaysTargets.js';
 import MicroCoachCard from '../../components/MicroCoachCard.jsx';
 import FoodShortcuts from '../../components/FoodShortcuts.jsx';
-import { yesterdayKey, copyMeals, appendMeals } from '../../domain/foods.js';
+import { yesterdayKey, copyMeals, appendMeals, groupBySection } from '../../domain/foods.js';
 import { storage } from '../../utils/storage.js';
 import { weeklyMicros, microCoach } from '../../domain/micros.js';
 
@@ -626,28 +626,35 @@ function NutritionTab({ settings, today }) {
       <MCard style={{ padding: 0 }}>
         {meals.length === 0 ? (
           <div style={{ padding: '16px 18px', fontSize: 13, color: 'var(--text-muted)' }}>Nothing logged today</div>
-        ) : [...meals].sort((a, b) => (a.time || '').localeCompare(b.time || '')).map((m, i) => (
-          <div key={m.id || i} style={{
-            display: 'flex', justifyContent: 'space-between', alignItems: 'center',
-            padding: '12px 16px',
-            borderBottom: i < meals.length - 1 ? '0.5px solid var(--card-border)' : 'none',
-          }}>
-            <div style={{ minWidth: 0 }}>
-              {m.time && <div style={{ fontSize: 10, color: 'var(--text-muted)', marginBottom: 2 }}>{m.time}</div>}
-              <div style={{ fontSize: 13, color: 'var(--text-primary)',
-                overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
-                {m.name}
+        ) : groupBySection(meals).map(sec => (
+          <div key={sec.id}>
+            <div style={{ display: 'flex', justifyContent: 'space-between', padding: '9px 16px 4px', fontSize: 10, letterSpacing: '0.07em', textTransform: 'uppercase', color: 'var(--text-muted)' }}>
+              <span>{sec.label}</span><span>{sec.kcal} kcal</span>
+            </div>
+            {sec.meals.map((m, i) => (
+              <div key={m.id || i} style={{
+                display: 'flex', justifyContent: 'space-between', alignItems: 'center',
+                padding: '8px 4px 8px 16px',
+                borderBottom: '0.5px solid var(--card-border)',
+              }}>
+                <div style={{ minWidth: 0 }}>
+                  {m.time && <div style={{ fontSize: 10, color: 'var(--text-muted)', marginBottom: 2 }}>{m.time}</div>}
+                  <div style={{ fontSize: 13, color: 'var(--text-primary)',
+                    overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+                    {m.name}
+                  </div>
+                </div>
+                <div style={{ display: 'flex', gap: 8, alignItems: 'center', flexShrink: 0, fontSize: 11 }}>
+                  <span style={{ color: '#f59e0b' }}>{m.calories}kcal</span>
+                  <span style={{ color: '#e879a0' }}>{m.protein}p</span>
+                  <span style={{ color: '#a78bfa' }}>{m.carbs}c</span>
+                  <span style={{ color: '#4caf7d' }}>{m.fat}f</span>
+                  <button onClick={() => removeMealEntry(m.id)} aria-label={`Remove ${m.name}`} style={{
+                    background: 'none', border: 'none', color: 'var(--text-muted)', fontSize: 18,
+                    cursor: 'pointer', width: 44, height: 44, WebkitTapHighlightColor: 'transparent' }}>×</button>
+                </div>
               </div>
-            </div>
-            <div style={{ display: 'flex', gap: 8, alignItems: 'center', flexShrink: 0, fontSize: 11 }}>
-              <span style={{ color: '#f59e0b' }}>{m.calories}kcal</span>
-              <span style={{ color: '#e879a0' }}>{m.protein}p</span>
-              <span style={{ color: '#a78bfa' }}>{m.carbs}c</span>
-              <span style={{ color: '#4caf7d' }}>{m.fat}f</span>
-              <button onClick={() => removeMealEntry(m.id)} style={{
-                background: 'none', border: 'none', color: 'var(--text-muted)', fontSize: 15,
-                cursor: 'pointer', padding: '2px 4px', WebkitTapHighlightColor: 'transparent' }}>×</button>
-            </div>
+            ))}
           </div>
         ))}
       </MCard>

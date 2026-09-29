@@ -27,12 +27,12 @@ MyFitnessPal's paid tiers add meal scan, barcode scan, voice logging, per-day-of
 | AI meal plan → ingredients → grocery list → pantry aware | Have (and pantry subtraction is beyond MFP) | — |
 | Copy yesterday | **Have** (2026-09-30, desktop + phone, with Undo) | — |
 | Quick-add calories/macros with no food name | **Have** (2026-09-30, desktop + phone, with Undo) | — |
-| Meal sections (breakfast / lunch / dinner / snacks) | Missing | P2 |
+| Meal sections (breakfast / lunch / dinner / snacks) | **Have** (2026-09-30, by time logged, with subtotals; desktop log also gained remove-with-Undo) | — |
 | Different macro goals for training vs rest days | **Have** (2026-09-30, Goal HQ: calories move in carbs only, weekly total holds, rest days keep at least half the carbs). Not arbitrary per-weekday goals: the schedule decides | — |
 | Voice logging ("two eggs and toast") | Partial — the orb has speech, but it logs calories only, no foods/quantities | P2 |
 | Photo meal scan (AI estimates macros) | Missing; needs the `ai-chat` gateway deployed first | P2 |
 | Fasting timer | Missing | P3 |
-| Saved and recent meals remember ingredients (so they use up the pantry) | Missing | P2 |
+| Saved and recent meals remember ingredients (so they use up the pantry) | **Have** (2026-09-30; plan meals also log in one tap with "Log now") | — |
 
 ## 2. Strong / Liftoff (and Stronger) — training
 
