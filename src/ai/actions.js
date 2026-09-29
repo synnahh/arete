@@ -7,6 +7,7 @@ import { storage, STORAGE_KEYS } from '../utils/storage.js';
 import { sanitizePayload } from '../utils/sanitize.js';
 import { toLocalDateKey } from '../utils/localDate.js';
 import { makeTask } from '../domain/tasks.js';
+import { NAV_TARGETS } from '../nav/groups.js';
 
 //  Callback registry 
 // Components register handlers here so VALERIE can trigger UI actions.
@@ -89,10 +90,8 @@ async function _executeOne(action) {
 
     //  Navigation
     case 'navigate': {
-      const valid = ['dashboard','assistant','tasks','calendar','notes','health','workout',
-                     'finance','portfolio','progress','style','essentials','lists','focus',
-                     'routines','mind','lm','places','vault','settings'];
-      if (valid.includes(action.target)) {
+      // Screen ids or group ids (home, plan, coach, mind, finance, settings)
+      if (NAV_TARGETS.includes(action.target)) {
         _registry.navigate?.(action.target);
       }
       break;

@@ -84,6 +84,10 @@ function SubScreen({ title, onBack, children }) {
     startX.current = null; swiping.current = false;
   }
 
+  // Rendered as a group section (MobileShell) rather than a pushed sub-screen:
+  // no back header, no swipe-back.
+  if (!onBack) return <div>{children}</div>;
+
   return (
     <div ref={ref} style={{ willChange: 'transform, opacity' }}
       onTouchStart={onTouchStart} onTouchMove={onTouchMove} onTouchEnd={onTouchEnd}>
@@ -94,7 +98,7 @@ function SubScreen({ title, onBack, children }) {
 }
 
 //  Tasks sub-screen 
-function TasksScreen({ onBack }) {
+export function TasksScreen({ onBack }) {
   // Was raw localStorage (storage.get/set) — tasks added on the phone never
   // reached Supabase, so they never appeared on desktop. Same table/schema as
   // the desktop Tasks tab now.
@@ -201,7 +205,7 @@ function TasksScreen({ onBack }) {
 }
 
 //  Placeholder sub-screen 
-function PlaceholderScreen({ title, onBack }) {
+export function PlaceholderScreen({ title, onBack }) {
   return (
     <SubScreen title={title} onBack={onBack}>
       <MCard style={{ padding: '24px 18px' }}>

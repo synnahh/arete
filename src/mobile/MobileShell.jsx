@@ -7,7 +7,9 @@ import { requestPushPermission, pushPermissionStatus, registerFCMToken } from '.
 import { isInstalledPWA }     from '../utils/platform.js';
 import MobileDashboard  from './screens/MobileDashboard.jsx';
 import MobileHealth     from './screens/MobileHealth.jsx';
-import MobileMore       from './screens/MobileMore.jsx';
+import { TasksScreen, PlaceholderScreen } from './screens/MobileMore.jsx';
+import MobileWorkout    from './screens/MobileWorkout.jsx';
+import MobileLM         from './screens/MobileLM.jsx';
 import MobileFinance    from './screens/MobileFinance.jsx';
 import MobileSettings   from './screens/MobileSettings.jsx';
 import MobileAI         from './screens/MobileAI.jsx';
@@ -15,62 +17,46 @@ import MobileMind       from './screens/MobileMind.jsx';
 import MobilePortfolio  from './screens/MobilePortfolio.jsx';
 import { haptics }     from './utils/haptics.js';
 import { storage, STORAGE_KEYS } from '../utils/storage.js';
+import SectionBar      from '../components/SectionBar.jsx';
+import { groupOf, groupScreens, resolveTarget, DEFAULT_SCREEN, SCREEN_LABELS } from '../nav/groups.js';
 
-//  Tab definitions 
-const TABS = [
+//  Bottom bar: Home · Plan · Coach (the orb) · Finance · Mind
+// Settings opens from the gear in the section row. Screen ids are unchanged;
+// see src/nav/groups.js.
+const stroke = (active) => ({ stroke: 'currentColor', strokeWidth: active ? 2 : 1.5 });
+const BAR = [
   {
-    id: 'dashboard',
+    id: 'home',
     label: 'Home',
     icon: (active) => (
-      <svg width="22" height="22" viewBox="0 0 24 24" fill="none">
+      <svg width="22" height="22" viewBox="0 0 24 24" fill="none" aria-hidden="true">
         <path d="M3 9.5L12 3l9 6.5V20a1 1 0 01-1 1H4a1 1 0 01-1-1V9.5z"
-          stroke="currentColor" strokeWidth={active ? 2 : 1.5}
-          fill={active ? 'currentColor' : 'none'} fillOpacity={active ? 0.15 : 0} />
-        <path d="M9 21V12h6v9" stroke="currentColor" strokeWidth={active ? 2 : 1.5} strokeLinecap="round"/>
+          {...stroke(active)} fill={active ? 'currentColor' : 'none'} fillOpacity={active ? 0.15 : 0} />
+        <path d="M9 21V12h6v9" {...stroke(active)} strokeLinecap="round"/>
       </svg>
     ),
   },
   {
-    id: 'health',
-    label: 'Health',
+    id: 'plan',
+    label: 'Plan',
     icon: (active) => (
-      <svg width="22" height="22" viewBox="0 0 24 24" fill="none">
-        <path d="M12 21C12 21 3 14.5 3 8.5a4.5 4.5 0 018.598-1.873A4.5 4.5 0 0121 8.5C21 14.5 12 21 12 21z"
-          stroke="currentColor" strokeWidth={active ? 2 : 1.5}
-          fill={active ? 'currentColor' : 'none'} fillOpacity={active ? 0.2 : 0} />
+      <svg width="22" height="22" viewBox="0 0 24 24" fill="none" aria-hidden="true">
+        <rect x="3.5" y="5" width="17" height="15.5" rx="2.5"
+          {...stroke(active)} fill={active ? 'currentColor' : 'none'} fillOpacity={active ? 0.12 : 0} />
+        <path d="M3.5 10h17M8 3v4M16 3v4" {...stroke(active)} strokeLinecap="round"/>
       </svg>
     ),
   },
-  {
-    id: 'more',
-    label: 'More',
-    icon: (active) => (
-      <svg width="22" height="22" viewBox="0 0 24 24" fill="none">
-        <rect x="4"    y="4"    width="6.5" height="6.5" rx="2"
-          stroke="currentColor" strokeWidth={active ? 2 : 1.5}
-          fill={active ? 'currentColor' : 'none'} fillOpacity={active ? 0.2 : 0} />
-        <rect x="13.5" y="4"    width="6.5" height="6.5" rx="2"
-          stroke="currentColor" strokeWidth={active ? 2 : 1.5}
-          fill={active ? 'currentColor' : 'none'} fillOpacity={active ? 0.2 : 0} />
-        <rect x="4"    y="13.5" width="6.5" height="6.5" rx="2"
-          stroke="currentColor" strokeWidth={active ? 2 : 1.5}
-          fill={active ? 'currentColor' : 'none'} fillOpacity={active ? 0.2 : 0} />
-        <rect x="13.5" y="13.5" width="6.5" height="6.5" rx="2"
-          stroke="currentColor" strokeWidth={active ? 2 : 1.5}
-          fill={active ? 'currentColor' : 'none'} fillOpacity={active ? 0.2 : 0} />
-      </svg>
-    ),
-  },
+  { id: 'coach', label: 'Coach', orb: true },
   {
     id: 'finance',
     label: 'Finance',
     icon: (active) => (
-      <svg width="22" height="22" viewBox="0 0 24 24" fill="none">
+      <svg width="22" height="22" viewBox="0 0 24 24" fill="none" aria-hidden="true">
         <rect x="2" y="5" width="20" height="14" rx="3"
-          stroke="currentColor" strokeWidth={active ? 2 : 1.5}
-          fill={active ? 'currentColor' : 'none'} fillOpacity={active ? 0.1 : 0} />
-        <path d="M2 10h20" stroke="currentColor" strokeWidth={active ? 2 : 1.5} />
-        <path d="M6 15h3M15 15h3" stroke="currentColor" strokeWidth={active ? 2 : 1.5} strokeLinecap="round" />
+          {...stroke(active)} fill={active ? 'currentColor' : 'none'} fillOpacity={active ? 0.1 : 0} />
+        <path d="M2 10h20" {...stroke(active)} />
+        <path d="M6 15h3M15 15h3" {...stroke(active)} strokeLinecap="round" />
       </svg>
     ),
   },
@@ -78,91 +64,67 @@ const TABS = [
     id: 'mind',
     label: 'Mind',
     icon: (active) => (
-      <svg width="22" height="22" viewBox="0 0 24 24" fill="none">
+      <svg width="22" height="22" viewBox="0 0 24 24" fill="none" aria-hidden="true">
         <path d="M9.5 2a2.5 2.5 0 015 0v.5A7.5 7.5 0 0117 9.5v1a5 5 0 01-10 0v-1A7.5 7.5 0 019.5 2.5V2z"
-          stroke="currentColor" strokeWidth={active ? 2 : 1.5}
-          fill={active ? 'currentColor' : 'none'} fillOpacity={active ? 0.15 : 0} />
-        <path d="M12 16v6M9 22h6" stroke="currentColor" strokeWidth={active ? 2 : 1.5} strokeLinecap="round" />
-      </svg>
-    ),
-  },
-  {
-    id: 'portfolio',
-    label: 'Portfolio',
-    icon: (active) => (
-      <svg width="22" height="22" viewBox="0 0 24 24" fill="none">
-        <polyline points="4 18 8 12 12 15 16 8 20 11"
-          stroke="currentColor" strokeWidth={active ? 2 : 1.5} strokeLinecap="round" strokeLinejoin="round"
-          fill={active ? 'currentColor' : 'none'} fillOpacity={active ? 0.1 : 0} />
-        <line x1="4" y1="21" x2="20" y2="21" stroke="currentColor" strokeWidth={active ? 2 : 1.5} strokeLinecap="round" />
-      </svg>
-    ),
-  },
-  {
-    id: 'settings',
-    label: 'Settings',
-    icon: (active) => (
-      <svg width="22" height="22" viewBox="0 0 24 24" fill="none">
-        <circle cx="12" cy="12" r="3" stroke="currentColor" strokeWidth={active ? 2 : 1.5}
-          fill={active ? 'currentColor' : 'none'} fillOpacity={active ? 0.3 : 0} />
-        <path d="M12 2v2M12 20v2M4.22 4.22l1.42 1.42M18.36 18.36l1.42 1.42M2 12h2M20 12h2M4.22 19.78l1.42-1.42M18.36 5.64l1.42-1.42"
-          stroke="currentColor" strokeWidth={active ? 2 : 1.5} strokeLinecap="round"/>
+          {...stroke(active)} fill={active ? 'currentColor' : 'none'} fillOpacity={active ? 0.15 : 0} />
+        <path d="M12 16v6M9 22h6" {...stroke(active)} strokeLinecap="round" />
       </svg>
     ),
   },
 ];
 
-//  Floating VALERIE orb button 
-function VALERIEOrb({ onClick, orbState }) {
+//  Coach button: the VALERIE orb, centre of the bar
+// Tap opens Coach; hold (450 ms) opens the VALERIE conversation sheet.
+const HOLD_MS = 450;
+function CoachOrb({ active, orbState, onTap, onHold }) {
+  const timer = useRef(null);
+  const held  = useRef(false);
   const color = orbState === 'listening' ? '#4a9eff'
               : orbState === 'thinking'  ? '#f59e0b'
-              : orbState === 'speaking'  ? 'var(--accent)'
               : 'var(--accent)';
   const pulse = orbState === 'listening' || orbState === 'speaking';
-  const stateLabel = orbState === 'listening' ? 'Listening...'
-                   : orbState === 'thinking'  ? 'Thinking...'
-                   : orbState === 'speaking'  ? 'Speaking...'
-                   : null;
+
+  function down() {
+    held.current = false;
+    timer.current = setTimeout(() => { held.current = true; haptics.success(); onHold(); }, HOLD_MS);
+  }
+  function up() {
+    clearTimeout(timer.current);
+    if (!held.current) onTap();
+  }
+  function cancel() { clearTimeout(timer.current); }
 
   return (
     <button
-      onClick={onClick}
+      type="button"
+      aria-label="Coach. Hold to talk to VALERIE"
+      aria-current={active ? 'page' : undefined}
+      onPointerDown={down}
+      onPointerUp={up}
+      onPointerLeave={cancel}
+      onContextMenu={e => e.preventDefault()}
       style={{
-        position: 'fixed',
-        right: 16,
-        bottom: 'calc(82px + env(safe-area-inset-bottom))',
-        width: 50, height: 50,
-        borderRadius: '50%',
-        background: `radial-gradient(circle at 35% 35%, ${color}55, ${color}20)`,
-        border: `1px solid ${color}60`,
-        boxShadow: `0 4px 24px ${color}35, 0 2px 8px rgba(0,0,0,0.5)`,
-        cursor: 'pointer',
-        display: 'flex', alignItems: 'center', justifyContent: 'center',
-        zIndex: 200,
-        WebkitTapHighlightColor: 'transparent',
-        transition: 'transform 0.12s ease',
+        flex: 1, display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'flex-start',
+        gap: 4, background: 'none', border: 'none', cursor: 'pointer', paddingTop: 0,
+        color: active ? 'var(--accent)' : 'var(--text-muted)',
+        WebkitTapHighlightColor: 'transparent', WebkitUserSelect: 'none', userSelect: 'none',
+        touchAction: 'manipulation',
       }}
-      onTouchStart={e => e.currentTarget.style.transform = 'scale(0.90)'}
-      onTouchEnd={e => e.currentTarget.style.transform = 'scale(1)'}
     >
-      {pulse && (
-        <div style={{
-          position: 'absolute', inset: -10, borderRadius: '50%',
-          background: color, opacity: 0.12,
-          animation: 'orbPulse 1.6s ease-in-out infinite',
-          pointerEvents: 'none',
-        }} />
-      )}
-      <div style={{ width: 14, height: 14, borderRadius: '50%', background: color, opacity: 0.9 }} />
-      {/* State label pill */}
-      {stateLabel && (
-        <div style={{
-          position: 'absolute', right: 54, top: '50%', transform: 'translateY(-50%)',
-          background: 'var(--bg-sidebar)', border: '0.5px solid var(--card-border)',
-          borderRadius: 20, padding: '4px 10px', whiteSpace: 'nowrap',
-          fontSize: 11, color, fontWeight: 500, boxShadow: '0 2px 8px rgba(0,0,0,0.3)',
-        }}>{stateLabel}</div>
-      )}
+      <span style={{
+        position: 'relative', width: 54, height: 54, marginTop: -20, borderRadius: '50%',
+        background: `radial-gradient(circle at 35% 30%, #ffffff 0%, ${color} 40%, var(--bg-base) 100%)`,
+        boxShadow: `0 0 20px var(--orb-glow)${active ? ', 0 0 0 2px var(--accent)' : ''}`,
+      }}>
+        {pulse && (
+          <span style={{
+            position: 'absolute', inset: -8, borderRadius: '50%',
+            background: color, opacity: 0.12,
+            animation: 'orbPulse 1.6s ease-in-out infinite', pointerEvents: 'none',
+          }} />
+        )}
+      </span>
+      <span style={{ fontSize: 10, fontWeight: active ? 600 : 400, letterSpacing: '0.02em' }}>Coach</span>
     </button>
   );
 }
@@ -265,11 +227,28 @@ function usePullToRefresh(scrollRef, onRefresh) {
   return { pullPct, refreshing, onTouchStart, onTouchMove, onTouchEnd };
 }
 
-//  Shell 
+//  Screens available on the phone, by screen id. Screens without a mobile
+//  version yet keep the existing "available on desktop" placeholder.
+const MOBILE_SCREENS = {
+  dashboard: (p) => <MobileDashboard {...p} />,
+  tasks:     ()  => <TasksScreen />,
+  workout:   ()  => <MobileWorkout />,
+  health:    (p) => <MobileHealth {...p} />,
+  lm:        ()  => <MobileLM />,
+  mind:      (p) => <MobileMind {...p} />,
+  finance:   (p) => <MobileFinance {...p} />,
+  portfolio: (p) => <MobilePortfolio {...p} />,
+  settings:  (p) => <MobileSettings {...p} />,
+};
+// The assistant lives in the orb's conversation sheet on the phone.
+const MOBILE_EXCLUDED = ['assistant'];
+
+//  Shell
 export default function MobileShell({ settings, onSettingsChange }) {
-  const [activeTab, setActiveTab]   = useState('dashboard');
+  const [activeTab, setActiveTab]   = useState(DEFAULT_SCREEN);
   const [valOpen,   setValOpen]     = useState(false);
   const scrollRef = useRef(null);
+  const lastByGroupRef = useRef({});
   const ai        = useAI();
   const peakState = usePeakState(settings);
 
@@ -295,22 +274,33 @@ export default function MobileShell({ settings, onSettingsChange }) {
 
   useEffect(() => { ai.setActiveTab?.(activeTab); }, [activeTab]);
 
-  function switchTab(id) { haptics.tap(); setActiveTab(id); }
+  const navOpts = () => ({
+    hidden: [...(settings?.hiddenTabs ?? []), ...MOBILE_EXCLUDED],
+    order:  storage.get(STORAGE_KEYS.SIDEBAR_ORDER_IOS, null) ?? storage.get(STORAGE_KEYS.SIDEBAR_ORDER_DESKTOP, null),
+  });
+
+  // Accepts a screen id or a group id; ignores anything unknown.
+  function switchTab(target) {
+    if (target === 'assistant') { setValOpen(true); return; }
+    const screen = resolveTarget(target, { ...navOpts(), lastByGroup: lastByGroupRef.current });
+    if (!screen) return;
+    haptics.tap();
+    lastByGroupRef.current[groupOf(screen).id] = screen;
+    setActiveTab(screen);
+  }
+
+  // VALERIE's navigate action drives the phone shell too
+  useEffect(() => {
+    ai.registerCallback?.('navigate', switchTab);
+  }, [ai.registerCallback]); // eslint-disable-line react-hooks/exhaustive-deps
 
   const { pullPct, refreshing, onTouchStart, onTouchMove, onTouchEnd } =
     usePullToRefresh(scrollRef, () => new Promise(r => setTimeout(r, 600)));
 
   const screenProps = { settings, onSettingsChange, ai, peakState, onTabChange: switchTab };
-
-  const screens = {
-    dashboard: <MobileDashboard {...screenProps} />,
-    health:    <MobileHealth    {...screenProps} />,
-    more:      <MobileMore      {...screenProps} />,
-    finance:   <MobileFinance   {...screenProps} />,
-    mind:      <MobileMind      {...screenProps} />,
-    portfolio: <MobilePortfolio {...screenProps} />,
-    settings:  <MobileSettings  {...screenProps} />,
-  };
+  const activeGroup = groupOf(activeTab);
+  const sections    = groupScreens(activeGroup.id, navOpts());
+  const render      = MOBILE_SCREENS[activeTab];
 
   return (
     <div style={{
@@ -330,11 +320,37 @@ export default function MobileShell({ settings, onSettingsChange }) {
         }
       `}</style>
 
+      {/*  Section row: this group's screens + Settings  */}
+      <div style={{ display: 'flex', alignItems: 'center', flexShrink: 0 }}>
+        <div style={{ flex: 1, minWidth: 0 }}>
+          <SectionBar group={activeGroup} screens={sections} active={activeTab} onPick={switchTab} compact />
+        </div>
+        <button
+          type="button"
+          aria-label="Settings"
+          aria-current={activeGroup.id === 'settings' ? 'page' : undefined}
+          onClick={() => switchTab('settings')}
+          style={{
+            width: 44, height: 44, marginRight: 8, flexShrink: 0,
+            display: 'flex', alignItems: 'center', justifyContent: 'center',
+            background: 'none', border: 'none', cursor: 'pointer',
+            color: activeGroup.id === 'settings' ? 'var(--accent)' : 'var(--text-muted)',
+            WebkitTapHighlightColor: 'transparent',
+          }}
+        >
+          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" aria-hidden="true">
+            <circle cx="12" cy="12" r="3" stroke="currentColor" strokeWidth="1.6" />
+            <path d="M12 2v2M12 20v2M4.22 4.22l1.42 1.42M18.36 18.36l1.42 1.42M2 12h2M20 12h2M4.22 19.78l1.42-1.42M18.36 5.64l1.42-1.42"
+              stroke="currentColor" strokeWidth="1.6" strokeLinecap="round"/>
+          </svg>
+        </button>
+      </div>
+
       {/*  Screen content with pull-to-refresh  */}
       <div
         ref={scrollRef}
         style={{ flex: 1, overflowY: 'auto', overflowX: 'hidden',
-          paddingBottom: 'calc(140px + env(safe-area-inset-bottom))',
+          paddingBottom: 'calc(120px + env(safe-area-inset-bottom))',
           WebkitOverflowScrolling: 'touch' }}
         onTouchStart={onTouchStart}
         onTouchMove={onTouchMove}
@@ -356,17 +372,16 @@ export default function MobileShell({ settings, onSettingsChange }) {
             transition: refreshing ? 'none' : 'opacity 0.15s',
           }} />
         </div>
-        {screens[activeTab]}
+        {render
+          ? render(screenProps)
+          : <div style={{ padding: 16 }}><PlaceholderScreen title={SCREEN_LABELS[activeTab] ?? activeTab} /></div>}
       </div>
 
-      {/*  Floating VALERIE orb  */}
-      <VALERIEOrb onClick={() => setValOpen(true)} orbState={ai?.orbState || 'idle'} />
-
-      {/*  VALERIE slide-up sheet  */}
+      {/*  VALERIE slide-up sheet (hold the Coach orb)  */}
       <VALERIESheet open={valOpen} onClose={() => setValOpen(false)} ai={ai} settings={settings} />
 
       {/*  Bottom tab bar  */}
-      <nav style={{
+      <nav aria-label="Tabs" style={{
         position: 'fixed', bottom: 0, left: 0, right: 0,
         height: 'calc(72px + env(safe-area-inset-bottom))',
         paddingBottom: 'env(safe-area-inset-bottom)',
@@ -377,11 +392,19 @@ export default function MobileShell({ settings, onSettingsChange }) {
         WebkitBackdropFilter: 'blur(20px)',
         zIndex: 100,
       }}>
-        {TABS.map(tab => {
-          const active = activeTab === tab.id;
+        {BAR.map(tab => {
+          const active = activeGroup.id === tab.id;
+          if (tab.orb) {
+            return (
+              <CoachOrb key={tab.id} active={active} orbState={ai?.orbState || 'idle'}
+                onTap={() => switchTab('coach')} onHold={() => setValOpen(true)} />
+            );
+          }
           return (
             <button
               key={tab.id}
+              type="button"
+              aria-current={active ? 'page' : undefined}
               onClick={() => switchTab(tab.id)}
               style={{
                 flex: 1,

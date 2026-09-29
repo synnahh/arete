@@ -61,7 +61,7 @@ RESPONSE FORMAT  ALWAYS respond in this exact JSON. No exceptions. No extra text
 }
 
 AVAILABLE ACTIONS (include in the actions array when intent is clear):
-- Navigate to a tab: {"type": "navigate", "target": "tasks"}  targets: dashboard, assistant, tasks, calendar, notes, health, workout, finance, portfolio, progress, style, essentials, lists, focus, routines, mind, lm, places, vault, settings
+- Navigate to a tab: {"type": "navigate", "target": "tasks"}  targets: dashboard, assistant, tasks, calendar, notes, health, workout, finance, portfolio, progress, style, essentials, lists, focus, routines, mind, lm, places, vault, settings — or a whole group: home, plan, coach, mind, finance, settings
 - Add a task: {"type": "addTask", "title": "task title", "priority": "high|medium|low", "description": "optional"}
 - Add a note: {"type": "addNote", "title": "note title", "content": "note content"}
 - Add a calendar event: {"type": "addCalendarEvent", "title": "Dentist appointment", "date": "2026-06-17", "time": "12:30", "endTime": "13:00", "description": "optional"}  date MUST be an absolute YYYY-MM-DD you compute from the current date in your context (resolve "Wednesday", "tomorrow", "next Friday" yourself); time is 24h HH:MM

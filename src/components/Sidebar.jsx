@@ -3,6 +3,7 @@ import { createPortal } from 'react-dom';
 import { storage, STORAGE_KEYS } from '../utils/storage.js';
 import { supabase, getUserId, getUserIdSync } from '../supabase/supabase.js';
 import { getAttentionTabs, FOCUS_ALWAYS_VISIBLE } from '../utils/attention.js';
+import { GROUPS, groupScreens } from '../nav/groups.js';
 
 //  Icons (inline SVG  no external dep needed for now) 
 const Icon = ({ d, size = 20 }) => (
@@ -35,6 +36,10 @@ const ICONS = {
   places:     "M12 2C8.13 2 5 5.13 5 9c0 5.25 7 13 7 13s7-7.75 7-13c0-3.87-3.13-7-7-7zm0 9.5c-1.38 0-2.5-1.12-2.5-2.5s1.12-2.5 2.5-2.5 2.5 1.12 2.5 2.5-1.12 2.5-2.5 2.5z",
   // Sharp 'chad' face — chiselled jaw silhouette + brow ticks
   lm:         "M7 4L17 4L18 10.5L14.5 19L12 21L9.5 19L6 10.5Z M8.8 9H10.6 M13.4 9H15.2",
+  // Navigation groups
+  home:       "M3 9l9-7 9 7v11a2 2 0 01-2 2H5a2 2 0 01-2-2z M9 22V12h6v10",
+  plan:       "M8 2v4 M16 2v4 M3 10h18 M5 4h14a2 2 0 012 2v14a2 2 0 01-2 2H5a2 2 0 01-2-2V6a2 2 0 012-2z",
+  coach:      "M7 7v10 M17 7v10 M4 9.5v5 M20 9.5v5 M7 12h10",
 };
 
 //  All reorderable tabs in default order 
@@ -59,11 +64,6 @@ export const ALL_TABS = [
   { id: 'lm',         label: 'LM',         desc: 'Looksmaxxing'                         },
 ];
 
-// Always pinned at bottom, not reorderable
-const BOTTOM = [
-  { id: 'vault',    label: 'Vault',    desc: 'Private encrypted storage'    },
-  { id: 'settings', label: 'Settings', desc: 'App preferences & integrations' },
-];
 
 //  Single tab button 
 function TabButton({ tab, active, onClick }) {
@@ -263,27 +263,6 @@ function StatusIndicator({ claudeOnline, ollamaOnline, internetOnline, lastPinge
   );
 }
 
-// Category → label mapping (drives grouping regardless of reorder)
-const TAB_CATEGORY = {
-  dashboard:  'CORE',
-  assistant:  'CORE',
-  tasks:      'PLAN',
-  calendar:   'PLAN',
-  notes:      'PLAN',
-  health:     'BODY',
-  workout:    'BODY',
-  lm:         'BODY',
-  finance:    'MONEY',
-  portfolio:  'MONEY',
-  progress:   'GROWTH',
-  focus:      'GROWTH',
-  routines:   'GROWTH',
-  mind:       'GROWTH',
-  style:      'LIFE',
-  essentials: 'LIFE',
-  lists:      'LIFE',
-  places:     'LIFE',
-};
 
 //  Category divider with label
 function CategoryLabel({ label, first }) {
@@ -439,35 +418,10 @@ function PeakStateDot({ peakState }) {
   );
 }
 
-export default function Sidebar({ activeTab, onTabClick, claudeOnline, ollamaOnline, internetOnline, lastPinged, firebaseSynced, hiddenTabs = [], peakState }) {
+export default function Sidebar({ activeGroup, onGroupClick, claudeOnline, ollamaOnline, internetOnline, lastPinged, firebaseSynced, hiddenTabs = [], peakState }) {
 
-  // Load platform-specific tab order from storage
-  const [orderedTabs, setOrderedTabs] = useState(() => {
-    const saved = storage.get(STORAGE_KEYS.SIDEBAR_ORDER_DESKTOP, null);
-    if (saved?.length) {
-      // Merge saved order with ALL_TABS  include any new tabs at end
-      const known = new Set(saved);
-      const extra = ALL_TABS.filter(t => !known.has(t.id));
-      return [...saved.map(id => ALL_TABS.find(t => t.id === id)).filter(Boolean), ...extra];
-    }
-    return ALL_TABS;
-  });
-
-  // Sync when storage changes (Settings tab reorders  same device)
-  useEffect(() => {
-    const handler = () => {
-      const saved = storage.get(STORAGE_KEYS.SIDEBAR_ORDER_DESKTOP, null);
-      if (saved?.length) {
-        const known = new Set(saved);
-        const extra = ALL_TABS.filter(t => !known.has(t.id));
-        setOrderedTabs([...saved.map(id => ALL_TABS.find(t => t.id === id)).filter(Boolean), ...extra]);
-      }
-    };
-    window.addEventListener('valerie:sidebar-order-changed', handler);
-    return () => window.removeEventListener('valerie:sidebar-order-changed', handler);
-  }, []);
-
-  // Sync sidebar order from Supabase (cross-device)
+  // Sync the saved screen order from Supabase (cross-device). The order now
+  // decides section order inside each group; App reads it from storage.
   useEffect(() => {
     let channel;
     let alive = true;
@@ -476,9 +430,7 @@ export default function Sidebar({ activeTab, onTabClick, claudeOnline, ollamaOnl
       const applyOrder = (saved) => {
         if (!saved?.length) return;
         storage.set(STORAGE_KEYS.SIDEBAR_ORDER_DESKTOP, saved);
-        const known = new Set(saved);
-        const extra = ALL_TABS.filter(t => !known.has(t.id));
-        setOrderedTabs([...saved.map(id => ALL_TABS.find(t => t.id === id)).filter(Boolean), ...extra]);
+        window.dispatchEvent(new CustomEvent('valerie:sidebar-order-changed'));
       };
 
       supabase.from('user_meta').select('value').eq('user_id', userId).eq('key', 'sidebar_order_desktop').maybeSingle()
@@ -496,7 +448,7 @@ export default function Sidebar({ activeTab, onTabClick, claudeOnline, ollamaOnl
   }, []); // eslint-disable-line react-hooks/exhaustive-deps
 
   // Focus Mode: cycles off  today  tomorrow  off, filtering the sidebar
-  // down to only tabs with actionable items due (see src/utils/attention.js)
+  // down to only groups with actionable items due (see src/utils/attention.js)
   const [focusMode, setFocusMode] = useState('off');
   const attention = useMemo(
     () => focusMode === 'off' ? null : getAttentionTabs(focusMode === 'tomorrow' ? 1 : 0),
@@ -507,32 +459,16 @@ export default function Sidebar({ activeTab, onTabClick, claudeOnline, ollamaOnl
     []
   );
 
-  const visible = (tabs) => tabs.filter(t => {
-    if (hiddenTabs.includes(t.id)) return false;
-    if (attention && !FOCUS_ALWAYS_VISIBLE.has(t.id) && !attention.tabs.has(t.id)) return false;
-    return true;
-  });
-  const visibleMain = visible(orderedTabs);
-
-  // Group tabs by category (fixed category order, user order preserved within each)
-  const CATEGORY_ORDER = ['CORE', 'PLAN', 'BODY', 'MONEY', 'GROWTH', 'LIFE', 'OTHER'];
-  const withDividers = useMemo(() => {
-    const groups = Object.fromEntries(CATEGORY_ORDER.map(c => [c, []]));
-    visibleMain.forEach(tab => {
-      const cat = TAB_CATEGORY[tab.id] ?? 'OTHER';
-      (groups[cat] ?? (groups['OTHER'] = groups['OTHER'] || [])).push(tab);
-    });
-    const result = [];
-    let first = true;
-    CATEGORY_ORDER.forEach(cat => {
-      const tabs = groups[cat];
-      if (!tabs?.length) return;
-      result.push({ divider: true, key: `div-${cat}`, label: cat, first });
-      first = false;
-      tabs.forEach(tab => result.push(tab));
-    });
-    return result;
-  }, [visibleMain]);
+  // A group shows when it has a visible screen and, in Focus Mode, when one of
+  // its screens needs attention (Settings always shows).
+  const groupVisible = (g) => {
+    const screens = groupScreens(g.id, { hidden: hiddenTabs });
+    if (!screens.length) return false;
+    if (g.id === 'settings' || !attention) return true;
+    return screens.some(id => FOCUS_ALWAYS_VISIBLE.has(id) || attention.tabs.has(id));
+  };
+  const mainGroups   = GROUPS.filter(g => g.id !== 'settings' && groupVisible(g));
+  const settingsTab  = GROUPS.find(g => g.id === 'settings');
 
   return (
     <aside style={{
@@ -568,28 +504,16 @@ export default function Sidebar({ activeTab, onTabClick, claudeOnline, ollamaOnl
         <FocusModeButton mode={focusMode} onCycle={cycleFocus} count={attention?.count ?? 0} />
       </div>
 
-      {/* Scrollable tab area */}
+      {/* Groups */}
       <div style={{ flex: 1, overflowY: 'auto', width: '100%',
         display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 0 }}>
-        <div style={{ display: 'flex', flexDirection: 'column', gap: 2, padding: '0 0 4px' }}>
-          {withDividers.map(item =>
-            item.divider
-              ? <CategoryLabel key={item.key} label={item.label} first={item.first} />
-              : <TabButton key={item.id} tab={item} active={activeTab === item.id} onClick={onTabClick} />
-          )}
-        </div>
+        <TabGroup tabs={mainGroups} activeTab={activeGroup} onTabClick={onGroupClick} />
       </div>
 
       {/* Bottom pinned section */}
       <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 4 }}>
         <CategoryLabel label="SYS" />
-        {visible(BOTTOM).map(tab => (
-          <TabButton key={tab.id} tab={tab} active={activeTab === tab.id} onClick={onTabClick} />
-        ))}
-        {/* Settings is always visible  never hideable */}
-        {hiddenTabs.includes('settings') && (
-          <TabButton tab={{ id: 'settings', label: 'Settings' }} active={activeTab === 'settings'} onClick={onTabClick} />
-        )}
+        <TabButton tab={settingsTab} active={activeGroup === 'settings'} onClick={onGroupClick} />
         {/* Peak State dot */}
         <PeakStateDot peakState={peakState} />
         {/* Connection status indicator */}
@@ -606,5 +530,3 @@ export default function Sidebar({ activeTab, onTabClick, claudeOnline, ollamaOnl
     </aside>
   );
 }
-
-

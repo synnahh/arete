@@ -17,6 +17,8 @@ import SignIn                    from './components/SignIn.jsx';
 import Sidebar                   from './components/Sidebar.jsx';
 import QuickCapture              from './components/QuickCapture.jsx';
 import CommandPalette            from './components/CommandPalette.jsx';
+import SectionBar                from './components/SectionBar.jsx';
+import { groupOf, groupScreens, resolveTarget, DEFAULT_SCREEN } from './nav/groups.js';
 
 //  Tab imports 
 import Dashboard  from './tabs/Dashboard.jsx';
@@ -147,9 +149,25 @@ class TabErrorBoundary extends Component {
 
 export default function App() {
   const [onboarded,     setOnboarded]     = useState(null); // null = loading
-  const [activeTab,     setActiveTab]     = useState('dashboard');
+  const [activeTab,     setActiveTab]     = useState(DEFAULT_SCREEN);
   const [settings,      setSettings]      = useState(null);
   const [paletteOpen,   setPaletteOpen]   = useState(false);
+
+  //  Navigation  activeTab is always a screen id; groups (Home, Plan, Coach,
+  //  Mind, Finance, Settings) resolve to their last-visited screen.
+  const lastByGroupRef = useRef({});
+  const settingsRef    = useRef(null);
+  settingsRef.current  = settings;
+  const goTo = useCallback((target) => {
+    const screen = resolveTarget(target, {
+      hidden:      settingsRef.current?.hiddenTabs ?? [],
+      order:       storage.get(STORAGE_KEYS.SIDEBAR_ORDER_DESKTOP, null),
+      lastByGroup: lastByGroupRef.current,
+    });
+    if (!screen) return;
+    lastByGroupRef.current[groupOf(screen).id] = screen;
+    setActiveTab(screen);
+  }, []);
 
   // ── PIN gate — always required on app open (hardcoded single-user PIN) ──────
   const [locked, setLocked] = useState(true);
@@ -239,7 +257,7 @@ export default function App() {
 
   //  Wire VALERIE's navigate action to the real tab-change function 
   useEffect(() => {
-    ai.registerCallback('navigate', setActiveTab);
+    ai.registerCallback('navigate', goTo);
   }, [ai.registerCallback]); // eslint-disable-line react-hooks/exhaustive-deps
 
   //  Keep VALERIE's context aware of the active tab 
@@ -387,6 +405,11 @@ export default function App() {
 
   //  Main app shell 
   const ActiveTab = TAB_MAP[activeTab] || Dashboard;
+  const activeGroup = groupOf(activeTab);
+  const sectionScreens = groupScreens(activeGroup.id, {
+    hidden: settings?.hiddenTabs ?? [],
+    order:  storage.get(STORAGE_KEYS.SIDEBAR_ORDER_DESKTOP, null),
+  });
 
   // Layout density for the active tab  drives CSS variable + prop
   const layoutDensity = settings?.tabLayouts?.[activeTab] || 'standard';
@@ -398,8 +421,8 @@ export default function App() {
     >
       {/* Sidebar */}
       <Sidebar
-        activeTab={activeTab}
-        onTabClick={setActiveTab}
+        activeGroup={activeGroup.id}
+        onGroupClick={goTo}
         claudeOnline={ai.claudeOnline}
         ollamaOnline={ai.ollamaOnline}
         internetOnline={ai.internetOnline}
@@ -419,11 +442,13 @@ export default function App() {
           position: 'relative',
         }}
       >
+        <SectionBar group={activeGroup} screens={sectionScreens} active={activeTab} onPick={goTo} />
+
         <TabErrorBoundary key={activeTab}>
           <div className="val-fade-up" style={{ flex: 1, minHeight: 0, display: 'flex', flexDirection: 'column' }}>
             <ActiveTab
               settings={settings}
-              onTabChange={setActiveTab}
+              onTabChange={goTo}
               ai={ai}
               density={layoutDensity}
               peakState={peakState}
@@ -439,14 +464,14 @@ export default function App() {
       <CommandPalette
         open={paletteOpen}
         onClose={() => setPaletteOpen(false)}
-        onTabChange={setActiveTab}
+        onTabChange={goTo}
         ai={ai}
       />
 
       {/* Proactive nudges + whole-life Weekly Review + unified Today view */}
-      <NudgeStack onTabChange={setActiveTab} />
+      <NudgeStack onTabChange={goTo} />
       <WeeklyReview />
-      <TodayView onTabChange={setActiveTab} />
+      <TodayView onTabChange={goTo} />
 
       {/* Sleep dim overlay  fades in as bedtime approaches. Max 80% opacity (never fully black). */}
       {dimLevel > 0 && (

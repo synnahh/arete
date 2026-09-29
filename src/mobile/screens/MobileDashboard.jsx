@@ -260,7 +260,7 @@ function TodayWorkoutCard({ onTabChange }) {
   if (!active) return null;
 
   return (
-    <div onClick={() => onTabChange?.('more')} style={{
+    <div onClick={() => onTabChange?.('workout')} style={{
       padding: '12px 16px', borderRadius: 14, cursor: 'pointer',
       background: isRest ? 'rgba(255,255,255,0.03)' : `${colour}14`,
       border: `0.5px solid ${isRest ? 'rgba(255,255,255,0.08)' : `${colour}35`}`,
