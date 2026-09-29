@@ -25,6 +25,10 @@ export function useCollection(collectionName, storageKey) {
   const [synced, setSynced] = useState(false);
   const userIdRef = useRef(null);
   const subRef    = useRef(null);
+  // Latest items for update(): the render-time closure missed rows added since
+  // the last render, so an update right after an add silently did nothing.
+  const itemsRef  = useRef(items);
+  itemsRef.current = items;
 
   //  Helpers 
   function rowToItem(row) {
@@ -77,13 +81,15 @@ export function useCollection(collectionName, storageKey) {
           filter: `user_id=eq.${userId}`,
         }, async () => {
           // Re-fetch on any change
-          const { data: fresh } = await supabase
+          const { data: fresh, error: freshError } = await supabase
             .from(collectionName)
             .select('*')
             .eq('user_id', userId)
             .order('created_at', { ascending: true });
           if (!alive) return;
-          const mapped = (fresh || []).map(rowToItem);
+          // A failed refetch must not blank the list and its local mirror.
+          if (freshError || !Array.isArray(fresh)) return;
+          const mapped = fresh.map(rowToItem);
           setItems(mapped);
           storage.set(storageKey, mapped);
         })
@@ -110,6 +116,7 @@ export function useCollection(collectionName, storageKey) {
 
     if (error) { reportDataError(collectionName, 'add', error.message); return null; }
     const newItem = rowToItem(rows);
+    itemsRef.current = [...itemsRef.current, newItem];
     setItems(prev => {
       const next = [...prev, newItem];
       storage.set(storageKey, next);
@@ -120,8 +127,8 @@ export function useCollection(collectionName, storageKey) {
 
   const update = useCallback(async (id, patch) => {
     // Merge patch into existing data
-    const existing = items.find(i => i.id === id);
-    if (!existing) return;
+    const existing = itemsRef.current.find(i => i.id === id);
+    if (!existing) return false;
     const { id: _skip, ...existingData } = existing;
     const merged = { ...existingData, ...patch };
 
@@ -130,13 +137,15 @@ export function useCollection(collectionName, storageKey) {
       .update({ data: merged })
       .eq('id', id);
 
-    if (error) { reportDataError(collectionName, 'update', error.message); return; }
+    if (error) { reportDataError(collectionName, 'update', error.message); return false; }
+    itemsRef.current = itemsRef.current.map(i => i.id === id ? { id, ...merged } : i);
     setItems(prev => {
       const next = prev.map(i => i.id === id ? { id, ...merged } : i);
       storage.set(storageKey, next);
       return next;
     });
-  }, [collectionName, storageKey, items]);
+    return true;
+  }, [collectionName, storageKey]);
 
   const remove = useCallback(async (id) => {
     const { error } = await supabase
@@ -144,12 +153,14 @@ export function useCollection(collectionName, storageKey) {
       .delete()
       .eq('id', id);
 
-    if (error) { reportDataError(collectionName, 'remove', error.message); return; }
+    if (error) { reportDataError(collectionName, 'remove', error.message); return false; }
+    itemsRef.current = itemsRef.current.filter(i => i.id !== id);
     setItems(prev => {
       const next = prev.filter(i => i.id !== id);
       storage.set(storageKey, next);
       return next;
     });
+    return true;
   }, [collectionName, storageKey]);
 
   return { items, add, update, remove, synced };

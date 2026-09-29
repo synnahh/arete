@@ -194,8 +194,14 @@ export function usePeakState(settings) {
     ];
 
     async function fetchTable(tableName, storageKey, key, uid) {
-      const { data } = await supabase.from(tableName).select('*').eq('user_id', uid).order('created_at', { ascending: false });
-      const mapped = (data || []).map(r => ({ id: r.id, ...r.data }));
+      const { data, error } = await supabase.from(tableName).select('*').eq('user_id', uid).order('created_at', { ascending: false });
+      // A failed fetch (offline, network, auth) used to write [] over the local
+      // mirror of all eight tables. Keep what we have instead.
+      if (error || !Array.isArray(data)) {
+        if (error) console.warn(`[usePeakState] ${tableName} fetch failed:`, error.message);
+        return;
+      }
+      const mapped = data.map(r => ({ id: r.id, ...r.data }));
       collectionsRef.current = { ...collectionsRef.current, [key]: mapped };
       storage.set(storageKey, mapped);
       recompute();
@@ -204,6 +210,7 @@ export function usePeakState(settings) {
     let alive = true;
     getUserId().then(uid => {
       if (!alive) return; // effect was cleaned up before getUserId resolved (StrictMode)
+      if (!uid) return;   // not signed in: nothing to fetch, keep the local mirror
       TABLE_MAP.forEach(([t, s, k]) => fetchTable(t, s, k, uid));
       // Unique channel name per mount — avoids reusing an already-subscribed channel
       // (which throws "cannot add postgres_changes callbacks after subscribe()").
