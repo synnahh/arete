@@ -11,6 +11,7 @@ import { haptics }       from '../utils/haptics.js';
 import { useHealthData } from '../../hooks/useHealthData.js';
 import { STORAGE_KEYS }  from '../../utils/storage.js';
 import { toLocalDateKey } from '../../utils/localDate.js';
+import SkinRoutine from '../../tabs/SkinRoutine.jsx';
 
 const LIFT_MAP = { bench: 'Bench Press', squat: 'Barbell Squat', deadlift: 'Deadlift', pullups: 'Pull-ups', dips: 'Dips' };
 function latestLifts(items = []) {
@@ -414,8 +415,7 @@ function Foundation({ profile, save, sleep, nutrition, health }) {
 
 // ═══ SKIN ═════════════════════════════════════════════════════════════════════
 
-function SkinMaxxing({ profile, save, skin }) {
-  const routines = profile?.skinRoutines || { morning: '', night: '' };
+function SkinMaxxing({ profile, save, skin, daily }) {
   const [a, setA] = useState({ acne: 5, redness: 5, pigmentation: 5, texture: 5, dryness: 5 });
   function logAssessment() {
     const score = Math.round(SKIN_METRICS.reduce((s,k)=>s+(10-a[k]),0)/SKIN_METRICS.length);
@@ -423,13 +423,7 @@ function SkinMaxxing({ profile, save, skin }) {
   }
   return (
     <div style={{ padding: '16px 16px 40px', display: 'flex', flexDirection: 'column', gap: 14 }}>
-      {['morning','night'].map(t => (
-        <MCard key={t} style={{ padding: '14px 16px' }}>
-          <div style={LABEL}>{t} routine</div>
-          <textarea value={routines[t]} onChange={e => save({ ...profile, skinRoutines: { ...routines, [t]: e.target.value } })}
-            placeholder={t === 'morning' ? '1. Cleanser\n2. Vitamin C\n3. Moisturiser\n4. SPF 50' : '1. Cleanser\n2. Retinol\n3. Moisturiser'} style={{ ...TA, minHeight: 100 }} />
-        </MCard>
-      ))}
+      <SkinRoutine profile={profile} saveProfile={save} daily={daily} />
       <MCard style={{ padding: '14px 16px' }}>
         <div style={{ ...LABEL, display: 'flex', justifyContent: 'space-between' }}><span>Skin assessment</span><span>0 clear · 10 severe</span></div>
         {SKIN_METRICS.map(k => <ScoreRow key={k} label={k[0].toUpperCase()+k.slice(1)} value={a[k]} onChange={v=>setA(p=>({...p,[k]:v}))} colour="#f4a642" />)}
@@ -965,7 +959,7 @@ export default function MobileLM() {
       {section === 'daily'      && <DailyTracker daily={daily} />}
       {section === 'physique'   && <Physique profile={profile} save={save} metrics={metrics} strength={strength} health={health} workouts={workouts.items} />}
       {section === 'foundation' && <Foundation profile={profile} save={save} sleep={sleep} nutrition={nutrition} health={health} />}
-      {section === 'skin'       && <SkinMaxxing profile={profile} save={save} skin={skin} />}
+      {section === 'skin'       && <SkinMaxxing profile={profile} save={save} skin={skin} daily={daily} />}
       {section === 'hair'       && <HairMaxxing profile={profile} save={save} haircuts={haircuts} products={products} />}
       {section === 'grooming'   && <Grooming profile={profile} save={save} fragrances={fragrances} />}
       {section === 'style'      && <StyleMaxxing profile={profile} save={save} wardrobe={wardrobe} outfits={outfits} />}

@@ -15,6 +15,7 @@ import { askClaudeRaw }  from '../utils/claudeRaw.js';
 import { RingChart, ProgressBar, BarChart } from '../components/Charts.jsx';
 import { useHealthData } from '../hooks/useHealthData.js';
 import { toLocalDateKey } from '../utils/localDate.js';
+import SkinRoutine from './SkinRoutine.jsx';
 
 // Map LM strength fields → Workout-tab exercise names, so LM can show your real lifts.
 const LIFT_MAP = { bench: 'Bench Press', squat: 'Barbell Squat', deadlift: 'Deadlift', pullups: 'Pull-ups', dips: 'Dips' };
@@ -687,8 +688,7 @@ function Physique({ profile, saveProfile, metrics, strength, health, workouts })
 
 const SKIN_METRICS = ['acne', 'redness', 'pigmentation', 'texture', 'dryness'];
 
-function SkinMaxxing({ profile, saveProfile, skin }) {
-  const routines = profile?.skinRoutines || { morning: '', night: '' };
+function SkinMaxxing({ profile, saveProfile, skin, daily }) {
   const [assess, setAssess] = useState({ acne: 5, redness: 5, pigmentation: 5, texture: 5, dryness: 5 });
 
   function logAssessment() {
@@ -699,18 +699,7 @@ function SkinMaxxing({ profile, saveProfile, skin }) {
 
   return (
     <div style={{ padding: '20px 24px 40px', display: 'flex', flexDirection: 'column', gap: 16 }}>
-      <GlassCard>
-        <SectionLabel>Routine Builder</SectionLabel>
-        <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 14 }}>
-          {['morning', 'night'].map(t => (
-            <div key={t}>
-              <div style={FIELD_LABEL}>{t} routine — products & steps</div>
-              <textarea value={routines[t]} onChange={e => saveProfile({ ...profile, skinRoutines: { ...routines, [t]: e.target.value } })}
-                placeholder={t === 'morning' ? '1. Cleanser\n2. Vitamin C\n3. Moisturiser\n4. SPF 50' : '1. Cleanser\n2. Retinol\n3. Moisturiser'} style={{ ...TEXTAREA, minHeight: 130 }} />
-            </div>
-          ))}
-        </div>
-      </GlassCard>
+      <SkinRoutine profile={profile} saveProfile={saveProfile} daily={daily} />
 
       <GlassCard>
         <SectionLabel right={<span style={{ fontSize: 11, color: MUTE }}>0 = clear · 10 = severe</span>}>Skin Assessment</SectionLabel>
@@ -1441,7 +1430,7 @@ export default function LM() {
         {section === 'baseline'    && <Baseline profile={profile} saveProfile={saveProfile} />}
         {section === 'foundation'  && <Foundation profile={profile} saveProfile={saveProfile} sleep={sleep} nutrition={nutrition} health={health} />}
         {section === 'physique'    && <Physique profile={profile} saveProfile={saveProfile} metrics={metrics} strength={strength} health={health} workouts={workouts.items} />}
-        {section === 'skin'        && <SkinMaxxing profile={profile} saveProfile={saveProfile} skin={skin} />}
+        {section === 'skin'        && <SkinMaxxing profile={profile} saveProfile={saveProfile} skin={skin} daily={daily} />}
         {section === 'hair'        && <HairMaxxing profile={profile} saveProfile={saveProfile} haircuts={haircuts} products={products} />}
         {section === 'grooming'    && <Grooming profile={profile} saveProfile={saveProfile} fragrances={fragrances} />}
         {section === 'style'       && <StyleMaxxing profile={profile} saveProfile={saveProfile} wardrobe={wardrobe} outfits={outfits} />}
