@@ -15,6 +15,7 @@ import { toLocalDateKey } from '../utils/localDate.js';
 import { peekHealthSection, clearHealthSection, screenForHealthSection } from '../nav/healthSection.js';
 import { recentFoods } from '../domain/foods.js';
 import { weightCoach } from '../domain/weight.js';
+import { weeklyMicros, microCoach } from '../domain/micros.js';
 import { calcWaterGoal, waterAdvice, DEFAULT_WATER_PROFILE } from '../domain/water.js';
 import { currentWaterGoal, trainedToday, sleepWindow } from '../utils/waterGoal.js';
 import WeightChart from '../components/WeightChart.jsx';
@@ -647,6 +648,12 @@ function Nutrition({ nutritionLogs, addNutritionLog, updateNutritionLog, setting
     return sumMicros([foodMicros, suppMicros]);
   }, [meals, suppLogs, supplements, today]);
 
+  // Micro coach: the last 7 days, judged only when enough logs carry micronutrient data
+  const microAdvice = useMemo(
+    () => microCoach(weeklyMicros({ nutritionLogs, supplements, suppLogs, today })),
+    [nutritionLogs, supplements, suppLogs, today]
+  );
+
   const [showAdd, setShowAdd]   = useState(false);
   const [addMode, setAddMode]   = useState('my');   // 'my' | 'search'
   const [showSaveMeal, setShowSaveMeal] = useState(false);
@@ -820,6 +827,35 @@ function Nutrition({ nutritionLogs, addNutritionLog, updateNutritionLog, setting
               </button>
             ))}
           </div>
+        </div>
+      )}
+
+      {/* Micro coach: 7-day gaps and what to eat */}
+      {microAdvice.status !== 'no-data' && (
+        <div role="status" style={{ ...cardSx, marginBottom: 16, display: 'flex', flexDirection: 'column', gap: 8 }}>
+          <div style={{ fontSize: 10, color: 'var(--text-muted)', letterSpacing: '0.07em' }}>MICRO COACH · LAST 7 DAYS</div>
+          {microAdvice.status === 'low-coverage' && (
+            <div style={{ fontSize: 12.5, lineHeight: 1.5, color: 'var(--text-secondary)' }}>
+              Only {microAdvice.coverage}% of the meals you logged carry micronutrient data ({microAdvice.dataDays} day{microAdvice.dataDays === 1 ? '' : 's'}), so gaps can't be judged yet. Search or scan foods, or tick supplements that list what they provide.
+            </div>
+          )}
+          {microAdvice.status === 'ok' && microAdvice.gaps.length === 0 && microAdvice.overs.length === 0 && (
+            <div style={{ fontSize: 12.5, lineHeight: 1.5, color: '#4caf7d' }}>No consistent gaps across the nutrients your logs report. Nice.</div>
+          )}
+          {microAdvice.status === 'ok' && microAdvice.gaps.map(g => (
+            <div key={g.key} style={{ fontSize: 12.5, lineHeight: 1.5, color: 'var(--text-primary)' }}>
+              <strong style={{ color: '#e8a13a' }}>{g.label}</strong> averages {g.avgPct}% of the daily reference.
+              {g.foods.length > 0 && <span style={{ color: 'var(--text-secondary)' }}> Try {g.foods.slice(0, 3).join(', ')}.</span>}
+            </div>
+          ))}
+          {microAdvice.status === 'ok' && microAdvice.overs.map(o => (
+            <div key={o.key} style={{ fontSize: 12.5, lineHeight: 1.5, color: 'var(--text-primary)' }}>
+              <strong style={{ color: '#e55a5a' }}>{o.label}</strong> averages {o.avgPct}% of the daily limit.
+            </div>
+          ))}
+          {microAdvice.status === 'ok' && (
+            <div style={{ fontSize: 10.5, color: 'var(--text-muted)' }}>Based on {microAdvice.dataDays} days with micronutrient data ({microAdvice.coverage}% of meals). General reference values, not medical advice.</div>
+          )}
         </div>
       )}
 
