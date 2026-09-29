@@ -428,8 +428,10 @@ select option {
    short fade, None is instant. transform + opacity only. */
 @keyframes val-snap-in  { 0% { opacity: 0; transform: translateY(-14px); } 60% { opacity: 1; transform: translateY(2px); } 100% { opacity: 1; transform: none; } }
 @keyframes val-bloom-in { 0% { opacity: 0; transform: translateY(8px); } 100% { opacity: 1; transform: none; } }
-html:not([data-motion="reduced"])[data-group="plan"] main > .val-fade-up { animation-name: val-snap-in;  animation-duration: 320ms; }
-html:not([data-motion="reduced"])[data-group="mind"] main > .val-fade-up { animation-name: val-bloom-in; animation-duration: 600ms; }
+html:not([data-motion="reduced"])[data-group="plan"] main > .val-fade-up,
+html:not([data-motion="reduced"])[data-group="plan"] .m-screen.val-fade-up { animation-name: val-snap-in;  animation-duration: 320ms; }
+html:not([data-motion="reduced"])[data-group="mind"] main > .val-fade-up,
+html:not([data-motion="reduced"])[data-group="mind"] .m-screen.val-fade-up { animation-name: val-bloom-in; animation-duration: 600ms; }
 @keyframes val-fade-in   { from { opacity: 0; } to { opacity: 1; } }
 @keyframes val-scale-in  { from { opacity: 0; transform: scale(0.94); } to { opacity: 1; transform: scale(1); } }
 @keyframes val-pop       { 0% { transform: scale(0.8); opacity: 0; } 60% { transform: scale(1.06); } 100% { transform: scale(1); opacity: 1; } }

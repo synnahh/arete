@@ -393,9 +393,11 @@ export default function MobileShell({ settings, onSettingsChange }) {
             transition: refreshing ? 'none' : 'opacity 0.15s',
           }} />
         </div>
-        {render
-          ? render(screenProps)
-          : <div style={{ padding: 16 }}><PlaceholderScreen title={SCREEN_LABELS[activeTab] ?? activeTab} /></div>}
+        <div key={activeTab} className="val-fade-up m-screen">
+          {render
+            ? render(screenProps)
+            : <div style={{ padding: 16 }}><PlaceholderScreen title={SCREEN_LABELS[activeTab] ?? activeTab} /></div>}
+        </div>
       </div>
 
       {/*  VALERIE slide-up sheet (hold the Coach orb)  */}
