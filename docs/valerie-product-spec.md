@@ -9,9 +9,9 @@
 
 ---
 
-## 0. Name — [OWNER] Q-NAME
+## 0. Name — **Arete** (decided 2026-09-29)
 
-The app is renamed away from an assistant's name. Shortlist is in the session notes; the working name stays `Valerie` in code until the owner picks one. The rename is a single constant plus the Tauri, PWA and manifest metadata, so it is not a blocker.
+*Arete* (Greek, ar-eh-TAY): excellence, living up to your full potential. The app is **Arete**; the AI and the Ahead engine may carry a second name later (candidate: *Pronoia*, “foresight”). In code, the rename is one constant plus the Tauri, PWA and manifest metadata. Storage keys and table names keep their `valerie_` prefix, because renaming them would orphan existing data.
 
 ---
 
@@ -317,7 +317,6 @@ Cross-cutting: build passes; tests pass; 60 fps on tab switch and list scroll on
 | Id | Question | Blocks |
 |---|---|---|
 | Q-KEYS | Rotate the Anthropic and ElevenLabs keys (audit §0.1). Confirm when done. | Any new deployment |
-| Q-NAME | New app name (shortlist in session notes). | Branding pass only |
 | Q-MIND | Mind as its own tab, or folded into Plan → Review? | Compact nav bar |
 | Q-COACH | Coach personality; voice on/off. | Coach prompt layer (default: calm expert, text) |
 | Q-USE | Features used daily vs never. | Removal list |
