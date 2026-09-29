@@ -194,3 +194,9 @@ Rotate the Anthropic and ElevenLabs keys, then set `ANTHROPIC_API_KEY`/`ANTHROPI
 - Style constants/helpers moved to `domain/style.js`. Desktop Google image search is not on the phone (needs a key in the client).
 - `docs/inspiration-feature-map.md`: per-app gaps and a recommended build order. Q-STANCE still open (name matches several apps).
 - 183 tests; both builds; browser at 375 px and desktop against a stub.
+
+### Update — next-session suggestions and plateau detection (cba5e07)
+- `domain/progression.js` (`suggestNext`, `detectPlateau`, `plateaus`, 17 tests) replaces the old last-top-set rule in `computeProgression` (Workout.jsx now delegates). Rules: add weight only if every working set (sets within 90% of the day's heaviest) hits the top of the range; hold and aim +1 rep otherwise; drop ~10% only after two consecutive missed sessions; restart 5/10/20% lighter after 3/6/12 weeks away; DELOAD (-10%) when no new estimated best for 4+ sessions over 2+ weeks, once (not again right after a deload). Suggestions only; nothing is written.
+- Shown in Train (reason line, STALLED/SLIDING chip, stalled-lifts banner), the Overload Coach panel, and the assistant context. `plannedRows` uses the engine's `targetReps`.
+- Limits: pure e1RM rule needs 5+ sessions; exercise settings (rep range, increment) come from the saved exercise list, the assistant falls back to 8-12 / 2.5 kg for unsaved lifts. Readiness (sleep debt) is not an input yet; planned next.
+- Verified: 201 tests, both builds, browser with seeded 5-session bench history (DELOAD to 62.5 kg pre-filled, banner, chip, Overload Coach agrees). Not verified on a phone (the phone Train screen shares TrainSession).
