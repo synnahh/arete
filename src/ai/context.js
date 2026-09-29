@@ -8,6 +8,7 @@ import { toLocalDateKey, isOnLocalDay } from '../utils/localDate.js';
 import { normalizeTasks } from '../domain/tasks.js';
 import { dayScore, GOAL_TEMPLATES } from '../domain/goals.js';
 import { bests, detectPR, setsOf } from '../domain/training.js';
+import { plateaus } from '../domain/progression.js';
 import { dueItems } from '../domain/ahead.js';
 import { suppliesWithUsage } from '../utils/supplies.js';
 import { withLiveStreaks } from '../domain/habits.js';
@@ -201,6 +202,19 @@ export function buildContext({ activeTab = 'dashboard' } = {}) {
       processed.push(log);
     }
     if (prs.length) lines.push(`Recent training PRs: ${prs.slice(-5).join('; ')}`);
+  } catch {}
+
+  //  Stalled lifts and the next-session plan (domain/progression.js)
+  try {
+    const logs = storage.get(STORAGE_KEYS.WORKOUT_LOGS, []);
+    const list = Array.isArray(logs) ? logs : [];
+    const saved = storage.get(STORAGE_KEYS.OVERLOAD_EXERCISES, null);
+    const names = [...new Set(list.map(l => l?.exerciseName).filter(Boolean))];
+    const exercises = Array.isArray(saved) && saved.length ? saved : names.map(name => ({ name, repsMin: 8, repsMax: 12, increment: 2.5 }));
+    const stalled = plateaus(exercises, list, toLocalDateKey(now)).slice(0, 3);
+    if (stalled.length) {
+      lines.push(`Stalled lifts: ${stalled.map(s => `${s.name} (${s.status === 'regressing' ? 'sliding' : 'no new best'} for ${s.sessions} sessions; best est. ${s.best}kg on ${s.bestDate}${s.action === 'DELOAD' ? `; suggested deload to ${s.nextWeight}kg` : ''})`).join('; ')}`);
+    }
   } catch {}
 
   //  Ahead engine: only items inside the ordering window

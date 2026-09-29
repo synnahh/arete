@@ -9,6 +9,7 @@ import { STORAGE_KEYS }  from '../utils/storage.js';
 import { anteriorData, posteriorData } from '../components/bodyModel.js';
 import { toLocalDateKey } from '../utils/localDate.js';
 import TrainSession from './TrainSession.jsx';
+import { suggestNext } from '../domain/progression.js';
 
 //  Helpers 
 const todayStr = () => toLocalDateKey(new Date());
@@ -111,30 +112,10 @@ const DEFAULT_PROGRAM_DAYS = {
 };
 
 //  Progression logic 
+// Next-session target: the rules live in domain/progression.js (all working sets,
+// no drop after one bad day, plateau deload, layoff restart).
 export function computeProgression(ex, workoutLogs) {
-  const logs = (workoutLogs || [])
-    .filter(l => l.exerciseName === ex.name && l.topSet)
-    .sort((a, b) => b.date.localeCompare(a.date));
-  const last = logs[0] ?? null;
-  const currentWeight = last?.topSet?.weight ?? ex.startingWeight;
-  const lastReps = last?.topSet?.reps ?? null;
-  let nextWeight = currentWeight, action = 'FIRST SET';
-  let hint = `Start at ${ex.bodyweight ? 'bodyweight' : `${currentWeight}kg`}. Target ${ex.repsMin}${ex.repsMax} reps.`;
-  if (lastReps !== null) {
-    if (lastReps >= ex.repsMax) {
-      nextWeight = parseFloat((currentWeight + ex.increment).toFixed(2));
-      action = 'ADD WEIGHT';
-      hint = `You hit ${lastReps} reps  time to add ${ex.increment}kg. Expect ${ex.repsMin}${ex.repsMin + 1} next session.`;
-    } else if (lastReps >= ex.repsMin) {
-      action = 'HOLD';
-      hint = `You hit ${lastReps} reps  stay at ${currentWeight}kg and push for ${ex.repsMax}.`;
-    } else {
-      nextWeight = Math.max(0, parseFloat((currentWeight - ex.increment).toFixed(2)));
-      action = 'DROP WEIGHT';
-      hint = `Only ${lastReps} reps  drop to ${nextWeight}kg and rebuild.`;
-    }
-  }
-  return { last, currentWeight, nextWeight, action, hint };
+  return suggestNext(ex, workoutLogs, toLocalDateKey(new Date()));
 }
 
 //  Stepper 
@@ -289,7 +270,7 @@ function OverloadCoach({ workoutLogs, addWorkoutLog, exercises, saveExercises, s
 
   const addExercise = ex => { const u = [...exercises, ex]; saveExercises(u); setSelectedId(ex.id); setShowAdd(false); };
 
-  const actionColour = { 'ADD WEIGHT': '#4caf7d', 'HOLD': 'rgba(255,255,255,0.5)', 'DROP WEIGHT': '#e25d7a', 'FIRST SET': 'var(--accent)' };
+  const actionColour = { 'ADD WEIGHT': '#4caf7d', 'HOLD': 'rgba(255,255,255,0.5)', 'DROP WEIGHT': '#e25d7a', 'DELOAD': '#e8a13a', 'FIRST SET': 'var(--accent)' };
 
   return (
     <Section title="Progressive Overload">

@@ -8,6 +8,7 @@ import { toLocalDateKey } from '../utils/localDate.js';
 import {
   bests, detectPR, plannedRows, previousSets, restSeconds, setsOf, todaysLog, topSetOf, volume,
 } from '../domain/training.js';
+import { plateaus } from '../domain/progression.js';
 
 const today = () => toLocalDateKey(new Date());
 const fmt = (s) => `${Math.floor(s / 60)}:${String(Math.max(0, s) % 60).padStart(2, '0')}`;
@@ -37,7 +38,7 @@ const pill = (on) => ({
   background: on ? 'color-mix(in srgb, var(--tab-accent) 14%, transparent)' : 'transparent',
   color: on ? 'var(--tab-accent)' : 'var(--text-secondary)', fontWeight: on ? 600 : 500,
 });
-const ACTION_COLOUR = { 'ADD WEIGHT': '#4caf7d', HOLD: 'var(--text-secondary)', 'DROP WEIGHT': '#e25d7a', 'FIRST SET': 'var(--tab-accent)' };
+const ACTION_COLOUR = { 'ADD WEIGHT': '#4caf7d', HOLD: 'var(--text-secondary)', 'DROP WEIGHT': '#e25d7a', DELOAD: '#e8a13a', 'FIRST SET': 'var(--tab-accent)' };
 
 //  Rest timer
 function RestTimer({ onDone }) {
@@ -100,7 +101,15 @@ function ExerciseCard({ ex, prog, rows, onChange, onTick, onAddSet, onRemoveSet,
       <div className="val-num" style={{ fontSize: 12, color: 'var(--text-secondary)' }}>
         TARGET {ex.bodyweight ? 'BW' : `${prog.nextWeight} kg`} × {ex.repsMin}–{ex.repsMax} ·{' '}
         <span style={{ color: ACTION_COLOUR[prog.action] ?? 'var(--text-secondary)', fontWeight: 600 }}>{prog.action}</span>
+        {prog.plateau?.status && prog.plateau.status !== 'none' && (
+          <span style={{ marginLeft: 8, padding: '1px 8px', borderRadius: 999, fontSize: 10, fontWeight: 700, letterSpacing: '0.08em', color: '#e8a13a', border: '0.5px solid #e8a13a' }}>
+            {prog.plateau.status === 'regressing' ? 'SLIDING' : 'STALLED'} {prog.plateau.sessions}
+          </span>
+        )}
       </div>
+      {prog.hint && prog.action !== 'FIRST SET' && (
+        <div style={{ fontSize: 12.5, lineHeight: 1.45, color: 'var(--text-secondary)' }}>{prog.hint}</div>
+      )}
 
       <div role="table" aria-label={`${ex.name} sets`} style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
         <div role="row" style={{ display: 'grid', gridTemplateColumns: '28px minmax(0,1fr) 76px 64px 40px', gap: 8, alignItems: 'center', ...label, fontSize: 9.5 }}>
@@ -215,6 +224,8 @@ export default function TrainSession({
   }, [todays, workoutLogs, date, progression, setPlan]);
 
   const progFor = (ex) => progression(ex, workoutLogs.filter(l => l.date < date));
+  // Lifts (any day) with no new best for weeks: one place to see what needs a deload.
+  const stalled = useMemo(() => plateaus(exercises, workoutLogs.filter(l => l.date < date), date), [exercises, workoutLogs, date]);
 
   const setRows = (exId, fn) => setPlan(p => ({ ...p, [exId]: fn(p[exId] ?? []) }));
 
@@ -311,6 +322,13 @@ export default function TrainSession({
             </button>
           </div>
         </div>
+
+        {stalled.length > 0 && (
+          <div role="status" style={{ padding: '10px 14px', borderRadius: 14, border: '0.5px solid #e8a13a', background: 'color-mix(in srgb, #e8a13a 8%, transparent)', fontSize: 13, lineHeight: 1.5, color: 'var(--text-primary)' }}>
+            <strong style={{ color: '#e8a13a' }}>{stalled.length === 1 ? '1 lift has stalled' : `${stalled.length} lifts have stalled`}.</strong>{' '}
+            {stalled.slice(0, 3).map(s => `${s.name} (${s.sessions} sessions${s.action === 'DELOAD' ? `, deload to ${s.nextWeight} kg` : ''})`).join('; ')}.
+          </div>
+        )}
 
         {todays.length === 0 && (
           <div style={{ fontSize: 14, color: 'var(--text-secondary)', padding: '24px 0' }}>

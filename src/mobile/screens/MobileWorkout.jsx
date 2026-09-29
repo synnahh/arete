@@ -13,7 +13,7 @@ import { toLocalDateKey } from '../../utils/localDate.js';
 
 const DAY_KEYS   = ['sun','mon','tue','wed','thu','fri','sat'];
 const SPLIT_COLOURS = { push:'#e25d7a', pull:'#4a9eff', legs:'#f4a642', rest:'rgba(255,255,255,0.18)', custom:'#9b5de5' };
-const ACTION_COLOURS = { 'ADD WEIGHT':'#4caf7d', 'HOLD':'#f59e0b', 'DROP WEIGHT':'#e05555', 'FIRST SET':'var(--accent)' };
+const ACTION_COLOURS = { 'ADD WEIGHT':'#4caf7d', 'HOLD':'#f59e0b', 'DROP WEIGHT':'#e05555', 'DELOAD':'#e8a13a', 'FIRST SET':'var(--accent)' };
 
 function MCard({ children, style = {} }) {
   return (

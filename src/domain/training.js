@@ -95,9 +95,12 @@ export function plannedRows(ex, prog, prev = [], count = 3) {
   const n = Math.max(count, prev.length);
   const weight = ex.bodyweight ? 0 : prog.nextWeight;
   const lastTopReps = topSetOf(prev)?.reps ?? null;
-  const reps = prog.action === 'HOLD' && lastTopReps !== null
-    ? Math.min(ex.repsMax, lastTopReps + 1)
-    : ex.repsMin;
+  // The progression engine names the rep target; older callers only give an action.
+  const reps = Number.isFinite(prog.targetReps) && prog.targetReps > 0
+    ? prog.targetReps
+    : prog.action === 'HOLD' && lastTopReps !== null
+      ? Math.min(ex.repsMax, lastTopReps + 1)
+      : ex.repsMin;
   return Array.from({ length: n }, (_, i) => ({ weight, reps, prev: prev[i] ?? null, done: false }));
 }
 

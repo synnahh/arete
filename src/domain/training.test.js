@@ -76,6 +76,11 @@ describe('planning', () => {
     expect(restSeconds({ repsMax: 15 })).toBe(90);
   });
 
+  it('uses the rep target the progression engine names', () => {
+    const rows = plannedRows(ex, { nextWeight: 80, action: 'HOLD', targetReps: 7 }, [{ weight: 80, reps: 5 }]);
+    expect(rows[0]).toMatchObject({ weight: 80, reps: 7 });
+  });
+
   it('adds weight at the bottom of the range', () => {
     const rows = plannedRows(ex, { nextWeight: 82.5, action: 'ADD WEIGHT' }, [{ weight: 80, reps: 8 }]);
     expect(rows).toHaveLength(3);
