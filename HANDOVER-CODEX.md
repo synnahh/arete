@@ -171,3 +171,7 @@ Rotate the Anthropic and ElevenLabs keys, then set `ANTHROPIC_API_KEY`/`ANTHROPI
 4. Look: progress photos; feed `skinSteps` into the coach context; ingredient warnings for more families.
 5. Ahead: food logs subtracting pantry items (Finance projection is done).
 6. Signature motion for Plan/Mind/Finance; phone Habits/Style; delete dead phone code; removal list once Q-USE is answered.
+
+### Update — Claude resumed again (HEAD `697c2e3`)
+- `8911f4f` micro coach on the phone (shared `components/MicroCoachCard.jsx`). `697c2e3` phone Plan/Mind screen entrances (`.m-screen` wrapper in `MobileShell.jsx`).
+- 136 tests, build and build:pwa pass; checked in browser at 375 px. Remaining gaps: progress photos, phone Habits/Style, confirmation cards, pantry subtraction, removal list. Rob-blocked items unchanged.
