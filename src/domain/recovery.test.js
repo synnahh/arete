@@ -7,11 +7,11 @@ const night = (back, hours) => ({ date: day(back), duration: Math.round(hours * 
 const nights = (hoursList, startBack = 0) => hoursList.map((h, i) => night(startBack + i, h));
 
 describe('recentNights', () => {
-  it('keeps the last 14 days, ignores junk and future dates, adds two rows on one date', () => {
+  it('keeps the last 14 days, ignores junk and future dates, and never double-counts a date', () => {
     const rows = [night(0, 7), night(13, 6), night(14, 9), { date: 'nope', duration: 400 }, { date: day(-1), duration: 400 }, { date: day(2), duration: 0 }, night(0, 1)];
     const n = recentNights(rows, TODAY);
     expect(n.map(x => x.date)).toEqual([day(13), day(0)]);
-    expect(n[1].hours).toBe(8); // 7 + a 1 h nap on the same date
+    expect(n[1].hours).toBe(7); // a duplicate row for the same date is not added on top
   });
 });
 

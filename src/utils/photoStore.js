@@ -12,6 +12,15 @@ const URL_CACHE_MS = 50 * 60 * 1000; // refresh well before the signed URL lapse
 
 export const SETUP_HINT = 'Photo storage isn’t set up yet. Run supabase/progress_photos.sql in the Supabase SQL editor.';
 
+// Decode a data: URL directly. fetch(dataUrl) is blocked by a connect-src CSP
+// that doesn't list data:, so this avoids depending on the network layer.
+function dataUrlToBlob(dataUrl) {
+  const m = /^data:([^;,]+)?(;base64)?,(.*)$/s.exec(dataUrl);
+  if (!m) throw new Error('That photo could not be read');
+  const bytes = m[2] ? Uint8Array.from(atob(m[3]), ch => ch.charCodeAt(0)) : new TextEncoder().encode(decodeURIComponent(m[3]));
+  return new Blob([bytes], { type: m[1] || 'application/octet-stream' });
+}
+
 async function decode(file) {
   // imageOrientation applies the EXIF rotation, so phone photos aren't sideways.
   if (typeof createImageBitmap === 'function') {
@@ -58,7 +67,7 @@ async function put(path, blob) {
 export async function uploadPhoto(input, { date, pose }) {
   const userId = await getUserId();
   if (!userId) throw new Error('Sign in on this device to save progress photos');
-  const file = typeof input === 'string' ? await (await fetch(input)).blob() : input;
+  const file = typeof input === 'string' ? dataUrlToBlob(input) : input;
   const source = await decode(file);
   const full = await shrink(source, FULL);
   const thumb = await shrink(source, THUMB);

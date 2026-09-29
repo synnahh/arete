@@ -35,7 +35,9 @@ export function recentNights(rows = [], today, days = DEBT_WINDOW_DAYS) {
   for (const r of rows) {
     const d = dayIndex(r?.date), h = hoursOf(r);
     if (d == null || h == null || h > 24 || d > end || d <= end - days) continue;
-    byDate.set(r.date, (byDate.get(r.date) || 0) + h); // two rows for one date (nap + night) add up
+    // One row per date is the rule (the logger updates in place). If a re-import left two,
+    // take the longer rather than adding them and reporting a night of double length.
+    byDate.set(r.date, Math.max(byDate.get(r.date) || 0, h));
   }
   return [...byDate.entries()].map(([date, hours]) => ({ date, hours })).sort((a, b) => a.date.localeCompare(b.date));
 }

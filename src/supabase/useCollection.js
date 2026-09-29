@@ -26,6 +26,12 @@ function reportDataError(collection, op, message) {
 // data. Instances of the same collection now tell each other about each change.
 const peers = new Set();
 
+// supabase.channel(topic) hands back the EXISTING channel for a repeated topic, so a
+// second hook on the same table would try to add a callback to an already-joined
+// channel (an error), and the first one to unmount would remove it for everyone.
+// Each hook instance gets its own topic.
+let instanceCounter = 0;
+
 export function useCollection(collectionName, storageKey) {
   const [items,  setItems]  = useState(() => storage.get(storageKey, []));
   const [synced, setSynced] = useState(false);
@@ -36,6 +42,8 @@ export function useCollection(collectionName, storageKey) {
   const itemsRef  = useRef(items);
   itemsRef.current = items;
   const peerRef   = useRef(null);
+  const instanceRef = useRef(0);
+  if (!instanceRef.current) instanceRef.current = ++instanceCounter;
 
   // Apply another instance's change to this one (idempotent).
   useEffect(() => {
@@ -104,7 +112,7 @@ export function useCollection(collectionName, storageKey) {
 
       // Realtime subscription
       subRef.current = supabase
-        .channel(`${collectionName}:${userId}`)
+        .channel(`${collectionName}:${userId}:${instanceRef.current}`)
         .on('postgres_changes', {
           event:  '*',
           schema: 'public',
