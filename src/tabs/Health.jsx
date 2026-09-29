@@ -14,6 +14,8 @@ import { searchOpenFoodFacts, lookupBarcode, startBarcodeScan } from '../utils/o
 import { toLocalDateKey } from '../utils/localDate.js';
 import { peekHealthSection, clearHealthSection, screenForHealthSection } from '../nav/healthSection.js';
 import { recentFoods } from '../domain/foods.js';
+import { weightCoach } from '../domain/weight.js';
+import WeightChart from '../components/WeightChart.jsx';
 
 //  Helpers 
 const todayStr = () => toLocalDateKey(new Date());
@@ -1213,7 +1215,7 @@ const BODY_TABS = [
   { id:'photos',       label:'Photos',       emoji:'=' },
 ];
 
-function Body({ bodyMetrics, addBodyMetric }) {
+function Body({ bodyMetrics, addBodyMetric, settings }) {
   const [bodyTab,  setBodyTab]  = useState('weight');
   const [logForm,  setLogForm]  = useState({ weight:'', bodyFat:'', muscle:'', notes:'' });
   const [adding,   setAdding]   = useState(false);
@@ -1241,6 +1243,9 @@ function Body({ bodyMetrics, addBodyMetric }) {
   const sorted = useBodyDemo ? DEMO_BODY_METRICS : rawSorted;
   const latest = sorted[0];
   const weightData = useMemo(()=>sorted.slice(0,30).reverse().map(m=>({value:parseFloat(m.weight)||0,label:m.date?m.date.slice(5):''})),[sorted]);
+
+  // Weight coach: smoothed trend + weekly rate + pace against the Coach goal (real data only)
+  const coach = useMemo(() => (useBodyDemo ? null : weightCoach(rawSorted, settings?.coachGoal?.targets?.weeklyRateKg ?? null)), [useBodyDemo, rawSorted, settings?.coachGoal]);
 
   const saveMeasures = (m) => { setMeasures(m); saveMeasuresDoc(m); };
   const savePhotos   = (p) => { setPhotos(p);   localStorage.setItem('valerie_photos',JSON.stringify(p)); };
@@ -1333,8 +1338,27 @@ function Body({ bodyMetrics, addBodyMetric }) {
             </div>
           )}
 
-          {/* Trend chart */}
-          {weightData.length>1?(
+          {/* Weight coach: trend, weekly rate, pace vs goal */}
+          {coach && coach.series.length>1 ? (
+            <GlassCard>
+              <div style={{display:'flex',gap:18,alignItems:'flex-end',flexWrap:'wrap',marginBottom:10}}>
+                <div>
+                  <div style={{fontSize:9,color:'var(--text-muted)',letterSpacing:'0.1em',marginBottom:4}}>TREND WEIGHT</div>
+                  <div className="val-num" style={{fontSize:28,fontWeight:500,color:'var(--tab-accent)',lineHeight:1}}>{coach.trend}<span style={{fontSize:12,color:'var(--text-secondary)',marginLeft:3}}>kg</span></div>
+                </div>
+                <div>
+                  <div style={{fontSize:9,color:'var(--text-muted)',letterSpacing:'0.1em',marginBottom:4}}>RATE</div>
+                  <div className="val-num" style={{fontSize:20,color:'var(--text-primary)',lineHeight:1.1}}>{coach.rate==null?'—':(coach.rate>0?'+':'')+coach.rate}<span style={{fontSize:11,color:'var(--text-secondary)',marginLeft:3}}>kg/week</span></div>
+                </div>
+              </div>
+              {coach.pace && (
+                <div role="status" style={{fontSize:12.5,lineHeight:1.45,marginBottom:10,color:coach.pace.status==='on-track'?'#4caf7d':'#e8a13a'}}>{coach.pace.message}</div>
+              )}
+              {coach.rate==null && <div style={{fontSize:12,color:'var(--text-secondary)',marginBottom:10}}>Log weight on a few days over a week or more to see your rate.</div>}
+              <WeightChart series={coach.series} />
+              <div style={{fontSize:11,color:'var(--text-secondary)',marginTop:6}}>Dots are daily weigh-ins; the line is your trend. Judge progress by the line: daily readings swing with water and food.</div>
+            </GlassCard>
+          ) : weightData.length>1?(
             <GlassCard>
               <GlassLabel>Weight trend  last {weightData.length} entries</GlassLabel>
               <BarChart data={weightData} maxHeight={80}/>
@@ -2725,7 +2749,7 @@ export default function Health({ settings, onTabChange, peakState, sections = nu
       case 'habits':      return <Habits       habits={habits} addHabit={addHabit} updateHabit={updateHabit} removeHabit={removeHabit} />;
       case 'nutrition':   return <Nutrition    {...p} nutritionLogs={nutritionLogs} addNutritionLog={addNutritionLog} updateNutritionLog={updateNutritionLog} savedMeals={savedMeals} addSavedMeal={addSavedMeal} removeSavedMeal={removeSavedMeal} supplements={supplements} suppLogs={suppLogs} />;
       case 'water':       return <Water        {...p} waterLogs={waterLogs} addWaterLog={addWaterLog} />;
-      case 'body':        return <Body         bodyMetrics={bodyMetrics} addBodyMetric={addBodyMetric} />;
+      case 'body':        return <Body         bodyMetrics={bodyMetrics} addBodyMetric={addBodyMetric} settings={p.settings} />;
       case 'supplements': return <Supplements  supplements={supplements} suppLogs={suppLogs} addSupplement={addSupplement} removeSupplement={removeSupplement} addSuppLog={addSuppLog} />;
       case 'sleep':       return <Sleep        sleepData={sleepData} settings={p.settings} />;
       case 'stimulant':   return <Stimulant    {...p} stimLogs={stimLogs} addStimLog={addStimLog} removeStimLog={removeStimLog} />;

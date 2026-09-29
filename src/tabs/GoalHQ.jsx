@@ -11,6 +11,7 @@ import {
   GOAL_TEMPLATES, TEMPLATE_IDS, computeTargets, estimateMaintenance,
   adaptiveMaintenance, makeGoal, settingsForGoal,
 } from '../domain/goals.js';
+import { weightCoach } from '../domain/weight.js';
 
 const card = {
   position: 'relative', padding: 20, borderRadius: 16,
@@ -189,13 +190,15 @@ function GoalEditor({ settings, latestWeight, adaptive, onDone, onCancel }) {
 }
 
 //  The locked goal, progress since starting, and the weekly target check
-function GoalCard({ goal, settings, latestWeight, adaptive, onChange }) {
+function GoalCard({ goal, settings, latestWeight, coach, adaptive, onChange }) {
   const [dismissed, setDismissed] = useState(false);
   const t = GOAL_TEMPLATES[goal.template];
   const today = toLocalDateKey(new Date());
   const days = Math.max(0, Math.round((Date.parse(today) - Date.parse(goal.startedOn)) / 86400000));
   const week = Math.floor(days / 7) + 1;
-  const delta = latestWeight && goal.startWeightKg ? +(latestWeight - goal.startWeightKg).toFixed(1) : null;
+  // Judge progress by the smoothed trend, not a single noisy weigh-in.
+  const shownWeight = coach?.trend ?? latestWeight ?? goal.startWeightKg;
+  const delta = (coach?.trend ?? latestWeight) && goal.startWeightKg ? +((coach?.trend ?? latestWeight) - goal.startWeightKg).toFixed(1) : null;
 
   // Weekly check: propose new targets when real maintenance has drifted.
   const drift = adaptive ? adaptive.kcal - goal.maintenanceKcal : 0;
@@ -218,9 +221,9 @@ function GoalCard({ goal, settings, latestWeight, adaptive, onChange }) {
             {goal.customText && <span style={{ fontSize: 15, color: 'var(--text-primary)' }}>{goal.customText}</span>}
           </div>
           <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'flex-end', gap: 4 }}>
-            <span style={label}>Bodyweight</span>
+            <span style={label}>{coach ? 'Trend weight' : 'Bodyweight'}</span>
             <span className="val-num" style={{ fontSize: 26, fontWeight: 500 }}>
-              {latestWeight ?? goal.startWeightKg}<span style={{ fontSize: 13, color: 'var(--text-secondary)' }}> kg</span>
+              {shownWeight}<span style={{ fontSize: 13, color: 'var(--text-secondary)' }}> kg</span>
             </span>
             {delta !== null && (
               <span className="val-num" style={{ fontSize: 13, color: 'var(--text-secondary)' }}>
@@ -231,6 +234,9 @@ function GoalCard({ goal, settings, latestWeight, adaptive, onChange }) {
         </div>
         <div style={{ height: 1, background: 'var(--card-border)', margin: '16px 0' }} />
         <TargetRow targets={goal.targets} training={t?.training} />
+        {coach?.pace && (
+          <div role="status" style={{ marginTop: 14, fontSize: 14, lineHeight: 1.45, color: coach.pace.status === 'on-track' ? '#4caf7d' : '#e8a13a' }}>{coach.pace.message}</div>
+        )}
         <div style={{ display: 'flex', gap: 10, marginTop: 16 }}>
           <button type="button" onClick={onChange} style={ghostBtn}>Change goal</button>
         </div>
@@ -266,6 +272,7 @@ export default function GoalHQ({ settings, overview = null, compact = false }) {
     [bodyMetrics, nutritionLogs]
   );
   const goal = settings?.coachGoal;
+  const coach = useMemo(() => weightCoach(bodyMetrics, goal?.targets?.weeklyRateKg ?? null), [bodyMetrics, goal]);
   const showEditor = !goal || editing;
 
   return (
@@ -281,7 +288,7 @@ export default function GoalHQ({ settings, overview = null, compact = false }) {
         {showEditor
           ? <GoalEditor settings={settings} latestWeight={latestWeight} adaptive={adaptive}
               onDone={() => setEditing(false)} onCancel={goal ? () => setEditing(false) : null} />
-          : <GoalCard goal={goal} settings={settings} latestWeight={latestWeight} adaptive={adaptive} onChange={() => setEditing(true)} />}
+          : <GoalCard goal={goal} settings={settings} latestWeight={latestWeight} coach={coach} adaptive={adaptive} onChange={() => setEditing(true)} />}
       </div>
 
       {overview && !showEditor && <div style={{ minHeight: 480 }}>{overview}</div>}
