@@ -200,3 +200,9 @@ Rotate the Anthropic and ElevenLabs keys, then set `ANTHROPIC_API_KEY`/`ANTHROPI
 - Shown in Train (reason line, STALLED/SLIDING chip, stalled-lifts banner), the Overload Coach panel, and the assistant context. `plannedRows` uses the engine's `targetReps`.
 - Limits: pure e1RM rule needs 5+ sessions; exercise settings (rep range, increment) come from the saved exercise list, the assistant falls back to 8-12 / 2.5 kg for unsaved lifts. Readiness (sleep debt) is not an input yet; planned next.
 - Verified: 201 tests, both builds, browser with seeded 5-session bench history (DELOAD to 62.5 kg pre-filled, banner, chip, Overload Coach agrees). Not verified on a phone (the phone Train screen shares TrainSession).
+
+### Update — recovery: sleep debt + readiness (8c3292c)
+- `domain/recovery.js` (14 tests): sleep debt over 14 nights counting only logged nights (extra sleep repays max 1 h/night; needs 4+ nights), readiness 0-100 = last night 40% + debt 30% + last-48h training load 30%, renormalised over the parts that exist. `no-data` without a night or a debt. Sleep need setting `sleepNeedHours` (default 8, stepper in the card).
+- `components/ReadinessCard.jsx` on Recover (desktop + phone), a line at the top of Train, and a line in the assistant context. `applyReadiness` in `progression.js`: on a go-easy day an ADD WEIGHT becomes HOLD (never lowers a weight, never blocks logging).
+- Progression engine (`domain/progression.js`, 18 tests) shipped earlier this session: all-working-sets double progression, plateau detection (4+ sessions and 14+ days since best e1RM), DELOAD, layoff restart. Feeds Train, Overload Coach panel, assistant context.
+- Verified: 217 tests; both builds; browser (desktop + 375 px, stub data). Not verified: real sleep data (rows come from the assistant, Health Auto Export or manual logs; nothing in the app logs sleep on the phone). Home ring not wired to readiness.
