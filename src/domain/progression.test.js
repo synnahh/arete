@@ -139,3 +139,14 @@ describe('applyReadiness', () => {
     expect(applyReadiness(drop, { status: 'ok', band: 'go-easy', score: 30 })).toBe(drop);
   });
 });
+
+describe('liftHistory', () => {
+  it('gives one point per day with e1RM and top weight, oldest first', async () => {
+    const { liftHistory } = await import('./progression.js');
+    const h = liftHistory([log(7, [[60, 8]]), log(0, [[65, 5], [60, 8]]), { date: day(3), exerciseName: 'Squat', sets: [{ weight: 100, reps: 5 }] }], 'Bench');
+    expect(h.map(p => p.date)).toEqual([day(0), day(7)]);
+    expect(h[0]).toMatchObject({ topWeight: 65, e1rm: 76 }); // the 60 x 8 set is the stronger estimate
+    expect(h[1]).toMatchObject({ topWeight: 60, e1rm: 76 });
+    expect(liftHistory([], 'Bench')).toEqual([]);
+  });
+});

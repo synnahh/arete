@@ -186,3 +186,8 @@ export function applyReadiness(prog, r) {
     hint: `Readiness is ${r.score} today, so hold ${prog.currentWeight}kg rather than adding weight. Take the increase next session.`,
   };
 }
+
+/** One point per training day for the lift chart: estimated 1RM and top weight. */
+export function liftHistory(logs, name) {
+  return sessionsOf(logs, name).map(s => ({ date: s.date, e1rm: +s.e1rm.toFixed(1), topWeight: s.topWeight }));
+}

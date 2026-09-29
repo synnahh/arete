@@ -45,8 +45,8 @@ Strong is the clean set logger. Liftoff wraps logging in a game: XP, ranks per e
 | XP / level system | Partial — XP exists (Progress) but is not tied to lifts | P2 |
 | **Next-session suggestion** ("add 2.5 kg", "repeat", "deload") from your own history | **Have** (2026-09-30, `domain/progression.js`: judged on all working sets, no drop after one bad day, layoff restart) | — |
 | Plateau / stall detection on a lift | **Have** (no new best in 4+ sessions over 2+ weeks → STALLED chip, banner, deload suggestion, assistant context) | — |
-| Per-exercise progress chart (e1RM over time) | Missing | **P1** |
-| Warm-up set generator, plate calculator | Missing | P2 |
+| Per-exercise progress chart (e1RM over time) | **Have** (2026-09-30, History button on each Train card) | — |
+| Warm-up ramp and plate calculator | **Have** (2026-09-30, barbell lifts only, standard 20 kg bar and plates; not yet configurable) | — |
 | Supersets, RPE per set | Missing | P2 |
 | Muscle recovery map (what is fresh / hot) | Partial — a body model exists in `Workout.jsx`, not fed by training volume | P2 |
 | Strength Score / per-lift rank vs global standards | Missing (needs a standards table; bodyweight-relative) | P3 |

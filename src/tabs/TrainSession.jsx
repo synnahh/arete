@@ -8,7 +8,9 @@ import { toLocalDateKey } from '../utils/localDate.js';
 import {
   bests, detectPR, plannedRows, previousSets, restSeconds, setsOf, todaysLog, topSetOf, volume,
 } from '../domain/training.js';
-import { plateaus, applyReadiness } from '../domain/progression.js';
+import { plateaus, applyReadiness, liftHistory } from '../domain/progression.js';
+import { isBarbell, platesFor, warmupSets, DEFAULT_BAR_KG } from '../domain/plates.js';
+import LiftChart from '../components/LiftChart.jsx';
 import { useRecovery } from '../hooks/useRecovery.js';
 
 const today = () => toLocalDateKey(new Date());
@@ -88,8 +90,13 @@ function RestTimer({ onDone }) {
 }
 
 //  One exercise card
-function ExerciseCard({ ex, prog, rows, onChange, onTick, onAddSet, onRemoveSet, prs, compact }) {
+function ExerciseCard({ ex, prog, rows, onChange, onTick, onAddSet, onRemoveSet, prs, compact, history }) {
   const doneSets = rows.filter(r => r.done);
+  const [showChart, setShowChart] = useState(false);
+  const barbell = !ex.bodyweight && isBarbell(ex.name);
+  const workKg = Number(rows[0]?.weight) || prog.nextWeight;
+  const plates = barbell ? platesFor(workKg) : null;
+  const warmups = barbell ? warmupSets(workKg) : [];
   return (
     <section aria-label={ex.name} style={{
       display: 'flex', flexDirection: 'column', gap: 10, padding: compact ? 14 : 16, borderRadius: 16,
@@ -110,6 +117,15 @@ function ExerciseCard({ ex, prog, rows, onChange, onTick, onAddSet, onRemoveSet,
       </div>
       {prog.hint && prog.action !== 'FIRST SET' && (
         <div style={{ fontSize: 12.5, lineHeight: 1.45, color: 'var(--text-secondary)' }}>{prog.hint}</div>
+      )}
+
+      {barbell && (plates || warmups.length > 0) && (
+        <div className="val-num" style={{ fontSize: 12, lineHeight: 1.6, color: 'var(--text-secondary)' }}>
+          {plates && workKg > DEFAULT_BAR_KG && (
+            <div>Per side for {plates.total} kg: {plates.perSide.length ? plates.perSide.join(' + ') : 'bar only'}{plates.short > 0 ? ` (${plates.short} kg short)` : ''}</div>
+          )}
+          {warmups.length > 0 && <div>Warm-up: {warmups.map(w => `${w.weight}×${w.reps}`).join(' · ')}</div>}
+        </div>
       )}
 
       <div role="table" aria-label={`${ex.name} sets`} style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
@@ -155,7 +171,11 @@ function ExerciseCard({ ex, prog, rows, onChange, onTick, onAddSet, onRemoveSet,
         {rows.length > 1 && !rows[rows.length - 1].done && (
           <button type="button" onClick={onRemoveSet} style={pill(false)}>Remove set</button>
         )}
+        {history.length > 0 && (
+          <button type="button" aria-expanded={showChart} onClick={() => setShowChart(v => !v)} style={{ ...pill(showChart), marginLeft: 'auto' }}>History</button>
+        )}
       </div>
+      {showChart && <LiftChart history={history} />}
     </section>
   );
 }
@@ -351,7 +371,7 @@ export default function TrainSession({
             onChange={(i, patch) => setRows(ex.id, rs => rs.map((r, j) => j === i ? { ...r, ...patch } : r))}
             onTick={(i) => tick(ex, i)}
             onAddSet={() => setRows(ex.id, rs => [...rs, { ...(rs[rs.length - 1] ?? { weight: 0, reps: ex.repsMin }), prev: null, done: false, justDone: false }])}
-            onRemoveSet={() => setRows(ex.id, rs => rs.slice(0, -1))} />
+            onRemoveSet={() => setRows(ex.id, rs => rs.slice(0, -1))} history={liftHistory(workoutLogs, ex.name)} />
         ))}
 
         {others.length > 0 && (
