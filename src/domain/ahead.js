@@ -168,3 +168,29 @@ export function shoppingList(plan, pantry = [], today) {
     .map(x => ({ ...x, qty: Math.round(x.qty * 10) / 10 }))
     .sort((a, b) => a.name.localeCompare(b.name));
 }
+
+/**
+ * What restocking supplies will cost over the next `days` days, for Finance.
+ * A supply is bought when it reaches its order-by date (today if already
+ * overdue) and again every `days per pack` after that; only supplies with a
+ * price and a known forecast count. Prices are per pack.
+ */
+export function projectedSpend(items, today, { days = 30 } = {}) {
+  const end = dayIndex(today) + days;
+  const lines = [];
+  for (const item of items) {
+    const price = Number(item.price);
+    if (!(price > 0)) continue;
+    const f = forecast(item, today);
+    if (f.status === 'unknown') continue;
+    let buy = Math.max(dayIndex(f.reorderBy), dayIndex(today));
+    const dates = [];
+    while (buy <= end && dates.length < 12) {
+      dates.push(keyOf(buy));
+      buy += Math.max(1, f.daysPerPack);
+    }
+    if (dates.length) lines.push({ name: item.name, price, dates, subtotal: +(price * dates.length).toFixed(2) });
+  }
+  lines.sort((a, b) => a.dates[0].localeCompare(b.dates[0]));
+  return { total: +lines.reduce((s, l) => s + l.subtotal, 0).toFixed(2), lines };
+}

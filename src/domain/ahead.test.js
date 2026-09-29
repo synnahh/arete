@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest';
-import { scheduledDaysPerPack, daysPerPack, forecast, restock, dueItems, parseAsin, cartLinks, shoppingList } from './ahead.js';
+import { scheduledDaysPerPack, daysPerPack, forecast, restock, dueItems, parseAsin, cartLinks, shoppingList, projectedSpend } from './ahead.js';
 
 // A 50 ml serum, 1 ml a use, twice a day → 25 days a pack.
 const serum = { name: 'Niacinamide serum', category: 'grooming', boughtDate: '2026-09-01', packQty: 50, unit: 'ml', dosePerUse: 1, usesPerDay: 2 };
@@ -109,5 +109,31 @@ describe('shopping list', () => {
   it('skips what the pantry already has in stock', () => {
     const pantry = [{ name: 'Rice', category: 'kitchen', boughtDate: '2026-09-01', lifespanDays: 60 }];
     expect(shoppingList(plan, pantry, '2026-09-10').map(x => x.name)).toEqual(['Chicken breast', 'Eggs']);
+  });
+});
+
+describe('projected spend', () => {
+  const t = '2026-09-10';
+  const serumP = { ...serum, price: 20 };          // 25-day pack; order by 2026-09-21 (in the window)
+  const creatine = { name: 'Creatine', boughtDate: '2026-09-01', packQty: 300, dosePerUse: 5, usesPerDay: 1, price: 40 }; // 60 days; order by 2026-10-26 (outside)
+  const overdue = { name: 'Toothpaste', boughtDate: '2026-07-01', lifespanDays: 30, price: 6 };  // long overdue → buy now, then every 30 days
+
+  it('counts a purchase at the order-by date and again each pack later', () => {
+    const p = projectedSpend([serumP], t, { days: 30 });
+    expect(p.lines[0].dates).toEqual(['2026-09-21']);
+    expect(p.total).toBe(20);
+    expect(projectedSpend([serumP], t, { days: 60 }).lines[0].dates).toEqual(['2026-09-21', '2026-10-16']);
+  });
+
+  it('leaves out supplies that are not due in the window, or have no price or forecast', () => {
+    const p = projectedSpend([creatine, { ...serum, price: null }, { name: 'x', price: 5 }], t, { days: 30 });
+    expect(p).toEqual({ total: 0, lines: [] });
+  });
+
+  it('buys an overdue supply today and sums a mixed cart soonest first', () => {
+    const p = projectedSpend([serumP, overdue], t, { days: 30 });
+    expect(p.lines.map(l => [l.name, l.dates[0]])).toEqual([['Toothpaste', '2026-09-10'], ['Niacinamide serum', '2026-09-21']]);
+    expect(p.lines[0].dates).toEqual(['2026-09-10', '2026-10-10']);
+    expect(p.total).toBe(32);   // toothpaste x2 (12) + serum (20)
   });
 });

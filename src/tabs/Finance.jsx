@@ -7,6 +7,7 @@ import { fetchWatchlist }    from '../utils/finnhub.js';
 import { isGmailConnected, fetchEmailsSince, applyRulesToEmails, DEFAULT_EMAIL_RULES } from '../utils/gmail.js';
 import { currencySymbol, DEFAULT_CURRENCY } from '../utils/currency.js';
 import { toLocalDateKey } from '../utils/localDate.js';
+import { projectedSpend } from '../domain/ahead.js';
 
 //  Categories 
 const CATEGORIES = [
@@ -356,6 +357,10 @@ function Overview({ transactions, goals, subscriptions, purchases = [], fmt, cur
 
   const netColour = net >= 0 ? '#6BE3A4' : '#FF6B6B';
 
+  // Ahead: what restocking supplies will cost over the next 30 days
+  const { items: supplies = [] } = useCollection('essentials', STORAGE_KEYS.ESSENTIALS);
+  const restocks = useMemo(() => projectedSpend(supplies, toLocalDateKey(new Date()), { days: 30 }), [supplies]);
+
   return (
     <div style={{ display: 'flex', flexDirection: 'column', gap: 0, padding: '20px 24px 32px' }}>
 
@@ -422,6 +427,25 @@ function Overview({ transactions, goals, subscriptions, purchases = [], fmt, cur
           </GlassCard>
         ))}
       </div>
+
+      {/*  Ahead: supply restocks over the next 30 days  */}
+      {restocks.lines.length > 0 && (
+        <GlassCard style={{ marginBottom: 10 }}>
+          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'baseline', marginBottom: 8 }}>
+            <SectionLabel>Supplies · next 30 days</SectionLabel>
+            <span style={{ fontSize: 18, fontWeight: 600, color: 'rgba(255,255,255,0.85)', fontVariantNumeric: 'tabular-nums' }}>{fmt(restocks.total)}</span>
+          </div>
+          {restocks.lines.map(l => (
+            <div key={l.name} style={{ display: 'flex', justifyContent: 'space-between', gap: 10, marginBottom: 6, fontSize: 13 }}>
+              <span style={{ color: 'rgba(255,255,255,0.8)' }}>{l.name}{l.dates.length > 1 ? ` ×${l.dates.length}` : ''}</span>
+              <span style={{ color: 'rgba(255,255,255,0.55)', fontFamily: 'ui-monospace,monospace', whiteSpace: 'nowrap' }}>
+                {l.dates[0] <= toLocalDateKey(new Date()) ? 'now' : fmtDate(l.dates[0])} · {fmt(l.subtotal)}
+              </span>
+            </div>
+          ))}
+          <div style={{ fontSize: 11, color: 'rgba(255,255,255,0.4)', marginTop: 4 }}>Predicted from your usage and prices in Supplies.</div>
+        </GlassCard>
+      )}
 
       {/*  Renewal alerts  */}
       {renewalsSoon.length > 0 && (
