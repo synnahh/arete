@@ -151,7 +151,10 @@ Reviewed and committed Codex's dirty tree, then continued. HEAD is now `0d31c02`
 | `a5145b4` | Water coach: one shared goal (`domain/water.js`, `utils/waterGoal.js`) used by the Water screen, overview, Home ring, Peak State, reminders, phone and assistant (four formulas before; the profile formula also ignored kg/lb); +500 ml on training days; pace advice with a one-tap log on the Water screen. Phone has the goal but no coaching line |
 | `72c3904` | Plan "time snap" and Mind "ink bloom" screen entrances (CSS only; Reduced/None safe). Phone shell has no entrance animations yet |
 
-HEAD is now `72c3904`, **128 tests**, tree clean.
+| `371e532` | Micro coach (`domain/micros.js`): 7-day gaps + food suggestions in Fuel > Nutrition; refuses to judge unless 3+ days and half of meals carry micronutrient data (a missing value is not a deficiency) |
+| `a1d71ee` | Phone parity: water pace advice, weight coach, supplies spend card; **fixed phone counting assistant/Gmail income as spending** (it tested `category==='income'`, those rows have `type:'income'`, category "Income") |
+
+HEAD is now `a1d71ee`, **136 tests**, tree clean. Remaining gaps vs the brief: progress photos, micro coach on the phone, phone screen-entrance animations, STANCE (needs Rob).
 
 ### Gotchas found this session
 - LM data keys carry a doubled prefix in localStorage (`valerie_valerie_lm_profile`, `valerie_valerie_lm_daily`) because the hooks pass `'valerie_lm_*'` as the storage key. Harmless, but remember it when seeding data.
@@ -164,7 +167,7 @@ Rotate the Anthropic and ElevenLabs keys, then set `ANTHROPIC_API_KEY`/`ANTHROPI
 ### Best next order (revised)
 1. (Rob) apply SQL, rotate + deploy, two-device sync test. Without these the server AI reports unavailable off desktop.
 2. Assistant actions should be proposals with confirmation cards (spec §7.3); today they still execute immediately (now to the right tables).
-3. Fuel/Body: water coach, micro coach; phone parity for the weight coach (`MobileHealth` BodyTab), the Finance supplies card (`MobileFinance`) and barcode.
+3. Fuel/Body: micro coach on the phone; barcode on the phone.
 4. Look: progress photos; feed `skinSteps` into the coach context; ingredient warnings for more families.
 5. Ahead: food logs subtracting pantry items (Finance projection is done).
 6. Signature motion for Plan/Mind/Finance; phone Habits/Style; delete dead phone code; removal list once Q-USE is answered.
