@@ -92,7 +92,7 @@ Stance builds workouts and meals from a goal and training days, adjusts weights 
 |---|---|---|
 | Goal → targets (cut/bulk/recomp/glow-up) and weekly adaptive maintenance proposal | Have (Goal HQ; never applied silently) | — |
 | Coach chat that knows your goal, score, PRs and due supplies | Have, coded — not deployed until the key is rotated | — |
-| **Approval before the coach changes anything** | Missing — assistant actions still save immediately (Q-CONFIRM) | **P1** |
+| **Approval before the coach changes anything** | **Have** for settings (2026-09-30: an Apply / Not now card; secret-like keys and non-plain values refused). Logging actions (water, food, sleep, tasks) stay instant by design | — |
 | AI-built weekly workout plan from goal, days and equipment | Missing (there is a program editor, no generator) | P2 |
 | Auto-adjusted loads | **Have** as suggestions the lifter can override (see section 2) | — |
 | Pre-session advice ("sleep was short, keep it lighter") | **Have** (readiness line at the top of Train) | — |
@@ -123,7 +123,7 @@ The first six are small, pure-logic features on data the app already stores, and
 4. ~~Copy yesterday + quick-add calories~~ done 2026-09-30
 5. ~~Face progress photos + daily skin rating~~ done 2026-09-30
 6. ~~Habit heatmap~~ done 2026-09-30
-7. Approval cards for assistant actions (blocked on Q-CONFIRM)
+7. ~~Approval cards for assistant actions~~ done 2026-09-30 (decided: settings need Apply, logging is instant)
 8. Product barcode scanner via Open Beauty Facts, opened-product expiry
 9. Voice and photo food logging (photo needs the gateway deployed)
 

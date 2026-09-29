@@ -206,3 +206,12 @@ Rotate the Anthropic and ElevenLabs keys, then set `ANTHROPIC_API_KEY`/`ANTHROPI
 - `components/ReadinessCard.jsx` on Recover (desktop + phone), a line at the top of Train, and a line in the assistant context. `applyReadiness` in `progression.js`: on a go-easy day an ADD WEIGHT becomes HOLD (never lowers a weight, never blocks logging).
 - Progression engine (`domain/progression.js`, 18 tests) shipped earlier this session: all-working-sets double progression, plateau detection (4+ sessions and 14+ days since best e1RM), DELOAD, layoff restart. Feeds Train, Overload Coach panel, assistant context.
 - Verified: 216 tests; both builds; browser (desktop + 375 px, stub data). Not verified: real sleep data (rows come from the assistant, Health Auto Export or manual logs; nothing in the app logs sleep on the phone). Home ring not wired to readiness.
+
+### Update — batch 2026-09-30 (Fuel/Look/Habits/assistant)
+- **Goal weight ETA** (`weight.js goalEta`, Goal HQ field, `GoalEta` on Body and Goal HQ) and **training/rest-day targets** (`goals.js cycleTargets`, `utils/todaysTargets.js`; Goal HQ card; read by Fuel desktop+phone, Home ring, Peak State, assistant; stored base targets untouched; rest days keep at least half the base carbs, bonus scaled down if needed).
+- **Fuel:** copy yesterday + quick-add with Undo (`domain/foods.js`, `components/FoodShortcuts.jsx`).
+- **Toasts on the phone:** the toast host existed only in the desktop shell, so phone save errors and Undo prompts were silently dropped. Now `components/Toaster.jsx` is mounted by both shells.
+- **Look:** daily skin rating (1-5 on the lm_daily row), weekly trend, routine-vs-rating comparison (`skin.js`); Face pose in the photo component, shown in Look.
+- **Habits:** 12-week heatmap (`domain/habits.js heatmap`, `HabitHeatmap.jsx`), desktop + phone.
+- **Assistant safety (Q-CONFIRM decided):** setting changes now need an Apply card (`ai/confirm.js`, `ActionConfirm.jsx`); secret-like keys (`key|token|secret|password|pin|auth|api|...`) and non-plain values are refused; logging stays instant.
+- Verified: 254 tests; both builds; browser (desktop and 375 px) with stub data. Not verified against real Supabase.

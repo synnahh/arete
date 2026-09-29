@@ -10,6 +10,7 @@ import { makeTask } from '../domain/tasks.js';
 import { NAV_TARGETS } from '../nav/groups.js';
 import { updateSettings } from '../utils/settingsStore.js';
 import { waterRow, sleepRow, nutritionDay } from '../domain/dayLogs.js';
+import { needsConfirmation, describeAction } from './confirm.js';
 
 //  Callback registry 
 // Components register handlers here so VALERIE can trigger UI actions.
@@ -109,11 +110,25 @@ export function parseResponse(raw) {
 export async function executeActions(actions = []) {
   for (const action of actions) {
     try {
+      // Setting changes wait for an Apply on a card; logging runs straight away.
+      if (needsConfirmation(action)) { requestConfirmation(action); continue; }
       await _executeOne(action);
     } catch (err) {
       console.warn('[VALERIE/Actions] Failed to execute action:', action, err.message);
     }
   }
+}
+
+function requestConfirmation(action) {
+  const info = describeAction(action, storage.get(STORAGE_KEYS.SETTINGS, {}));
+  if (!info) { console.warn('[VALERIE/Actions] Refused setting change:', action?.type, action?.key); return; }
+  window.dispatchEvent(new CustomEvent('valerie:confirm-action', { detail: { action, ...info } }));
+}
+
+/** Run an action the user approved on a confirmation card. */
+export async function runConfirmed(action) {
+  try { await _executeOne(action); }
+  catch (err) { console.warn('[VALERIE/Actions] Approved action failed:', action, err.message); }
 }
 
 async function _executeOne(action) {
@@ -227,7 +242,7 @@ async function _executeOne(action) {
     //  Toggle a boolean setting 
     case 'toggleSetting': {
       const key = action.key;
-      if (!key) break;
+      if (!key || !describeAction(action, storage.get(STORAGE_KEYS.SETTINGS, {}))) break; // never for secret-like keys
       const s = storage.get(STORAGE_KEYS.SETTINGS, {});
       updateSettings({ [key]: !s[key] }, s);
       break;
@@ -236,7 +251,7 @@ async function _executeOne(action) {
     //  Change a specific setting value 
     case 'changeSetting': {
       const { key: sKey, value: sVal } = action;
-      if (!sKey) break;
+      if (!sKey || !describeAction(action, storage.get(STORAGE_KEYS.SETTINGS, {}))) break; // safe key and plain value only
       const s2 = storage.get(STORAGE_KEYS.SETTINGS, {});
       updateSettings({ [sKey]: sVal }, s2);
       break;

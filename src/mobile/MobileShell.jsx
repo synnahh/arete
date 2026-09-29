@@ -18,6 +18,7 @@ import MobileMind       from './screens/MobileMind.jsx';
 import MobilePortfolio  from './screens/MobilePortfolio.jsx';
 import MobileHabits     from './screens/MobileHabits.jsx';
 import Toaster          from '../components/Toaster.jsx';
+import ActionConfirm    from '../components/ActionConfirm.jsx';
 import MobileStyle      from './screens/MobileStyle.jsx';
 import { haptics }     from './utils/haptics.js';
 import { storage, STORAGE_KEYS } from '../utils/storage.js';
@@ -406,6 +407,7 @@ export default function MobileShell({ settings, onSettingsChange }) {
       </div>
 
       <Toaster phone />
+      <ActionConfirm phone />
 
       {/*  VALERIE slide-up sheet (hold the Coach orb)  */}
       <VALERIESheet open={valOpen} onClose={() => setValOpen(false)} ai={ai} settings={settings} />
