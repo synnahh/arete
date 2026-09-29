@@ -81,3 +81,54 @@ Q-INFRA approve Supabase Edge Functions as the server layer · Q-COACH personali
 
 ## Housekeeping when you finish a chunk
 Commit small, one concern each, message ending with the attribution line the harness asks for. Update `docs/valerie-product-spec.md` and the Obsidian handoff note; log decisions with the Obsidian `log_decision` tool. Don't save secrets in Obsidian. The Obsidian MCP is available in Claude sessions; if you can't reach it, edit the markdown under `D:\Work\Obsidian-Brain\BRAIN\01 - PROJECTS\Valerie\` directly.
+
+## Update — Codex independent review (2026-09-29)
+- Reviewed `src/domain/*.js` and `src/tabs/TrainSession.jsx` as requested.
+- Fixed malformed/impossible legacy supply dates crashing the full Supplies forecast; they now render as `unknown`.
+- Fixed numeric-string top-set values being compared lexicographically (`"90"` could beat `"100"`).
+- Fixed rapid queued Train writes recovering to an optimistic snapshot after a failure. Recovery now uses the last server-confirmed rows, only the newest mutation may repair UI state, and rejected promises use the same path.
+- Verified: **79 unit tests**, `npm run build`, `npm run build:pwa`, `git diff --check`, and no `TEMP-VERIFY` markers.
+- **Checkpoint pending:** this Codex environment was granted project and `.git` write access, but the OS still denied creation of `.git/index.lock`. The six changed files are intentionally left in the working tree; do not discard them.
+
+## Update — server-side AI gateway coded (2026-09-29)
+- Rob approved Supabase Edge Functions. Added authenticated `supabase/functions/ai-chat` plus the shared client in `src/ai/server.js`.
+- All Anthropic calls now use the gateway: Coach chat, daily briefs, Mind/LM/Portfolio raw prompts and Fuel meal-plan generation. Desktop Ollama remains the offline fallback.
+- Removed Claude API-key entry from Settings and removed every client reference to `VITE_ANTHROPIC_API_KEY`, `VITE_CLAUDE_API_KEY` and `VITE_ELEVENLABS_API_KEY`. Legacy Claude keys are scrubbed from local settings on load.
+- `settingsStore.js` now strips Claude, voice, Twilio and integration credentials from the synced `user_meta` settings row. AI actions use that same save path, fixing the old whole-row overwrite inconsistency.
+- Added manual deployment instructions under `supabase/functions/README.md`. **Not deployed:** the old exposed Anthropic key must be rotated first, then `ANTHROPIC_API_KEY` and `ANTHROPIC_MODEL` set as Supabase secrets.
+- Verified: **81 unit tests**, desktop build, PWA build, diff check, and built bundles contain no Anthropic/Claude/ElevenLabs secret markers. Edge runtime was not locally checked because neither Deno nor Supabase CLI is installed.
+- Coach context now includes the locked goal and targets, today's five-factor score, PRs derived with Train's own detection rules, due-supply forecasts, and the selected personality (`calm expert` default; drill-sergeant and hype layers are ready when Q-COACH is answered).
+
+## Claude resume summary — latest state
+
+### Working tree
+- Work only in `D:\Work\Projects\Projects\VALERIE-MAKEOVER`; never touch the original `VALERIE` tree.
+- The working tree is intentionally **dirty** with the independent-review fixes and server/Coach work above. Codex could edit source but the environment denied `.git/index.lock`, even after `.git` permission was granted, so none of this latest work is committed. Preserve every listed change.
+- Dev server was started with `npm run dev` at `http://localhost:1420/`.
+
+### Latest coded work
+- Review fixes: safe malformed supply dates, numeric top-set comparison, and server-confirmed recovery for rapid queued Train writes.
+- Supabase Edge Function `ai-chat`: authenticated server-side Anthropic gateway; provider key and core Coach prompt no longer ship in the client.
+- All Claude call sites route through the gateway, including Coach, daily briefs, Mind/LM/Portfolio and Fuel meal-plan generation. Ollama remains the desktop fallback.
+- Client Claude-key UI and Vite secret paths removed. Legacy Claude keys are scrubbed locally. Provider credentials are stripped before settings sync. AI setting actions now use `settingsStore.js` instead of overwriting the row independently.
+- Coach server context now contains active goal/targets, today's adherence score, recent PRs and due supplies. Calm expert is the default; drill-sergeant and hype prompt layers exist pending Rob's choice.
+
+### Verification level
+- **VERIFIED:** 81 unit tests pass; desktop Vite build passes; PWA build passes; `git diff --check` passes; built bundles contain no Anthropic/Claude/ElevenLabs secret markers.
+- **NOT VERIFIED:** Edge Function runtime/deployment (no Deno or Supabase CLI); Tauri/Rust build; real Supabase writes; two-device propagation.
+- Edge deployment is manual and blocked on rotating the exposed Anthropic key, then setting `ANTHROPIC_API_KEY` and `ANTHROPIC_MODEL` as Supabase secrets. Instructions: `supabase/functions/README.md`.
+
+### Database/cross-device audit — do not claim confirmed yet
+- Intended design is correct: every device signs into the same email/password Supabase account; `getUserId()` uses the auth UID; `useCollection` fetches by `user_id`, maintains a local cache, writes to Supabase and subscribes to filtered realtime changes. `sync_all_tables.sql` creates collection tables, owner RLS policies and realtime publication entries.
+- Live validation was blocked at the app's **Connect this device** sign-in screen; no credentials were entered or bypassed. The SQL's actual deployment status is unknown.
+- The repository contains **no creation/RLS/realtime definition for `user_meta`**, although `useDocument` and settings depend on it. Verify the live table and add an idempotent schema migration to the repo before claiming full sync.
+- AI actions still write water and sleep directly to local storage (`src/ai/actions.js`), so those assistant-created records do **not** propagate between devices. Calories use the legacy local health object too. Route these through the canonical Supabase collections/action handlers.
+- `useDocument.save()` returns no success/failure result and initialises a query with a null UID if mounted outside the sign-in gate. Harden this while adding integration coverage.
+- Required proof: apply/verify schemas, sign into two clients with the same account, create/update/delete a disposable record through normal UI, confirm realtime appearance on client B, reload both clients, and confirm settings/meal-plan documents plus collection data persist. Do not use Rob's real health/finance records for destructive testing.
+
+### Best next order
+1. Add/verify `user_meta` schema, RLS and uniqueness on `(user_id,key)`; harden `useDocument`.
+2. Replace local-only AI health writes with canonical collection writes and confirmation cards.
+3. Run a real same-account two-client sync test, then record the result.
+4. Rotate/configure the Anthropic secret and deploy/test `ai-chat`.
+5. Continue Fuel → Look → Ahead/Finance once the data foundation is proven.

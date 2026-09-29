@@ -11,7 +11,7 @@ import { buildContext }              from './context.js';
 import { parseResponse, executeActions, registerActionHandler } from './actions.js';
 import { cleanForSpeech, speakText, cancelCurrentSpeech, isStopIntent } from './speech.js';
 import { storage, STORAGE_KEYS }     from '../utils/storage.js';
-import { isTauri, isMobile }         from '../utils/platform.js';
+import { isMobile }                  from '../utils/platform.js';
 
 // Voice (TTS output + wake-word/speech input) is disabled on the iOS/mobile shell —
 // the assistant there is text-only. Desktop keeps the full voice pipeline.
@@ -21,24 +21,6 @@ const VOICE_DISABLED = isMobile();
 // app never requests mic access / triggers the permission popup. TTS output is
 // unaffected — VALERIE can still speak replies. Set to false to restore mic input.
 export const MIC_DISABLED = true;
-
-//  Tauri invoke  resolved once at module level, reused everywhere 
-// Dynamic import is cached by the module system but the async overhead adds up
-// across pingAll (every 60s) and sendMessage. Resolve once, store the reference.
-let _invoke = null;
-async function getTauriInvoke() {
-  if (_invoke) return _invoke;
-  if (!isTauri()) return null;
-  try {
-    const mod  = await import('@tauri-apps/api/core');
-    _invoke    = mod.invoke;
-    return _invoke;
-  } catch {
-    return null;
-  }
-}
-// Kick off resolution immediately on module load so it's ready before first use
-getTauriInvoke().catch(() => {});
 
 // Silence before ending a voice session (ms)
 const VOICE_SILENCE_TIMEOUT = 9000;
@@ -79,7 +61,6 @@ export function useAI() {
   const ollamaOnlineRef  = useRef(ollamaOnline);
   const ltMemoryRef      = useRef(ltMemory);
   const orbStateRef      = useRef(orbState);
-  const settingsRef      = useRef(storage.get(STORAGE_KEYS.SETTINGS, {}));
   const loadingRef       = useRef(loading);
 
   useEffect(() => { messagesRef.current     = messages;      }, [messages]);
@@ -110,20 +91,7 @@ export function useAI() {
   //  Ping Claude + Ollama (on mount and every 30s) 
   const pingAll = useCallback(async () => {
     try {
-      const settings = storage.get(STORAGE_KEYS.SETTINGS, {});
-      settingsRef.current = settings;
-      // Priority: env var (hardlocked)  keychain (desktop)  settings (PWA fallback)
-      let apiKey = import.meta.env.VITE_ANTHROPIC_API_KEY || settings.apiKey || '';
-      if (!apiKey) {
-        try {
-          const inv = await getTauriInvoke();
-          if (inv) {
-            apiKey = await inv('get_secret', { service: 'valerie', key: 'claude_api_key' }) ?? '';
-            if (apiKey) settingsRef.current = { ...settings, apiKey };
-          }
-        } catch {}
-      }
-      const [claude, ollama] = await Promise.all([pingClaude(apiKey), pingOllama()]);
+      const [claude, ollama] = await Promise.all([pingClaude(), pingOllama()]);
       setClaudeOnline(claude);
       setOllamaOnline(ollama);
       setLastPinged(new Date());
@@ -155,14 +123,6 @@ export function useAI() {
     setOrbState('thinking');
 
     const settings = storage.get(STORAGE_KEYS.SETTINGS, {});
-    // Priority: env var (hardlocked)  keychain (desktop)  settings (PWA fallback)
-    let apiKey = import.meta.env.VITE_ANTHROPIC_API_KEY || settings.apiKey || '';
-    if (!apiKey) {
-      try {
-        const inv = await getTauriInvoke();
-        if (inv) apiKey = await inv('get_secret', { service: 'valerie', key: 'claude_api_key' }) ?? '';
-      } catch {}
-    }
 
     // Build context snapshot from live app state
     const context = buildContext({ activeTab: activeTabRef.current });
@@ -177,7 +137,6 @@ export function useAI() {
       const { text: rawReply, engine } = await routeMessage({
         message: text,
         history,
-        apiKey,
         claudeOnline: claudeOnlineRef.current,
         ollamaOnline: ollamaOnlineRef.current,
         context,

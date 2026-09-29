@@ -6,6 +6,9 @@
 import { storage, STORAGE_KEYS } from '../utils/storage.js';
 import { toLocalDateKey, isOnLocalDay } from '../utils/localDate.js';
 import { normalizeTasks } from '../domain/tasks.js';
+import { dayScore, GOAL_TEMPLATES } from '../domain/goals.js';
+import { bests, detectPR, setsOf } from '../domain/training.js';
+import { dueItems } from '../domain/ahead.js';
 
 //  buildContext 
 /**
@@ -145,6 +148,66 @@ export function buildContext({ activeTab = 'dashboard' } = {}) {
     const body   = storage.get(STORAGE_KEYS.BODY, []);
     const latest = [...(Array.isArray(body) ? body : [])].sort((a, b) => (b.date ?? '').localeCompare(a.date ?? ''))[0];
     if (latest?.weight) lines.push(`Body: ${latest.weight}kg${latest.bodyFat ? `, ${latest.bodyFat}% body fat` : ''}${latest.muscle ? `, ${latest.muscle}kg muscle` : ''}`);
+  } catch {}
+
+  //  Active Coach goal + today's adherence score
+  try {
+    const settings = storage.get(STORAGE_KEYS.SETTINGS, {}) || {};
+    const goal = settings.coachGoal;
+    if (goal?.targets) {
+      const today = toLocalDateKey(now);
+      const nutrition = storage.get(STORAGE_KEYS.MACROS, []);
+      const water = storage.get(STORAGE_KEYS.WATER, []);
+      const sleep = storage.get(STORAGE_KEYS.SLEEP, []);
+      const workouts = storage.get(STORAGE_KEYS.WORKOUT_LOGS, []);
+      const todayNutrition = (Array.isArray(nutrition) ? nutrition : []).filter(x => x.date === today);
+      const lastSleep = [...(Array.isArray(sleep) ? sleep : [])].sort((a, b) => (b.date ?? '').localeCompare(a.date ?? ''))[0];
+      const score = dayScore({
+        targets: goal.targets,
+        calories: todayNutrition.reduce((sum, x) => sum + (Number(x.calories) || 0), 0),
+        protein: todayNutrition.reduce((sum, x) => sum + (Number(x.protein) || 0), 0),
+        waterMl: (Array.isArray(water) ? water : []).filter(x => x.date === today).reduce((sum, x) => sum + (Number(x.amount) || 0), 0),
+        waterGoalMl: settings.waterGoal || 2500,
+        sleepHours: lastSleep?.duration ? Number(lastSleep.duration) / 60 : Number(lastSleep?.hours) || 0,
+        trained: (Array.isArray(workouts) ? workouts : []).some(x => x.date === today),
+      });
+      const goalName = GOAL_TEMPLATES[goal.template]?.label || goal.customText || goal.template;
+      lines.push(`Active Coach goal: ${goalName}`);
+      lines.push(`Coach targets: ${goal.targets.kcal} kcal, ${goal.targets.protein}g protein, ${goal.targets.carbs}g carbs, ${goal.targets.fat}g fat`);
+      lines.push(`Today's Coach score: ${score.score}/100 (${score.factors.map(x => `${x.label} ${Math.round(x.pct * 100)}%`).join(', ')})`);
+      lines.push(`Coach personality: ${settings.coachPersonality || 'calm expert'}`);
+    }
+  } catch {}
+
+  //  Recent PRs, derived from the same set-level rules as Train
+  try {
+    const logs = [...(storage.get(STORAGE_KEYS.WORKOUT_LOGS, []) || [])]
+      .filter(x => x?.date && x?.exerciseName)
+      .sort((a, b) => a.date.localeCompare(b.date));
+    const processed = [];
+    const cutoff = toLocalDateKey(new Date(now.getTime() - 14 * 86400000));
+    const prs = [];
+    for (const log of logs) {
+      const history = bests(processed, log.exerciseName);
+      const todaySets = [];
+      for (const set of setsOf(log)) {
+        const pr = detectPR(set, { history, todaySets });
+        if (pr && log.date >= cutoff) prs.push(`${log.date} ${log.exerciseName} ${set.weight}kg × ${set.reps} (${pr.kinds.join('+')})`);
+        todaySets.push(set);
+      }
+      processed.push(log);
+    }
+    if (prs.length) lines.push(`Recent training PRs: ${prs.slice(-5).join('; ')}`);
+  } catch {}
+
+  //  Ahead engine: only items inside the ordering window
+  try {
+    const today = toLocalDateKey(now);
+    const supplies = storage.get(STORAGE_KEYS.ESSENTIALS, []);
+    const due = dueItems(Array.isArray(supplies) ? supplies : [], today).slice(0, 5);
+    if (due.length) {
+      lines.push(`Supplies due: ${due.map(({ item, f }) => `${item.name} (${f.status}, order by ${f.reorderBy}, runs out ${f.runOut})`).join('; ')}`);
+    }
   } catch {}
 
   //  Looksmaxxing (LM) phase + appearance scorecard

@@ -2,12 +2,13 @@
 // Parses structured action objects from Claude's JSON response and executes them.
 // This is how VALERIE actually controls the app  not just talks about it.
 
-import { supabase, getUserId, getUserIdSync } from '../supabase/supabase.js';
+import { supabase, getUserId } from '../supabase/supabase.js';
 import { storage, STORAGE_KEYS } from '../utils/storage.js';
 import { sanitizePayload } from '../utils/sanitize.js';
 import { toLocalDateKey } from '../utils/localDate.js';
 import { makeTask } from '../domain/tasks.js';
 import { NAV_TARGETS } from '../nav/groups.js';
+import { updateSettings } from '../utils/settingsStore.js';
 
 //  Callback registry 
 // Components register handlers here so VALERIE can trigger UI actions.
@@ -220,19 +221,7 @@ async function _executeOne(action) {
       const key = action.key;
       if (!key) break;
       const s = storage.get(STORAGE_KEYS.SETTINGS, {});
-      const merged = { ...s, [key]: !s[key] };
-      storage.set(STORAGE_KEYS.SETTINGS, merged);
-      window.dispatchEvent(new CustomEvent('valerie:settings-changed', { detail: merged }));
-      // Strip sensitive keys before syncing to Firestore
-      const { apiKey: _a, finnhubKey: _f, ...safeSettings } = merged;
-      const uidTS = getUserIdSync();
-      if (uidTS) {
-        supabase.from('user_meta').upsert({ user_id: uidTS, key: 'settings', value: safeSettings }, { onConflict: 'user_id,key' }).then(({ error }) => {
-          if (error) { console.error('[VALERIE action] settings sync failed:', error.message); window.dispatchEvent(new CustomEvent('valerie:toast', { detail: { message: `⚠️ Couldn't sync settings — ${error.message}`, type: 'error' } })); }
-        });
-      } else {
-        console.error('[VALERIE action] settings sync failed: not signed in');
-      }
+      updateSettings({ [key]: !s[key] }, s);
       break;
     }
 
@@ -241,19 +230,7 @@ async function _executeOne(action) {
       const { key: sKey, value: sVal } = action;
       if (!sKey) break;
       const s2 = storage.get(STORAGE_KEYS.SETTINGS, {});
-      const updated = { ...s2, [sKey]: sVal };
-      storage.set(STORAGE_KEYS.SETTINGS, updated);
-      window.dispatchEvent(new CustomEvent('valerie:settings-changed', { detail: updated }));
-      // Strip sensitive keys before syncing to Firestore
-      const { apiKey: _a2, finnhubKey: _f2, ...safeUpdated } = updated;
-      const uidCS = getUserIdSync();
-      if (uidCS) {
-        supabase.from('user_meta').upsert({ user_id: uidCS, key: 'settings', value: safeUpdated }, { onConflict: 'user_id,key' }).then(({ error }) => {
-          if (error) { console.error('[VALERIE action] settings sync failed:', error.message); window.dispatchEvent(new CustomEvent('valerie:toast', { detail: { message: `⚠️ Couldn't sync settings — ${error.message}`, type: 'error' } })); }
-        });
-      } else {
-        console.error('[VALERIE action] settings sync failed: not signed in');
-      }
+      updateSettings({ [sKey]: sVal }, s2);
       break;
     }
 

@@ -4,6 +4,7 @@
 // Extracted from Settings.jsx handleSave; behaviour is unchanged.
 import { storage, STORAGE_KEYS } from './storage.js';
 import { supabase, getUserIdSync } from '../supabase/supabase.js';
+import { settingsForSync, stripLegacyClaudeKeys } from './settingsSecurity.js';
 
 const toast = (message) =>
   window.dispatchEvent(new CustomEvent('valerie:toast', { detail: { message, type: 'error' } }));
@@ -15,7 +16,7 @@ const toast = (message) =>
 export function updateSettings(updates, base = storage.get(STORAGE_KEYS.SETTINGS, {})) {
   // Strip any non-serialisable data before merging (prevents localStorage QuotaExceededError)
   const safeUpdates = JSON.parse(JSON.stringify(updates));
-  const merged = { ...base, ...safeUpdates };
+  const merged = stripLegacyClaudeKeys({ ...base, ...safeUpdates });
   try { storage.set(STORAGE_KEYS.SETTINGS, merged); } catch {}
 
   // Sync full settings to Supabase so iOS PWA can pull them on first launch.
@@ -25,7 +26,7 @@ export function updateSettings(updates, base = storage.get(STORAGE_KEYS.SETTINGS
     console.error('[Settings sync] not signed in — saved locally only');
     toast('⚠️ Not signed in — settings saved on this device only');
   } else {
-    supabase.from('user_meta').upsert({ user_id: userId, key: 'settings', value: merged }, { onConflict: 'user_id,key' }).then(({ error }) => {
+    supabase.from('user_meta').upsert({ user_id: userId, key: 'settings', value: settingsForSync(merged) }, { onConflict: 'user_id,key' }).then(({ error }) => {
       if (error) {
         console.error('[Settings sync]', error.message);
         toast(`⚠️ Couldn't sync settings — ${error.message}`);

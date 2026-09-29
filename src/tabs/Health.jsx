@@ -6,7 +6,7 @@ import { useCollection }                  from '../supabase/useCollection.js';
 import { useDocument }                    from '../supabase/useDocument.js';
 import { storage, STORAGE_KEYS }          from '../utils/storage.js';
 import { RingChart, ProgressBar, StageBar, BarChart } from '../components/Charts.jsx';
-import { fetch as tauriFetch } from '@tauri-apps/plugin-http';
+import { askClaudeRaw } from '../utils/claudeRaw.js';
 import { useAppleHealth } from '../hooks/useAppleHealth.js';
 import { MICRONUTRIENTS, MICRO_BY_KEY, MICRO_GROUPS, extractMicrosFromOFF, scaleMicros, sumMicros, hasMicros } from '../utils/micronutrients.js';
 import { currencySymbol as currencySym } from '../utils/currency.js';
@@ -2120,7 +2120,7 @@ const MEAL_TYPES = ['breakfast','lunch','dinner','snack'];
 const MEAL_TYPE_COLOUR = { breakfast:'#f4a642', lunch:'#4caf7d', dinner:'#4a9eff', snack:'#9b5de5' };
 const DAYS = ['Monday','Tuesday','Wednesday','Thursday','Friday','Saturday','Sunday'];
 
-async function generateMealPlan({ calorieGoal, proteinGoal, carbGoal, fatGoal, weight, mealsPerDay, dietaryNotes, supplements, apiKey, currency = 'AUD' }) {
+async function generateMealPlan({ calorieGoal, proteinGoal, carbGoal, fatGoal, weight, mealsPerDay, dietaryNotes, supplements, currency = 'AUD' }) {
   const suppList = supplements.length ? supplements.map(s => s.name).join(', ') : 'none';
   const prompt = `Generate a detailed personalised 7-day meal plan.
 
@@ -2165,30 +2165,13 @@ Rules:
 - List every ingredient with qty and unit (g or ml; unit "" for whole items like eggs); use the same plain ingredient names across the week so they add up into one shopping list
 - Include daily cost total in totals.cost`;
 
-  const res = await tauriFetch('https://api.anthropic.com/v1/messages', {
-    method: 'POST',
-    headers: {
-      'Content-Type': 'application/json',
-      'x-api-key': apiKey,
-      'anthropic-version': '2023-06-01',
-      'anthropic-dangerous-direct-browser-access': 'true',
-    },
-    body: JSON.stringify({
-      model: 'claude-sonnet-4-20250514',
-      max_tokens: 4096,
-      messages: [{ role: 'user', content: prompt }],
-    }),
-  });
-  if (!res.ok) { const e = await res.json().catch(() => ({})); throw new Error(e?.error?.message || `API error ${res.status}`); }
-  const data = await res.json();
-  const text = data.content?.[0]?.text ?? '';
+  const text = await askClaudeRaw(prompt, 'Return only the requested valid JSON object. Do not use markdown fences.', [], { maxTokens: 4096 });
   // Strip any markdown fences just in case
   const clean = text.replace(/```json?\n?/g, '').replace(/```/g, '').trim();
   return JSON.parse(clean);
 }
 
 function MealPlanner({ settings, savedMeals = [], addSavedMeal, bodyMetrics = [], supplements = [] }) {
-  const apiKey = settings?.claudeApiKey || settings?.apiKey || '';
   const goals  = settings?.macros ?? {};
   const latestBody  = [...bodyMetrics].sort((a,b)=>(b.date??'').localeCompare(a.date??''))[0];
   const currencySymbol = currencySym(settings?.currency);
@@ -2215,14 +2198,13 @@ function MealPlanner({ settings, savedMeals = [], addSavedMeal, bodyMetrics = []
   const [logged, setLogged] = useState(false);
 
   const generate = async () => {
-    if (!apiKey) { setError('No Claude API key — add it in Settings → AI.'); return; }
     setGenerating(true); setError(''); setPlan(null);
     try {
       const result = await generateMealPlan({
         calorieGoal, proteinGoal, carbGoal, fatGoal,
         weight: latestBody?.weight,
         mealsPerDay, dietaryNotes,
-        supplements, apiKey, currency: settings?.currency || 'AUD',
+        supplements, currency: settings?.currency || 'AUD',
       });
       const newPlan = result.plan ?? result;
       setPlan(newPlan);

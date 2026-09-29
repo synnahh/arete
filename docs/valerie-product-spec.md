@@ -111,6 +111,8 @@ Sections: **Goal HQ · Train · Fuel · Recover · Look · Body · Habits**.
 
 **Coach personality — [OWNER] Q-COACH:** a swappable system-prompt layer (calm expert / drill sergeant / hype). Voice on or off per platform. The default until decided is calm expert, text only.
 
+Implementation note (2026-09-29): the server prompt has all three personality layers and defaults to calm expert. Coach context now includes the active goal and targets, today's adherence score, recent Train PRs and due Supplies forecasts. The owner's personality/voice choice remains open.
+
 ### 4.4 The Ahead engine (new, the signature feature)
 
 The app predicts what runs out and prepares the restock before the owner notices.
@@ -192,7 +194,7 @@ All follow the existing RLS owner policy pattern.
 
 All model calls move to a **server function** (Supabase Edge Function `ai-chat`). The browser sends the user message plus a conversation id; the server assembles context, calls Anthropic with streaming, validates tool calls and streams back. The API key exists only on the server. This is also what makes web and iOS behave identically, because prompts and tool schemas live in one place.
 
-**[OWNER] Q-INFRA:** Approve adding Supabase Edge Functions (free tier covers this scale) as the server layer. Without it, the key-exposure fix, SMS and reliable reminders cannot be done properly.
+**Approved 2026-09-29.** `supabase/functions/ai-chat` is the first server function. The client migration is coded; deployment waits for the exposed Anthropic key to be rotated and configured as a Supabase secret.
 
 ### 7.2 Layers
 
@@ -333,6 +335,6 @@ Cross-cutting: build passes; tests pass; 60 fps on tab switch and list scroll on
 | Q-USE | Features used daily vs never. | Removal list |
 | Q-VIS | ~~Approve the visual board~~ Approved 2026-09-29; tokens shipped in 886b1ad. | — |
 | Q-STANCE | Brief lists STANCE as an inspiration app: which of its features should Arete take? | Feature list for Coach / Plan |
-| Q-INFRA | Approve Supabase Edge Functions as the server layer. | AI proxy, SMS, reliable reminders |
+| Q-INFRA | ~~Approve Supabase Edge Functions as the server layer.~~ Approved 2026-09-29; `ai-chat` coded, not yet deployed. | — |
 | Q-iOS | Is there any native iOS project? | Parity plan |
 | Q-SMS | SMS countries and sender status. | Twilio production setup |

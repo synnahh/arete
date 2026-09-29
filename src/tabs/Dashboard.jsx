@@ -19,7 +19,6 @@ import { getGreeting, formatDate } from '../utils/time.js';
 import { storage, STORAGE_KEYS } from '../utils/storage.js';
 import { askClaude } from '../ai/claude.js';
 import { askOllama } from '../ai/ollama.js';
-import { rateLimitClaude } from '../utils/rateLimit.js';
 import DayRing from '../components/DayRing.jsx';
 import GoalRing from '../components/GoalRing.jsx';
 import { useCollection } from '../supabase/useCollection.js';
@@ -392,11 +391,9 @@ function DailyBriefSection({ ai }) {
     const dateStr  = formatDate();
     const prompt = `${greeting}. Today is ${dateStr}. I have ${pending.length} pending task${pending.length !== 1 ? 's' : ''}.${pending.length > 0 ? ` Top items: ${pending.slice(0,3).map(t => t.text).join(', ')}.` : ''} Give me a sharp, motivating daily brief in 2-3 sentences. No fluff.`;
     try {
-      const settings = storage.get(STORAGE_KEYS.SETTINGS, {});
       let text = '';
-      if (ai.claudeOnline && settings.apiKey) {
-        rateLimitClaude();
-        text = await askClaude(prompt, [], settings.apiKey);
+      if (ai.claudeOnline) {
+        text = await askClaude(prompt);
       } else if (ai.ollamaOnline) {
         text = await askOllama(prompt, []);
       } else {

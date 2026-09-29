@@ -16,7 +16,6 @@ import { askOllama  } from './ollama.js';
  * @param {object} params
  * @param {string}  params.message
  * @param {Array}   params.history
- * @param {string}  params.apiKey
  * @param {boolean} params.claudeOnline
  * @param {boolean} params.ollamaOnline
  * @param {string}  params.context        live app context string
@@ -27,7 +26,6 @@ import { askOllama  } from './ollama.js';
 export async function routeMessage({
   message,
   history,
-  apiKey,
   claudeOnline,
   ollamaOnline,
   context = '',
@@ -38,7 +36,7 @@ export async function routeMessage({
   let engine = forceEngine ?? 'claude'; // Claude is always first preference
 
   // Downgrade to Ollama if Claude isn't available
-  if (engine === 'claude' && (!claudeOnline || !apiKey)) {
+  if (engine === 'claude' && !claudeOnline) {
     engine = 'ollama';
   }
 
@@ -54,7 +52,7 @@ export async function routeMessage({
     };
   }
 
-  if (engine === 'claude' && (!claudeOnline || !apiKey)) {
+  if (engine === 'claude' && !claudeOnline) {
     return {
       text: JSON.stringify({
         speech: "I'm offline right now. No connection to Claude or a local model. Check your internet or start Ollama to continue.",
@@ -68,7 +66,7 @@ export async function routeMessage({
   //  Try primary engine 
   try {
     if (engine === 'claude') {
-      const text = await askClaude(message, history, apiKey, { context, memory });
+      const text = await askClaude(message, history, null, { context, memory });
       return { text, engine: 'claude' };
     } else {
       const text = await askOllama(message, history, { context });
@@ -83,8 +81,8 @@ export async function routeMessage({
         const text = await askOllama(message, history, { context });
         return { text, engine: 'ollama' };
       }
-      if (engine === 'ollama' && claudeOnline && apiKey) {
-        const text = await askClaude(message, history, apiKey, { context, memory });
+      if (engine === 'ollama' && claudeOnline) {
+        const text = await askClaude(message, history, null, { context, memory });
         return { text, engine: 'claude' };
       }
     } catch (fallbackErr) {

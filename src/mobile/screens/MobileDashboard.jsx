@@ -183,9 +183,8 @@ function DailyBriefCard({ ai }) {
     const pending = tasks.filter(t => !t.done);
     const prompt  = `${getGreeting()}. Today is ${formatDate()}. I have ${pending.length} pending task${pending.length !== 1 ? 's' : ''}.${pending.length > 0 ? ` Top items: ${pending.slice(0,3).map(t=>t.text).join(', ')}.` : ''} Give me a sharp, motivating daily brief in 2-3 sentences. No fluff.`;
     try {
-      const settings = storage.get(STORAGE_KEYS.SETTINGS, {});
       let text = '';
-      if (ai.claudeOnline && settings.apiKey) text = await askClaude(prompt, [], settings.apiKey);
+      if (ai.claudeOnline)                    text = await askClaude(prompt);
       else if (ai.ollamaOnline)                text = await askOllama(prompt, []);
       else                                     text = `${getGreeting()}. ${pending.length} task${pending.length!==1?'s':''} waiting. Stay sharp and move with intention.`;
       setBrief(text);

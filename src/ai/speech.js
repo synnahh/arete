@@ -9,9 +9,8 @@ import { rateLimitElevenLabs } from '../utils/rateLimit.js';
 //  VALERIE's voice identity 
 // Default voice ID  locked in as VALERIE's voice. Overridable in Settings.
 const DEFAULT_VOICE_ID = import.meta.env.VITE_ELEVENLABS_VOICE_ID || 'yj30vwTGJxSHezdAGsv9';
-// API key is NOT read from env  enter it in Settings  Voice so it stays out of the bundle
-// Hardlocked via VITE_ELEVENLABS_API_KEY env var  no need to enter in Settings on web
-const DEFAULT_API_KEY  = import.meta.env.VITE_ELEVENLABS_API_KEY || '';
+// Never read provider secrets from Vite env: Vite embeds them in shipped JS.
+const DEFAULT_API_KEY  = '';
 const ELEVENLABS_MODEL    = 'eleven_monolingual_v1'; // compatible with free ElevenLabs plans
 
 // Session-level disables  set to true on first auth/plan rejection to avoid

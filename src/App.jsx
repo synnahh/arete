@@ -6,6 +6,7 @@ import { supabase }                 from './supabase/supabase.js';
 import MobileShell                  from './mobile/MobileShell.jsx';
 import { applyTheme }            from './styles/themes.js';
 import { applyAppearance, setActiveGroup, backgroundClass } from './styles/appearance.js';
+import { stripLegacyClaudeKeys } from './utils/settingsSecurity.js';
 import { getTimeOfDay }          from './utils/time.js';
 import { useAI }                 from './ai/useAI.js';
 import { useSupabaseStatus }    from './supabase/useSupabaseStatus.js';
@@ -294,6 +295,7 @@ export default function App() {
     setOnboarded(isOnboarded);
 
     function applyAndSet(s) {
+      s = stripLegacyClaudeKeys(s);
       if (s.theme === 'phantom') { s.theme = 'obsidian'; s.accentColorHex = ''; }
       setSettings(s);
       storage.set(STORAGE_KEYS.SETTINGS, s);

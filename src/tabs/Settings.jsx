@@ -40,7 +40,7 @@ class SectionErrorBoundary extends Component {
 }
 import { storage, STORAGE_KEYS } from '../utils/storage.js';
 import { THEMES, applyTheme }    from '../styles/themes.js';
-import { testClaudeKey }         from '../ai/claude.js';
+import { testClaudeConnection }  from '../ai/claude.js';
 import { sendTestSMS }           from '../utils/twilio.js';
 import { requestPushPermission, pushPermissionStatus } from '../utils/pushNotifications.js';
 import { spotifyLogin, spotifyDisconnect, isSpotifyConnected } from '../utils/spotify.js';
@@ -592,7 +592,7 @@ export function VoiceSection({ settings, onSave }) {
           fetchEl11Voices(stored).catch(() => {});
         } else {
           // Tauri keyring empty  fall back to env or settings
-          const legacy = settings.voice?.elevenlabsKey || settings.elevenlabsKey || import.meta.env.VITE_ELEVENLABS_API_KEY || '';
+          const legacy = settings.voice?.elevenlabsKey || settings.elevenlabsKey || '';
           if (legacy) {
             setEl11Key(legacy);
             if (isTauri()) invoke('store_secret', { service: 'valerie', key: 'elevenlabs_api_key', value: legacy }).catch(() => {});
@@ -602,7 +602,7 @@ export function VoiceSection({ settings, onSave }) {
       })
       .catch(() => {
         // PWA  keyring not available, use env key directly
-        const fallback = import.meta.env.VITE_ELEVENLABS_API_KEY || settings.voice?.elevenlabsKey || settings.elevenlabsKey || '';
+        const fallback = settings.voice?.elevenlabsKey || settings.elevenlabsKey || '';
         if (fallback) { setEl11Key(fallback); fetchEl11Voices(fallback).catch(() => {}); }
       });
   }, []); // eslint-disable-line react-hooks/exhaustive-deps
@@ -1115,7 +1115,6 @@ export function VoiceSection({ settings, onSave }) {
 
 //  Section: AI 
 export function AISection({ settings, onSave }) {
-  const [apiKey,        setApiKey]        = useState(settings.apiKey        || '');
   const [ollamaModel,   setOllamaModel]   = useState(settings.ollamaModel   || 'llama3');
   const [preferOffline, setPreferOffline] = useState(settings.preferOffline ?? false);
   const [tokenBudget,   setTokenBudget]   = useState(settings.dailyTokenBudget || 100000);
@@ -1125,28 +1124,6 @@ export function AISection({ settings, onSave }) {
   const [testResult,    setTestResult]    = useState(null); // { ok, reason }
   const [testing,       setTesting]       = useState(false);
 
-  // Load Claude API key from OS keychain on mount  survives force-kills and localStorage clears.
-  // Falls back to settings object (localStorage) then migrates legacy key into keychain.
-  useEffect(() => {
-    invoke('get_secret', { service: 'valerie', key: 'claude_api_key' })
-      .then(stored => {
-        if (stored) {
-          setApiKey(stored);
-        } else {
-          // Migrate legacy key from localStorage/settings into keychain
-          const legacy = settings.apiKey || '';
-          if (legacy) {
-            setApiKey(legacy);
-            invoke('store_secret', { service: 'valerie', key: 'claude_api_key', value: legacy }).catch(() => {});
-          }
-        }
-      })
-      .catch(() => {
-        // Keychain unavailable (PWA build)  fall back to settings value
-        if (settings.apiKey) setApiKey(settings.apiKey);
-      });
-  }, []); // eslint-disable-line react-hooks/exhaustive-deps
-
   useEffect(() => {
     fetch('http://localhost:11434/api/tags', { signal: AbortSignal.timeout(2000) })
       .then(r => r.json())
@@ -1155,52 +1132,41 @@ export function AISection({ settings, onSave }) {
   }, []);
 
   const handleSave = () => {
-    const key = apiKey.trim();
-    // Save to keychain so key survives force-kills  also keep in settings for PWA fallback
-    invoke('store_secret', { service: 'valerie', key: 'claude_api_key', value: key }).catch(() => {});
-    onSave({ apiKey: key, ollamaModel, preferOffline, dailyTokenBudget: tokenBudget, smartRouting });
+    onSave({ ollamaModel, preferOffline, dailyTokenBudget: tokenBudget, smartRouting });
     setSaved(true);
     setTimeout(() => setSaved(false), 2000);
     setTestResult(null);
   };
 
   const handleTest = async () => {
-    if (!apiKey.trim() || testing) return;
+    if (testing) return;
     setTesting(true);
     setTestResult(null);
-    const result = await testClaudeKey(apiKey.trim());
+    const result = await testClaudeConnection();
     setTestResult(result);
     setTesting(false);
-    if (result.ok) {
-      const key = apiKey.trim();
-      invoke('store_secret', { service: 'valerie', key: 'claude_api_key', value: key }).catch(() => {});
-      onSave({ apiKey: key });
-    }
   };
 
   return (
     <div>
       <SectionTitle>AI Configuration <SavedBadge show={saved} /></SectionTitle>
 
-      {/* Claude API key + test */}
+      {/* Server-side Claude connection */}
       <Row
-        label="Claude API key"
-        hint="Your Anthropic API key  stored locally, never transmitted except to api.anthropic.com"
+        label="Secure AI service"
+        hint="Anthropic runs through the authenticated Arete server; no provider key is stored in this app"
       >
         <div style={{ display: 'flex', gap: 8, marginBottom: 8 }}>
-          <div style={{ flex: 1 }}>
-            <Input value={apiKey} onChange={v => { setApiKey(v); setTestResult(null); }} placeholder="sk-ant-…" masked />
-          </div>
           <button
             onClick={handleTest}
-            disabled={!apiKey.trim() || testing}
+            disabled={testing}
             style={{
               padding: '0 16px', borderRadius: 8, flexShrink: 0,
               border: `0.5px solid ${testResult?.ok ? '#4caf7d' : testResult ? '#e55a5a' : 'var(--card-border)'}`,
               background: testResult?.ok ? '#4caf7d15' : testResult ? '#e55a5a15' : 'var(--hover-bg)',
               color: testResult?.ok ? '#4caf7d' : testResult ? '#e55a5a' : 'var(--text-secondary)',
-              fontSize: 12, cursor: !apiKey.trim() || testing ? 'not-allowed' : 'pointer',
-              opacity: !apiKey.trim() ? 0.5 : 1, whiteSpace: 'nowrap',
+              fontSize: 12, cursor: testing ? 'not-allowed' : 'pointer',
+              whiteSpace: 'nowrap',
             }}
           >
             {testing ? 'Testing…' : testResult?.ok ? '✓ Connected' : 'Test connection'}
@@ -1213,7 +1179,7 @@ export function AISection({ settings, onSave }) {
         )}
         {testResult?.ok && (
           <p style={{ margin: 0, fontSize: 11, color: '#4caf7d' }}>
-            {testResult.reason}  key saved automatically.
+            {testResult.reason}.
           </p>
         )}
       </Row>
@@ -1942,18 +1908,11 @@ function ApiUsageSection({ settings }) {
   const currSymbol = currencySym(currency);
   const rate       = currency === 'AUD' ? 1.55 : currency === 'GBP' ? 0.64 : currency === 'EUR' ? 0.73 : 1.0;
 
-  const hasKey = !!settings.apiKey?.trim();
-
   return (
     <div>
       <SectionTitle>API Usage</SectionTitle>
 
-      {!hasKey ? (
-        <div style={{ color: 'var(--text-muted)', fontSize: 13, lineHeight: 1.6 }}>
-          Add your Claude API key in <strong style={{ color: 'var(--text-primary)' }}>Settings → AI</strong> first.
-        </div>
-      ) : (
-        <div style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
+      <div style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
 
           {/* Console link  primary action */}
           <div style={{
@@ -2024,8 +1983,7 @@ function ApiUsageSection({ settings }) {
               {(localLog.log || []).length} logged events · VALERIE gets smarter with each interaction
             </div>
           </div>
-        </div>
-      )}
+      </div>
     </div>
   );
 }
