@@ -88,7 +88,7 @@ export default function AuthGate() {
         <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 16 }}>
           <img
             src="/assets/valerie-logo.png"
-            alt="VALERIE"
+            alt="Arete"
             style={{
               width: 72, height: 72, objectFit: 'contain',
               filter: 'drop-shadow(0 0 28px rgba(167,139,250,0.5))',

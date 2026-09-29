@@ -190,7 +190,7 @@ export default function LockScreen({ onUnlock }) {
         <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 14 }}>
           <img
             src="/assets/valerie-logo.png"
-            alt="VALERIE"
+            alt="Arete"
             style={{
               width: 68, height: 68, objectFit: 'contain',
               filter: 'drop-shadow(0 0 28px rgba(167,139,250,0.5))',

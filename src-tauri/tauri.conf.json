@@ -12,7 +12,7 @@
   "app": {
     "windows": [
       {
-        "title": "VALERIE",
+        "title": "Arete",
         "width": 1280,
         "height": 820,
         "minWidth": 1100,
@@ -31,10 +31,10 @@
     "active": true,
     "targets": "all",
     "publisher": "Rob",
-    "copyright": "© 2026 VALERIE",
+    "copyright": "© 2026 Arete",
     "category": "Productivity",
     "shortDescription": "Personal AI assistant dashboard",
-    "longDescription": "VALERIE is a premium personal AI assistant — your daily operating layer for health, finance, tasks, and life.",
+    "longDescription": "Arete: gym, nutrition, looks and money in one system, with an AI coach that stays ahead of you.",
     "icon": [
       "icons/32x32.png",
       "icons/128x128.png",

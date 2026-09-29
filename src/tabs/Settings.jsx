@@ -2977,7 +2977,7 @@ export default function SettingsTab({ settings: settingsProp }) {
           letterSpacing: '0.08em', fontFamily: 'ui-monospace, monospace',
           opacity: 0.5,
         }}>
-          VALERIE v{__APP_VERSION__}
+          Arete v{__APP_VERSION__}
         </div>
       </nav>
 

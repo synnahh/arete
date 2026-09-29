@@ -94,7 +94,7 @@ class RootErrorBoundary extends Component {
           alignItems: 'center', justifyContent: 'center', gap: 20,
         }}>
           <div style={{ fontSize: 32 }}>⚠️</div>
-          <div style={{ fontSize: 16, fontWeight: 600, color: '#fff' }}>VALERIE encountered an error</div>
+          <div style={{ fontSize: 16, fontWeight: 600, color: '#fff' }}>Arete hit an error</div>
           <div style={{ fontSize: 12, color: 'rgba(255,255,255,0.4)', maxWidth: 360, textAlign: 'center', lineHeight: 1.7 }}>
             {String(this.state.error?.message || this.state.error)}
           </div>
@@ -104,7 +104,7 @@ class RootErrorBoundary extends Component {
               background: 'var(--accent, #a78bfa)', color: '#000',
               fontSize: 14, fontWeight: 700, cursor: 'pointer', marginTop: 8 }}
           >
-            {this.state.reloading ? 'Reloading…' : 'Reload VALERIE'}
+            {this.state.reloading ? 'Reloading…' : 'Reload Arete'}
           </button>
         </div>
       );

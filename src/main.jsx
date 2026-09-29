@@ -53,7 +53,7 @@ ReactDOM.createRoot(document.getElementById("root")).render(
               background: '#0f172a', color: '#94a3b8', fontSize: 13, cursor: 'pointer',
             }}
           >
-            Reload VALERIE
+            Reload Arete
           </button>
         </div>
       }

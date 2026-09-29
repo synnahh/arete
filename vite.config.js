@@ -16,8 +16,8 @@ export default defineConfig(async () => ({
       registerType: "autoUpdate",
       includeAssets: ["assets/valerie-logo.png", "assets/icon-192.png", "assets/icon-512.png"],
       manifest: {
-        name: "VALERIE",
-        short_name: "VALERIE",
+        name: "Arete",
+        short_name: "Arete",
         description: "Your personal AI assistant — health, tasks, finance & focus",
         theme_color: "#080808",
         background_color: "#080808",

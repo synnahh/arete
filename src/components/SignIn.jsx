@@ -62,7 +62,7 @@ export default function SignIn({ onSignedIn }) {
       }}>
         <img
           src="/assets/valerie-logo.png"
-          alt="VALERIE"
+          alt="Arete"
           style={{ width: 60, height: 60, objectFit: 'contain', filter: 'drop-shadow(0 0 28px rgba(167,139,250,0.5))' }}
         />
 
@@ -70,7 +70,7 @@ export default function SignIn({ onSignedIn }) {
           <div style={{
             fontSize: 11, fontWeight: 700, letterSpacing: '0.28em', textTransform: 'uppercase',
             color: 'rgba(255,255,255,0.25)', fontFamily: 'ui-monospace, monospace', marginBottom: 10,
-          }}>VALERIE</div>
+          }}>ARETE</div>
           <div style={{ fontSize: 18, fontWeight: 300, color: 'rgba(255,255,255,0.85)' }}>
             Connect this device
           </div>

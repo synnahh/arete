@@ -477,7 +477,7 @@ export default function Sidebar({ activeGroup, onGroupClick, claudeOnline, ollam
       }}>
         <img
           src="/assets/valerie-logo.png"
-          alt="VALERIE"
+          alt="Arete"
           style={{ width: 28, height: 28, objectFit: 'contain', opacity: 0.9 }}
         />
       </div>
