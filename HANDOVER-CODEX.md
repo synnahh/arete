@@ -181,3 +181,9 @@ Rotate the Anthropic and ElevenLabs keys, then set `ANTHROPIC_API_KEY`/`ANTHROPI
 - **Rob must run `supabase/progress_photos.sql`** (table, RLS, realtime, private bucket, owner-only object policies). Until then uploads show "Photo storage isn't set up yet" and save nothing.
 - Old device-only photos (localStorage `valerie_photos`) show under "On this device only" with a Move to cloud button; each is removed locally only after upload + row succeed.
 - Verified in browser with in-memory Supabase/Storage stubs (desktop + 375 px): migrate, upload 4000x3000 -> 1600x1200, compare, delete, missing-bucket failure leaves no row or file. 148 tests; build and build:pwa pass. NOT verified: real Storage bucket/RLS, iPhone camera/EXIF, Tauri.
+
+### Update — pantry subtraction (b42fbdc)
+- Logged food now uses up Kitchen supplies (`pantryUsage`/`applyUsage` in `domain/ahead.js`, `utils/supplies.js` for mirror readers). Match rule: entry has a g/ml quantity, every word of the supply name is in the food name, same unit kind; most specific supply wins, ties match nothing. Derived on read: deleting a meal restores stock, nothing is saved. Per-supply "Subtract food I log" switch (`autoSubtract`).
+- Run-out follows the log after 3+ days of use in 14, and is never later than the schedule. Feeds Supplies, cart, grocery list, Today, attention, assistant context, projected spend.
+- Limits: needs g/ml quantities (search/scan entries have them; saved meals, recents and assistant-logged calories do not) and a pack size in g/kg/ml/l. Planned-meal ingredients are not yet logged with quantities.
+- Verified: 160 tests; both builds; browser with seeded stub (5 kg rice, 6 days x 400 g -> 2.6 kg left, 10 days). Not verified: real data, phone Supplies view (none).
