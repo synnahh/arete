@@ -436,6 +436,10 @@ select option {
 @keyframes val-draw      { to { stroke-dashoffset: 0; } }
 @keyframes val-confetti  { 0% { transform: translateY(0) rotate(0); opacity: 1; } 100% { transform: translateY(120px) rotate(540deg); opacity: 0; } }
 
+/* Coach signature: a logged set kicks (Reduced motion drops .val-signature) */
+@keyframes val-rep-kick { 0% { transform: scale(1); } 30% { transform: scale(1.22); } 100% { transform: scale(1); } }
+.val-rep-kick { animation: val-rep-kick 360ms var(--ease-spring); }
+
 /* ── Utility classes (set --d for per-item stagger delay) ───── */
 .val-fade-up   { opacity: 0; animation: val-fade-up  var(--dur-med)  var(--ease-out) forwards; animation-delay: var(--d, 0ms); }
 .val-fade-in   { opacity: 0; animation: val-fade-in  var(--dur-med)  ease forwards;            animation-delay: var(--d, 0ms); }

@@ -8,6 +8,7 @@ import { useDocument }   from '../supabase/useDocument.js';
 import { STORAGE_KEYS }  from '../utils/storage.js';
 import { anteriorData, posteriorData } from '../components/bodyModel.js';
 import { toLocalDateKey } from '../utils/localDate.js';
+import TrainSession from './TrainSession.jsx';
 
 //  Helpers 
 const todayStr = () => toLocalDateKey(new Date());
@@ -1096,6 +1097,7 @@ function WorkoutCalendar({ workoutLogs }) {
 // ROOT  Workout Tab
 // """""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
 const SUB_NAV = [
+  { id: 'session',  label: 'Session',        icon: '⏱️' },
   { id: 'overload', label: 'Overload Coach', icon: '📈' },
   { id: 'splits',   label: 'Split Planner',  icon: '📋' },
   { id: 'exercises',label: 'Exercises',      icon: '🏋️' },
@@ -1103,11 +1105,12 @@ const SUB_NAV = [
   { id: 'calendar', label: 'Calendar',       icon: '📅' },
 ];
 
-export default function WorkoutTab({ settings }) {
-  const [sub, setSub] = useState('overload');
+// Muscles a lift trains (drives Muscle Ranking and Look).
+export const musclesFor = (ex) => EXERCISE_MUSCLES[ex.name] || MUSCLE_MAP[ex.day] || [];
 
-  // Shared data
-  const { items: workoutLogs, add: addWorkoutLog } = useCollection('workout_logs', STORAGE_KEYS.WORKOUT_LOGS);
+// Shared Train data: logs, exercise library, split names, today's split.
+export function useTrainData() {
+  const { items: workoutLogs, add: addWorkoutLog, update: updateWorkoutLog, remove: removeWorkoutLog } = useCollection('workout_logs', STORAGE_KEYS.WORKOUT_LOGS);
   const { data: storedExercises,  save: saveExercisesDoc  } = useDocument('overload_exercises', STORAGE_KEYS.OVERLOAD_EXERCISES, null);
   const { data: storedSplitNames, save: saveSplitNamesDoc } = useDocument('split_names',        STORAGE_KEYS.SPLIT_NAMES,        DEFAULT_SPLITS);
   const { items: programs, add: addProgram, update: updateProgram, remove: removeProgram } = useCollection('programs', STORAGE_KEYS.PROGRAMS);
@@ -1120,6 +1123,32 @@ export default function WorkoutTab({ settings }) {
   const activeProgram  = programs.find(p => p.isActive) ?? null;
   const todaySplitType = activeProgram?.days?.[todayKey]?.splitType ?? null;
 
+  return {
+    workoutLogs, addWorkoutLog, updateWorkoutLog, removeWorkoutLog,
+    exercises, saveExercisesDoc, splitNames, saveSplitNamesDoc,
+    programs, addProgram, updateProgram, removeProgram, todaySplitType,
+  };
+}
+
+// Train · Session on its own (the phone's Train screen).
+export function TrainSessionScreen({ compact = true }) {
+  const d = useTrainData();
+  return (
+    <TrainSession exercises={d.exercises} workoutLogs={d.workoutLogs}
+      addWorkoutLog={d.addWorkoutLog} updateWorkoutLog={d.updateWorkoutLog} removeWorkoutLog={d.removeWorkoutLog}
+      splitNames={d.splitNames} todaySplitType={d.todaySplitType}
+      progression={computeProgression} musclesFor={musclesFor} compact={compact} />
+  );
+}
+
+export default function WorkoutTab({ settings }) {
+  const [sub, setSub] = useState('session');
+  const {
+    workoutLogs, addWorkoutLog, updateWorkoutLog, removeWorkoutLog,
+    exercises, saveExercisesDoc, splitNames, saveSplitNamesDoc,
+    programs, addProgram, updateProgram, removeProgram, todaySplitType,
+  } = useTrainData();
+
   return (
     <div style={{ display: 'flex', height: '100%', overflow: 'hidden' }}>
       {/* Left sub-nav */}
@@ -1128,8 +1157,8 @@ export default function WorkoutTab({ settings }) {
           <button key={s.id} onClick={() => setSub(s.id)} style={{
             display: 'flex', alignItems: 'center', gap: 8,
             padding: '8px 16px', border: 'none', cursor: 'pointer',
-            borderLeft: `2px solid ${sub === s.id ? 'var(--accent)' : 'transparent'}`,
-            color: sub === s.id ? 'var(--accent)' : 'var(--text-secondary)',
+            borderLeft: `2px solid ${sub === s.id ? 'var(--tab-accent)' : 'transparent'}`,
+            color: sub === s.id ? 'var(--tab-accent)' : 'var(--text-secondary)',
             fontSize: 13, fontWeight: sub === s.id ? 500 : 400,
             transition: 'all 0.15s ease', textAlign: 'left',
             background: sub === s.id ? 'var(--active-bg)' : 'transparent',
@@ -1142,6 +1171,7 @@ export default function WorkoutTab({ settings }) {
 
       {/* Content */}
       <div style={{ flex: 1, overflow: 'hidden' }}>
+        {sub === 'session'   && <TrainSession exercises={exercises} workoutLogs={workoutLogs} addWorkoutLog={addWorkoutLog} updateWorkoutLog={updateWorkoutLog} removeWorkoutLog={removeWorkoutLog} splitNames={splitNames} todaySplitType={todaySplitType} progression={computeProgression} musclesFor={musclesFor} />}
         {sub === 'overload'  && <OverloadCoach workoutLogs={workoutLogs} addWorkoutLog={addWorkoutLog} exercises={exercises} saveExercises={saveExercisesDoc} splitNames={splitNames} saveSplitNames={saveSplitNamesDoc} todaySplitType={todaySplitType} />}
         {sub === 'splits'    && <SplitPlanner programs={programs} addProgram={addProgram} updateProgram={updateProgram} removeProgram={removeProgram} exercises={exercises} splitNames={splitNames} />}
         {sub === 'exercises' && <ExercisesLibrary exercises={exercises} saveExercises={saveExercisesDoc} />}

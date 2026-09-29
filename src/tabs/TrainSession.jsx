@@ -1,0 +1,333 @@
+//  Train · Session  Strong/Liftoff-style logger. Today's exercises are
+//  pre-filled from progressive overload (target weight, reps, last time's
+//  sets as a ghost); one tap on ✓ logs a set, starts the rest timer and
+//  checks for a PR. Logic: src/domain/training.js. Data: workout_logs rows,
+//  one per exercise per day, same shape every other screen already reads.
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import { toLocalDateKey } from '../utils/localDate.js';
+import {
+  bests, detectPR, plannedRows, previousSets, restSeconds, setsOf, todaysLog, topSetOf, volume,
+} from '../domain/training.js';
+
+const today = () => toLocalDateKey(new Date());
+const fmt = (s) => `${Math.floor(s / 60)}:${String(Math.max(0, s) % 60).padStart(2, '0')}`;
+const haptic = (ms = 15) => { try { navigator.vibrate?.(ms); } catch {} };
+const toast = (message, type = 'success') =>
+  window.dispatchEvent(new CustomEvent('valerie:toast', { detail: { message, type } }));
+
+// Per-viewer conveniences that survive switching tabs.
+let restUntil = 0;
+let restTotal = 0;
+let sessionStartedAt = null;
+const readPref = (k, d) => { try { return localStorage.getItem(k) ?? d; } catch { return d; } };
+const writePref = (k, v) => { try { localStorage.setItem(k, v); } catch {} };
+
+const label = {
+  fontFamily: 'var(--font-mono)', fontSize: 10.5, letterSpacing: '0.14em',
+  textTransform: 'uppercase', color: 'var(--text-secondary)',
+};
+const numInput = {
+  width: '100%', minWidth: 0, boxSizing: 'border-box', height: 38, padding: '0 8px', borderRadius: 9,
+  background: 'var(--input-bg)', border: '0.5px solid var(--input-border)', color: 'var(--text-primary)',
+  fontFamily: 'var(--font-mono)', fontSize: 15, textAlign: 'center',
+};
+const pill = (on) => ({
+  minHeight: 36, padding: '0 14px', borderRadius: 999, cursor: 'pointer', fontFamily: 'inherit', fontSize: 13,
+  border: `0.5px solid ${on ? 'var(--tab-accent)' : 'var(--card-border)'}`,
+  background: on ? 'color-mix(in srgb, var(--tab-accent) 14%, transparent)' : 'transparent',
+  color: on ? 'var(--tab-accent)' : 'var(--text-secondary)', fontWeight: on ? 600 : 500,
+});
+const ACTION_COLOUR = { 'ADD WEIGHT': '#4caf7d', HOLD: 'var(--text-secondary)', 'DROP WEIGHT': '#e25d7a', 'FIRST SET': 'var(--tab-accent)' };
+
+//  Rest timer
+function RestTimer({ onDone }) {
+  const [, tick] = useState(0);
+  const active = restUntil > Date.now();
+  // Ticks only while a rest is running; idle costs nothing.
+  useEffect(() => {
+    if (!active) return undefined;
+    const t = setInterval(() => {
+      if (restUntil && Date.now() >= restUntil) {
+        restUntil = 0;
+        haptic([120, 60, 120]);
+        onDone();
+      }
+      tick(n => n + 1);
+    }, 250);
+    return () => clearInterval(t);
+  }, [active, onDone]);
+
+  if (!restUntil) return null;
+  const left = Math.ceil((restUntil - Date.now()) / 1000);
+  const pct = restTotal ? Math.max(0, left / restTotal) : 0;
+  const adjust = (d) => { restUntil = Math.max(Date.now() + 1000, restUntil + d * 1000); restTotal = Math.max(restTotal + d, 1); tick(n => n + 1); };
+
+  return (
+    <div role="timer" aria-live="off" style={{
+      position: 'sticky', bottom: 0, zIndex: 5, display: 'flex', alignItems: 'center', gap: 12,
+      padding: '10px 14px', margin: '0 -4px', borderRadius: 14,
+      background: 'var(--bg-sidebar)', border: '0.5px solid var(--card-border)',
+      boxShadow: '0 -6px 24px rgba(0,0,0,0.35)',
+    }}>
+      <svg width="34" height="34" viewBox="0 0 34 34" aria-hidden="true">
+        <circle cx="17" cy="17" r="14" fill="none" stroke="var(--card-border)" strokeWidth="3.5" />
+        <circle cx="17" cy="17" r="14" fill="none" stroke="var(--tab-accent)" strokeWidth="3.5" strokeLinecap="round"
+          strokeDasharray="88" strokeDashoffset={88 * (1 - pct)} transform="rotate(-90 17 17)" />
+      </svg>
+      <div style={{ display: 'flex', flexDirection: 'column', flex: 1 }}>
+        <span style={label}>Rest</span>
+        <span className="val-num" style={{ fontSize: 22, fontWeight: 500, lineHeight: 1.1 }}>{fmt(left)}</span>
+      </div>
+      <button type="button" onClick={() => adjust(-15)} style={pill(false)} aria-label="Rest 15 seconds less">−15</button>
+      <button type="button" onClick={() => adjust(15)} style={pill(false)} aria-label="Rest 15 seconds more">+15</button>
+      <button type="button" onClick={() => { restUntil = 0; tick(n => n + 1); }} style={pill(true)}>Skip</button>
+    </div>
+  );
+}
+
+//  One exercise card
+function ExerciseCard({ ex, prog, rows, onChange, onTick, onAddSet, onRemoveSet, prs, compact }) {
+  const doneSets = rows.filter(r => r.done);
+  return (
+    <section aria-label={ex.name} style={{
+      display: 'flex', flexDirection: 'column', gap: 10, padding: compact ? 14 : 16, borderRadius: 16,
+      background: 'var(--bg-panel)', border: '0.5px solid var(--card-border)',
+    }}>
+      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'baseline', gap: 10 }}>
+        <span style={{ fontSize: 17, fontWeight: 600, color: 'var(--text-primary)' }}>{ex.name}</span>
+        <span className="val-num" style={{ fontSize: 12, color: 'var(--text-secondary)' }}>{doneSets.length}/{rows.length} sets</span>
+      </div>
+      <div className="val-num" style={{ fontSize: 12, color: 'var(--text-secondary)' }}>
+        TARGET {ex.bodyweight ? 'BW' : `${prog.nextWeight} kg`} × {ex.repsMin}–{ex.repsMax} ·{' '}
+        <span style={{ color: ACTION_COLOUR[prog.action] ?? 'var(--text-secondary)', fontWeight: 600 }}>{prog.action}</span>
+      </div>
+
+      <div role="table" aria-label={`${ex.name} sets`} style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
+        <div role="row" style={{ display: 'grid', gridTemplateColumns: '28px minmax(0,1fr) 76px 64px 40px', gap: 8, alignItems: 'center', ...label, fontSize: 9.5 }}>
+          <span role="columnheader">Set</span><span role="columnheader">Previous</span>
+          <span role="columnheader" style={{ textAlign: 'center' }}>kg</span><span role="columnheader" style={{ textAlign: 'center' }}>Reps</span>
+          <span role="columnheader" aria-label="Done" />
+        </div>
+        {rows.map((r, i) => {
+          const pr = prs[i];
+          return (
+            <div role="row" key={i} style={{
+              display: 'grid', gridTemplateColumns: '28px minmax(0,1fr) 76px 64px 40px', gap: 8, alignItems: 'center',
+              padding: '4px 6px', margin: '0 -6px', borderRadius: 10,
+              background: r.done ? 'color-mix(in srgb, var(--tab-accent) 10%, transparent)' : 'transparent',
+            }}>
+              <span className="val-num" style={{ fontSize: 14, color: r.done ? 'var(--tab-accent)' : 'var(--text-secondary)' }}>{i + 1}</span>
+              <span className="val-num" style={{ fontSize: 13, color: 'var(--text-secondary)', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
+                {r.prev ? `${ex.bodyweight ? 'BW' : r.prev.weight} × ${r.prev.reps}` : '—'}
+                {pr && <span className="val-pop" style={{ marginLeft: 6, padding: '1px 6px', borderRadius: 999, fontSize: 10, fontWeight: 700, letterSpacing: '0.08em', background: 'var(--tab-accent)', color: 'var(--on-tab-accent)' }}>PR</span>}
+              </span>
+              <input aria-label={`Set ${i + 1} weight`} inputMode="decimal" disabled={ex.bodyweight || r.done} value={ex.bodyweight ? 'BW' : r.weight}
+                onFocus={e => e.target.select()} onChange={e => onChange(i, { weight: e.target.value })} style={{ ...numInput, opacity: r.done ? 0.75 : 1 }} />
+              <input aria-label={`Set ${i + 1} reps`} inputMode="numeric" disabled={r.done} value={r.reps}
+                onFocus={e => e.target.select()} onChange={e => onChange(i, { reps: e.target.value })} style={{ ...numInput, opacity: r.done ? 0.75 : 1 }} />
+              <button type="button" onClick={() => onTick(i)} aria-pressed={r.done}
+                aria-label={r.done ? `Undo set ${i + 1}` : `Log set ${i + 1}`}
+                className={r.justDone ? 'val-signature val-rep-kick' : undefined}
+                style={{
+                  width: 38, height: 38, borderRadius: 999, cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center',
+                  border: r.done ? 'none' : '1.5px solid var(--card-border)',
+                  background: r.done ? 'var(--tab-accent)' : 'transparent', color: r.done ? 'var(--on-tab-accent)' : 'var(--text-secondary)',
+                }}>
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.6" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true"><path d="M5 12.5 10 17l9-10" /></svg>
+              </button>
+            </div>
+          );
+        })}
+      </div>
+
+      <div style={{ display: 'flex', gap: 8 }}>
+        <button type="button" onClick={onAddSet} style={pill(false)}>+ Add set</button>
+        {rows.length > 1 && !rows[rows.length - 1].done && (
+          <button type="button" onClick={onRemoveSet} style={pill(false)}>Remove set</button>
+        )}
+      </div>
+    </section>
+  );
+}
+
+//  Session
+export default function TrainSession({
+  exercises, workoutLogs, addWorkoutLog, updateWorkoutLog, removeWorkoutLog,
+  splitNames, todaySplitType, progression, musclesFor, compact = false,
+}) {
+  const date = today();
+  const [gym, setGymState] = useState(() => readPref('valerie_train_gym', 'home'));
+  const [day, setDay] = useState(() => (['push', 'pull', 'legs'].includes(todaySplitType) ? todaySplitType : 'push'));
+  const [extraIds, setExtraIds] = useState([]);
+  // exId → rows. Mirrored in a ref and updated synchronously so two taps in
+  // the same frame each see the other's set (state alone would be stale).
+  const planRef = useRef({});
+  const [plan, setPlanState] = useState({});
+  const setPlan = useCallback((updater) => {
+    const next = typeof updater === 'function' ? updater(planRef.current) : updater;
+    planRef.current = next;
+    setPlanState(next);
+  }, []);
+  const [prs, setPrs] = useState({});            // exId → { rowIndex: pr }
+  const [, rerender] = useState(0);
+  const logsRef = useRef(workoutLogs);
+  logsRef.current = workoutLogs;
+  const rowIds = useRef({});                     // exId → today's workout_logs id
+  const queue = useRef({});                      // exId → pending write chain
+
+  const setGym = (g) => { setGymState(g); writePref('valerie_train_gym', g); };
+  const onRestDone = useCallback(() => toast('Rest done — next set'), []);
+
+  const todays = useMemo(() => {
+    const base = exercises.filter(e => (e.gym === gym || e.gym === 'both') && e.day === day);
+    const extra = exercises.filter(e => extraIds.includes(e.id) && !base.includes(e));
+    return [...base, ...extra];
+  }, [exercises, gym, day, extraIds]);
+
+  // Build (or resume) rows for exercises not yet planned this session.
+  useEffect(() => {
+    setPlan(prev => {
+      let changed = false;
+      const next = { ...prev };
+      for (const ex of todays) {
+        if (next[ex.id]) continue;
+        const prog = progression(ex, workoutLogs.filter(l => l.date < date));
+        const rows = plannedRows(ex, prog, previousSets(workoutLogs, ex.name, date));
+        const existing = todaysLog(workoutLogs, ex.name, date);
+        if (existing) {
+          rowIds.current[ex.id] = existing.id;
+          setsOf(existing).forEach((s, i) => {
+            if (!rows[i]) rows[i] = { weight: s.weight, reps: s.reps, prev: null, done: false };
+            rows[i] = { ...rows[i], weight: s.weight, reps: s.reps, done: true };
+          });
+        }
+        next[ex.id] = rows;
+        changed = true;
+      }
+      return changed ? next : prev;
+    });
+  }, [todays, workoutLogs, date, progression, setPlan]);
+
+  const progFor = (ex) => progression(ex, workoutLogs.filter(l => l.date < date));
+
+  const setRows = (exId, fn) => setPlan(p => ({ ...p, [exId]: fn(p[exId] ?? []) }));
+
+  // Serialise writes per exercise so quick ticks never race or duplicate.
+  function persist(ex, rows) {
+    const sets = rows.filter(r => r.done).map(r => ({ weight: Number(r.weight) || 0, reps: Number(r.reps) || 0 }));
+    const payload = {
+      date, exerciseName: ex.name, muscle: ex.day, muscles: musclesFor(ex),
+      topSet: topSetOf(sets), sets,
+    };
+    const run = async () => {
+      const id = rowIds.current[ex.id] ?? todaysLog(logsRef.current, ex.name, date)?.id;
+      if (!sets.length) {
+        if (id) { const ok = await removeWorkoutLog(id); if (ok) delete rowIds.current[ex.id]; return ok; }
+        return true;
+      }
+      if (id) return updateWorkoutLog(id, payload);
+      const newId = await addWorkoutLog(payload);
+      if (newId) rowIds.current[ex.id] = newId;
+      return !!newId;
+    };
+    const chain = (queue.current[ex.id] ?? Promise.resolve()).then(run, run);
+    queue.current[ex.id] = chain.catch(() => false);
+    return chain;
+  }
+
+  async function tick(ex, i) {
+    const rows = planRef.current[ex.id];
+    const row = rows[i];
+    const undo = row.done;
+    if (!undo && !ex.bodyweight && !(Number(row.weight) >= 0 && row.weight !== '')) return;
+    if (!undo && !(Number(row.reps) > 0)) return;
+
+    const nextRows = rows.map((r, j) => j === i ? { ...r, done: !undo, justDone: !undo } : { ...r, justDone: false });
+    setRows(ex.id, () => nextRows);
+    haptic();
+
+    let pr = null;
+    const prevRest = { until: restUntil, total: restTotal };
+    if (!undo) {
+      const history = bests(logsRef.current, ex.name, { excludeDate: date });
+      const todaySets = rows.filter((r, j) => r.done && j !== i).map(r => ({ weight: Number(r.weight) || 0, reps: Number(r.reps) || 0 }));
+      pr = detectPR({ weight: Number(row.weight) || 0, reps: Number(row.reps) }, { history, todaySets });
+      if (!sessionStartedAt) sessionStartedAt = Date.now();
+      restTotal = restSeconds(ex);
+      restUntil = Date.now() + restTotal * 1000;
+    }
+    setPrs(p => ({ ...p, [ex.id]: { ...(p[ex.id] ?? {}), [i]: pr } }));
+
+    const ok = await persist(ex, nextRows);
+    if (!ok) {
+      // Revert: the set was not saved, so it must not look logged.
+      setRows(ex.id, rs => rs.map((r, j) => j === i ? { ...r, done: undo, justDone: false } : r));
+      setPrs(p => ({ ...p, [ex.id]: { ...(p[ex.id] ?? {}), [i]: null } }));
+      if (!undo) { restUntil = prevRest.until; restTotal = prevRest.total; }
+      rerender(n => n + 1);
+      return;
+    }
+    if (pr) {
+      haptic([30, 40, 60]);
+      toast(`New PR · ${ex.name} ${ex.bodyweight ? 'BW' : `${row.weight} kg`} × ${row.reps}`);
+    }
+    rerender(n => n + 1);
+  }
+
+  // Session totals
+  const allDone = todays.flatMap(ex => (plan[ex.id] ?? []).filter(r => r.done).map(r => ({ weight: Number(r.weight) || 0, reps: Number(r.reps) || 0 })));
+  const prCount = Object.values(prs).reduce((s, m) => s + Object.values(m).filter(Boolean).length, 0);
+  const minutes = sessionStartedAt ? Math.round((Date.now() - sessionStartedAt) / 60000) : 0;
+  const others = exercises.filter(e => !todays.includes(e));
+
+  return (
+    <div style={{ height: '100%', overflowY: 'auto' }}>
+      <div style={{ display: 'flex', flexDirection: 'column', gap: 14, padding: compact ? 16 : '20px 28px 28px', maxWidth: 760 }}>
+        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-end', gap: 12, flexWrap: 'wrap' }}>
+          <div style={{ display: 'flex', flexDirection: 'column', gap: 4 }}>
+            <h1 style={{ margin: 0, fontSize: compact ? 26 : 30, fontWeight: 700, color: 'var(--text-primary)' }}>{splitNames[day] ?? day}</h1>
+            <span className="val-num" style={{ fontSize: 12, color: 'var(--text-secondary)', letterSpacing: '0.06em' }}>
+              {allDone.length} SETS · {volume(allDone).toLocaleString()} KG{minutes ? ` · ${minutes} MIN` : ''}{prCount ? ` · ${prCount} PR${prCount > 1 ? 'S' : ''}` : ''}
+            </span>
+          </div>
+          <div style={{ display: 'flex', gap: 6, flexWrap: 'wrap' }}>
+            {['push', 'pull', 'legs'].map(d => (
+              <button key={d} type="button" aria-pressed={day === d} onClick={() => setDay(d)} style={pill(day === d)}>{splitNames[d] ?? d}</button>
+            ))}
+            <button type="button" onClick={() => setGym(gym === 'home' ? 'commercial' : 'home')} style={pill(false)}
+              aria-label={`Gym: ${gym === 'home' ? 'Home' : 'Commercial'}. Switch`}>
+              {gym === 'home' ? 'Home gym' : 'Commercial'}
+            </button>
+          </div>
+        </div>
+
+        {todays.length === 0 && (
+          <div style={{ fontSize: 14, color: 'var(--text-secondary)', padding: '24px 0' }}>
+            No exercises for this day and gym. Add some in Exercises, or add one below.
+          </div>
+        )}
+
+        {todays.map(ex => plan[ex.id] && (
+          <ExerciseCard key={ex.id} ex={ex} prog={progFor(ex)} rows={plan[ex.id]} prs={prs[ex.id] ?? {}} compact={compact}
+            onChange={(i, patch) => setRows(ex.id, rs => rs.map((r, j) => j === i ? { ...r, ...patch } : r))}
+            onTick={(i) => tick(ex, i)}
+            onAddSet={() => setRows(ex.id, rs => [...rs, { ...(rs[rs.length - 1] ?? { weight: 0, reps: ex.repsMin }), prev: null, done: false, justDone: false }])}
+            onRemoveSet={() => setRows(ex.id, rs => rs.slice(0, -1))} />
+        ))}
+
+        {others.length > 0 && (
+          <label style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
+            <span style={label}>Add exercise</span>
+            <select value="" onChange={e => e.target.value && setExtraIds(ids => [...ids, e.target.value])}
+              style={{ ...numInput, textAlign: 'left', flex: 1, fontFamily: 'inherit' }}>
+              <option value="">Choose…</option>
+              {others.map(e => <option key={e.id} value={e.id}>{e.name}</option>)}
+            </select>
+          </label>
+        )}
+
+        <RestTimer onDone={onRestDone} />
+      </div>
+    </div>
+  );
+}

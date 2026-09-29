@@ -1,0 +1,97 @@
+import { describe, it, expect } from 'vitest';
+import { e1rm, setsOf, topSetOf, previousSets, todaysLog, bests, detectPR, restSeconds, plannedRows, volume } from './training.js';
+
+const logs = [
+  { id: 'a', date: '2026-09-20', exerciseName: 'Bench Press', topSet: { weight: 80, reps: 6 } },               // legacy row
+  { id: 'b', date: '2026-09-24', exerciseName: 'Bench Press', topSet: { weight: 80, reps: 8 },
+    sets: [{ weight: 80, reps: 8 }, { weight: 80, reps: 7 }, { weight: 80, reps: 6 }] },
+  { id: 'c', date: '2026-09-24', exerciseName: 'Squat', topSet: { weight: 100, reps: 5 } },
+];
+
+describe('e1rm', () => {
+  it('uses Epley and treats singles as the weight', () => {
+    expect(e1rm(100, 1)).toBe(100);
+    expect(e1rm(80, 8)).toBe(101.3);
+    expect(e1rm(80, 0)).toBe(0);
+  });
+});
+
+describe('reading logs', () => {
+  it('reads legacy top-set rows as one set', () => {
+    expect(setsOf(logs[0])).toEqual([{ weight: 80, reps: 6 }]);
+    expect(setsOf(logs[1])).toHaveLength(3);
+  });
+
+  it('picks the heaviest set, most reps on ties', () => {
+    expect(topSetOf([{ weight: 80, reps: 6 }, { weight: 82.5, reps: 5 }, { weight: 82.5, reps: 6 }])).toEqual({ weight: 82.5, reps: 6 });
+    expect(topSetOf([])).toBeNull();
+  });
+
+  it('finds the last session before a date and today’s row', () => {
+    expect(previousSets(logs, 'Bench Press', '2026-09-29')).toHaveLength(3);
+    expect(previousSets(logs, 'Bench Press', '2026-09-24')).toEqual([{ weight: 80, reps: 6 }]);
+    expect(previousSets(logs, 'Deadlift', '2026-09-29')).toEqual([]);
+    expect(todaysLog(logs, 'Squat', '2026-09-24').id).toBe('c');
+  });
+});
+
+describe('PRs', () => {
+  const history = bests(logs, 'Bench Press');
+
+  it('computes bests across legacy and new rows', () => {
+    expect(history).toMatchObject({ bestWeight: 80, count: 4 });
+    expect(history.bestE1rm).toBe(101.3);
+  });
+
+  it('flags a heavier weight and a better e1RM', () => {
+    expect(detectPR({ weight: 82.5, reps: 8 }, { history }).kinds).toEqual(['weight', 'e1rm']);
+    expect(detectPR({ weight: 80, reps: 9 }, { history }).kinds).toEqual(['e1rm']);
+    expect(detectPR({ weight: 80, reps: 7 }, { history })).toBeNull();
+  });
+
+  it('counts sets already done today', () => {
+    expect(detectPR({ weight: 82.5, reps: 8 }, { history, todaySets: [{ weight: 85, reps: 8 }] })).toBeNull();
+  });
+
+  it('never celebrates the first set of a new exercise', () => {
+    expect(detectPR({ weight: 60, reps: 5 }, { history: bests(logs, 'Deadlift') })).toBeNull();
+  });
+
+  it('can exclude today when re-opening a session', () => {
+    expect(bests(logs, 'Bench Press', { excludeDate: '2026-09-24' }).count).toBe(1);
+  });
+});
+
+describe('planning', () => {
+  const ex = { name: 'Bench Press', bodyweight: false, repsMin: 6, repsMax: 8 };
+
+  it('rests longer for heavy rep ranges', () => {
+    expect(restSeconds({ repsMax: 5 })).toBe(180);
+    expect(restSeconds({ repsMax: 8 })).toBe(120);
+    expect(restSeconds({ repsMax: 15 })).toBe(90);
+  });
+
+  it('adds weight at the bottom of the range', () => {
+    const rows = plannedRows(ex, { nextWeight: 82.5, action: 'ADD WEIGHT' }, [{ weight: 80, reps: 8 }]);
+    expect(rows).toHaveLength(3);
+    expect(rows[0]).toMatchObject({ weight: 82.5, reps: 6, prev: { weight: 80, reps: 8 } });
+    expect(rows[2].prev).toBeNull();
+  });
+
+  it('chases one more rep while holding', () => {
+    const rows = plannedRows(ex, { nextWeight: 80, action: 'HOLD' }, [{ weight: 80, reps: 7 }, { weight: 80, reps: 6 }]);
+    expect(rows[0].reps).toBe(8);
+  });
+
+  it('keeps as many rows as last time had sets', () => {
+    expect(plannedRows(ex, { nextWeight: 80, action: 'HOLD' }, [1, 2, 3, 4].map(() => ({ weight: 80, reps: 6 })))).toHaveLength(4);
+  });
+
+  it('logs bodyweight movements at 0 kg', () => {
+    expect(plannedRows({ ...ex, bodyweight: true }, { nextWeight: 0, action: 'FIRST SET' })[0].weight).toBe(0);
+  });
+
+  it('sums volume', () => {
+    expect(volume([{ weight: 80, reps: 8 }, { weight: 80, reps: 7 }])).toBe(1200);
+  });
+});
