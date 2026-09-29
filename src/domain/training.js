@@ -23,9 +23,10 @@ export function setsOf(log) {
 export function topSetOf(sets = []) {
   let top = null;
   for (const s of sets) {
-    if (!top || s.weight > top.weight || (s.weight === top.weight && s.reps > top.reps)) top = s;
+    const candidate = { weight: Number(s?.weight) || 0, reps: Number(s?.reps) || 0 };
+    if (!top || candidate.weight > top.weight || (candidate.weight === top.weight && candidate.reps > top.reps)) top = candidate;
   }
-  return top ? { weight: top.weight, reps: top.reps } : null;
+  return top;
 }
 
 const forExercise = (logs, name) => (logs || []).filter(l => l.exerciseName === name);

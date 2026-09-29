@@ -13,11 +13,14 @@ export const DEFAULT_BUFFER_DAYS = 2;
 const ALPHA = 0.3; // EWMA weight on each new observed cycle
 
 const DAY = 86400000;
+const DATE_KEY_RE = /^\d{4}-\d{2}-\d{2}$/;
+const keyOf = (idx) => Number.isFinite(idx) ? new Date(idx * DAY).toISOString().slice(0, 10) : null;
 const dayIndex = (key) => {
+  if (!DATE_KEY_RE.test(String(key))) return null;
   const [y, m, d] = String(key).split('-').map(Number);
-  return Date.UTC(y, m - 1, d) / DAY;
+  const idx = Date.UTC(y, m - 1, d) / DAY;
+  return keyOf(idx) === key ? idx : null;
 };
-const keyOf = (idx) => new Date(idx * DAY).toISOString().slice(0, 10);
 
 /** Days one pack lasts on the planned schedule, or null. */
 export function scheduledDaysPerPack(item) {
@@ -54,9 +57,12 @@ export function forecast(item, today) {
   const buffer = Number.isFinite(Number(item.bufferDays)) && item.bufferDays !== '' && item.bufferDays != null ? Number(item.bufferDays) : DEFAULT_BUFFER_DAYS;
 
   const start = dayIndex(item.boughtDate);
+  const t = dayIndex(today);
+  // Old/manual rows can contain free-text or impossible dates. One bad row
+  // must not throw while Supplies maps every item to a forecast.
+  if (start == null || t == null) return { status: 'unknown', source: per.source };
   const runOutIdx = Math.floor(start + per.days * packs);
   const reorderIdx = runOutIdx - lead - buffer;
-  const t = dayIndex(today);
   const daysLeft = runOutIdx - t;
   const daysToReorder = reorderIdx - t;
   const status = daysLeft <= 0 ? 'out' : daysToReorder <= 0 ? 'order' : daysToReorder <= 7 ? 'soon' : 'ok';

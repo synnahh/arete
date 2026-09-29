@@ -174,6 +174,11 @@ export default function TrainSession({
   logsRef.current = workoutLogs;
   const rowIds = useRef({});                     // exId → today's workout_logs id
   const queue = useRef({});                      // exId → pending write chain
+  // Last server-confirmed rows and newest optimistic mutation per exercise.
+  // If queued writes fail, only the newest mutation may repair the UI, and it
+  // repairs to confirmed state (not another optimistic snapshot).
+  const confirmedRows = useRef({});
+  const mutationRevision = useRef({});
 
   const setGym = (g) => { setGymState(g); writePref('valerie_train_gym', g); };
   const onRestDone = useCallback(() => toast('Rest done — next set'), []);
@@ -201,6 +206,7 @@ export default function TrainSession({
             rows[i] = { ...rows[i], weight: s.weight, reps: s.reps, done: true };
           });
         }
+        confirmedRows.current[ex.id] = rows.map(r => ({ ...r, justDone: false }));
         next[ex.id] = rows;
         changed = true;
       }
@@ -232,7 +238,7 @@ export default function TrainSession({
     };
     const chain = (queue.current[ex.id] ?? Promise.resolve()).then(run, run);
     queue.current[ex.id] = chain.catch(() => false);
-    return chain;
+    return queue.current[ex.id];
   }
 
   async function tick(ex, i) {
@@ -243,11 +249,12 @@ export default function TrainSession({
     if (!undo && !(Number(row.reps) > 0)) return;
 
     const nextRows = rows.map((r, j) => j === i ? { ...r, done: !undo, justDone: !undo } : { ...r, justDone: false });
+    const revision = (mutationRevision.current[ex.id] ?? 0) + 1;
+    mutationRevision.current[ex.id] = revision;
     setRows(ex.id, () => nextRows);
     haptic();
 
     let pr = null;
-    const prevRest = { until: restUntil, total: restTotal };
     if (!undo) {
       const history = bests(logsRef.current, ex.name, { excludeDate: date });
       const todaySets = rows.filter((r, j) => r.done && j !== i).map(r => ({ weight: Number(r.weight) || 0, reps: Number(r.reps) || 0 }));
@@ -260,13 +267,17 @@ export default function TrainSession({
 
     const ok = await persist(ex, nextRows);
     if (!ok) {
-      // Revert: the set was not saved, so it must not look logged.
-      setRows(ex.id, rs => rs.map((r, j) => j === i ? { ...r, done: undo, justDone: false } : r));
-      setPrs(p => ({ ...p, [ex.id]: { ...(p[ex.id] ?? {}), [i]: null } }));
-      if (!undo) { restUntil = prevRest.until; restTotal = prevRest.total; }
+      // A newer queued write includes this row and owns recovery. Rolling back
+      // an older failure here would make the UI disagree with that later save.
+      if (mutationRevision.current[ex.id] !== revision) return;
+      setRows(ex.id, () => (confirmedRows.current[ex.id] ?? []).map(r => ({ ...r, justDone: false })));
+      setPrs(p => ({ ...p, [ex.id]: {} }));
+      restUntil = 0;
+      restTotal = 0;
       rerender(n => n + 1);
       return;
     }
+    confirmedRows.current[ex.id] = nextRows.map(r => ({ ...r, justDone: false }));
     if (pr) {
       haptic([30, 40, 60]);
       toast(`New PR · ${ex.name} ${ex.bodyweight ? 'BW' : `${row.weight} kg`} × ${row.reps}`);

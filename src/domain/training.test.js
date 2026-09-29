@@ -27,6 +27,11 @@ describe('reading logs', () => {
     expect(topSetOf([])).toBeNull();
   });
 
+  it('compares numeric input values numerically, not lexicographically', () => {
+    expect(topSetOf([{ weight: '90', reps: '10' }, { weight: '100', reps: '5' }])).toEqual({ weight: 100, reps: 5 });
+    expect(topSetOf([{ weight: '80', reps: '9' }, { weight: '80', reps: '10' }])).toEqual({ weight: 80, reps: 10 });
+  });
+
   it('finds the last session before a date and today’s row', () => {
     expect(previousSets(logs, 'Bench Press', '2026-09-29')).toHaveLength(3);
     expect(previousSets(logs, 'Bench Press', '2026-09-24')).toEqual([{ weight: 80, reps: 6 }]);

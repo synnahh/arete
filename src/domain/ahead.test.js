@@ -44,6 +44,12 @@ describe('forecast', () => {
   it('is unknown without enough information', () => {
     expect(forecast({ name: 'x' }, '2026-09-10').status).toBe('unknown');
   });
+
+  it('does not crash the Supplies screen on malformed legacy dates', () => {
+    expect(forecast({ ...serum, boughtDate: 'not-a-date' }, '2026-09-10').status).toBe('unknown');
+    expect(forecast({ ...serum, boughtDate: '2026-02-30' }, '2026-09-10').status).toBe('unknown');
+    expect(forecast(serum, 'not-a-date').status).toBe('unknown');
+  });
 });
 
 describe('restock learning', () => {
