@@ -263,6 +263,11 @@ export default function TrainSession({
     return [...base, ...extra];
   }, [exercises, gym, day, extraIds]);
 
+  // What we pre-filled for each exercise (weight x reps per row), so a later change of
+  // readiness only rewrites rows you have not touched.
+  const autoPlan = useRef({});
+  const sig = (rows) => rows.map(r => `${r.weight}x${r.reps}`).join('|');
+
   // Build (or resume) rows for exercises not yet planned this session.
   useEffect(() => {
     setPlan(prev => {
@@ -281,12 +286,35 @@ export default function TrainSession({
           });
         }
         confirmedRows.current[ex.id] = rows.map(r => ({ ...r, justDone: false }));
+        if (!existing) autoPlan.current[ex.id] = sig(rows);
         next[ex.id] = rows;
         changed = true;
       }
       return changed ? next : prev;
     });
   }, [todays, workoutLogs, date, progression, setPlan]);
+
+  // Sleep logged (or loaded) after the screen opened: refresh pre-filled rows the
+  // lifter has not touched, so a low-readiness hold is not missed. Never overwrites
+  // an edit or a logged set.
+  useEffect(() => {
+    setPlan(prev => {
+      let changed = false;
+      const next = { ...prev };
+      for (const ex of todays) {
+        const rows = prev[ex.id];
+        const auto = autoPlan.current[ex.id];
+        if (!rows || auto == null || rows.some(r => r.done) || sig(rows) !== auto) continue;
+        const fresh = plannedRows(ex, applyReadiness(progression(ex, workoutLogs.filter(l => l.date < date)), recovery), previousSets(workoutLogs, ex.name, date));
+        if (sig(fresh) === auto) continue;
+        autoPlan.current[ex.id] = sig(fresh);
+        confirmedRows.current[ex.id] = fresh.map(r => ({ ...r, justDone: false }));
+        next[ex.id] = fresh;
+        changed = true;
+      }
+      return changed ? next : prev;
+    });
+  }, [recovery.status, recovery.band]); // eslint-disable-line react-hooks/exhaustive-deps
 
   const progFor = (ex) => applyReadiness(progression(ex, workoutLogs.filter(l => l.date < date)), recovery);
   // Lifts (any day) with no new best for weeks: one place to see what needs a deload.
