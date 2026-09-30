@@ -33,6 +33,18 @@ const PERSONALITIES: Record<string, string> = {
 
 type ChatMessage = { role: 'user' | 'assistant'; content: string };
 
+// One optional image (a meal photo) for raw mode. The client shrinks it to about
+// 1 MB; this is the server-side limit and type check.
+const IMAGE_TYPES = new Set(['image/jpeg', 'image/png', 'image/webp']);
+const MAX_IMAGE_B64 = 5_000_000;
+function cleanImage(value: unknown): { mediaType: string; data: string } | null {
+  if (!value || typeof value !== 'object') return null;
+  const { mediaType, data } = value as { mediaType?: unknown; data?: unknown };
+  if (typeof mediaType !== 'string' || !IMAGE_TYPES.has(mediaType)) return null;
+  if (typeof data !== 'string' || data.length === 0 || data.length > MAX_IMAGE_B64 || !/^[A-Za-z0-9+/]+=*$/.test(data)) return null;
+  return { mediaType, data };
+}
+
 function cleanHistory(value: unknown): ChatMessage[] {
   if (!Array.isArray(value)) return [];
   return value.slice(-14).flatMap((item) => {
@@ -80,6 +92,8 @@ Deno.serve(async (req) => {
   if (message.length > 50_000) return json({ error: 'Message is too long' }, 413);
 
   const mode = body.mode === 'raw' ? 'raw' : 'chat';
+  const image = mode === 'raw' ? cleanImage(body.image) : null;
+  if (body.image && mode === 'raw' && !image) return json({ error: 'Unsupported or oversized image' }, 400);
   const context = typeof body.context === 'string' ? body.context.slice(0, 80_000) : '';
   const memories = Array.isArray(body.memory)
     ? body.memory.filter((x): x is string => typeof x === 'string').slice(0, 8)
@@ -107,7 +121,12 @@ Deno.serve(async (req) => {
         model,
         max_tokens: maxTokens,
         system,
-        messages: [...cleanHistory(body.history), { role: 'user', content: message }],
+        messages: [...cleanHistory(body.history), {
+          role: 'user',
+          content: image
+            ? [{ type: 'image', source: { type: 'base64', media_type: image.mediaType, data: image.data } }, { type: 'text', text: message }]
+            : message,
+        }],
       }),
       signal: controller.signal,
     });

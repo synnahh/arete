@@ -17,6 +17,8 @@ Use a newly rotated Anthropic key. Never prefix provider credentials with
 `VITE_`; Vite variables are public client configuration and are embedded in
 the desktop and PWA bundles.
 
+Raw mode also accepts one optional `image` (`{ mediaType, data }`, base64 JPEG/PNG/WebP up to about 3.5 MB) so Fuel can estimate a meal from a photo. If you deployed `ai-chat` before that was added, deploy it again.
+
 Deployment is intentionally manual. After deployment, sign in to Arete and use
 Settings → AI → Test connection. Until then, desktop Ollama remains the local
 fallback and the iOS/web AI service reports unavailable.

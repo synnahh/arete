@@ -82,6 +82,20 @@ export async function uploadPhoto(input, { date, pose }) {
   return { path, thumbPath, w: full.w, h: full.h, bytes: full.blob.size };
 }
 
+/**
+ * A photo shrunk for the AI (longest side 1024 px, JPEG) as { mediaType, data }
+ * with base64 data. Nothing is uploaded to storage.
+ */
+export async function imageForAI(file, { max = 1024, quality = 0.8 } = {}) {
+  const source = await decode(file);
+  const { blob } = await shrink(source, { max, quality });
+  source.close?.();
+  const bytes = new Uint8Array(await blob.arrayBuffer());
+  let binary = '';
+  for (let i = 0; i < bytes.length; i += 0x8000) binary += String.fromCharCode(...bytes.subarray(i, i + 0x8000));
+  return { mediaType: 'image/jpeg', data: btoa(binary) };
+}
+
 /** Best-effort delete of storage objects. Returns true when the call succeeded. */
 export async function removePhotoFiles(paths) {
   const list = paths.filter(Boolean);

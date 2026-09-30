@@ -30,7 +30,7 @@ MyFitnessPal's paid tiers add meal scan, barcode scan, voice logging, per-day-of
 | Meal sections (breakfast / lunch / dinner / snacks) | **Have** (2026-09-30, by time logged, with subtotals; desktop log also gained remove-with-Undo) | — |
 | Different macro goals for training vs rest days | **Have** (2026-09-30, Goal HQ: calories move in carbs only, weekly total holds, rest days keep at least half the carbs). Not arbitrary per-weekday goals: the schedule decides | — |
 | Voice logging ("two eggs and toast") | Partial — the orb has speech, but it logs calories only, no foods/quantities | P2 |
-| Photo meal scan (AI estimates macros) | Missing; needs the `ai-chat` gateway deployed first | P2 |
+| Photo meal scan (AI estimates macros) | **Coded, not live** (2026-09-30): Photo button in Fuel sends a shrunk image to `ai-chat`, shows an editable estimate, logs it marked as an estimate. Tested against a stubbed gateway only; needs `ai-chat` deployed again (image support was added) | — |
 | Fasting timer | **Have** (2026-09-30: 14/16/18/20 h presets, ring, 30-day stats; synced through settings) | — |
 | Saved and recent meals remember ingredients (so they use up the pantry) | **Have** (2026-09-30; plan meals also log in one tap with "Log now") | — |
 

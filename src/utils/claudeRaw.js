@@ -10,6 +10,7 @@ export async function askClaudeRaw(userMessage, systemPrompt, history = [], opti
     systemPrompt,
     history,
     maxTokens: options.maxTokens,
+    ...(options.image ? { image: options.image } : {}),
   });
   return data?.text ?? '';
 }

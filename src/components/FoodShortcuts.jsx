@@ -3,6 +3,7 @@
 // Used by the desktop Nutrition screen and the phone Nutrition tab.
 import { useState } from 'react';
 import { quickEntry } from '../domain/foods.js';
+import MealPhoto from './MealPhoto.jsx';
 
 const btn = {
   minHeight: 44, padding: '0 16px', borderRadius: 12, cursor: 'pointer', fontFamily: 'inherit', fontSize: 13.5,
@@ -42,6 +43,7 @@ export default function FoodShortcuts({ yesterday, onCopy, onQuickAdd }) {
           {yesterday ? `Copy yesterday · ${yesterday.count} item${yesterday.count === 1 ? '' : 's'} · ${yesterday.kcal.toLocaleString()} kcal` : 'Copy yesterday'}
         </button>
         <button type="button" aria-pressed={open} onClick={() => { setOpen(o => !o); setError(''); }} style={btn}>Quick add</button>
+        <MealPhoto onLog={onQuickAdd} />
       </div>
       {open && (
         <div style={{ display: 'flex', flexDirection: 'column', gap: 8, padding: 12, borderRadius: 12, background: 'var(--bg-panel)', border: '0.5px solid var(--card-border)' }}>
