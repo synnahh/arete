@@ -10,6 +10,7 @@ import { anteriorData, posteriorData } from '../components/bodyModel.js';
 import { toLocalDateKey } from '../utils/localDate.js';
 import TrainSession from './TrainSession.jsx';
 import { suggestNext } from '../domain/progression.js';
+import { suggestWeek, describeWeek } from '../domain/split.js';
 
 //  Helpers 
 const todayStr = () => toLocalDateKey(new Date());
@@ -477,6 +478,20 @@ function SplitPlanner({ programs, addProgram, updateProgram, removeProgram, exer
     setShowNewProgram(false); setNewProgramName('');
   };
 
+  // Suggest a week from how many days you can train; creates a NEW program
+  // (never edits the one you have) and only switches to it if asked.
+  const [suggestDays, setSuggestDays] = useState(null);
+  const suggestion = useMemo(() => suggestWeek(suggestDays, splitNames), [suggestDays, splitNames]);
+  const createSuggested = async (makeActive) => {
+    if (!suggestion) return;
+    const id = await addProgram({ name: `${suggestDays}-day ${splitNames.push || 'Push'}/${splitNames.pull || 'Pull'}/${splitNames.legs || 'Legs'}`, isActive: programs.length === 0, days: suggestion, pinnedExercises: {} });
+    if (makeActive && id) {
+      for (const p of programs) if (p.isActive) await updateProgram(p.id, { isActive: false });
+      await updateProgram(id, { isActive: true });
+    }
+    setSuggestDays(null);
+  };
+
   const updateDay = async (dayKey, patch) => {
     if (!activeProgram) return;
     const days = { ...activeProgram.days, [dayKey]: { ...activeProgram.days?.[dayKey], ...patch } };
@@ -514,6 +529,27 @@ function SplitPlanner({ programs, addProgram, updateProgram, removeProgram, exer
                 </div>
               ))}
               <button onClick={() => setShowNewProgram(true)} style={{ ...btnGhost, alignSelf: 'flex-start', marginTop: 4, fontSize: 11 }}>+ New program</button>
+            </div>
+          )}
+        </GlassCard>
+
+        {/* Suggest a week */}
+        <GlassCard style={{ marginBottom: 16 }}>
+          <GlassLabel>Suggest a week</GlassLabel>
+          <div style={{ fontSize: 12.5, color: 'var(--text-secondary)', marginBottom: 8 }}>How many days can you train? Arete lays out a push / pull / legs week with the hard days spread out. Edit it after.</div>
+          <div style={{ display: 'flex', gap: 6, flexWrap: 'wrap' }}>
+            {[2, 3, 4, 5, 6].map(n => (
+              <button key={n} type="button" aria-pressed={suggestDays === n} onClick={() => setSuggestDays(suggestDays === n ? null : n)}
+                style={{ ...btnGhost, minHeight: 40, padding: '0 16px', borderColor: suggestDays === n ? 'var(--accent)' : undefined, color: suggestDays === n ? 'var(--accent)' : undefined }}>{n} days</button>
+            ))}
+          </div>
+          {suggestion && (
+            <div style={{ marginTop: 10, display: 'flex', flexDirection: 'column', gap: 8 }}>
+              <div className="val-num" style={{ fontSize: 13, color: 'var(--text-primary)' }}>{describeWeek(suggestion)}</div>
+              <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>
+                <button type="button" onClick={() => createSuggested(false)} style={btnGhost}>Save as a program</button>
+                <button type="button" onClick={() => createSuggested(true)} style={btnPrimary}>Save and make active</button>
+              </div>
             </div>
           )}
         </GlassCard>

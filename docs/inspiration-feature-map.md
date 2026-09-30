@@ -93,7 +93,7 @@ Stance builds workouts and meals from a goal and training days, adjusts weights 
 | Goal → targets (cut/bulk/recomp/glow-up) and weekly adaptive maintenance proposal | Have (Goal HQ; never applied silently) | — |
 | Coach chat that knows your goal, score, PRs and due supplies | Have, coded — not deployed until the key is rotated | — |
 | **Approval before the coach changes anything** | **Have** for settings (2026-09-30: an Apply / Not now card; secret-like keys and non-plain values refused). Logging actions (water, food, sleep, tasks) stay instant by design | — |
-| AI-built weekly workout plan from goal, days and equipment | Missing (there is a program editor, no generator) | P2 |
+| AI-built weekly workout plan from goal, days and equipment | **Partly** (2026-09-30: Split Planner suggests a push/pull/legs week for 2-6 days, no AI, as a new program). No exercise selection from goal or equipment | P3 |
 | Auto-adjusted loads | **Have** as suggestions the lifter can override (see section 2) | — |
 | Pre-session advice ("sleep was short, keep it lighter") | **Have** (readiness line at the top of Train) | — |
 | Plateau detection and intervention | **Have** (section 2) | — |
