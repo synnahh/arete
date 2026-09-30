@@ -284,3 +284,8 @@ Removed: `mobile/screens/MobileWorkout.jsx` and the unused More grid in `MobileM
 ### Clash families and what was skipped (2026-09-30)
 - `domain/skin.js` now also warns on: vitamin C with a retinoid or an acid (tip), benzoyl peroxide with an acid (tip), copper peptides with vitamin C / acids / retinoids (tip), a physical scrub with an active (warn), two retinoids in one routine (warn). New tags `copper` and `scrub`. Tier routines still produce no warnings (tested).
 - Deliberately not built: supersets (would change how a session is structured; needs a decision), drink types and weather adjustment for water (see the feature map for why).
+
+### Server-held voice and SMS credentials (2026-09-30)
+- New Supabase functions (not deployed, Deno not available here so not run): `voice-tts` (ElevenLabs, returns MP3 as octet-stream so supabase-js gives a Blob) and `send-sms` (Twilio; destination is the `SMS_TO` secret, so it can only text the owner). Both require a signed-in user's JWT via `functions/_shared/http.ts`.
+- Client: `utils/serverVoice.js` (`fetchServerTTS`, `sendServerSMS`, tested with an injected invoke). 404/503 marks a function unavailable for the session. `ai/speech.js` tries the server first, then the old client key, then Azure/browser. SMS is opt-in through Settings > Notifications > Text messages (`notifications.sms`); without it the old Twilio-in-settings path is unchanged.
+- Still true until you migrate: `VITE_ELEVENLABS_API_KEY` is baked into the bundle. Steps in `docs/deploy-runbook.md` 2b.

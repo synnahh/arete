@@ -34,6 +34,10 @@ npx supabase functions deploy send-sms
 ```
 `SMS_TO` is your own number: the function can only ever text that number. `TWILIO_FROM_SENTRY` is an optional second sender. Then switch on Settings > Notifications > Text messages. Once voice works, delete the ElevenLabs key from Settings and `.env` (`VITE_ELEVENLABS_API_KEY`) and clear the Twilio SID and token fields.
 
+### 2b. Voice and text messages (optional, removes the keys from the app)
+These two functions hold the ElevenLabs and Twilio credentials in Supabase instead of the app. The app uses them when they exist and falls back to the old settings when they don't.
+\ is your own number: the function can only ever text that number. Optional  for a second sender. Then turn on Settings > Notifications > Text messages. Once voice works, delete the ElevenLabs key from Settings and  (), and clear the Twilio SID and token fields.
+
 ## 3. Database
 Open the Supabase dashboard > SQL editor and run, one after the other:
 1. `supabase/user_meta.sql`
