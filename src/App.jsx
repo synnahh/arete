@@ -282,7 +282,6 @@ export default function App() {
 
     function applyAndSet(s) {
       s = stripLegacyClaudeKeys(s);
-      if (s.theme === 'phantom') { s.theme = 'obsidian'; s.accentColorHex = ''; }
       setSettings(s);
       storage.set(STORAGE_KEYS.SETTINGS, s);
       applyAppearance(s);
