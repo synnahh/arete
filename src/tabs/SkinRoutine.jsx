@@ -7,6 +7,7 @@ import { useCollection } from '../supabase/useCollection.js';
 import { STORAGE_KEYS } from '../utils/storage.js';
 import { toLocalDateKey } from '../utils/localDate.js';
 import ProgressPhotos from '../components/ProgressPhotos.jsx';
+import ProductCheck from '../components/ProductCheck.jsx';
 import {
   ALL_DAYS, WHEN_LABEL, RATING_LABELS, newStep, usesPerDay, supplyUsage, stepsFor, completion, routineWarnings, ratingTrend, routineInsight,
 } from '../domain/skin.js';
@@ -98,6 +99,21 @@ export default function SkinRoutine({ profile, saveProfile, daily }) {
   function linkSupply(step, value) {
     if (value === '__new') return createSupply(step);
     return patch(step.id, { supplyId: value || null });
+  }
+
+  // Add a checked product: a routine step, and (optionally) a Supply with its shelf life,
+  // linked so the routine drives its run-out forecast.
+  async function addFromProduct({ name: pName, when: pWhen, paoMonths, track }) {
+    const step = newStep(pName, pWhen);
+    let linked = step;
+    if (track) {
+      const id = await supplies.add({
+        name: pName, category: 'grooming', boughtDate: todayKey, packsOnHand: 1,
+        usesPerDay: usesPerDay(step), ...(paoMonths ? { paoMonths } : {}), createdAt: new Date().toISOString(),
+      });
+      if (id) linked = { ...step, supplyId: id };
+    }
+    await commit([...steps, linked]);
   }
 
   // Turn the old free-text routine into steps (the text itself is kept).
@@ -192,6 +208,8 @@ export default function SkinRoutine({ profile, saveProfile, daily }) {
           ))}
         </div>
       )}
+
+      <ProductCheck steps={steps} onAdd={addFromProduct} />
 
       <div style={card}>
         <span style={label}>Routine builder</span>

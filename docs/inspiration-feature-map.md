@@ -63,7 +63,7 @@ Skin Bliss scans products (barcode, search, shelf photo) for ingredient clashes,
 | Routine linked to Supplies so run-out is forecast | Have (beyond Skin Bliss) | — |
 | Progress photos with before/after slider | **Have** for the body (front/side/back) and the face (Look, 2026-09-30) | — |
 | Daily skin rating (1–5), weekly trend, and routine-vs-rating comparison | **Have** (2026-09-30, Look; no notes field) | — |
-| Product scanner (barcode → ingredients) | Missing. Open Beauty Facts is a free, open database like the one already used for food | P2 |
+| Product scanner (barcode → ingredients) | **Have, partly verified** (2026-09-30, Look > Skin > Check a product): type or scan a barcode (Open Beauty Facts) or paste the ingredients; shows actives and clashes with your routine, then adds it to the routine and Supplies. The paste path is tested in the browser; the live barcode lookup and camera scan are not (no network or camera here), and iOS Safari has no barcode scanning, so the typed barcode is the phone path | — |
 | Score a product against your skin profile | Missing | P3 |
 | Opened-product expiry (period-after-opening) reminder | **Have** (2026-09-30: "use within N months" on a supply; shown in Supplies, Today and the attention count). Not verified: the Today panel on screen | — |
 | Tiered routine builder (Essential → Complete → Power) | Missing | P3 |

@@ -66,7 +66,8 @@ const sharesPeriod = (a, b) => (runsAm(a) && runsAm(b)) || (runsPm(a) && runsPm(
  */
 export function routineWarnings(steps) {
   const out = [];
-  const tagged = steps.map(s => ({ s, tags: tagsFor(s.name) }));
+  // `tagText` lets a step be judged by its ingredient list rather than just its name.
+  const tagged = steps.map(s => ({ s, tags: tagsFor(s.tagText ?? s.name) }));
   const add = (level, text) => { if (!out.some(o => o.text === text)) out.push({ level, text }); };
 
   for (let i = 0; i < tagged.length; i++) {
@@ -162,4 +163,29 @@ export function routineInsight(rows, steps, today, { days = 30 } = {}) {
   if (window.length < 10 || hi.length < 4 || lo.length < 4) return null;
   const high = +mean(hi).toFixed(1), low = +mean(lo).toFixed(1);
   return { high: { avg: high, days: hi.length }, low: { avg: low, days: lo.length }, diff: +(high - low).toFixed(1) };
+}
+
+// ── Check a product before you buy or add it ────────────────────────────────
+
+export const TAG_LABELS = { retinoid: 'a retinoid', aha: 'an AHA', bha: 'a BHA', bpo: 'benzoyl peroxide', vitc: 'vitamin C', spf: 'sunscreen', niacinamide: 'niacinamide' };
+
+/**
+ * What a product contains (from its name and ingredient text) and what it would
+ * clash with if added to your routine in the morning, at night, or both.
+ * Only conflicts that involve the new product are returned. General cosmetic
+ * guidance, not medical advice; an ingredient list that isn't complete can only
+ * under-report.
+ */
+export function checkProduct({ name, ingredients = '' }, steps = []) {
+  const label = String(name || 'This product').trim() || 'This product';
+  const tagText = `${label} ${ingredients}`;
+  const tags = [...tagsFor(tagText)];
+  const forPeriod = (when) => {
+    const virtual = { ...newStep(label, when), name: label, tagText, days: ALL_DAYS };
+    const before = new Set(routineWarnings(steps).map(w => w.text));
+    return routineWarnings([...steps, virtual]).filter(w => !before.has(w.text) && w.text.includes(label));
+  };
+  const am = forPeriod('am'), pm = forPeriod('pm');
+  const worst = [...am, ...pm].some(w => w.level === 'warn') ? 'warn' : [...am, ...pm].length ? 'tip' : 'ok';
+  return { name: label, tags, am, pm, verdict: worst };
 }

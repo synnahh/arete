@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest';
-import { newStep, usesPerDay, supplyUsage, stepsFor, completion, tagsFor, routineWarnings, ALL_DAYS, ratingTrend, dayAdherence, routineInsight } from './skin.js';
+import { newStep, usesPerDay, supplyUsage, stepsFor, completion, tagsFor, routineWarnings, ALL_DAYS, ratingTrend, dayAdherence, routineInsight, checkProduct } from './skin.js';
 
 const step = (name, when = 'both', days = ALL_DAYS, supplyId = null) => ({ ...newStep(name, when, supplyId), days });
 
@@ -106,5 +106,31 @@ describe('skin rating', () => {
     expect(routineInsight(good, steps, day(0))).toBeNull();
     expect(routineInsight([], steps, day(0))).toBeNull();
     expect(routineInsight(good, [], day(0))).toBeNull();
+  });
+});
+
+describe('checkProduct', () => {
+  const s = (name, when = 'both') => ({ ...newStep(name, when), days: ALL_DAYS });
+  it('names the actives from the ingredient list', () => {
+    const r = checkProduct({ name: 'Glow Serum', ingredients: 'Aqua, Glycolic Acid, Niacinamide' }, []);
+    expect(r.tags.sort()).toEqual(['aha', 'niacinamide']);
+    expect(r.verdict).toBe('ok');
+  });
+  it('flags a retinoid product in the morning and against an acid at night', () => {
+    const r = checkProduct({ name: 'Night Cream', ingredients: 'Retinol, Glycerin' }, [s('Glycolic acid toner', 'pm')]);
+    expect(r.am.some(w => /best at night/.test(w.text))).toBe(true);
+    expect(r.pm.some(w => /exfoliating acid/.test(w.text))).toBe(true);
+    expect(r.verdict).toBe('warn');
+  });
+  it('a clash only counts in the period where the other step runs', () => {
+    const r = checkProduct({ name: 'BHA Liquid', ingredients: 'Salicylic Acid' }, [s('Retinol serum', 'pm')]);
+    expect(r.am.filter(w => /retinoid/.test(w.text))).toHaveLength(0);
+    expect(r.pm.some(w => /retinoid/.test(w.text))).toBe(true);
+  });
+  it('does not repeat warnings your routine already has', () => {
+    const steps = [s('Retinol', 'am')];
+    const r = checkProduct({ name: 'Plain Moisturiser', ingredients: 'Aqua, Glycerin' }, steps);
+    expect(r.am).toEqual([]);
+    expect(r.verdict).toBe('ok');
   });
 });
