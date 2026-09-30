@@ -13,6 +13,7 @@ import { toLocalDateKey } from '../../utils/localDate.js';
 import { useTasks } from '../../hooks/useTasks.js';
 import { normalizeTasks } from '../../domain/tasks.js';
 import GoalRing from '../../components/GoalRing.jsx';
+import NextMoves from '../../components/NextMoves.jsx';
 
 //  Shared components 
 function MCard({ children, style = {}, onClick }) {
@@ -578,6 +579,8 @@ export default function MobileDashboard({ settings, ai, peakState, onTabChange }
 
       {/*  Goal ring — today's score against the Coach goal  */}
       <GoalRing settings={settings} onTabChange={onTabChange} compact />
+
+      <NextMoves onTabChange={onTabChange} compact />
 
       {/*  Stat strip (horizontal scroll)  */}
       <StatStrip tasks={tasks} />

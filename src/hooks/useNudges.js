@@ -4,6 +4,7 @@
 
 import { storage, STORAGE_KEYS } from '../utils/storage.js';
 import { toLocalDateKey } from '../utils/localDate.js';
+import { currentWaterGoal } from '../utils/waterGoal.js';
 
 const dayKey = (d) => toLocalDateKey(d);
 const today  = () => dayKey(new Date());
@@ -42,8 +43,7 @@ export function computeNudges() {
 
   // 4 — Hydration low in the afternoon
   try {
-    const goalP = storage.get(STORAGE_KEYS.WATER_PROFILE, {});
-    const goalMl = (goalP.weight || 80) * 35;
+    const goalMl = currentWaterGoal(storage.get(STORAGE_KEYS.SETTINGS, {})); // the one shared goal
     const todayMl = arr(STORAGE_KEYS.WATER).filter(w => w.date === t).reduce((s, w) => s + (w.amount || 0), 0);
     if (hour >= 14 && todayMl < goalMl * 0.4) out.push({ id: 'water', icon: '💧', text: 'Hydration low today', tab: 'fuel', section: 'water', severity: 'warn' });
   } catch {}
