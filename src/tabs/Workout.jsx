@@ -11,6 +11,7 @@ import { toLocalDateKey } from '../utils/localDate.js';
 import TrainSession from './TrainSession.jsx';
 import { suggestNext } from '../domain/progression.js';
 import { suggestWeek, describeWeek } from '../domain/split.js';
+import { EXERCISE_MUSCLES, MUSCLE_MAP, musclesForLog as getLogMuscles, musclesForExercise } from '../domain/muscles.js';
 import ExerciseSuggest from '../components/ExerciseSuggest.jsx';
 
 //  Helpers 
@@ -679,43 +680,6 @@ function SplitPlanner({ programs, addProgram, updateProgram, removeProgram, exer
 // MUSCLE RANKING
 // """""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
 
-// Fallback: maps each split day-type → muscle groups (used for custom exercises
-// and old logs that don't carry a per-exercise muscle list).
-const MUSCLE_MAP = {
-  push: ['chest', 'shoulders', 'triceps'],
-  pull: ['back', 'biceps', 'forearms'],
-  legs: ['quads', 'hamstrings', 'glutes', 'calves'],
-};
-
-// Per-exercise muscle targeting — every logged set credits exactly the muscles
-// that exercise hits (primary movers).
-const EXERCISE_MUSCLES = {
-  'Bench Press':       ['chest', 'triceps', 'shoulders'],
-  'Overhead Press':    ['shoulders', 'triceps'],
-  'Dips':              ['chest', 'triceps'],
-  'Push Press':        ['shoulders', 'triceps'],
-  'DB Shoulder Press': ['shoulders', 'triceps'],
-  'Deadlift':          ['back', 'hamstrings', 'glutes'],
-  'Pull-ups':          ['back', 'biceps'],
-  'Barbell Row':       ['back', 'biceps'],
-  'Lat Pulldown':      ['back', 'biceps'],
-  'Face Pulls':        ['shoulders', 'back'],
-  'Barbell Squat':     ['quads', 'glutes'],
-  'Romanian Deadlift': ['hamstrings', 'glutes'],
-  'Leg Press':         ['quads', 'glutes'],
-  'Leg Curl':          ['hamstrings'],
-  'Walking Lunges':    ['quads', 'glutes'],
-  'Calf Raises':       ['calves'],
-};
-
-// Resolve which muscles a single logged set trained, most-specific first.
-function getLogMuscles(log) {
-  if (Array.isArray(log?.muscles) && log.muscles.length) return log.muscles;
-  if (log?.exerciseName && EXERCISE_MUSCLES[log.exerciseName]) return EXERCISE_MUSCLES[log.exerciseName];
-  const split = log?.splitType || log?.day || log?.muscle;
-  return MUSCLE_MAP[split] || [];
-}
-
 // All tracked muscles with display metadata
 const MUSCLES = [
   // Front
@@ -1125,7 +1089,7 @@ const SUB_NAV = [
 ];
 
 // Muscles a lift trains (drives Muscle Ranking and Look).
-export const musclesFor = (ex) => EXERCISE_MUSCLES[ex.name] || MUSCLE_MAP[ex.day] || [];
+export const musclesFor = musclesForExercise;
 
 // Shared Train data: logs, exercise library, split names, today's split.
 export function useTrainData() {

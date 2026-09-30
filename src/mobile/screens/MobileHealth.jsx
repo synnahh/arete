@@ -11,6 +11,7 @@ import { weightCoach } from '../../domain/weight.js';
 import WeightChart from '../../components/WeightChart.jsx';
 import ProgressPhotos from '../../components/ProgressPhotos.jsx';
 import ReadinessCard from '../../components/ReadinessCard.jsx';
+import MuscleRecovery from '../../components/MuscleRecovery.jsx';
 import SleepLogger from '../../components/SleepLogger.jsx';
 import FastingCard from '../../components/FastingCard.jsx';
 import GoalEta from '../../components/GoalEta.jsx';
@@ -333,6 +334,7 @@ function SleepTab({ today }) {
   return (
     <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
       <ReadinessCard compact />
+      <MuscleRecovery compact />
       <SleepLogger />
       {sorted.length === 0 ? (
         <MCard>

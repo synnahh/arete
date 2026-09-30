@@ -48,7 +48,7 @@ Strong is the clean set logger. Liftoff wraps logging in a game: XP, ranks per e
 | Per-exercise progress chart (e1RM over time) | **Have** (2026-09-30, History button on each Train card) | — |
 | Warm-up ramp and plate calculator | **Have** (2026-09-30, barbell lifts only; bar weight and plate set are settings) | — |
 | Supersets, RPE per set | Missing | P2 |
-| Muscle recovery map (what is fresh / hot) | Partial — a body model exists in `Workout.jsx`, not fed by training volume | P2 |
+| Muscle recovery map (what is fresh / hot) | **Have** (2026-09-30, Recover: per-muscle status, weekly sets against 10-20, best split day; seen with stand-in data) | — |
 | Strength Score / per-lift level vs standards | **Have** (2026-09-30, Train: bodyweight-relative, main barbell lifts, weakest-lift hint; rough adult-male ratios, not sex/age adjusted) | — |
 | Feed, friends, leaderboards | Missing — **recommend skipping**: single-user app | Skip |
 

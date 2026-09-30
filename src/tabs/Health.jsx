@@ -19,6 +19,7 @@ import { weightCoach } from '../domain/weight.js';
 import { weeklyMicros, microCoach } from '../domain/micros.js';
 import ProgressPhotos from '../components/ProgressPhotos.jsx';
 import ReadinessCard from '../components/ReadinessCard.jsx';
+import MuscleRecovery from '../components/MuscleRecovery.jsx';
 import SleepLogger from '../components/SleepLogger.jsx';
 import FastingCard from '../components/FastingCard.jsx';
 import GoalEta from '../components/GoalEta.jsx';
@@ -1796,6 +1797,7 @@ function Sleep({ sleepData, settings }) {
   return (
     <Section title="Sleep">
       <div style={{ marginBottom: 16 }}><ReadinessCard /></div>
+      <div style={{ marginBottom: 16 }}><MuscleRecovery /></div>
       <div style={{ marginBottom: 16 }}><SleepLogger /></div>
       {!latest && (
         <div style={{
