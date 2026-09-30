@@ -15,6 +15,7 @@ import { useSupabaseStatus }    from './supabase/useSupabaseStatus.js';
 import { usePeakState }         from './hooks/usePeakState.js';
 import { useSleepSchedule }    from './hooks/useSleepSchedule.js';
 import { useNotifications }    from './hooks/useNotifications.js';
+import { useCoachReminders }   from './hooks/useCoachReminders.js';
 import Onboarding                from './onboarding/Onboarding.jsx';
 import PinGate                   from './components/PinGate.jsx';
 import SignIn                    from './components/SignIn.jsx';
@@ -208,6 +209,7 @@ export default function App() {
 
   //  Notification scheduler  habits, water, tasks, finance, storage alerts 
   useNotifications(settings);
+  useCoachReminders(settings);
 
   //  Spotify OAuth callback 
   useEffect(() => {

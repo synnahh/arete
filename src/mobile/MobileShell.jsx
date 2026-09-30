@@ -3,6 +3,7 @@ import { useState, useEffect, useRef, useCallback } from 'react';
 import { useAI }              from '../ai/useAI.js';
 import { usePeakState }       from '../hooks/usePeakState.js';
 import { useNotifications }   from '../hooks/useNotifications.js';
+import { useCoachReminders }  from '../hooks/useCoachReminders.js';
 import { requestPushPermission, pushPermissionStatus, registerFCMToken } from '../utils/pushNotifications.js';
 import { isInstalledPWA }     from '../utils/platform.js';
 import MobileDashboard  from './screens/MobileDashboard.jsx';
@@ -279,6 +280,7 @@ export default function MobileShell({ settings, onSettingsChange }) {
 
   // Notification scheduler  drives SMS + push on mobile
   useNotifications(settings);
+  useCoachReminders(settings);
 
   // Request push permission once on first installed PWA launch
   useEffect(() => {

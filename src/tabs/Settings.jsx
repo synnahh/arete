@@ -2,6 +2,7 @@
 // Full 11-section settings hub. Every change persists to localStorage instantly.
 // Split view: left nav (130px) + right scrollable content.
 
+import { DEFAULT_COACH_REMINDERS } from '../domain/reminders.js';
 import { useState, useEffect, useCallback, useRef, Component } from 'react';
 import { fetch }        from '@tauri-apps/plugin-http';
 import { isTauri }      from '../utils/platform.js';
@@ -1346,6 +1347,7 @@ const TAB_REMINDERS_DEFAULT = {
 export function NotificationsSection({ settings, onSave }) {
   const [enabled,          setEnabled]          = useState(settings.notifications?.enabled ?? true);
   const [nudges,           setNudges]           = useState(settings.notifications?.proactiveNudges ?? true);
+  const [coach,            setCoach]            = useState(() => ({ ...DEFAULT_COACH_REMINDERS, ...(settings.notifications?.coach ?? {}) }));
   const [tabReminders,     setTabReminders]     = useState(() => {
     const saved = settings.notifications?.tabs ?? {};
     const merged = {};
@@ -1374,7 +1376,7 @@ export function NotificationsSection({ settings, onSave }) {
 
   const handleSave = () => {
     onSave({
-      notifications: { enabled, proactiveNudges: nudges, tabs: tabReminders },
+      notifications: { enabled, proactiveNudges: nudges, tabs: tabReminders, coach },
       twilioReminders, twilioSentry, twilioAccountSid, twilioAuthToken, phoneNumber,
       smsMessages: { alert: msgAlert },
     });
@@ -1449,6 +1451,25 @@ export function NotificationsSection({ settings, onSave }) {
 
       {enabled && (
         <>
+          <Block label="Coach check-ins">
+            <Row label="Morning and evening check-in" hint="Once each, the most important thing to do next, with why. Never at night.">
+              <Toggle value={coach.enabled !== false} onChange={(v) => setCoach(c => ({ ...c, enabled: v }))} />
+            </Row>
+            {coach.enabled !== false && (
+              <div style={{ display: 'flex', gap: 12, flexWrap: 'wrap', marginTop: 8 }}>
+                {[['morning', 'Morning', [6, 7, 8, 9, 10, 11]], ['evening', 'Evening', [16, 17, 18, 19, 20, 21]]].map(([k, name, hours]) => (
+                  <label key={k} style={{ fontSize: 12.5, color: 'var(--text-secondary)', display: 'flex', alignItems: 'center', gap: 8 }}>
+                    {name}
+                    <select value={coach[k]} onChange={e => setCoach(c => ({ ...c, [k]: Number(e.target.value) }))}
+                      style={{ background: 'var(--input-bg)', border: '0.5px solid var(--input-border)', borderRadius: 7, padding: '6px 8px', color: 'var(--text-primary)', fontFamily: 'inherit' }}>
+                      {hours.map(h => <option key={h} value={h}>{String(h).padStart(2, '0')}:00</option>)}
+                    </select>
+                  </label>
+                ))}
+              </div>
+            )}
+          </Block>
+
           {/*  iOS Push  */}
           {isMobile() && (
             <Block label="iOS Push Notifications">
