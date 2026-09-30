@@ -6,8 +6,8 @@ import { STORAGE_KEYS } from '../utils/storage.js';
 import { toLocalDateKey } from '../utils/localDate.js';
 import { weightCoach } from '../domain/weight.js';
 import { strengthScore } from '../domain/strength.js';
+import { label } from './ui.js';
 
-const label = { fontFamily: 'var(--font-mono)', fontSize: 10.5, letterSpacing: '0.14em', textTransform: 'uppercase', color: 'var(--text-secondary)' };
 
 export default function StrengthCard({ logs }) {
   const { items: bodyMetrics = [] } = useCollection('body_metrics', STORAGE_KEYS.BODY);

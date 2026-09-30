@@ -1,8 +1,8 @@
 // "Next moves": the few things worth doing now, most important first, each with
 // the reason. Rules: domain/nextMoves.js. Tapping one opens the screen for it.
 import { useNextMoves } from '../hooks/useNextMoves.js';
+import { label } from './ui.js';
 
-const label = { fontFamily: 'var(--font-mono)', fontSize: 10.5, letterSpacing: '0.14em', textTransform: 'uppercase', color: 'var(--text-secondary)' };
 
 export default function NextMoves({ onTabChange, compact = false }) {
   const moves = useNextMoves();

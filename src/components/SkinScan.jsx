@@ -10,8 +10,8 @@ import { imageForAI } from '../utils/photoStore.js';
 import { askClaudeRaw } from '../utils/claudeRaw.js';
 import { toLocalDateKey } from '../utils/localDate.js';
 import { SKIN_METRICS, SKIN_SCAN_PROMPT, parseSkinAnalysis, scanContext, compareAssessments, assessmentRow } from '../domain/skinAnalysis.js';
+import { label } from './ui.js';
 
-const label = { fontFamily: 'var(--font-mono)', fontSize: 10.5, letterSpacing: '0.14em', textTransform: 'uppercase', color: 'var(--text-secondary)' };
 const btn = (primary) => ({
   minHeight: 44, padding: '0 16px', borderRadius: 12, cursor: 'pointer', fontFamily: 'inherit', fontSize: 14, fontWeight: primary ? 600 : 500, WebkitTapHighlightColor: 'transparent',
   border: primary ? 'none' : '0.5px solid var(--card-border)', background: primary ? 'var(--tab-accent)' : 'transparent', color: primary ? 'var(--on-tab-accent)' : 'var(--text-primary)',

@@ -4,6 +4,7 @@
 import { useMemo } from 'react';
 import { heatmap } from '../domain/habits.js';
 import { toLocalDateKey } from '../utils/localDate.js';
+import { label } from './ui.js';
 
 // Explicit lookup: Tailwind would purge interpolated class names, and these are inline styles anyway.
 const FILL = {
@@ -14,7 +15,6 @@ const FILL = {
   4: 'var(--tab-accent)',
 };
 const DAY_LETTERS = ['M', 'T', 'W', 'T', 'F', 'S', 'S'];
-const label = { fontFamily: 'var(--font-mono)', fontSize: 10.5, letterSpacing: '0.14em', textTransform: 'uppercase', color: 'var(--text-secondary)' };
 
 const fmt = (key) => new Date(key + 'T12:00:00').toLocaleDateString(undefined, { day: 'numeric', month: 'short' });
 

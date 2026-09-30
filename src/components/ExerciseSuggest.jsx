@@ -4,8 +4,8 @@
 import { useMemo, useState } from 'react';
 import { PRESETS, suggestLibrary, freshEntries, styleFor } from '../domain/exercisePick.js';
 import { storage, STORAGE_KEYS } from '../utils/storage.js';
+import { label } from './ui.js';
 
-const label = { fontFamily: 'var(--font-mono)', fontSize: 10.5, letterSpacing: '0.14em', textTransform: 'uppercase', color: 'var(--text-secondary)' };
 const chip = (on) => ({
   minHeight: 36, padding: '0 14px', borderRadius: 999, cursor: 'pointer', fontFamily: 'inherit', fontSize: 13, fontWeight: on ? 600 : 500,
   border: `0.5px solid ${on ? 'var(--accent)' : 'var(--card-border)'}`, background: on ? 'var(--active-bg)' : 'transparent', color: on ? 'var(--accent)' : 'var(--text-secondary)',

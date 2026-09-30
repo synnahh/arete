@@ -9,11 +9,11 @@ import { useCollection } from '../supabase/useCollection.js';
 import { toLocalDateKey } from '../utils/localDate.js';
 import { uploadPhoto, removePhotoFiles, signedUrls } from '../utils/photoStore.js';
 import { POSES, BODY_POSES, byPose, defaultPair, comparison, formatDay, normalisePose } from '../domain/photos.js';
+import { label } from './ui.js';
 
 const LEGACY_KEY = 'valerie_photos';
 
 const card = { padding: 14, borderRadius: 14, background: 'var(--bg-panel)', border: '0.5px solid var(--card-border)', display: 'flex', flexDirection: 'column', gap: 10 };
-const label = { fontFamily: 'var(--font-mono)', fontSize: 10.5, letterSpacing: '0.14em', textTransform: 'uppercase', color: 'var(--text-secondary)' };
 const pill = (on) => ({
   minHeight: 36, padding: '0 14px', borderRadius: 999, cursor: 'pointer', fontFamily: 'inherit', fontSize: 13,
   border: `0.5px solid ${on ? 'var(--tab-accent)' : 'var(--card-border)'}`,

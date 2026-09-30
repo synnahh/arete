@@ -68,7 +68,7 @@ Skin Bliss scans products (barcode, search, shelf photo) for ingredient clashes,
 | Score a product against your skin profile | **Have** (2026-09-30: Look > Skin > Check a product, with a Your skin profile; 0-100 with a reason for every point, no score without ingredients. Logic and tests done; not yet seen on screen) | — |
 | Opened-product expiry (period-after-opening) reminder | **Have** (2026-09-30: "use within N months" on a supply; shown in Supplies, Today and the attention count). Not verified: the Today panel on screen | — |
 | Photo-based skin analysis by the coach (scores, observations, suggestions, change since last time) | **Have, unverified live** (2026-09-30, Look > Skin > Skin photo analysis) | — |
-| Tiered routine builder (Essential → Complete → Power) | Missing | P3 |
+| Tiered routine builder (Essential → Complete → Power) | **Have** (2026-09-30, Look > Skin > Suggest a routine; not yet seen on screen) | — |
 
 ## 4. Sleep, water and weight coaches
 

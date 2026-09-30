@@ -7,8 +7,8 @@ import { checkProduct, TAG_LABELS } from '../domain/skin.js';
 import { scoreProduct, BAND_LABEL, SKIN_TYPES, SKIN_CONCERNS, CONCERN_LABEL } from '../domain/skinScore.js';
 import { isBarcode, lookupBeautyProduct } from '../utils/openBeautyFacts.js';
 import { startBarcodeScan } from '../utils/openFoodFacts.js';
+import { label } from './ui.js';
 
-const label = { fontFamily: 'var(--font-mono)', fontSize: 10.5, letterSpacing: '0.14em', textTransform: 'uppercase', color: 'var(--text-secondary)' };
 const input = { width: '100%', boxSizing: 'border-box', minHeight: 44, padding: '0 12px', borderRadius: 10, background: 'var(--input-bg)', border: '0.5px solid var(--input-border)', color: 'var(--text-primary)', fontFamily: 'inherit', fontSize: 14 };
 const btn = (primary) => ({
   minHeight: 44, padding: '0 16px', borderRadius: 12, cursor: 'pointer', fontFamily: 'inherit', fontSize: 14, fontWeight: primary ? 600 : 500, WebkitTapHighlightColor: 'transparent',

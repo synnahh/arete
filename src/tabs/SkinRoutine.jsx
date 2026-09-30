@@ -13,12 +13,12 @@ import SkinTiers from '../components/SkinTiers.jsx';
 import {
   ALL_DAYS, WHEN_LABEL, RATING_LABELS, newStep, usesPerDay, supplyUsage, stepsFor, completion, routineWarnings, ratingTrend, routineInsight,
 } from '../domain/skin.js';
+import { label } from '../components/ui.js';
 
 const DAY_LETTERS = ['S', 'M', 'T', 'W', 'T', 'F', 'S'];
 const DAY_NAMES = ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'];
 
 const card = { padding: 18, borderRadius: 16, background: 'var(--bg-panel)', border: '0.5px solid var(--card-border)', display: 'flex', flexDirection: 'column', gap: 12 };
-const label = { fontFamily: 'var(--font-mono)', fontSize: 10.5, letterSpacing: '0.14em', textTransform: 'uppercase', color: 'var(--text-secondary)' };
 const input = { width: '100%', boxSizing: 'border-box', height: 40, padding: '0 12px', borderRadius: 10, background: 'var(--input-bg)', border: '0.5px solid var(--input-border)', color: 'var(--text-primary)', fontFamily: 'inherit', fontSize: 14 };
 const pill = (on) => ({
   minHeight: 32, padding: '0 12px', borderRadius: 999, cursor: 'pointer', fontFamily: 'inherit', fontSize: 12.5,

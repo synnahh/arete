@@ -3,12 +3,12 @@
 // thresholds: src/domain/recovery.js.
 import { useRecovery } from '../hooks/useRecovery.js';
 import { updateSettings } from '../utils/settingsStore.js';
+import { label } from './ui.js';
 
 const BAND_COLOUR = { push: '#4caf7d', normal: '#e8a13a', 'go-easy': '#e25d7a' };
 const R = 34;
 const CIRC = 2 * Math.PI * R;
 
-const label = { fontFamily: 'var(--font-mono)', fontSize: 10.5, letterSpacing: '0.14em', textTransform: 'uppercase', color: 'var(--text-secondary)' };
 
 function NeedStepper({ need }) {
   const set = (v) => updateSettings({ sleepNeedHours: Math.max(5, Math.min(11, +(v).toFixed(1))) });

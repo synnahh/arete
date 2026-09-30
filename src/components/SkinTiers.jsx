@@ -4,8 +4,8 @@
 import { useMemo, useState } from 'react';
 import { TIERS, TIER_LABEL, TIER_BLURB, suggestRoutine, newSteps, tierWarnings } from '../domain/skinTiers.js';
 import { WHEN_LABEL } from '../domain/skin.js';
+import { label } from './ui.js';
 
-const label = { fontFamily: 'var(--font-mono)', fontSize: 10.5, letterSpacing: '0.14em', textTransform: 'uppercase', color: 'var(--text-secondary)' };
 const chip = (on) => ({
   minHeight: 40, padding: '0 16px', borderRadius: 999, cursor: 'pointer', fontFamily: 'inherit', fontSize: 14, WebkitTapHighlightColor: 'transparent',
   border: `0.5px solid ${on ? 'var(--tab-accent)' : 'var(--card-border)'}`, fontWeight: on ? 600 : 500,

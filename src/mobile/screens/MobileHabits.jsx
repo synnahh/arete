@@ -8,6 +8,7 @@ import { haptics } from '../utils/haptics.js';
 import Sheet from '../Sheet.jsx';
 import HabitHeatmap from '../../components/HabitHeatmap.jsx';
 import { isDone, currentStreak, bestStreak, toggleDay, weekDots, completionRate, todayProgress } from '../../domain/habits.js';
+import { label } from '../../components/ui.js';
 
 const ICONS = ['💧', '🏋️', '🥗', '📖', '🧘', '😴', '🚶', '🧴', '💊', '☕', '🎯', '✅'];
 const IDEAS = ['Drink 3 L of water', 'Lift or train', 'Walk 10 minutes', 'Read 10 pages', 'Skincare AM and PM', 'In bed by 10:30', 'No caffeine after 2pm'];
@@ -16,7 +17,6 @@ const card = { background: 'var(--bg-panel)', border: '0.5px solid var(--card-bo
 const input = { width: '100%', boxSizing: 'border-box', height: 44, padding: '0 12px', borderRadius: 10, background: 'var(--input-bg)', border: '0.5px solid var(--input-border)', color: 'var(--text-primary)', fontFamily: 'inherit', fontSize: 15 };
 const primary = { minHeight: 48, borderRadius: 12, border: 'none', cursor: 'pointer', fontFamily: 'inherit', fontSize: 15, fontWeight: 600, background: 'var(--tab-accent)', color: 'var(--on-tab-accent)', WebkitTapHighlightColor: 'transparent' };
 const ghost = { minHeight: 44, borderRadius: 12, cursor: 'pointer', fontFamily: 'inherit', fontSize: 14, background: 'transparent', border: '0.5px solid var(--card-border)', color: 'var(--text-secondary)', WebkitTapHighlightColor: 'transparent' };
-const label = { fontFamily: 'var(--font-mono)', fontSize: 10.5, letterSpacing: '0.14em', textTransform: 'uppercase', color: 'var(--text-secondary)' };
 
 function HabitSheet({ habit, onSave, onDelete, onClose }) {
   const [name, setName] = useState(habit?.name ?? '');

@@ -9,8 +9,8 @@ import { toLocalDateKey } from '../utils/localDate.js';
 import { sleepWindow } from '../utils/waterGoal.js';
 import { sleepRow } from '../domain/dayLogs.js';
 import { sleepHoursBetween } from '../domain/recovery.js';
+import { label } from './ui.js';
 
-const label = { fontFamily: 'var(--font-mono)', fontSize: 10.5, letterSpacing: '0.14em', textTransform: 'uppercase', color: 'var(--text-secondary)' };
 const field = { height: 44, boxSizing: 'border-box', padding: '0 10px', borderRadius: 10, fontFamily: 'inherit', fontSize: 15, background: 'var(--input-bg)', border: '0.5px solid var(--input-border)', color: 'var(--text-primary)' };
 const chip = (on) => ({
   minHeight: 40, padding: '0 14px', borderRadius: 999, cursor: 'pointer', fontFamily: 'inherit', fontSize: 13.5,

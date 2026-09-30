@@ -5,10 +5,10 @@ import { useEffect, useState } from 'react';
 import { storage, STORAGE_KEYS } from '../utils/storage.js';
 import { updateSettings } from '../utils/settingsStore.js';
 import { PROTOCOLS, startFast, fastProgress, endFast, addToLog, fastStats, formatHours } from '../domain/fasting.js';
+import { label } from './ui.js';
 
 const R = 34;
 const CIRC = 2 * Math.PI * R;
-const label = { fontFamily: 'var(--font-mono)', fontSize: 10.5, letterSpacing: '0.14em', textTransform: 'uppercase', color: 'var(--text-secondary)' };
 const chip = (on) => ({
   minHeight: 40, padding: '0 14px', borderRadius: 999, cursor: 'pointer', fontFamily: 'inherit', fontSize: 13.5,
   border: `0.5px solid ${on ? 'var(--tab-accent)' : 'var(--card-border)'}`,
