@@ -95,7 +95,7 @@ Stance builds workouts and meals from a goal and training days, adjusts weights 
 | Goal → targets (cut/bulk/recomp/glow-up) and weekly adaptive maintenance proposal | Have (Goal HQ; never applied silently) | — |
 | Coach chat that knows your goal, score, PRs and due supplies | Have, coded — not deployed until the key is rotated | — |
 | **Approval before the coach changes anything** | **Have** for settings (2026-09-30: an Apply / Not now card; secret-like keys and non-plain values refused). Logging actions (water, food, sleep, tasks) stay instant by design | — |
-| AI-built weekly workout plan from goal, days and equipment | **Partly** (2026-09-30: Split Planner suggests a push/pull/legs week for 2-6 days, no AI, as a new program). No exercise selection from goal or equipment | P3 |
+| AI-built weekly workout plan from goal, days and equipment | **Partly** (2026-09-30: Split Planner suggests a push/pull/legs week for 2-6 days, no AI, as a new program). Exercise picker by equipment and goal added 2026-09-30 (Train > Exercises) | P3 |
 | Auto-adjusted loads | **Have** as suggestions the lifter can override (see section 2) | — |
 | Pre-session advice ("sleep was short, keep it lighter") | **Have** (readiness line at the top of Train) | — |
 | Plateau detection and intervention | **Have** (section 2) | — |
@@ -109,8 +109,8 @@ Reference features: daily habits with tags (Gym, Health, Focus), an overall rati
 |---|---|---|
 | Daily habits, streaks that break correctly | Have (fixed this session; desktop + phone) | — |
 | Habit heatmap | **Have** (2026-09-30, 12 weeks, desktop + phone) | — |
-| One overall rating that rises with what you do | Partial — the Home goal ring scores today; there is no long-run OVR | P2 |
-| Journal, breathing | Partial — Mind has notes; no breathing tool | P3 |
+| One overall rating that rises with what you do | **Have** (2026-09-30, Home > Overall: 0-99 over the last 28 days from training, food, sleep, habits and weigh-ins, against the month before; seen with stand-in data) | — |
+| Journal, breathing | **Have** (breathing: Mind > Breathe, three patterns, 1/3/5 min, seen with stand-in data). Journal: Mind has notes | — |
 | Focus timer / blocking | Have (Focus tab); blocking apps is impossible in a web app | — |
 
 ---

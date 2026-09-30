@@ -6,6 +6,7 @@ import { useCollection } from '../../supabase/useCollection.js';
 import { useDocument }   from '../../supabase/useDocument.js';
 import { askClaudeRaw }  from '../../utils/claudeRaw.js';
 import { toLocalDateKey } from '../../utils/localDate.js';
+import BreathingTool from '../../components/BreathingTool.jsx';
 
 // ─── Shared primitives ────────────────────────────────────────────────────────
 
@@ -69,6 +70,7 @@ const SECTIONS = [
   { id: 'beliefs',      label: 'Beliefs',      emoji: '💡' },
   { id: 'vault',        label: 'Vault',        emoji: '🗄️'  },
   { id: 'insights',     label: 'Insights',     emoji: '🔮' },
+  { id: 'breathe',      label: 'Breathe',      emoji: '🫁' },
 ];
 
 // ─── CONSTITUTION ─────────────────────────────────────────────────────────────
@@ -604,6 +606,7 @@ export default function MobileMind() {
         {section === 'beliefs'      && <Beliefs />}
         {section === 'vault'        && <Vault />}
         {section === 'insights'     && <Insights constitution={constitutionDoc.data} />}
+        {section === 'breathe'      && <BreathingTool />}
       </div>
 
       <style>{`

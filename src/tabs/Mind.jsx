@@ -7,6 +7,7 @@ import { useDocument }   from '../supabase/useDocument.js';
 import { STORAGE_KEYS }  from '../utils/storage.js';
 import { askClaudeRaw }  from '../utils/claudeRaw.js';
 import { toLocalDateKey } from '../utils/localDate.js';
+import BreathingTool from '../components/BreathingTool.jsx';
 
 // ─── Shared design tokens ─────────────────────────────────────────────────────
 
@@ -1127,6 +1128,7 @@ const MIND_TABS = [
   { id: 'beliefs',      label: 'BELIEFS'      },
   { id: 'vault',        label: 'VAULT'        },
   { id: 'insights',     label: 'INSIGHTS'     },
+  { id: 'breathe',      label: 'BREATHE'      },
 ];
 
 export default function Mind({ settings = {} }) {
@@ -1179,6 +1181,7 @@ export default function Mind({ settings = {} }) {
         {section === 'beliefs'      && <Beliefs />}
         {section === 'vault'        && <MemoryVault />}
         {section === 'insights'     && <Insights constitution={constitution} settings={settings} />}
+        {section === 'breathe'      && <div style={{ padding: '20px 24px' }}><BreathingTool /></div>}
       </div>
 
       <style>{`
