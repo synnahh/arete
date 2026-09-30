@@ -109,6 +109,45 @@ function stop(s) {
   if (s.channel) { supabase.removeChannel(s.channel); s.channel = null; }
 }
 
+//  Store-level CRUD (always against the latest list, so an update right after an add works)
+async function addTo(s, item) {
+  const userId = s.userId || await getUserId();
+  if (!userId) { reportDataError(s.name, 'add', 'Not signed in — cannot save.'); return null; }
+  const { id: _skip, ...data } = item;
+  const { data: row, error } = await supabase
+    .from(s.name)
+    .insert({ user_id: userId, data })
+    .select()
+    .single();
+
+  if (error) { reportDataError(s.name, 'add', error.message); return null; }
+  const newItem = rowToItem(row);
+  if (!s.items.some(i => i.id === newItem.id)) setItems(s, [...s.items, newItem]); // realtime may have got there first
+  return newItem.id;
+}
+
+async function updateIn(s, id, patch) {
+  const existing = s.items.find(i => i.id === id);
+  if (!existing) return false;
+  const { id: _skip, ...existingData } = existing;
+  const merged = { ...existingData, ...patch };
+
+  const { error } = await supabase.from(s.name).update({ data: merged }).eq('id', id);
+  if (error) { reportDataError(s.name, 'update', error.message); return false; }
+  setItems(s, s.items.map(i => (i.id === id ? { id, ...merged } : i)));
+  return true;
+}
+
+async function removeFrom(s, id) {
+  const { error } = await supabase.from(s.name).delete().eq('id', id);
+  if (error) { reportDataError(s.name, 'remove', error.message); return false; }
+  setItems(s, s.items.filter(i => i.id !== id));
+  return true;
+}
+
+// Exposed for tests only: the store without React.
+export const __store = { storeFor, start, stop, setItems, addTo, updateIn, removeFrom, STOP_GRACE_MS };
+
 //  The hook
 export function useCollection(collectionName, storageKey) {
   const s = storeFor(collectionName);
@@ -130,41 +169,9 @@ export function useCollection(collectionName, storageKey) {
     };
   }, [s]);
 
-  //  CRUD (always against the latest list, so an update right after an add works)
-  const add = useCallback(async (item) => {
-    const userId = s.userId || await getUserId();
-    if (!userId) { reportDataError(s.name, 'add', 'Not signed in — cannot save.'); return null; }
-    const { id: _skip, ...data } = item;
-    const { data: row, error } = await supabase
-      .from(s.name)
-      .insert({ user_id: userId, data })
-      .select()
-      .single();
-
-    if (error) { reportDataError(s.name, 'add', error.message); return null; }
-    const newItem = rowToItem(row);
-    if (!s.items.some(i => i.id === newItem.id)) setItems(s, [...s.items, newItem]); // realtime may have got there first
-    return newItem.id;
-  }, [s]);
-
-  const update = useCallback(async (id, patch) => {
-    const existing = s.items.find(i => i.id === id);
-    if (!existing) return false;
-    const { id: _skip, ...existingData } = existing;
-    const merged = { ...existingData, ...patch };
-
-    const { error } = await supabase.from(s.name).update({ data: merged }).eq('id', id);
-    if (error) { reportDataError(s.name, 'update', error.message); return false; }
-    setItems(s, s.items.map(i => (i.id === id ? { id, ...merged } : i)));
-    return true;
-  }, [s]);
-
-  const remove = useCallback(async (id) => {
-    const { error } = await supabase.from(s.name).delete().eq('id', id);
-    if (error) { reportDataError(s.name, 'remove', error.message); return false; }
-    setItems(s, s.items.filter(i => i.id !== id));
-    return true;
-  }, [s]);
+  const add = useCallback((item) => addTo(s, item), [s]);
+  const update = useCallback((id, patch) => updateIn(s, id, patch), [s]);
+  const remove = useCallback((id) => removeFrom(s, id), [s]);
 
   return { items: s.items, add, update, remove, synced: s.synced };
 }
