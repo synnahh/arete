@@ -209,7 +209,7 @@ export default function SkinRoutine({ profile, saveProfile, daily }) {
         </div>
       )}
 
-      <ProductCheck steps={steps} onAdd={addFromProduct} />
+      <ProductCheck steps={steps} onAdd={addFromProduct} skinProfile={profile?.skinProfile || {}} onSkinProfile={(sp) => saveProfile({ ...profile, skinProfile: sp })} />
 
       <div style={card}>
         <span style={label}>Routine builder</span>

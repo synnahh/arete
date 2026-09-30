@@ -54,8 +54,8 @@ export function useNextMoves() {
     const live = applyUsage(supplies, nutrition, today);
     const skinSteps = Array.isArray(lmProfile?.skinSteps) ? lmProfile.skinSteps : [];
     const skinTicks = lmDaily.find(d => d.date === today)?.skin ?? {};
-    const am = completion(skinSteps, skinTicks, 'am', now.getDay());
-    const pm = completion(skinSteps, skinTicks, 'pm', now.getDay());
+    const am = completion(skinSteps, skinTicks.am || {}, 'am', now.getDay());
+    const pm = completion(skinSteps, skinTicks.pm || {}, 'pm', now.getDay());
     const lastWeigh = body.map(b => b.date).filter(d => dayIndex(d) != null).sort().pop();
 
     return nextMoves({
