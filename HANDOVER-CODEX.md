@@ -306,3 +306,7 @@ Rob does not want a voice AI or anything to talk to. The coach keeps the plan in
 
 ### Water goal follows weight (192cec1)
 - Coach engine has a fifth auto rule: the water goal is kept in step with body weight (cooldown, Undo via the same feed). 454 tests and `npm run build` pass (re-checked 2026-10-01, tree clean). Not verified in a browser or against real Supabase.
+
+### Split rule checked in a browser (2026-10-01)
+- Stubbed database, 5-day plan with 2 sessions a week for 3 weeks: Home showed "Switch to a 2-day split?" as a question (not auto-applied). Apply added an active "2-day plan (coach)" and deactivated the old plan (kept); Undo reactivated the old plan, left the new one inactive, marked the log entry undone, and the question did not come back. Not verified against real Supabase.
+- Exposed keys removed from the gitignored `.env` (Claude, ElevenLabs key and voice id, unused Google search key and cx) and redacted in the Obsidian voice note. Git history and built bundles held no real key. The keys themselves are still live until rotated at the providers.
