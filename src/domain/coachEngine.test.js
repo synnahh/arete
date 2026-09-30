@@ -120,3 +120,29 @@ describe('applied questions read as statements', () => {
     expect(logEntry(u, 'dismissed').title).toBe('Switch?');
   });
 });
+
+describe('water', () => {
+  const flat = (kg) => range(14).map(i => ({ date: day(i), weight: kg })).reverse();
+  const profile = { weight: 75, weightUnit: 'kg', sex: 'male', activityHours: 5, caffeineMg: 200 };
+
+  it('follows trend weight when the saved profile is 2+ kg off', () => {
+    const u = coachUpdates({ weights: flat(82), waterProfile: profile, today: TODAY }).find(x => x.key === 'water');
+    expect(u.mode).toBe('auto');
+    expect(u.apply.profile.weight).toBe(82);
+    expect(u.apply.profile.sex).toBe('male');
+    expect(u.title).toMatch(/up to/);
+  });
+
+  it('converts to pounds when the profile is in pounds', () => {
+    const u = coachUpdates({ weights: flat(82), waterProfile: { ...profile, weight: 165, weightUnit: 'lb' }, today: TODAY }).find(x => x.key === 'water');
+    expect(u.apply.profile.weightUnit).toBe('lb');
+    expect(u.apply.profile.weight).toBeGreaterThan(175);
+  });
+
+  it('does nothing without a saved profile, for small drift, or while cooling down', () => {
+    expect(keys(coachUpdates({ weights: flat(82), today: TODAY }))).not.toContain('water');
+    expect(keys(coachUpdates({ weights: flat(76), waterProfile: profile, today: TODAY }))).not.toContain('water');
+    const log = [{ key: 'water', status: 'applied', at: `${day(5)}T10:00:00Z` }];
+    expect(keys(coachUpdates({ weights: flat(82), waterProfile: profile, log, today: TODAY }))).not.toContain('water');
+  });
+});

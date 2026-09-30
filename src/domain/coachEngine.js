@@ -10,20 +10,23 @@
 //                      -> targets rebuilt from it at your current trend weight.
 //   macros       auto  Trend weight has moved 3+ kg since targets were set
 //                      -> protein and fat re-set for your weight, same maintenance.
+//   water        auto  Your saved water profile is 2+ kg off your trend weight
+//                      -> profile weight follows it, so the daily water goal does too.
 //   goal-reached ask   Trend is within 0.5 kg of your goal weight -> switch to Recomp.
 //   split        ask   You train at least 1.5 days a week fewer than your plan, three
 //                      weeks running -> a split that fits the days you actually train.
 //
 // Update shape: { key, mode: 'auto' | 'ask', title, doneTitle?, why, apply }
-//   apply: { type: 'goal', goal }  or  { type: 'split', days }
+//   apply: { type: 'goal', goal }  or  { type: 'split', days }  or  { type: 'water', profile }
 // Log entry (settings.coachLog): { id, key, status: 'applied' | 'undone' | 'dismissed',
 //   at, title, why, before, after }
 
 import { adaptiveMaintenance, makeGoal, GOAL_TEMPLATES } from './goals.js';
 import { weightCoach } from './weight.js';
+import { calcWaterGoal, profileKg } from './water.js';
 import { dayIndex } from '../utils/dayIndex.js';
 
-export const COOLDOWN_DAYS = { maintenance: 14, macros: 14, 'goal-reached': 30, split: 28 };
+export const COOLDOWN_DAYS = { maintenance: 14, macros: 14, 'goal-reached': 30, split: 28, water: 21 };
 export const LOG_LIMIT = 30;
 const DAYS = ['mon', 'tue', 'wed', 'thu', 'fri', 'sat', 'sun'];
 
@@ -56,7 +59,7 @@ export const plannedDays = (program) => DAYS.filter(d => program?.days?.[d]?.spl
  *     program (the active one or null), log: settings.coachLog, today }
  */
 export function coachUpdates(data = {}) {
-  const { goal, weights = [], nutrition = [], workouts = [], program = null, log = [], today } = data;
+  const { goal, weights = [], nutrition = [], workouts = [], program = null, waterProfile = null, log = [], today } = data;
   const t = dayIndex(today);
   const out = [];
   if (t == null) return out;
@@ -107,6 +110,27 @@ export function coachUpdates(data = {}) {
           doneTitle: `Switched to Recomp to hold ${target} kg`,
           why: `Your trend is ${round1(trend)} kg. Recomp eats at maintenance (${next.targets.kcal} kcal) with high protein, so you keep the weight and keep building muscle.`,
           apply: { type: 'goal', goal: { ...next, targetsWeightKg: round1(trend) } },
+        });
+      }
+    }
+  }
+
+  // Water goal follows bodyweight. Only touches a profile you saved, and only while the
+  // weight has real data behind it (goal or not).
+  if (waterProfile && Number(waterProfile.weight) > 0 && !coolingDown(log, 'water', today)) {
+    const trend = weightCoach(weights, null, null, today)?.trend ?? null;
+    const lb = waterProfile.weightUnit === 'lb';
+    const kg = profileKg(waterProfile);
+    if (trend && Math.abs(trend - kg) >= 2) {
+      const weight = round1(lb ? trend / 0.45359237 : trend);
+      const profile = { ...waterProfile, weight };
+      const from = calcWaterGoal(waterProfile), to = calcWaterGoal(profile);
+      if (from !== to) {
+        out.push({
+          key: 'water', mode: 'auto',
+          title: `Water goal ${to > from ? 'up' : 'down'} to ${(to / 1000).toFixed(2).replace(/0$/, '')} L`,
+          why: `Your water profile said ${round1(lb ? kg / 0.45359237 : kg)} ${lb ? 'lb' : 'kg'} but your trend weight is ${weight} ${lb ? 'lb' : 'kg'}, so the daily goal moved from ${from} to ${to} ml.`,
+          apply: { type: 'water', profile },
         });
       }
     }

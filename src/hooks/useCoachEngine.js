@@ -7,6 +7,7 @@
 // and apply / dismiss / undo.
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { useCollection } from '../supabase/useCollection.js';
+import { useDocument } from '../supabase/useDocument.js';
 import { storage, STORAGE_KEYS } from '../utils/storage.js';
 import { toLocalDateKey } from '../utils/localDate.js';
 import { updateSettings } from '../utils/settingsStore.js';
@@ -17,6 +18,11 @@ import { coachUpdates, logEntry, pushLog, canUndo } from '../domain/coachEngine.
 const WARMUP_MS = 4000;
 let applying = false; // one writer at a time across every mounted copy
 
+// Undo a water change only while it is the newest one and the profile is still what it set.
+const undoableWater = (entry, log, current) => entry.status === 'applied' && !!entry.before?.water
+  && log.find(e => e.after?.water && e.status === 'applied')?.id === entry.id
+  && JSON.stringify(current ?? null) === JSON.stringify(entry.after.water);
+
 const readSettings = () => storage.get(STORAGE_KEYS.SETTINGS, {}) || {};
 const toast = (detail) => window.dispatchEvent(new CustomEvent('valerie:toast', { detail }));
 
@@ -25,7 +31,9 @@ export function useCoachEngine({ run = false } = {}) {
   const nutrition = useCollection('nutrition_logs', STORAGE_KEYS.MACROS);
   const workouts = useCollection('workout_logs', STORAGE_KEYS.WORKOUT_LOGS);
   const programs = useCollection('programs', STORAGE_KEYS.PROGRAMS);
-  const synced = body.synced && nutrition.synced && workouts.synced && programs.synced;
+  // The water profile is only touched if you saved one (the default is never written).
+  const water = useDocument('water_profile', STORAGE_KEYS.WATER_PROFILE, null);
+  const synced = body.synced && nutrition.synced && workouts.synced && programs.synced && water.synced;
 
   const [settings, setSettings] = useState(readSettings);
   useEffect(() => {
@@ -44,9 +52,10 @@ export function useCoachEngine({ run = false } = {}) {
     nutrition: (nutrition.items || []).map(n => ({ date: n.date, calories: n.calories })),
     workouts: workouts.items || [],
     program: activeProgram,
+    waterProfile: water.data,
     log,
     today,
-  }), [settings.coachGoal, body.items, nutrition.items, workouts.items, activeProgram, log, today]);
+  }), [settings.coachGoal, body.items, nutrition.items, workouts.items, activeProgram, water.data, log, today]);
 
   // Write one update and its log entry. Returns the log entry, or null if nothing changed.
   const commit = useCallback(async (update) => {
@@ -68,8 +77,16 @@ export function useCoachEngine({ run = false } = {}) {
       updateSettings({ coachLog: pushLog(readSettings().coachLog, entry) });
       return entry;
     }
+    if (update.apply.type === 'water') {
+      const before = { water: water.data };
+      const after = { water: update.apply.profile };
+      const entry = logEntry(update, 'applied', { before, after });
+      await water.save(after.water);
+      updateSettings({ coachLog: pushLog(readSettings().coachLog, entry) });
+      return entry;
+    }
     return null;
-  }, [programs]);
+  }, [programs, water]);
 
   const undo = useCallback(async (entry) => {
     const current = readSettings();
@@ -88,8 +105,14 @@ export function useCoachEngine({ run = false } = {}) {
       updateSettings({ coachLog: entries.map(e => (e.id === entry.id ? { ...e, status: 'undone' } : e)) });
       return true;
     }
+    if (entry.after?.water) {
+      if (!undoableWater(entry, entries, water.data)) return false;
+      await water.save(entry.before.water);
+      updateSettings({ coachLog: entries.map(e => (e.id === entry.id ? { ...e, status: 'undone' } : e)) });
+      return true;
+    }
     return false;
-  }, [programs]);
+  }, [programs, water]);
 
   const applyAsk = useCallback(async (update) => {
     if (applying) return;
@@ -126,7 +149,8 @@ export function useCoachEngine({ run = false } = {}) {
 
   const pending = useMemo(() => updates.filter(u => u.mode === 'ask'), [updates]);
   const undoable = useCallback((entry) => (entry.after?.goal ? canUndo(entry, log, settings.coachGoal)
-    : entry.status === 'applied' && !!entry.after?.programId && log.find(e => e.after?.programId && e.status === 'applied')?.id === entry.id), [log, settings.coachGoal]);
+    : entry.after?.water ? undoableWater(entry, log, water.data)
+    : entry.status === 'applied' && !!entry.after?.programId && log.find(e => e.after?.programId && e.status === 'applied')?.id === entry.id), [log, settings.coachGoal, water.data]);
 
   return { pending, log, applyAsk, dismiss, undo, undoable };
 }

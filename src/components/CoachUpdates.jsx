@@ -56,7 +56,7 @@ export default function CoachUpdates({ compact = false, always = false }) {
 
       {!pending.length && !recent.length && (
         <div style={{ fontSize: 13, lineHeight: 1.55, color: 'var(--text-secondary)' }}>
-          Nothing to change right now. The coach watches your weigh-ins, food and training and adjusts your targets when the data shows they're off: your real maintenance after two weeks, protein and fat as your weight moves, and your split if you're training fewer days than planned. Each change shows here with the reason and an Undo.
+          Nothing to change right now. The coach watches your weigh-ins, food and training and adjusts your targets when the data shows they're off: your real maintenance after two weeks, protein and fat as your weight moves, your water goal as your weight changes, and your split if you're training fewer days than planned. Each change shows here with the reason and an Undo.
         </div>
       )}
     </section>
