@@ -20,10 +20,11 @@ Combine speech + actions: say what you're doing, then include the action(s).
 If you cannot format as JSON, just respond naturally in plain text.`;
 
 //  askOllama 
-export async function askOllama(message, history = [], { context = '' } = {}) {
+export async function askOllama(message, history = [], { context = '', coaching = '' } = {}) {
+  const base = coaching ? `${OLLAMA_SYSTEM}\n\nCoaching method (background, do not recite):\n${coaching}` : OLLAMA_SYSTEM;
   const systemContent = context
-    ? `${OLLAMA_SYSTEM}\n\nCurrent context:\n${context}`
-    : OLLAMA_SYSTEM;
+    ? `${base}\n\nCurrent context:\n${context}`
+    : base;
 
   const messages = [
     { role: 'system',  content: systemContent },

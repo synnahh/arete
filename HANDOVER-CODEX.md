@@ -240,3 +240,10 @@ Rotate the Anthropic and ElevenLabs keys, then set `ANTHROPIC_API_KEY`/`ANTHROPI
 - **Fixes:** saved Phantom theme is no longer rewritten to Obsidian on launch; Train pre-filled rows refresh when readiness changes (untouched rows only); bottom sheets trap focus and restore it; one strict `utils/dayIndex.js` replaces six copies (four lax NaN-returning copies left alone on purpose: their arithmetic depends on NaN).
 - 352 tests; both builds; browser (desktop + 375 px, stub data). Not verified against real Supabase or the live gateway.
 - **Not built:** exercise selection from goal/equipment; skin step in Next moves; shared style constants (seven near-identical inline style sets); dead code removal (`MobileWorkout.jsx`, More grid) waits on Rob.
+
+## Batch 5 (2026-09-30): product scoring and the coach's prompt layer
+
+- **Next moves skincare** (`useNextMoves.js`): morning (7 am-noon) and night (from 8 pm) steps from `lm_profile.skinSteps` and today's `lm_daily.skin.am/pm` ticks. Ticks are per period.
+- **Product scoring** (`domain/skinScore.js`, tests): 0-100 against `profile.skinProfile` = `{ type, concerns[], avoid }`, saved through the Look profile document. Every point carries a reason; null score without ingredients or profile. Cosmetic guidance, not medical. UI in `components/ProductCheck.jsx` ("Your skin" chips + score).
+- **Coach prompt layer** (`ai/coachPrompt.js`, from `D:\Work\Projects\Prompts\Coaching Prompt`): `buildCoachBrief` picks methods by topic (nutrition, training, skin, sleep, body, habits), adds directives from `coachSnapshot()` in `ai/context.js` (weight pace, readiness, sleep debt, stalled lifts, skin trend), and a tone line. Sent as `coaching` to `ai-chat` (chat mode only, 12k cap, placed under the core rules). **Needs `ai-chat` redeployed**; until then the extra field is ignored and chat works as before.
+- Not built from that prompt: skin/face photo analysis by the coach, scheduled reminders and notifications, wearable/device integration beyond Apple Health.

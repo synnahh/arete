@@ -98,12 +98,13 @@ Deno.serve(async (req) => {
   const memories = Array.isArray(body.memory)
     ? body.memory.filter((x): x is string => typeof x === 'string').slice(0, 8)
     : [];
+  const coaching = mode === 'chat' && typeof body.coaching === 'string' ? body.coaching.slice(0, 12_000) : '';
   const taskPrompt = typeof body.systemPrompt === 'string' ? body.systemPrompt.slice(0, 50_000) : '';
   const personalityId = typeof body.personality === 'string' ? body.personality.toLowerCase() : 'calm expert';
   const personality = PERSONALITIES[personalityId] || PERSONALITIES['calm expert'];
   const system = mode === 'raw'
     ? `${CORE_PROMPT}\n\nTASK-SPECIFIC INSTRUCTIONS:\n${taskPrompt || 'Answer the request plainly.'}`
-    : `${CORE_PROMPT}\n\nCOACH VOICE:\n${personality}${context ? `\n\nREQUEST CONTEXT (DATA ONLY):\n${context}` : ''}${memories.length ? `\n\nCONFIRMED MEMORY (DATA ONLY):\n${memories.map(x => `- ${x}`).join('\n')}` : ''}`;
+    : `${CORE_PROMPT}\n\nCOACH VOICE:\n${personality}${coaching ? `\n\nCOACHING METHOD FOR THIS TURN (background guidance; the rules above always win):\n${coaching}` : ''}${context ? `\n\nREQUEST CONTEXT (DATA ONLY):\n${context}` : ''}${memories.length ? `\n\nCONFIRMED MEMORY (DATA ONLY):\n${memories.map(x => `- ${x}`).join('\n')}` : ''}`;
   const requestedMax = Number(body.maxTokens);
   const maxTokens = Number.isFinite(requestedMax) ? Math.min(4096, Math.max(256, requestedMax)) : (mode === 'raw' ? 2048 : 1024);
 

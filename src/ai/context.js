@@ -9,6 +9,8 @@ import { normalizeTasks } from '../domain/tasks.js';
 import { dayScore, GOAL_TEMPLATES } from '../domain/goals.js';
 import { bests, detectPR, setsOf } from '../domain/training.js';
 import { plateaus } from '../domain/progression.js';
+import { weightCoach } from '../domain/weight.js';
+import { ratingTrend } from '../domain/skin.js';
 import { readiness, DEFAULT_SLEEP_NEED_H } from '../domain/recovery.js';
 import { todaysTargets } from '../utils/todaysTargets.js';
 import { dueItems } from '../domain/ahead.js';
@@ -255,4 +257,41 @@ export function buildContext({ activeTab = 'dashboard' } = {}) {
   } catch {}
 
   return lines.filter(l => l !== undefined).join('\n');
+}
+
+// ── coachSnapshot ───────────────────────────────────────────────────────────
+// Measured state for ai/coachPrompt.js situation(). Numbers only; every part is
+// optional and a failure in one leaves it out rather than breaking the reply.
+export function coachSnapshot(now = new Date()) {
+  const today = toLocalDateKey(now);
+  const arr = (key) => { const v = storage.get(key, []); return Array.isArray(v) ? v : []; };
+  const snap = {};
+  const settings = storage.get(STORAGE_KEYS.SETTINGS, {}) || {};
+  try {
+    const goal = settings.coachGoal;
+    snap.goal = goal?.template || null;
+    const body = arr(STORAGE_KEYS.BODY);
+    const coach = weightCoach(body, goal?.targets?.weeklyRateKg ?? null, goal?.targetWeightKg ?? null, today);
+    if (coach?.pace) snap.pace = coach.pace;
+    const last = body.map(b => b?.date).filter(Boolean).sort().pop();
+    if (last) { const d = Math.round((Date.parse(today) - Date.parse(last)) / 86400000); if (Number.isFinite(d)) snap.daysSinceWeighIn = d; }
+  } catch {}
+  try {
+    const need = Number(settings.sleepNeedHours) >= 5 ? Number(settings.sleepNeedHours) : DEFAULT_SLEEP_NEED_H;
+    const r = readiness({ sleepRows: arr(STORAGE_KEYS.SLEEP), workoutLogs: arr(STORAGE_KEYS.WORKOUT_LOGS), today, need });
+    if (r.status === 'ok') { snap.readiness = { band: r.band, score: r.score }; if (r.debt?.status && r.debt.status !== 'insufficient') snap.sleepDebt = r.debt.status; }
+  } catch {}
+  try {
+    const list = arr(STORAGE_KEYS.WORKOUT_LOGS);
+    const names = [...new Set(list.map(l => l?.exerciseName).filter(Boolean))];
+    const saved = storage.get(STORAGE_KEYS.OVERLOAD_EXERCISES, null);
+    const exercises = Array.isArray(saved) && saved.length ? saved : names.map(name => ({ name, repsMin: 8, repsMax: 12, increment: 2.5 }));
+    snap.stalledLifts = plateaus(exercises, list, today).length;
+  } catch {}
+  try {
+    const lm = storage.get('valerie_lm_profile', {}) || {};
+    const steps = Array.isArray(lm.skinSteps) ? lm.skinSteps : [];
+    snap.skin = { steps: steps.length, trend: ratingTrend(arr('valerie_lm_daily'), today) };
+  } catch {}
+  return snap;
 }

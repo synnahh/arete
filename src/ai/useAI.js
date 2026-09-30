@@ -7,7 +7,8 @@ import { useState, useEffect, useRef, useCallback } from 'react';
 import { pingClaude }                from './claude.js';
 import { pingOllama }                from './ollama.js';
 import { routeMessage }              from './router.js';
-import { buildContext }              from './context.js';
+import { buildContext, coachSnapshot } from './context.js';
+import { buildCoachBrief }             from './coachPrompt.js';
 import { parseResponse, executeActions, registerActionHandler } from './actions.js';
 import { cleanForSpeech, speakText, cancelCurrentSpeech, isStopIntent } from './speech.js';
 import { storage, STORAGE_KEYS }     from '../utils/storage.js';
@@ -127,6 +128,10 @@ export function useAI() {
     // Build context snapshot from live app state
     const context = buildContext({ activeTab: activeTabRef.current });
 
+    // Method + measured-state directives for this message (ai/coachPrompt.js)
+    let coaching = '';
+    try { coaching = buildCoachBrief({ message: text, activeTab: activeTabRef.current, snapshot: coachSnapshot(), personality: settings.coachPersonality }); } catch { /* the reply is still useful without the brief */ }
+
     // Get long-term memory facts
     const memory = ltMemoryRef.current.facts || [];
 
@@ -141,6 +146,7 @@ export function useAI() {
         ollamaOnline: ollamaOnlineRef.current,
         context,
         memory,
+        coaching,
       });
 
       // Parse the structured response

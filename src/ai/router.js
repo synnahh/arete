@@ -20,6 +20,7 @@ import { askOllama  } from './ollama.js';
  * @param {boolean} params.ollamaOnline
  * @param {string}  params.context        live app context string
  * @param {Array}   params.memory         long-term memory facts array
+ * @param {string}  [params.coaching]     coaching brief from ai/coachPrompt.js
  * @param {string}  [params.forceEngine]  'claude'|'ollama' to override
  * @returns {Promise<{ text: string, engine: 'claude'|'ollama'|'none'|'error' }>}
  */
@@ -30,6 +31,7 @@ export async function routeMessage({
   ollamaOnline,
   context = '',
   memory  = [],
+  coaching = '',
   forceEngine,
 }) {
   // Determine which engine to use
@@ -66,10 +68,10 @@ export async function routeMessage({
   //  Try primary engine 
   try {
     if (engine === 'claude') {
-      const text = await askClaude(message, history, null, { context, memory });
+      const text = await askClaude(message, history, null, { context, memory, coaching });
       return { text, engine: 'claude' };
     } else {
-      const text = await askOllama(message, history, { context });
+      const text = await askOllama(message, history, { context, coaching });
       return { text, engine: 'ollama' };
     }
   } catch (err) {
@@ -78,11 +80,11 @@ export async function routeMessage({
     //  Fallback to the other engine 
     try {
       if (engine === 'claude' && ollamaOnline) {
-        const text = await askOllama(message, history, { context });
+        const text = await askOllama(message, history, { context, coaching });
         return { text, engine: 'ollama' };
       }
       if (engine === 'ollama' && claudeOnline) {
-        const text = await askClaude(message, history, null, { context, memory });
+        const text = await askClaude(message, history, null, { context, memory, coaching });
         return { text, engine: 'claude' };
       }
     } catch (fallbackErr) {
