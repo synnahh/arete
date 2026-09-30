@@ -42,10 +42,13 @@ export default function ProductCheck({ steps, onAdd, skinProfile = {}, onSkinPro
 
   const result = name.trim() || ingredients.trim() ? checkProduct({ name, ingredients }, steps) : null;
   const fit = result ? scoreProduct({ name, ingredients }, skinProfile, steps) : null;
-  const setProfile = (patch) => onSkinProfile?.({ ...skinProfile, ...patch });
+  // Edits build on the latest profile we sent, not the prop snapshot, so two quick taps both land.
+  const latest = useRef(skinProfile);
+  latest.current = skinProfile;
+  const setProfile = (patch) => { latest.current = { ...latest.current, ...patch }; onSkinProfile?.(latest.current); };
   const toggleConcern = (c) => {
-    const has = (skinProfile.concerns || []).includes(c);
-    setProfile({ concerns: has ? skinProfile.concerns.filter(x => x !== c) : [...(skinProfile.concerns || []), c] });
+    const cur = latest.current.concerns || [];
+    setProfile({ concerns: cur.includes(c) ? cur.filter(x => x !== c) : [...cur, c] });
   };
 
   async function lookup(c = code) {
@@ -93,8 +96,8 @@ export default function ProductCheck({ steps, onAdd, skinProfile = {}, onSkinPro
               <div role="group" aria-label="Skin concerns" style={{ display: 'flex', gap: 6, flexWrap: 'wrap' }}>
                 {SKIN_CONCERNS.map(c => { const on = (skinProfile.concerns || []).includes(c); return <button key={c} type="button" aria-pressed={on} onClick={() => toggleConcern(c)} style={chip(on)}>{CONCERN_LABEL[c]}</button>; })}
               </div>
-              <input aria-label="Ingredients to avoid" placeholder="Ingredients to avoid, comma separated (e.g. fragrance, coconut)" defaultValue={skinProfile.avoid || ''}
-                onBlur={e => { if (e.target.value !== (skinProfile.avoid || '')) setProfile({ avoid: e.target.value }); }} style={input} />
+              <input aria-label="Ingredients to avoid" placeholder="Ingredients to avoid, comma separated (e.g. fragrance, coconut)" key={skinProfile.avoid || ''} defaultValue={skinProfile.avoid || ''}
+                onBlur={e => { if (e.target.value !== (latest.current.avoid || '')) setProfile({ avoid: e.target.value }); }} style={input} />
             </fieldset>
           )}
           <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>

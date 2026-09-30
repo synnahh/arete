@@ -22,8 +22,8 @@ export function useCoachReminders(settings) {
   settingsRef.current = settings;
 
   useEffect(() => {
-    const n = settingsRef.current?.notifications;
-    if (!n || n.enabled === false) return undefined;
+    // Same default as the Settings toggle: on unless the master switch was turned off.
+    if (settingsRef.current?.notifications?.enabled === false) return undefined;
 
     const run = () => {
       if (Date.now() - startedAt.current < WARMUP_MS) return;
@@ -34,7 +34,9 @@ export function useCoachReminders(settings) {
       const due = dueCoachReminder({ hour: now.getHours(), moves, cfg: settingsRef.current?.notifications?.coach, fired });
       if (!due) return;
       // Mark first so a re-render or a second shell cannot send it twice.
-      storage.set(FLAG_KEY, { ...flags, [flagFor(due.slot, day)]: true });
+      // Only today's flags are ever read, so older ones are dropped rather than accumulating.
+      const todays = Object.fromEntries(Object.entries(flags).filter(([k]) => k.endsWith(`_${day}`)));
+      storage.set(FLAG_KEY, { ...todays, [flagFor(due.slot, day)]: true });
       window.dispatchEvent(new CustomEvent('valerie:toast', { detail: { message: `${due.title}. ${due.body}`, type: 'info' } }));
       try { showLocalNotification(due.title, due.body, { tag: `coach-${due.slot}`, url: '/' })?.catch?.(() => {}); } catch { /* the toast already showed it */ }
     };

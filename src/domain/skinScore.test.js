@@ -71,3 +71,14 @@ describe('avoid-list aliases', () => {
     expect(scoreProduct({ name: 'X', ingredients: 'Aqua, Glycerin, Niacinamide, Panthenol' }, { type: 'normal', concerns: ['dryness'], avoid: 'fragrance' }).reasons.some(x => /avoid list/.test(x.text))).toBe(false);
   });
 });
+
+describe('one ingredient, paid once', () => {
+  it('does not credit niacinamide separately for every concern', () => {
+    const list = 'Aqua, Niacinamide, Glycerin, Phenoxyethanol';
+    const one = scoreProduct({ name: 'N', ingredients: list }, { type: 'normal', concerns: ['acne'] });
+    const three = scoreProduct({ name: 'N', ingredients: list }, { type: 'normal', concerns: ['acne', 'pigmentation', 'redness'] });
+    expect(three.score).toBe(one.score);
+    expect(three.reasons.filter(r => r.kind === 'good')).toHaveLength(1);
+    expect(three.reasons.some(r => /already counted/.test(r.text))).toBe(true);
+  });
+});

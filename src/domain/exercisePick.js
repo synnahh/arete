@@ -136,5 +136,3 @@ export function freshEntries(entries, library = []) {
   });
 }
 
-/** The muscles a day's pick covers, for a one-line summary. */
-export const musclesCovered = (entries) => [...new Set(entries.map(e => CATALOGUE.find(c => c.id === e.id.replace(/\d+$/, ''))?.muscle).filter(Boolean))];

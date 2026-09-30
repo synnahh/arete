@@ -72,10 +72,13 @@ export function scoreProduct({ name, ingredients = '' }, skinProfile = {}, steps
   const seen = new Set();
 
   // Concern matches: +12 for the first ingredient that helps, +5 for each further one, capped per concern.
+  // An ingredient is paid for once: niacinamide helps acne, dark spots and redness, but it is one ingredient.
   for (const c of concerns) {
     const hits = HELPS[c].filter(([, re]) => re.test(list)).map(([n]) => n);
     if (!hits.length) { reasons.push({ kind: 'note', text: `Nothing here specifically targets ${CONCERN_LABEL[c].toLowerCase()}.` }); continue; }
-    good(Math.min(12 + (hits.length - 1) * 5, 22), `Helps with ${CONCERN_LABEL[c].toLowerCase()}: ${hits.join(', ')}.`);
+    const fresh = hits.filter(h => !seen.has(h));
+    if (fresh.length) good(Math.min(12 + (fresh.length - 1) * 5, 22), `Helps with ${CONCERN_LABEL[c].toLowerCase()}: ${hits.join(', ')}.`);
+    else reasons.push({ kind: 'note', text: `Also helps with ${CONCERN_LABEL[c].toLowerCase()}: ${hits.join(', ')} (already counted).` });
     hits.forEach(h => seen.add(h));
   }
 
