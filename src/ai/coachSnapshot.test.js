@@ -9,6 +9,7 @@ globalThis.localStorage = {
   setItem: (k, v) => mem.set(k, String(v)),
   removeItem: (k) => mem.delete(k),
 };
+// The Look collections mirror to a key that already starts with valerie_, so storage.get double-prefixes it.
 const put = (key, value) => mem.set('valerie_' + key, JSON.stringify(value));
 const NOW = new Date('2026-09-30T10:00:00');
 
@@ -23,10 +24,18 @@ describe('coachSnapshot', () => {
     expect(buildCoachBrief({ message: 'how am I doing', snapshot: s })).toMatch(/PRINCIPLES/);
   });
 
+  it('reads the skin routine and rating trend from the Look mirrors', () => {
+    put('valerie_lm_profile', { skinSteps: [{ id: 'a', name: 'Cleanser' }, { id: 'b', name: 'SPF' }] });
+    put('valerie_lm_daily', [1, 2, 3].map(i => ({ date: '2026-09-2' + (5 + i), skinRating: 4 })));
+    const s = coachSnapshot(NOW);
+    expect(s.skin.steps).toBe(2);
+    expect(s.skin.trend.status).toBe('ok');
+  });
+
   it('reports the goal, a stale weigh-in, and a skincare routine with no steps', () => {
     put(STORAGE_KEYS.SETTINGS, { coachGoal: { template: 'cut', targets: { weeklyRateKg: -0.6 } } });
     put(STORAGE_KEYS.BODY, [{ date: '2026-09-20', weight: 90 }]);
-    put('lm_profile', { skinSteps: [] });
+    put('valerie_lm_profile', { skinSteps: [] });
     const s = coachSnapshot(NOW);
     expect(s.goal).toBe('cut');
     expect(s.daysSinceWeighIn).toBe(10);

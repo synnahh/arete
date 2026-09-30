@@ -61,3 +61,13 @@ describe('scoreProduct', () => {
     expect(scoreProduct({ name: 'X', ingredients: 'Aqua, Glycerin' }, { type: 'dry' }).reasons.some(r => /very short/.test(r.text))).toBe(true);
   });
 });
+
+describe('avoid-list aliases', () => {
+  it('matches fragrance to parfum and coconut to Cocos Nucifera', () => {
+    const list = 'Aqua, Glycerin, Parfum, Cocos Nucifera Oil, Niacinamide';
+    const base = scoreProduct({ name: 'X', ingredients: list }, { type: 'normal', concerns: ['dryness'] }).score;
+    const r = scoreProduct({ name: 'X', ingredients: list }, { type: 'normal', concerns: ['dryness'], avoid: 'fragrance, coconut' });
+    expect(r.score).toBe(base - 50);
+    expect(scoreProduct({ name: 'X', ingredients: 'Aqua, Glycerin, Niacinamide, Panthenol' }, { type: 'normal', concerns: ['dryness'], avoid: 'fragrance' }).reasons.some(x => /avoid list/.test(x.text))).toBe(false);
+  });
+});

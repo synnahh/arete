@@ -36,6 +36,15 @@ const DRYING_ALCOHOL = /\b(alcohol denat|denatured alcohol|sd alcohol|isopropyl 
 const CLOGGERS = [['coconut oil', /coconut oil|cocos nucifera/i], ['isopropyl myristate', /isopropyl (myristate|palmitate|isostearate)/i], ['cocoa butter', /theobroma cacao|cocoa butter/i], ['wheat germ oil', /wheat germ/i], ['algae extract', /algae extract|laminaria/i]];
 const IRRITANTS = [['a retinoid', /retinol|retinal|tretinoin|adapalene/i], ['an exfoliating acid', /glycolic|salicylic|lactic acid|mandelic|\baha\b|\bbha\b/i], ['benzoyl peroxide', /benzoyl\s*peroxide/i]];
 
+// An avoid-list word that labels write another way ("fragrance" is "parfum" on the pack).
+const AVOID_ALIASES = [
+  [/fragrance|perfume|parfum|scent/i, FRAGRANCE],
+  [/coconut/i, /coconut|cocos nucifera/i],
+  [/alcohol/i, /alcohol denat|denatured alcohol|sd alcohol|isopropyl alcohol|ethanol/i],
+  [/paraben/i, /paraben/i],
+  [/sulfate|sulphate/i, /sulfate|sulphate|sls|sles/i],
+];
+
 const clean = (t) => String(t || '').replace(/\s+/g, ' ').trim();
 const avoidList = (avoid) => clean(avoid).split(/[,;\n]/).map(s => s.trim().toLowerCase()).filter(s => s.length >= 3);
 
@@ -88,7 +97,8 @@ export function scoreProduct({ name, ingredients = '' }, skinProfile = {}, steps
 
   // The user's own avoid list is absolute.
   for (const a of avoid) {
-    if (list.toLowerCase().includes(a)) bad(25, `Contains "${a}", which is on your avoid list.`);
+    const hit = AVOID_ALIASES.find(([re]) => re.test(a));
+    if (hit ? hit[1].test(list) : list.toLowerCase().includes(a)) bad(25, `Contains "${a}", which is on your avoid list.`);
   }
 
   // Clashes with the current routine.
