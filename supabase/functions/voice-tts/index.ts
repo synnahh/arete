@@ -35,7 +35,7 @@ Deno.serve(async (req) => {
     headers: { 'xi-api-key': apiKey, 'Content-Type': 'application/json', Accept: 'audio/mpeg' },
     body: JSON.stringify({ text, model_id: MODEL, voice_settings: VOICE_SETTINGS }),
   });
-  if (!upstream.ok) return json({ error: `Voice provider error (${upstream.status})` }, upstream.status === 401 || upstream.status === 402 || upstream.status === 403 ? 502 : upstream.status);
+  if (!upstream.ok) return json({ error: `Voice provider error (${upstream.status})` }, upstream.status === 429 ? 429 : 502); // never pass 404/503 through: the client reads those as "function not deployed"
 
   return new Response(upstream.body, { headers: { ...corsHeaders, 'Content-Type': 'application/octet-stream', 'Cache-Control': 'no-store' } });
 });

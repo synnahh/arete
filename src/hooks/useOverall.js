@@ -1,5 +1,5 @@
 // useOverall — the long-run rating (domain/overall.js) from the synced collections.
-import { useMemo } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import { useCollection } from '../supabase/useCollection.js';
 import { storage, STORAGE_KEYS } from '../utils/storage.js';
 import { toLocalDateKey } from '../utils/localDate.js';
@@ -12,6 +12,14 @@ export function useOverall() {
   const { items: sleep = [] } = useCollection('sleep_data', STORAGE_KEYS.SLEEP);
   const { items: habits = [] } = useCollection('habits', STORAGE_KEYS.HABITS);
   const { items: body = [] } = useCollection('body_metrics', STORAGE_KEYS.BODY);
+
+  // Targets and the training plan are read from storage, so recompute when settings change.
+  const [settingsTick, setSettingsTick] = useState(0);
+  useEffect(() => {
+    const bump = () => setSettingsTick(n => n + 1);
+    window.addEventListener('valerie:settings-changed', bump);
+    return () => window.removeEventListener('valerie:settings-changed', bump);
+  }, []);
 
   const today = toLocalDateKey(new Date());
   return useMemo(() => {
@@ -26,5 +34,5 @@ export function useOverall() {
       need: settings.sleepNeedHours,
       sessionsPerWeek: planned || 3,
     }, today);
-  }, [workouts, nutrition, sleep, habits, body, today]);
+  }, [workouts, nutrition, sleep, habits, body, today, settingsTick]);
 }

@@ -239,7 +239,11 @@ export async function speakText(text, voiceSettings = {}, { onStart, onEnd, onEr
 
   // Priority 0: the voice-tts server function, which keeps the ElevenLabs key out of the app.
   // null when it is not set up, so the older client-key path below still works.
-  const serverBlob = _el11Disabled ? null : await fetchServerTTS(text, voiceSettings.elevenlabsVoiceId);
+  let serverBlob = null;
+  if (!_el11Disabled) {
+    try { rateLimitElevenLabs(); serverBlob = await fetchServerTTS(text, voiceSettings.elevenlabsVoiceId); }
+    catch { /* rate limited: fall through to the other voices */ }
+  }
 
   //  Priority 1: ElevenLabs 
   if ((serverBlob || apiKey) && !_el11Disabled) {

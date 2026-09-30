@@ -45,7 +45,8 @@ function pillars({ workouts, nutrition, sleep, habits, body, targets, need, sess
   }
   if (startedBy(nutrition, endIdx)) {
     let credit = 0;
-    for (const kcal of fed.values()) credit += targets?.kcal > 0 && Math.abs(kcal - targets.kcal) / targets.kcal <= 0.15 ? 1 : 0.7;
+    for (const kcal of fed.values()) // With no calorie target there is nothing to miss, so a logged day counts fully.
+      credit += !(targets?.kcal > 0) || Math.abs(kcal - targets.kcal) / targets.kcal <= 0.15 ? 1 : 0.7;
     out.fuel = clamp01(credit / WINDOW_DAYS);
   }
 

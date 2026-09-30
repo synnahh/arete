@@ -7,7 +7,8 @@
 //   worked      trained today
 //   recovering  trained yesterday, or 2 days ago with 8+ hard sets
 //   fresh       3+ days since, or never in the last 14 days
-// Weekly sets (last 7 days) are compared with the usual 10-20 hard sets per muscle.
+// Weekly sets (last 7 days) are compared with the usual 10-20 hard sets per muscle. Helper muscles
+// (triceps in a bench press) count half a set per set, the usual way of counting volume.
 // A guide, not a measurement: it cannot see how hard the sets were.
 import { MUSCLE_IDS, musclesForLog } from './muscles.js';
 import { setsOf } from './training.js';
@@ -35,11 +36,12 @@ export function muscleRecovery(logs = [], today) {
     const idx = dayIndex(log?.date);
     if (idx == null || idx > t || t - idx > 14) continue;
     const sets = countSets(log);
-    for (const m of musclesForLog(log)) {
-      if (!out[m]) continue;
+    // The first muscle listed is the prime mover and gets the full sets; the others help, so half.
+    musclesForLog(log).forEach((m, n) => {
+      if (!out[m]) return;
       const k = `${m}|${idx}`;
-      byMuscleDay.set(k, (byMuscleDay.get(k) || 0) + sets);
-    }
+      byMuscleDay.set(k, (byMuscleDay.get(k) || 0) + sets * (n === 0 ? 1 : 0.5));
+    });
   }
 
   for (const [k, sets] of byMuscleDay) {
@@ -58,6 +60,8 @@ export function muscleRecovery(logs = [], today) {
     const d = row.daysSince;
     row.status = d == null ? 'fresh' : d === 0 ? 'worked' : d === 1 ? 'recovering' : d === 2 && row.sessionSets >= HEAVY_SETS ? 'recovering' : 'fresh';
     row.volume = volumeBand(row.sets7d);
+    row.sets7d = Math.round(row.sets7d);
+    row.sessionSets = Math.round(row.sessionSets);
   }
   return out;
 }

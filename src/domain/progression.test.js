@@ -183,3 +183,11 @@ describe('effort (RPE)', () => {
     expect(suggestNext(ex, [rated(0, [15, 'x', -1])], day(2)).action).toBe('ADD WEIGHT');
   });
 });
+
+describe('effort hold is a single repeat', () => {
+  const at = (n, rpe) => ({ date: day(n), exerciseName: 'Bench', sets: [1, 2, 3].map(() => ({ weight: 60, reps: 12, rpe })) });
+  it('adds weight once the maximal-effort session has already been repeated', () => {
+    expect(suggestNext(ex, [at(0, 10), at(3, 10)], day(5)).action).toBe('ADD WEIGHT');
+    expect(suggestNext(ex, [at(0, 8), at(3, 10)], day(5)).action).toBe('HOLD');
+  });
+});

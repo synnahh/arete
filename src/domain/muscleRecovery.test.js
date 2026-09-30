@@ -76,3 +76,13 @@ describe('summary and suggestSplitDay', () => {
     expect(suggestSplitDay(m).day).toBe('pull');
   });
 });
+
+describe('helper muscles count half', () => {
+  it('gives the prime mover full sets and helpers half', () => {
+    const m = muscleRecovery([{ date: '2026-09-30', exerciseName: 'Bench Press', sets: Array.from({ length: 12 }, () => ({ weight: 60, reps: 8 })) }], '2026-09-30');
+    expect(m.chest.sets7d).toBe(12);
+    expect(m.triceps.sets7d).toBe(6);
+    expect(m.shoulders.sets7d).toBe(6);
+    expect(m.triceps.volume).toBe('low');
+  });
+});

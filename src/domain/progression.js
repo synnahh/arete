@@ -145,7 +145,10 @@ export function suggestNext(ex, logs, today) {
   // Every working set at the top of the range: earn more weight.
   if (last.work.every(x => x.reps >= repsMax)) {
     if (ex.bodyweight || cur === 0) return out('HOLD', cur, repsMax, `All sets at ${repsMax} reps. Add load or a harder variation.`);
-    if (last.avgRpe != null && last.avgRpe >= 9.5) {
+    // "Repeat once": if the session before was the same weight, all at the top, and just as maximal,
+    // the repeat has already happened, so move up.
+    const repeated = prev && prev.topWeight === cur && prev.work.every(x => x.reps >= repsMax) && prev.avgRpe != null && prev.avgRpe >= 9.5;
+    if (last.avgRpe != null && last.avgRpe >= 9.5 && !repeated) {
       return out('HOLD', cur, repsMax, `Every set hit ${repsMax}, but they felt like a ${last.avgRpe} out of 10. Repeat ${cur}kg once and aim for smoother reps before adding weight.`);
     }
     const w = roundTo(cur + inc, 0.01);

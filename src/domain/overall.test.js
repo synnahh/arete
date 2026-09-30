@@ -95,3 +95,11 @@ describe('history before the window', () => {
     expect(r.delta).toBeLessThan(0);
   });
 });
+
+describe('fuel without a calorie target', () => {
+  it('counts every logged day fully', () => {
+    const d = great();
+    const r = overallRating({ ...d, targets: null }, TODAY);
+    expect(r.pillars.fuel).toBe(1);
+  });
+});

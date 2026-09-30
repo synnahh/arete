@@ -46,7 +46,6 @@ async function maybeSMS(settings, message) {
   }
   const { twilioAccountSid, twilioAuthToken, twilioReminders, phoneNumber } = settings;
   if (!twilioAccountSid || !twilioAuthToken || !phoneNumber || !twilioReminders) return;
-  if (window.__valerieSleepMode) return;
   await sendSMS({
     to: phoneNumber, from: twilioReminders, body: message,
     accountSid: twilioAccountSid, authToken: twilioAuthToken,
