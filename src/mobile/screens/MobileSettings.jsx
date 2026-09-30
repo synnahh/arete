@@ -3,14 +3,12 @@
 
 import { useState, useCallback } from 'react';
 import { storage, STORAGE_KEYS } from '../../utils/storage.js';
+import { Icon } from '../../components/icons.jsx';
 import {
   IdentitySection,
   AppearanceSection,
-  VoiceSection,
-  AISection,
   UnitsSection,
   NotificationsSection,
-  DailyBriefSection,
   ProgressSection,
   IntegrationsSection,
   DataSection,
@@ -41,7 +39,7 @@ function MRow({ icon, label, value, onClick, last = false, danger = false }) {
     onTouchStart={e => e.currentTarget.style.background = 'rgba(255,255,255,0.04)'}
     onTouchEnd={e => e.currentTarget.style.background = 'none'}
     >
-      <span style={{ fontSize: 20, width: 28, textAlign: 'center', flexShrink: 0 }}>{icon}</span>
+      <span style={{ width: 28, display: 'flex', justifyContent: 'center', flexShrink: 0, color: danger ? '#e05555' : 'var(--text-secondary)' }}><Icon name={icon} size={20} /></span>
       <span style={{ flex: 1, fontSize: 15, color: danger ? '#e05555' : 'var(--text-primary)' }}>
         {label}
       </span>
@@ -70,18 +68,15 @@ function SectionHeader({ children }) {
 
 //  Section list 
 const SECTIONS = [
-  { group: 'Personalisation', id: 'identity',      icon: '👤', label: 'Identity'         },
-  { group: 'Personalisation', id: 'appearance',    icon: '🎨', label: 'Appearance'       },
-  { group: 'Personalisation', id: 'voice',         icon: '🎙', label: 'Voice'            },
-  { group: 'Personalisation', id: 'ai',            icon: '🧠', label: 'AI'               },
-  { group: 'Personalisation', id: 'units',         icon: '💱', label: 'Units & Currency' },
-  { group: 'Features',        id: 'notifications', icon: '🔔', label: 'Notifications'    },
-  { group: 'Features',        id: 'daily_brief',   icon: '🌅', label: 'Daily Brief'      },
-  { group: 'Features',        id: 'progress',      icon: '⭐',  label: 'Progress & Rank'  },
-  { group: 'Connections',     id: 'integrations',  icon: '🔌', label: 'Integrations'     },
-  { group: 'Data',            id: 'data',          icon: '💾', label: 'Data'             },
-  { group: 'Data',            id: 'security',      icon: '🛡', label: 'Security'         },
-  { group: 'Data',            id: 'account',       icon: '☁',  label: 'Account & Sync'   },
+  { group: 'Personalisation', id: 'identity',      icon: 'user',     label: 'Profile'          },
+  { group: 'Personalisation', id: 'appearance',    icon: 'theme',    label: 'Appearance'       },
+  { group: 'Personalisation', id: 'units',         icon: 'globe',    label: 'Units & Currency' },
+  { group: 'Features',        id: 'notifications', icon: 'bell',     label: 'Notifications'    },
+  { group: 'Features',        id: 'progress',      icon: 'progress', label: 'Progress & Rank'  },
+  { group: 'Connections',     id: 'integrations',  icon: 'plug',     label: 'Integrations'     },
+  { group: 'Data',            id: 'data',          icon: 'database', label: 'Data'             },
+  { group: 'Data',            id: 'security',      icon: 'lock',     label: 'Security'         },
+  { group: 'Data',            id: 'account',       icon: 'cloud',   label: 'Account & Sync'   },
 ];
 
 const GROUPS = [...new Set(SECTIONS.map(s => s.group))];
@@ -91,11 +86,8 @@ function SectionContent({ id, settings, onSave }) {
   switch (id) {
     case 'identity':      return <IdentitySection      settings={settings} onSave={onSave} />;
     case 'appearance':    return <AppearanceSection    settings={settings} onSave={onSave} />;
-    case 'voice':         return <VoiceSection         settings={settings} onSave={onSave} />;
-    case 'ai':            return <AISection            settings={settings} onSave={onSave} />;
     case 'units':         return <UnitsSection         settings={settings} onSave={onSave} />;
     case 'notifications': return <NotificationsSection settings={settings} onSave={onSave} />;
-    case 'daily_brief':   return <DailyBriefSection    settings={settings} onSave={onSave} />;
     case 'progress':      return <ProgressSection      settings={settings} onSave={onSave} />;
     case 'integrations':  return <IntegrationsSection  settings={settings} onSave={onSave} />;
     case 'data':          return <DataSection />;

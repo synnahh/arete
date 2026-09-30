@@ -1,5 +1,5 @@
 // MobileMind.jsx — Mind OS for VALERIE iOS PWA
-// Sections: Constitution · Advisors · Ledger · Beliefs · Vault · Insights
+// Sections: Constitution · Ledger · Beliefs · Vault · Insights · Breathe
 
 import { useState, useRef, useEffect } from 'react';
 import { useCollection } from '../../supabase/useCollection.js';
@@ -65,7 +65,6 @@ function Spinner() {
 
 const SECTIONS = [
   { id: 'constitution', label: 'Constitution', emoji: '📜' },
-  { id: 'advisors',     label: 'Advisors',     emoji: '🧠' },
   { id: 'ledger',       label: 'Ledger',       emoji: '📖' },
   { id: 'beliefs',      label: 'Beliefs',      emoji: '💡' },
   { id: 'vault',        label: 'Vault',        emoji: '🗄️'  },
@@ -91,7 +90,7 @@ function Constitution({ constitution, onSave }) {
   return (
     <div style={{ padding: '16px 16px 40px', display: 'flex', flexDirection: 'column', gap: 4 }}>
       <div style={{ fontSize: 12.5, color: 'var(--text-muted)', lineHeight: 1.6, marginBottom: 10 }}>
-        Your values and principles — fed to every AI advisor as context.
+        Your values and principles. Insights check your decisions against them.
       </div>
       {[
         { label: 'Identity', val: identity, set: setId, ph: 'I am a builder...' },
@@ -106,134 +105,6 @@ function Constitution({ constitution, onSave }) {
         </Row>
       ))}
       <button onClick={save} style={BTN}>{saved ? '✓ Saved' : 'Save Constitution'}</button>
-    </div>
-  );
-}
-
-// ─── ADVISORS ─────────────────────────────────────────────────────────────────
-
-const ADVISORS = [
-  { id: 'career',    name: 'Career Coach',      colour: '#4a9eff', emoji: 'C',
-    prompt: 'You are an experienced executive career coach. Direct, no-nonsense, max 3 paragraphs.' },
-  { id: 'learning',  name: 'Learning Coach',    colour: '#a78bfa', emoji: 'L',
-    prompt: 'You are a world-class learning strategist. Cognitive science, deliberate practice. Max 3 paragraphs.' },
-  { id: 'strategist',name: 'Strategist',        colour: '#6BE3A4', emoji: 'S',
-    prompt: 'You are a sharp strategic advisor. First principles, leverage points, systems. Max 3 paragraphs.' },
-  { id: 'skeptic',   name: 'Skeptic',           colour: '#f4a642', emoji: '?',
-    prompt: 'You stress-test ideas and find flaws in reasoning. Direct and honest. Max 3 paragraphs.' },
-  { id: 'future',    name: 'Future Self',        colour: '#e879f9', emoji: 'F',
-    prompt: 'You are this person\'s future self, 10 years from now. Warm, honest, hindsight wisdom. Max 3 paragraphs.' },
-  { id: 'devil',     name: "Devil's Advocate",  colour: '#e55a5a', emoji: 'D',
-    prompt: 'You argue the strongest case against whatever is being considered. Max 3 paragraphs.' },
-];
-
-function AdvisorChat({ advisor, constitution, onBack }) {
-  const [msgs, setMsgs] = useState([]);
-  const [input, setInput] = useState('');
-  const [loading, setLoading] = useState(false);
-  const endRef = useRef(null);
-  useEffect(() => endRef.current?.scrollIntoView({ behavior: 'smooth' }), [msgs]);
-
-  const sysPrompt = advisor.prompt + (constitution?.values
-    ? `\n\nUser constitution:\nIdentity: ${constitution.identity||''}\nValues: ${constitution.values||''}\nPrinciples: ${constitution.principles||''}`
-    : '');
-
-  async function send(text) {
-    const msg = (text || input).trim(); if (!msg || loading) return;
-    setInput('');
-    const next = [...msgs, { role: 'user', content: msg }];
-    setMsgs(next); setLoading(true);
-    try {
-      const reply = await askClaudeRaw(msg, sysPrompt, msgs);
-      setMsgs([...next, { role: 'assistant', content: reply }]);
-    } catch (e) {
-      setMsgs([...next, { role: 'assistant', content: `Error: ${e.message}` }]);
-    } finally { setLoading(false); }
-  }
-
-  return (
-    <div style={{ display: 'flex', flexDirection: 'column', height: '100%' }}>
-      {/* Header */}
-      <div style={{ display: 'flex', alignItems: 'center', gap: 10, padding: '14px 16px 10px', flexShrink: 0,
-        borderBottom: '0.5px solid rgba(255,255,255,0.06)' }}>
-        <button onClick={onBack} style={{ background: 'none', border: 'none', color: 'var(--text-muted)',
-          fontSize: 18, cursor: 'pointer', padding: '0 4px' }}>‹</button>
-        <div style={{ width: 34, height: 34, borderRadius: 10, background: advisor.colour + '22',
-          display: 'flex', alignItems: 'center', justifyContent: 'center',
-          fontWeight: 800, fontSize: 12, color: advisor.colour }}>{advisor.emoji}</div>
-        <div style={{ fontSize: 15, fontWeight: 600, color: 'rgba(255,255,255,0.9)' }}>{advisor.name}</div>
-      </div>
-      {/* Messages */}
-      <div style={{ flex: 1, overflowY: 'auto', padding: '12px 16px', display: 'flex', flexDirection: 'column', gap: 10 }}>
-        {msgs.length === 0 && (
-          <div style={{ display: 'flex', flexWrap: 'wrap', gap: 7, marginTop: 4 }}>
-            {['What should I focus on right now?', 'Where is my biggest blind spot?', 'Challenge my current direction.'].map(s => (
-              <button key={s} onClick={() => send(s)} style={{
-                padding: '7px 13px', borderRadius: 20, fontSize: 12,
-                border: '0.5px solid rgba(255,255,255,0.1)', background: 'rgba(255,255,255,0.04)',
-                color: 'var(--text-secondary)', cursor: 'pointer', textAlign: 'left',
-              }}>{s}</button>
-            ))}
-          </div>
-        )}
-        {msgs.map((m, i) => (
-          <div key={i} style={{ display: 'flex', justifyContent: m.role === 'user' ? 'flex-end' : 'flex-start' }}>
-            <div style={{
-              maxWidth: '88%', padding: '10px 14px', fontSize: 14, lineHeight: 1.65,
-              color: 'rgba(255,255,255,0.85)', whiteSpace: 'pre-wrap',
-              borderRadius: m.role === 'user' ? '18px 18px 4px 18px' : '4px 18px 18px 18px',
-              background: m.role === 'user' ? 'color-mix(in srgb, var(--accent) 13%, transparent)' : 'rgba(255,255,255,0.05)',
-              border: `0.5px solid ${m.role === 'user' ? 'color-mix(in srgb, var(--accent) 27%, transparent)' : 'rgba(255,255,255,0.08)'}`,
-            }}>{m.content}</div>
-          </div>
-        ))}
-        {loading && <div style={{ padding: '4px 0' }}><Spinner /></div>}
-        <div ref={endRef} />
-      </div>
-      {/* Input */}
-      <div style={{ padding: '10px 16px calc(10px + env(safe-area-inset-bottom))', flexShrink: 0,
-        borderTop: '0.5px solid rgba(255,255,255,0.06)', display: 'flex', gap: 8 }}>
-        <input value={input} onChange={e => setInput(e.target.value)}
-          onKeyDown={e => e.key === 'Enter' && send()}
-          placeholder={`Ask ${advisor.name}...`}
-          style={{ ...INPUT, flex: 1, borderRadius: 20, padding: '11px 16px' }} />
-        <button onClick={() => send()} disabled={!input.trim() || loading}
-          style={{ ...BTN, width: 'auto', padding: '11px 18px', borderRadius: 20, opacity: (!input.trim()||loading)?0.5:1 }}>
-          Send
-        </button>
-      </div>
-    </div>
-  );
-}
-
-function Advisors({ constitution }) {
-  const [active, setActive] = useState(null);
-  if (active) return <AdvisorChat advisor={ADVISORS.find(a => a.id === active)} constitution={constitution} onBack={() => setActive(null)} />;
-
-  return (
-    <div style={{ padding: '16px 16px 40px', display: 'flex', flexDirection: 'column', gap: 10 }}>
-      <div style={{ fontSize: 12, color: 'var(--text-muted)', marginBottom: 4 }}>
-        Six perspectives on your life and decisions.
-      </div>
-      {ADVISORS.map(adv => (
-        <MCard key={adv.id} style={{ borderLeft: `3px solid ${adv.colour}`, cursor: 'pointer' }}
-          onClick={() => setActive(adv.id)}>
-          <div style={{ padding: '14px 16px', display: 'flex', alignItems: 'center', gap: 12 }}>
-            <div style={{ width: 38, height: 38, borderRadius: 11, background: adv.colour + '18',
-              display: 'flex', alignItems: 'center', justifyContent: 'center',
-              fontWeight: 800, fontSize: 12, color: adv.colour, flexShrink: 0 }}>{adv.emoji}</div>
-            <div>
-              <div style={{ fontSize: 14, fontWeight: 600, color: adv.colour, marginBottom: 2 }}>{adv.name}</div>
-              <div style={{ fontSize: 11, color: 'var(--text-muted)', lineHeight: 1.4 }}>
-                {{ career:'Career trajectory & blind spots', learning:'Skill acquisition & practice',
-                   strategist:'Long-game & leverage points', skeptic:'Stress-tests your thinking',
-                   future:'10-year future self wisdom', devil:'Strongest counterarguments' }[adv.id]}
-              </div>
-            </div>
-            <div style={{ marginLeft: 'auto', color: 'rgba(255,255,255,0.2)', fontSize: 18 }}>›</div>
-          </div>
-        </MCard>
-      ))}
     </div>
   );
 }
@@ -570,7 +441,6 @@ export default function MobileMind() {
   const constitutionDoc = useDocument('constitution', 'valerie_constitution', null);
 
   const activeSection = SECTIONS.find(s => s.id === section);
-  const isAdvisorChat = section === 'advisors'; // advisors handles its own back nav
 
   return (
     <div style={{ display: 'flex', flexDirection: 'column', height: '100%', overflow: 'hidden' }}>
@@ -601,7 +471,6 @@ export default function MobileMind() {
       {/* Content */}
       <div style={{ flex: 1, overflowY: 'auto', WebkitOverflowScrolling: 'touch' }}>
         {section === 'constitution' && <Constitution constitution={constitutionDoc.data} onSave={constitutionDoc.save} />}
-        {section === 'advisors'     && <Advisors constitution={constitutionDoc.data} />}
         {section === 'ledger'       && <Ledger />}
         {section === 'beliefs'      && <Beliefs />}
         {section === 'vault'        && <Vault />}

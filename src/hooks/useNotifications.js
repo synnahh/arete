@@ -7,7 +7,7 @@ import { useEffect, useRef } from 'react';
 import { storage, STORAGE_KEYS } from '../utils/storage.js';
 import { isTauri } from '../utils/platform.js';
 import { sendSMS } from '../utils/twilio.js';
-import { sendServerSMS } from '../utils/serverVoice.js';
+import { sendServerSMS } from '../utils/serverSms.js';
 import { currencySymbol as currencySym } from '../utils/currency.js';
 import { toLocalDateKey } from '../utils/localDate.js';
 import { currentWaterGoal } from '../utils/waterGoal.js';

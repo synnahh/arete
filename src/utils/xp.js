@@ -10,7 +10,7 @@ const XP_KEY = 'valerie_xp';
 // XP syncs constantly in the background (every task/habit/workout completion),
 // so failures are logged loudly but don't toast — a toast per completion would
 // be noise. Real data-loss risks (tasks, transactions, settings) DO toast; see
-// insertActionRow in ai/actions.js and useCollection/useDocument.
+// useCollection/useDocument.
 async function syncXPToSupabase(xpData) {
   const userId = await getUserId();
   if (!userId) { console.error('[XP sync] not signed in'); return; }

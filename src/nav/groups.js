@@ -5,7 +5,7 @@
 // keep working. A group is only a way of showing those screens together.
 
 export const GROUPS = [
-  { id: 'home',     label: 'Home',     desc: 'Today at a glance',                 screens: ['dashboard', 'assistant'] },
+  { id: 'home',     label: 'Home',     desc: 'Today at a glance',                 screens: ['dashboard'] },
   { id: 'plan',     label: 'Plan',     desc: 'Tasks · Calendar · Routines · Supplies', screens: ['tasks', 'calendar', 'routines', 'focus', 'progress', 'essentials', 'places'] },
   { id: 'coach',    label: 'Coach',    desc: 'Goal · Train · Fuel · Recover · Look · Body · Habits', screens: ['goal', 'workout', 'fuel', 'recover', 'lm', 'body', 'habits', 'style'] },
   { id: 'mind',     label: 'Mind',     desc: 'Mind · Notes · Lists',              screens: ['mind', 'notes', 'lists'] },
@@ -15,7 +15,7 @@ export const GROUPS = [
 
 // Section labels inside a group. Screens keep their ids; only the label changes.
 export const SCREEN_LABELS = {
-  dashboard: 'Today',    assistant: 'Ask',
+  dashboard: 'Today',
   tasks: 'Tasks',        calendar: 'Calendar',  routines: 'Routines', focus: 'Focus',
   progress: 'Progress',  essentials: 'Supplies', places: 'Places',
   goal: 'Goal HQ',       workout: 'Train',      fuel: 'Fuel',         recover: 'Recover',
@@ -29,7 +29,8 @@ export const DEFAULT_SCREEN = 'dashboard';
 
 // Old ids that now open a newer screen. Health was split across Coach;
 // its overview lives on Goal HQ.
-export const SCREEN_ALIASES = { health: 'goal' };
+// The assistant screen was removed; old links open Home.
+export const SCREEN_ALIASES = { health: 'goal', assistant: 'dashboard' };
 
 // Settings can never be hidden, or there would be no way to unhide anything.
 const NEVER_HIDDEN = new Set(['settings']);

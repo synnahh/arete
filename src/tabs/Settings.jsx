@@ -42,7 +42,6 @@ class SectionErrorBoundary extends Component {
 }
 import { storage, STORAGE_KEYS } from '../utils/storage.js';
 import { THEMES, applyTheme }    from '../styles/themes.js';
-import { testClaudeConnection }  from '../ai/claude.js';
 import { sendTestSMS }           from '../utils/twilio.js';
 import { requestPushPermission, pushPermissionStatus } from '../utils/pushNotifications.js';
 import { spotifyLogin, spotifyDisconnect, isSpotifyConnected } from '../utils/spotify.js';
@@ -57,10 +56,8 @@ import { updateSettings } from '../utils/settingsStore.js';
 
 // ─── Sections ────────────────────────────────────────────────────────────────
 const SECTIONS = [
-  { id: 'identity',      label: 'Identity',         icon: 'user' },
+  { id: 'identity',      label: 'Profile',          icon: 'user' },
   { id: 'appearance',    label: 'Appearance',       icon: 'theme' },
-  { id: 'voice',         label: 'Voice',            icon: 'mic' },
-  { id: 'ai',            label: 'AI',               icon: 'cpu' },
   { id: 'units',         label: 'Units & Currency', icon: 'globe' },
   { id: 'progress',      label: 'Progress & Rank',  icon: 'progress' },
   { id: 'notifications', label: 'Notifications',    icon: 'bell' },
@@ -68,7 +65,6 @@ const SECTIONS = [
   { id: 'api_usage',     label: 'API Usage',        icon: 'chart' },
   { id: 'platforms',     label: 'Platforms',        icon: 'monitor' },
   { id: 'data',          label: 'Data',             icon: 'database' },
-  { id: 'daily_brief',   label: 'Daily Brief',      icon: 'today' },
   { id: 'sidebar',       label: 'Sidebar Order',    icon: 'lists'  },
   { id: 'security',      label: 'Security',         icon: 'lock' },
   { id: 'account',       label: 'Account',          icon: 'cloud'  },
@@ -225,67 +221,21 @@ function SavedBadge({ show }) {
 
 // ─── Section: Identity ────────────────────────────────────────────────────────
 export function IdentitySection({ settings, onSave }) {
-  const [form, setForm] = useState({
-    assistantName:    settings.assistantName    || 'VALERIE',
-    userName:         settings.userName         || 'Rob',
-    personality:      settings.personality      || 'balanced',
-    greeting:         settings.greeting         ?? true,
-    customPrompt:     settings.customPrompt     || '',
-  });
+  const [userName, setUserName] = useState(settings.userName || '');
   const [saved, setSaved] = useState(false);
 
-  const set = (k, v) => setForm(f => ({ ...f, [k]: v }));
-
   const handleSave = () => {
-    onSave(form);
+    onSave({ userName: userName.trim() });
     setSaved(true);
     setTimeout(() => setSaved(false), 2000);
   };
 
   return (
     <div>
-      <SectionTitle>Identity <SavedBadge show={saved} /></SectionTitle>
+      <SectionTitle>Profile <SavedBadge show={saved} /></SectionTitle>
 
-      <Row label="Assistant name" hint="Displayed everywhere and used in all voice responses">
-        <Input value={form.assistantName} onChange={v => set('assistantName', v)} placeholder="VALERIE" />
-      </Row>
-
-      <Row label="Your name" hint="What VALERIE calls you">
-        <Input value={form.userName} onChange={v => set('userName', v)} placeholder="Rob" />
-      </Row>
-
-      <Row label="Personality" hint="How VALERIE speaks and engages">
-        <PillGroup
-          value={form.personality}
-          onChange={v => set('personality', v)}
-          options={[
-            { value: 'professional', label: 'Professional' },
-            { value: 'balanced',     label: 'Balanced'     },
-            { value: 'casual',       label: 'Casual'       },
-            { value: 'full',         label: 'Full character' },
-          ]}
-        />
-      </Row>
-
-      <Row label="Greet on launch">
-        <Toggle value={form.greeting} onChange={v => set('greeting', v)} />
-      </Row>
-
-      <Row label="Custom context" hint="Personal info VALERIE always knows — e.g. 'I work nights. I lift 4x a week.'">
-        <textarea
-          value={form.customPrompt}
-          onChange={e => set('customPrompt', e.target.value)}
-          rows={4}
-          placeholder="Add any personal context you want VALERIE to always know about you…"
-          style={{
-            width: '100%', padding: '9px 12px', boxSizing: 'border-box',
-            background: 'var(--bg-panel)', border: '0.5px solid var(--card-border)',
-            borderRadius: 8, color: 'var(--text-primary)', fontSize: 13,
-            resize: 'vertical', outline: 'none', fontFamily: 'inherit', lineHeight: 1.55,
-          }}
-          onFocus={e => e.target.style.borderColor = 'var(--accent)'}
-          onBlur={e => e.target.style.borderColor = 'var(--card-border)'}
-        />
+      <Row label="Your name" hint="Shown in the greeting on Home">
+        <Input value={userName} onChange={setUserName} placeholder="Your name" />
       </Row>
 
       <button
@@ -296,7 +246,7 @@ export function IdentitySection({ settings, onSave }) {
           fontSize: 13, fontWeight: 700, cursor: 'pointer',
         }}
       >
-        Save Identity
+        Save
       </button>
     </div>
   );
@@ -315,7 +265,6 @@ const FONTS = [
 // ─── Section: Appearance ──────────────────────────────────────────────────────
 export function AppearanceSection({ settings, onSave }) {
   const [theme,       setTheme]       = useState(settings.theme             || 'obsidian');
-  const [orbShape,    setOrbShape]    = useState(settings.orbShape           || 'sphere');
   const [animLevel,   setAnimLevel]   = useState(settings.animationIntensity || 'full');
   const [bgStyle,     setBgStyle]     = useState(settings.backgroundStyle    || 'time-of-day');
   const [fontFamily,  setFontFamily]  = useState(settings.fontFamily         || "'DM Sans', sans-serif");
@@ -349,7 +298,7 @@ export function AppearanceSection({ settings, onSave }) {
   };
 
   const handleSave = () => {
-    onSave({ orbShape, animationIntensity: animLevel, backgroundStyle: bgStyle });
+    onSave({ animationIntensity: animLevel, backgroundStyle: bgStyle });
     setSaved(true);
     setTimeout(() => setSaved(false), 2000);
   };
@@ -391,7 +340,7 @@ export function AppearanceSection({ settings, onSave }) {
       </Row>
 
       {/* Custom accent colour */}
-      <Row label="Custom accent colour" hint="Overrides the theme's default accent — applies to orb, highlights, active states">
+      <Row label="Custom accent colour" hint="Overrides the theme's default accent for highlights and active states">
         <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
           <input
             type="color"
@@ -474,19 +423,6 @@ export function AppearanceSection({ settings, onSave }) {
         />
       </Row>
 
-      {/* Orb shape */}
-      <Row label="Orb shape" hint="Visual shape of the VALERIE voice orb">
-        <PillGroup
-          value={orbShape}
-          onChange={setOrbShape}
-          options={[
-            { value: 'sphere',  label: 'Sphere'  },
-            { value: 'ring',    label: 'Ring'    },
-            { value: 'diamond', label: 'Diamond' },
-            { value: 'cube',    label: 'Cube'    },
-          ]}
-        />
-      </Row>
 
       {/* Animation intensity */}
       <Row label="Animation intensity">
@@ -524,710 +460,6 @@ export function AppearanceSection({ settings, onSave }) {
         }}
       >
         Save Appearance
-      </button>
-    </div>
-  );
-}
-
-// ─── Section: Voice ────────────────────────────────────────────────────────────
-export function VoiceSection({ settings, onSave }) {
-
-  // ── ElevenLabs state ──────────────────────────────────────────────────────
-  // Key is stored in the OS keychain — never in settings/Firebase
-  const [el11Key,     setEl11Key]     = useState('');
-  const [el11VoiceId, setEl11VoiceId] = useState(settings.voice?.elevenlabsVoiceId || settings.elevenlabsVoiceId || import.meta.env.VITE_ELEVENLABS_VOICE_ID || 'yj30vwTGJxSHezdAGsv9');
-  const [el11Voices,  setEl11Voices]  = useState([]);
-  const [el11Loading, setEl11Loading] = useState(false);
-  const [el11Error,   setEl11Error]   = useState('');
-  const [el11Playing, setEl11Playing] = useState(false);
-  const [el11PreviewErr, setEl11PreviewErr] = useState('');
-
-  // ── Browser TTS fallback state ────────────────────────────────────────────
-  const [sysVoices,   setSysVoices]   = useState([]);
-  const [voiceURI,    setVoiceURI]    = useState(settings.voice?.voiceURI || '');
-  const [rate,        setRate]        = useState(settings.voice?.rate     ?? 0.95);
-  const [pitch,       setPitch]       = useState(settings.voice?.pitch    ?? 1.0);
-
-  // ── Azure state ───────────────────────────────────────────────────────────
-  const [azureKey,       setAzureKey]       = useState(settings.voice?.azureKey    || settings.azureKey    || '');
-  const [azureRegion,    setAzureRegion]    = useState(settings.voice?.azureRegion || settings.azureRegion || 'australiaeast');
-  const [azureVoiceName, setAzureVoiceName] = useState(settings.voice?.azureVoiceName || 'en-AU-NatashaNeural');
-  const [azurePlaying,   setAzurePlaying]   = useState(false);
-  const [azureStatus,    setAzureStatus]    = useState(null); // null | 'ok' | 'bad_key' | 'bad_region' | 'error'
-  const [saved,          setSaved]          = useState(false);
-
-  // Fetch available voices from ElevenLabs API
-  const fetchEl11Voices = async (key) => {
-    if (!key?.trim()) return;
-    setEl11Loading(true);
-    setEl11Error('');
-    try {
-      const res = await fetch('https://api.elevenlabs.io/v1/voices', {
-        headers: { 'xi-api-key': key },
-        signal: AbortSignal.timeout(10000),
-      });
-      if (!res.ok) throw new Error(`ElevenLabs API ${res.status} — check your key`);
-      const data = await res.json();
-      const sorted = (data.voices || []).sort((a, b) => a.name.localeCompare(b.name));
-      setEl11Voices(sorted);
-    } catch (err) {
-      setEl11Error(err.message || 'Could not reach ElevenLabs');
-    } finally {
-      setEl11Loading(false);
-    }
-  };
-
-  // Load system TTS voices
-  useEffect(() => {
-    const load = () => setSysVoices(window.speechSynthesis?.getVoices() || []);
-    load();
-    window.speechSynthesis?.addEventListener('voiceschanged', load);
-    return () => window.speechSynthesis?.removeEventListener('voiceschanged', load);
-  }, []);
-
-  // Load ElevenLabs API key  keyring on Tauri desktop, env/settings on PWA
-  useEffect(() => {
-    invoke('get_secret', { service: 'valerie', key: 'elevenlabs_api_key' })
-      .then(stored => {
-        if (stored) {
-          setEl11Key(stored);
-          fetchEl11Voices(stored).catch(() => {});
-        } else {
-          // Tauri keyring empty  fall back to env or settings
-          const legacy = settings.voice?.elevenlabsKey || settings.elevenlabsKey || '';
-          if (legacy) {
-            setEl11Key(legacy);
-            if (isTauri()) invoke('store_secret', { service: 'valerie', key: 'elevenlabs_api_key', value: legacy }).catch(() => {});
-            fetchEl11Voices(legacy).catch(() => {});
-          }
-        }
-      })
-      .catch(() => {
-        // PWA  keyring not available, use env key directly
-        const fallback = settings.voice?.elevenlabsKey || settings.elevenlabsKey || '';
-        if (fallback) { setEl11Key(fallback); fetchEl11Voices(fallback).catch(() => {}); }
-      });
-  }, []); // eslint-disable-line react-hooks/exhaustive-deps
-
-  // el11Status: null | 'plan_required' | 'bad_key' | 'no_voice' | 'ok'
-  const [el11Status, setEl11Status] = useState(null);
-
-  // Preview using ElevenLabs — plays real audio from her voice
-  const handleEl11Preview = async () => {
-    if (!el11Key || el11Playing) return;
-    setEl11Playing(true);
-    setEl11PreviewErr('');
-    setEl11Status(null);
-    try {
-      const trimmedKey = el11Key.trim();
-      const res = await fetch(`https://api.elevenlabs.io/v1/text-to-speech/${el11VoiceId}`, {
-        method:  'POST',
-        headers: { 'xi-api-key': trimmedKey, 'Content-Type': 'application/json', 'Accept': 'audio/mpeg' },
-        body: JSON.stringify({
-          text:           "Ready when you are, Rob.",
-          model_id:       'eleven_monolingual_v1',
-          voice_settings: { stability: 0.45, similarity_boost: 0.80, style: 0.20, use_speaker_boost: true },
-        }),
-        signal: AbortSignal.timeout(15000),
-      });
-      if (!res.ok) {
-        if (res.status === 402 || res.status === 403) {
-          setEl11Status('plan_required');
-          setEl11Playing(false);
-          return;
-        }
-        if (res.status === 401) { setEl11Status('bad_key'); setEl11Playing(false); return; }
-        if (res.status === 422) { setEl11Status('no_voice'); setEl11Playing(false); return; }
-        setEl11PreviewErr(`Preview failed (${res.status}) — check your connection and try again.`);
-        setEl11Playing(false);
-        return;
-      }
-      setEl11Status('ok');
-      const blob  = await res.blob();
-      const url   = URL.createObjectURL(blob);
-      const audio = new Audio(url);
-      audio.onended = () => { URL.revokeObjectURL(url); setEl11Playing(false); };
-      audio.onerror = () => {
-        setEl11PreviewErr('Audio playback failed — check that audio is not muted');
-        setEl11Playing(false);
-      };
-      const p = audio.play();
-      if (p?.catch) p.catch(err => { setEl11PreviewErr(`Playback blocked: ${err.message}`); setEl11Playing(false); });
-    } catch (err) {
-      setEl11PreviewErr('Preview failed — check your connection.');
-      setEl11Playing(false);
-    }
-  };
-
-  // Preview using browser TTS (fallback only)
-  const handleSysPreview = () => {
-    window.speechSynthesis.cancel();
-    const utt   = new SpeechSynthesisUtterance("Ready when you are, Rob.");
-    const found = sysVoices.find(v => v.voiceURI === voiceURI);
-    if (found) utt.voice = found;
-    utt.rate  = rate;
-    utt.pitch = pitch;
-    window.speechSynthesis.speak(utt);
-  };
-
-  const [wakeWordEnabled, setWakeWordEnabled] = useState(settings.wakeWordEnabled ?? true);
-
-  // Preview Azure TTS
-  const handleAzurePreview = async () => {
-    if (!azureKey.trim() || !azureRegion || azurePlaying) return;
-    setAzurePlaying(true);
-    setAzureStatus(null);
-    try {
-      const langMatch = azureVoiceName.match(/^([a-z]{2}-[A-Z]{2})/);
-      const lang      = langMatch ? langMatch[1] : 'en-AU';
-      const ssml = `<speak version='1.0' xmlns='http://www.w3.org/2001/10/synthesis' xml:lang='${lang}'>`
-        + `<voice name='${azureVoiceName}'>Ready when you are, Rob.</voice></speak>`;
-
-      const res = await fetch(
-        `https://${azureRegion}.tts.speech.microsoft.com/cognitiveservices/v1`,
-        {
-          method: 'POST',
-          headers: {
-            'Ocp-Apim-Subscription-Key': azureKey.trim(),
-            'Content-Type':              'application/ssml+xml',
-            'X-Microsoft-OutputFormat':  'audio-16khz-128kbitrate-mono-mp3',
-          },
-          body:   ssml,
-          signal: AbortSignal.timeout(15000),
-        }
-      );
-      if (!res.ok) {
-        if (res.status === 401 || res.status === 403) { setAzureStatus('bad_key'); setAzurePlaying(false); return; }
-        if (res.status === 404) { setAzureStatus('bad_region'); setAzurePlaying(false); return; }
-        setAzureStatus('error'); setAzurePlaying(false); return;
-      }
-      setAzureStatus('ok');
-      const blob  = await res.blob();
-      const url   = URL.createObjectURL(blob);
-      const audio = new Audio(url);
-      audio.onended = () => { URL.revokeObjectURL(url); setAzurePlaying(false); };
-      audio.onerror = () => { setAzurePlaying(false); };
-      audio.play().catch(() => setAzurePlaying(false));
-    } catch {
-      setAzureStatus('error');
-      setAzurePlaying(false);
-    }
-  };
-
-  const handleSave = () => {
-    // ElevenLabs API key   OS keychain on Tauri, localStorage on PWA
-    if (el11Key.trim()) {
-      if (isTauri()) {
-        invoke('store_secret', { service: 'valerie', key: 'elevenlabs_api_key', value: el11Key.trim() }).catch(() => {});
-      } else {
-        localStorage.setItem('valerie_el11_key', el11Key.trim());
-      }
-    }
-    onSave({
-      voice: {
-        voiceURI, rate, pitch, volume: 1.0, lang: 'en-AU',
-        elevenlabsVoiceId: el11VoiceId,
-        azureKey:          azureKey.trim(),
-        azureRegion,
-        azureVoiceName,
-      },
-      azureKey:          azureKey.trim(),
-      azureRegion,
-      azureVoiceName,
-      elevenlabsVoiceId: el11VoiceId,
-      wakeWordEnabled,
-    });
-    setSaved(true);
-    setTimeout(() => setSaved(false), 2000);
-  };
-
-  // Active only if key is present AND hasn't been rejected (no 401/load error)
-  const isEl11Active      = !!el11Key && !el11Error;
-  const defaultVoiceId    = import.meta.env.VITE_ELEVENLABS_VOICE_ID || 'yj30vwTGJxSHezdAGsv9';
-  const selectedVoiceName = el11Voices.find(v => v.voice_id === el11VoiceId)?.name || '';
-  const enSysVoices       = sysVoices.filter(v => v.lang?.startsWith('en'));
-
-  return (
-    <div>
-      <SectionTitle>Voice <SavedBadge show={saved} /></SectionTitle>
-
-      {/* Active engine banner */}
-      {/* ─── Active engine banner ──────────────────────────────────────────── */}
-      {(() => {
-        const isAzureConfigured = !!azureKey.trim();
-        const engineLabel  = isEl11Active ? 'ElevenLabs' : isAzureConfigured ? 'Azure Neural' : 'System TTS';
-        const engineColor  = isEl11Active || isAzureConfigured ? '#4caf7d' : '#666';
-        const engineGlow   = isEl11Active || isAzureConfigured ? '#4caf7d99' : 'none';
-        const engineBg     = isEl11Active || isAzureConfigured ? '#4caf7d14' : 'var(--hover-bg)';
-        const engineBorder = isEl11Active || isAzureConfigured ? '#4caf7d44' : 'var(--card-border)';
-        const engineSub    = isEl11Active
-          ? `Priority: ElevenLabs → Azure Neural → System TTS${selectedVoiceName ? ` · ${selectedVoiceName}` : ''}`
-          : isAzureConfigured
-          ? `Priority: Azure Neural (${azureVoiceName}) → System TTS — ElevenLabs not configured`
-          : 'Add an ElevenLabs or Azure key below for VALERIE\'s real voice';
-        return (
-          <div style={{
-            display: 'flex', alignItems: 'center', gap: 10,
-            padding: '12px 16px', borderRadius: 10, marginBottom: 22,
-            background: engineBg, border: `1px solid ${engineBorder}`,
-          }}>
-            <div style={{
-              width: 8, height: 8, borderRadius: '50%', flexShrink: 0,
-              background: engineColor, boxShadow: `0 0 6px ${engineGlow}`,
-            }} />
-            <div style={{ flex: 1 }}>
-              <div style={{ fontSize: 13, fontWeight: 600, color: 'var(--text-primary)' }}>
-                {engineLabel} — Active
-              </div>
-              <div style={{ fontSize: 11, color: 'var(--text-muted)', marginTop: 1 }}>
-                {engineSub}
-              </div>
-            </div>
-          </div>
-        );
-      })()}
-
-      {/* ─── ElevenLabs block ─────────────────────────────────────────────── */}
-      <div style={{
-        border: `1px solid ${isEl11Active ? 'color-mix(in srgb, var(--accent) 33%, transparent)' : 'var(--card-border)'}`,
-        borderRadius: 12, padding: '16px 18px', marginBottom: 20,
-        background: isEl11Active ? 'color-mix(in srgb, var(--accent) 3%, transparent)' : 'var(--hover-bg)',
-      }}>
-        <div style={{
-          fontSize: 11, fontWeight: 700, letterSpacing: '0.06em', marginBottom: 14,
-          display: 'flex', alignItems: 'center', gap: 8,
-          color: isEl11Active ? 'var(--accent)' : 'var(--text-muted)',
-        }}>
-          ELEVENLABS
-          {isEl11Active && (
-            <span style={{
-              fontSize: 10.5, background: '#4caf7d22', color: '#4caf7d',
-              padding: '2px 8px', borderRadius: 10, fontWeight: 700, letterSpacing: '0.04em',
-            }}>ACTIVE</span>
-          )}
-        </div>
-
-        {/* API key + load button */}
-        <div style={{ marginBottom: 12 }}>
-          <div style={{ fontSize: 11, color: 'var(--text-secondary)', marginBottom: 5 }}>API Key</div>
-          <div style={{ display: 'flex', gap: 8 }}>
-            <div style={{ flex: 1 }}>
-              <Input value={el11Key} onChange={setEl11Key} placeholder="sk_…" masked />
-            </div>
-            <button
-              onClick={() => fetchEl11Voices(el11Key)}
-              disabled={!el11Key || el11Loading}
-              style={{
-                padding: '0 14px', borderRadius: 8, flexShrink: 0,
-                border: '0.5px solid var(--card-border)', background: 'var(--hover-bg)',
-                color: 'var(--text-secondary)', fontSize: 12,
-                cursor: !el11Key || el11Loading ? 'not-allowed' : 'pointer',
-                opacity: !el11Key || el11Loading ? 0.5 : 1,
-              }}
-            >
-              {el11Loading ? '…' : 'Load voices'}
-            </button>
-          </div>
-          {el11Error && (
-            <p style={{ margin: '6px 0 0', fontSize: 11, color: '#e55a5a' }}>{el11Error}</p>
-          )}
-        </div>
-
-        {/* Voice dropdown */}
-        <div style={{ marginBottom: 12 }}>
-          <div style={{ fontSize: 11, color: 'var(--text-secondary)', marginBottom: 5 }}>
-            Voice {el11Voices.length > 0 ? `(${el11Voices.length} available)` : '— click Load voices to fetch'}
-          </div>
-          <select
-            value={el11VoiceId}
-            onChange={e => setEl11VoiceId(e.target.value)}
-            style={{
-              width: '100%', padding: '9px 12px',
-              background: 'var(--bg-panel)', border: '0.5px solid var(--card-border)',
-              borderRadius: 8, color: 'var(--text-primary)', fontSize: 13,
-            }}
-          >
-            {el11Voices.length === 0 ? (
-              <option value={el11VoiceId}>
-                {el11VoiceId ? `${el11VoiceId} (load voices to see name)` : 'Enter key and click Load voices'}
-              </option>
-            ) : (
-              el11Voices.map(v => {
-                const accent = typeof v.labels?.accent === 'string' ? v.labels.accent : '';
-                return (
-                <option key={v.voice_id ?? v.name} value={v.voice_id ?? ''}>
-                  {String(v.name ?? '')}
-                  {v.voice_id === defaultVoiceId ? ' & VALERIE default' : ''}
-                  {accent ? ` — ${accent}` : ''}
-                </option>
-                );
-              })
-            )}
-          </select>
-        </div>
-
-        {/* Preview button + error */}
-        <button
-          onClick={handleEl11Preview}
-          disabled={!el11Key || el11Playing}
-          style={{
-            padding: '7px 16px', borderRadius: 8,
-            border: `0.5px solid ${isEl11Active ? 'var(--accent)' : 'var(--card-border)'}`,
-            background: isEl11Active ? 'color-mix(in srgb, var(--accent) 8%, transparent)' : 'var(--hover-bg)',
-            color: isEl11Active ? 'var(--accent)' : 'var(--text-muted)',
-            fontSize: 12,
-            cursor: !el11Key || el11Playing ? 'not-allowed' : 'pointer',
-            opacity: !el11Key || el11Playing ? 0.5 : 1,
-          }}
-        >
-          {el11Playing ? '🔊 Playing…' : "🔊 Preview VALERIE's voice"}
-        </button>
-        {/* Clean status banner — no raw API text ever shown */}
-        {(el11Status || el11PreviewErr) && (
-          <div style={{
-            marginTop: 10, padding: '10px 14px', borderRadius: 8, fontSize: 12, lineHeight: 1.5,
-            ...(el11Status === 'ok'
-              ? { background: '#4caf7d14', border: '0.5px solid #4caf7d44', color: '#4caf7d' }
-              : el11Status === 'plan_required'
-              ? { background: 'rgba(245,166,35,0.08)', border: '0.5px solid rgba(245,166,35,0.4)', color: '#f5a623' }
-              : el11Status === 'bad_key'
-              ? { background: 'rgba(229,90,90,0.08)', border: '0.5px solid rgba(229,90,90,0.35)', color: '#e55a5a' }
-              : el11Status === 'no_voice'
-              ? { background: 'rgba(245,166,35,0.08)', border: '0.5px solid rgba(245,166,35,0.4)', color: '#f5a623' }
-              : { background: 'rgba(229,90,90,0.08)', border: '0.5px solid rgba(229,90,90,0.35)', color: '#e55a5a' }),
-          }}>
-            {el11Status === 'ok'           && '✓ Voice preview played successfully.'}
-            {el11Status === 'plan_required' && 'ElevenLabs plan required — this model is not available on your current tier. VALERIE will use system TTS as fallback.'}
-            {el11Status === 'bad_key'       && 'API key rejected. Double-check your ElevenLabs key above and try again.'}
-            {el11Status === 'no_voice'      && 'Voice ID not found. Click Load voices and select a different one.'}
-            {!el11Status && el11PreviewErr  && el11PreviewErr}
-          </div>
-        )}
-      </div>
-
-      {/* ─── Azure Neural TTS ─────────────────────────────────────────────── */}
-      {(() => {
-        const isAzureActive = !!azureKey.trim();
-        return (
-          <div style={{
-            border: `1px solid ${isAzureActive ? 'color-mix(in srgb, var(--accent) 33%, transparent)' : 'var(--card-border)'}`,
-            borderRadius: 12, padding: '16px 18px', marginBottom: 20,
-            background: isAzureActive ? 'color-mix(in srgb, var(--accent) 3%, transparent)' : 'var(--hover-bg)',
-          }}>
-            <div style={{
-              fontSize: 11, fontWeight: 700, letterSpacing: '0.06em', marginBottom: 14,
-              display: 'flex', alignItems: 'center', gap: 8,
-              color: isAzureActive ? 'var(--accent)' : 'var(--text-muted)',
-            }}>
-              AZURE NEURAL VOICES
-              <span style={{ fontWeight: 400, fontSize: 11, color: 'var(--text-muted)' }}>(tier 2 fallback)</span>
-              {isAzureActive && (
-                <span style={{
-                  fontSize: 10.5, background: 'color-mix(in srgb, var(--accent) 13%, transparent)', color: 'var(--accent)',
-                  padding: '2px 8px', borderRadius: 10, fontWeight: 700,
-                }}>CONFIGURED</span>
-              )}
-            </div>
-
-            {/* API Key */}
-            <div style={{ marginBottom: 12 }}>
-              <div style={{ fontSize: 11, color: 'var(--text-secondary)', marginBottom: 5 }}>API Key</div>
-              <Input value={azureKey} onChange={v => { setAzureKey(v); setAzureStatus(null); }}
-                placeholder="Azure Cognitive Services subscription key" masked />
-            </div>
-
-            {/* Region */}
-            <div style={{ marginBottom: 12 }}>
-              <div style={{ fontSize: 11, color: 'var(--text-secondary)', marginBottom: 5 }}>
-                Region <span style={{ color: 'var(--text-muted)' }}>— must match your Azure resource region</span>
-              </div>
-              <select
-                value={azureRegion}
-                onChange={e => { setAzureRegion(e.target.value); setAzureStatus(null); }}
-                style={{
-                  width: '100%', padding: '9px 12px',
-                  background: 'var(--bg-panel)', border: '0.5px solid var(--card-border)',
-                  borderRadius: 8, color: 'var(--text-primary)', fontSize: 13,
-                }}
-              >
-                {[
-                  ['australiaeast',   'Australia East'],
-                  ['eastus',          'East US'],
-                  ['eastus2',         'East US 2'],
-                  ['westus',          'West US'],
-                  ['westus2',         'West US 2'],
-                  ['centralus',       'Central US'],
-                  ['northeurope',     'North Europe'],
-                  ['westeurope',      'West Europe'],
-                  ['uksouth',         'UK South'],
-                  ['southeastasia',   'Southeast Asia'],
-                  ['japaneast',       'Japan East'],
-                  ['canadacentral',   'Canada Central'],
-                ].map(([val, label]) => (
-                  <option key={val} value={val}>{label} — {val}</option>
-                ))}
-              </select>
-            </div>
-
-            {/* Voice */}
-            <div style={{ marginBottom: 14 }}>
-              <div style={{ fontSize: 11, color: 'var(--text-secondary)', marginBottom: 5 }}>Voice</div>
-              <select
-                value={azureVoiceName}
-                onChange={e => { setAzureVoiceName(e.target.value); setAzureStatus(null); }}
-                style={{
-                  width: '100%', padding: '9px 12px',
-                  background: 'var(--bg-panel)', border: '0.5px solid var(--card-border)',
-                  borderRadius: 8, color: 'var(--text-primary)', fontSize: 13,
-                }}
-              >
-                <optgroup label="Australian English">
-                  <option value="en-AU-NatashaNeural">Natasha — en-AU Female ★ VALERIE default</option>
-                  <option value="en-AU-WilliamNeural">William — en-AU Male</option>
-                </optgroup>
-                <optgroup label="British English">
-                  <option value="en-GB-SoniaNeural">Sonia — en-GB Female</option>
-                  <option value="en-GB-RyanNeural">Ryan — en-GB Male</option>
-                  <option value="en-GB-LibbyNeural">Libby — en-GB Female</option>
-                </optgroup>
-                <optgroup label="US English">
-                  <option value="en-US-JennyNeural">Jenny — en-US Female</option>
-                  <option value="en-US-AriaNeural">Aria — en-US Female</option>
-                  <option value="en-US-GuyNeural">Guy — en-US Male</option>
-                  <option value="en-US-SaraNeural">Sara — en-US Female</option>
-                </optgroup>
-              </select>
-            </div>
-
-            {/* Preview */}
-            <button
-              onClick={handleAzurePreview}
-              disabled={!azureKey.trim() || azurePlaying}
-              style={{
-                padding: '7px 16px', borderRadius: 8,
-                border: `0.5px solid ${isAzureActive ? 'var(--accent)' : 'var(--card-border)'}`,
-                background: isAzureActive ? 'color-mix(in srgb, var(--accent) 8%, transparent)' : 'var(--hover-bg)',
-                color: isAzureActive ? 'var(--accent)' : 'var(--text-muted)',
-                fontSize: 12, cursor: !azureKey.trim() || azurePlaying ? 'not-allowed' : 'pointer',
-                opacity: !azureKey.trim() || azurePlaying ? 0.5 : 1,
-              }}
-            >
-              {azurePlaying ? '🔊 Playing…' : '🔊 Preview Azure voice'}
-            </button>
-
-            {/* Status */}
-            {azureStatus && (
-              <div style={{
-                marginTop: 10, padding: '10px 14px', borderRadius: 8, fontSize: 12, lineHeight: 1.5,
-                ...(azureStatus === 'ok'
-                  ? { background: '#4caf7d14', border: '0.5px solid #4caf7d44', color: '#4caf7d' }
-                  : azureStatus === 'bad_key'
-                  ? { background: 'rgba(229,90,90,0.08)', border: '0.5px solid rgba(229,90,90,0.35)', color: '#e55a5a' }
-                  : azureStatus === 'bad_region'
-                  ? { background: 'rgba(245,166,35,0.08)', border: '0.5px solid rgba(245,166,35,0.4)', color: '#f5a623' }
-                  : { background: 'rgba(229,90,90,0.08)', border: '0.5px solid rgba(229,90,90,0.35)', color: '#e55a5a' }),
-              }}>
-                {azureStatus === 'ok'         && '✓ Azure voice preview played successfully.'}
-                {azureStatus === 'bad_key'    && 'API key rejected — check your Azure subscription key.'}
-                {azureStatus === 'bad_region' && 'Region not found — make sure the region matches your Azure resource (e.g. australiaeast).'}
-                {azureStatus === 'error'      && 'Preview failed — check your key and region, then try again.'}
-              </div>
-            )}
-          </div>
-        );
-      })()}
-
-      {/* ─── System TTS fallback ──────────────────────────────────────────── */}
-      <div style={{ marginBottom: 24 }}>
-        <div style={{
-          fontSize: 11, fontWeight: 700, color: 'var(--text-muted)',
-          letterSpacing: '0.06em', marginBottom: 8,
-        }}>
-          SYSTEM VOICE <span style={{ fontWeight: 400 }}>(fallback tier 3)</span>
-        </div>
-        <select
-          value={voiceURI}
-          onChange={e => setVoiceURI(e.target.value)}
-          style={{
-            width: '100%', padding: '9px 12px', marginBottom: 10,
-            background: 'var(--bg-panel)', border: '0.5px solid var(--card-border)',
-            borderRadius: 8, color: 'var(--text-primary)', fontSize: 13,
-          }}
-        >
-          <option value="">— System default —</option>
-          {enSysVoices.map(v => (
-            <option key={v.voiceURI} value={v.voiceURI}>{v.name} ({v.lang})</option>
-          ))}
-        </select>
-
-        <div style={{ display: 'flex', gap: 16, marginBottom: 10 }}>
-          <div style={{ flex: 1 }}>
-            <div style={{ fontSize: 11, color: 'var(--text-secondary)', marginBottom: 4 }}>Rate</div>
-            <Slider value={rate} onChange={setRate} min={0.5} max={2.0} step={0.05} />
-          </div>
-          <div style={{ flex: 1 }}>
-            <div style={{ fontSize: 11, color: 'var(--text-secondary)', marginBottom: 4 }}>Pitch</div>
-            <Slider value={pitch} onChange={setPitch} min={0.5} max={2.0} step={0.05} />
-          </div>
-        </div>
-
-        <button
-          onClick={handleSysPreview}
-          style={{
-            padding: '6px 14px', borderRadius: 8,
-            border: '0.5px solid var(--card-border)', background: 'var(--hover-bg)',
-            color: 'var(--text-secondary)', fontSize: 12, cursor: 'pointer',
-          }}
-        >
-           Preview system voice
-        </button>
-      </div>
-
-      {/* Wake word */}
-      <Row
-        label="Hey VAL / Hey Valerie wake word"
-        hint="Always-on mic listens for your wake phrase to start a voice session hands-free"
-      >
-        <Toggle value={wakeWordEnabled} onChange={setWakeWordEnabled} />
-        {wakeWordEnabled && (
-          <div style={{
-            marginTop: 8, padding: '8px 12px', borderRadius: 8,
-            background: 'color-mix(in srgb, var(--accent) 3%, transparent)', border: '0.5px solid color-mix(in srgb, var(--accent) 20%, transparent)',
-            fontSize: 11, color: 'var(--text-secondary)', lineHeight: 1.5,
-          }}>
-            Say <strong style={{ color: 'var(--accent)' }}>"Hey VAL"</strong> or{' '}
-            <strong style={{ color: 'var(--accent)' }}>"Hey Valerie"</strong> at any time to activate. Requires microphone permission.
-          </div>
-        )}
-      </Row>
-
-      <button
-        onClick={handleSave}
-        style={{
-          padding: '9px 24px', borderRadius: 8, border: 'none',
-          background: 'var(--accent)', color: 'var(--bg-base)',
-          fontSize: 13, fontWeight: 700, cursor: 'pointer',
-        }}
-      >
-        Save Voice Settings
-      </button>
-    </div>
-  );
-}
-
-// ─── Section: AI ───────────────────────────────────────────────────────────────
-export function AISection({ settings, onSave }) {
-  const [ollamaModel,   setOllamaModel]   = useState(settings.ollamaModel   || 'llama3');
-  const [preferOffline, setPreferOffline] = useState(settings.preferOffline ?? false);
-  const [tokenBudget,   setTokenBudget]   = useState(settings.dailyTokenBudget || 100000);
-  const [smartRouting,  setSmartRouting]  = useState(settings.smartRouting  ?? true);
-  const [ollamaModels,  setOllamaModels]  = useState([]);
-  const [saved,         setSaved]         = useState(false);
-  const [testResult,    setTestResult]    = useState(null); // { ok, reason }
-  const [testing,       setTesting]       = useState(false);
-
-  useEffect(() => {
-    fetch('http://localhost:11434/api/tags', { signal: AbortSignal.timeout(2000) })
-      .then(r => r.json())
-      .then(d => setOllamaModels((d.models || []).map(m => m.name)))
-      .catch(() => {});
-  }, []);
-
-  const handleSave = () => {
-    onSave({ ollamaModel, preferOffline, dailyTokenBudget: tokenBudget, smartRouting });
-    setSaved(true);
-    setTimeout(() => setSaved(false), 2000);
-    setTestResult(null);
-  };
-
-  const handleTest = async () => {
-    if (testing) return;
-    setTesting(true);
-    setTestResult(null);
-    const result = await testClaudeConnection();
-    setTestResult(result);
-    setTesting(false);
-  };
-
-  return (
-    <div>
-      <SectionTitle>AI Configuration <SavedBadge show={saved} /></SectionTitle>
-
-      {/* Server-side Claude connection */}
-      <Row
-        label="Secure AI service"
-        hint="Anthropic runs through the authenticated Arete server; no provider key is stored in this app"
-      >
-        <div style={{ display: 'flex', gap: 8, marginBottom: 8 }}>
-          <button
-            onClick={handleTest}
-            disabled={testing}
-            style={{
-              padding: '0 16px', borderRadius: 8, flexShrink: 0,
-              border: `0.5px solid ${testResult?.ok ? '#4caf7d' : testResult ? '#e55a5a' : 'var(--card-border)'}`,
-              background: testResult?.ok ? '#4caf7d15' : testResult ? '#e55a5a15' : 'var(--hover-bg)',
-              color: testResult?.ok ? '#4caf7d' : testResult ? '#e55a5a' : 'var(--text-secondary)',
-              fontSize: 12, cursor: testing ? 'not-allowed' : 'pointer',
-              whiteSpace: 'nowrap',
-            }}
-          >
-            {testing ? 'Testing…' : testResult?.ok ? '✓ Connected' : 'Test connection'}
-          </button>
-        </div>
-        {testResult && !testResult.ok && (
-          <p style={{ margin: 0, fontSize: 11, color: '#e55a5a', lineHeight: 1.4 }}>
-            {testResult.reason}
-          </p>
-        )}
-        {testResult?.ok && (
-          <p style={{ margin: 0, fontSize: 11, color: '#4caf7d' }}>
-            {testResult.reason}.
-          </p>
-        )}
-      </Row>
-
-      <Row label="Ollama model" hint="Local AI model — Ollama must be running at localhost:11434">
-        {ollamaModels.length > 0 ? (
-          <select
-            value={ollamaModel}
-            onChange={e => setOllamaModel(e.target.value)}
-            style={{
-              width: '100%', padding: '9px 12px',
-              background: 'var(--bg-panel)', border: '0.5px solid var(--card-border)',
-              borderRadius: 8, color: 'var(--text-primary)', fontSize: 13,
-            }}
-          >
-            {ollamaModels.map(m => <option key={m} value={m}>{m}</option>)}
-          </select>
-        ) : (
-          <div style={{ display: 'flex', gap: 10, alignItems: 'center' }}>
-            <Input value={ollamaModel} onChange={setOllamaModel} placeholder="llama3" />
-            <span style={{ fontSize: 11, color: 'var(--text-muted)', whiteSpace: 'nowrap' }}>Ollama offline</span>
-          </div>
-        )}
-      </Row>
-
-      <Row label="Prefer offline model" hint="Use Ollama first — only switch to Claude for complex tasks">
-        <Toggle value={preferOffline} onChange={setPreferOffline} />
-      </Row>
-
-      <Row label="Smart routing" hint="Auto-select best AI engine per message type">
-        <Toggle value={smartRouting} onChange={setSmartRouting} />
-      </Row>
-
-      <Row label="Daily token budget" hint="Approximate max tokens per day — VALERIE warns when approaching">
-        <Slider value={tokenBudget} onChange={setTokenBudget} min={10000} max={500000} step={10000} suffix=" tok" />
-      </Row>
-
-      <button
-        onClick={handleSave}
-        style={{
-          padding: '9px 24px', borderRadius: 8, border: 'none',
-          background: 'var(--accent)', color: 'var(--bg-base)',
-          fontSize: 13, fontWeight: 700, cursor: 'pointer',
-        }}
-      >
-        Save AI Settings
       </button>
     </div>
   );
@@ -2517,62 +1749,6 @@ export function DataSection() {
   );
 }
 
-// ─── Section: Daily Brief ─────────────────────────────────────────────────────
-export function DailyBriefSection({ settings, onSave }) {
-  const cfg = settings.dailyBrief ?? {};
-  const [weather,  setWeather]  = useState(cfg.weather  !== false);
-  const [calendar, setCalendar] = useState(cfg.calendar !== false);
-  const [tasks,    setTasks]    = useState(cfg.tasks    !== false);
-  const [vitamins, setVitamins] = useState(cfg.vitamins !== false);
-  const [routine,  setRoutine]  = useState(cfg.routine  !== false);
-  const [saved,    setSaved]    = useState(false);
-
-  function handleSave() {
-    onSave({ dailyBrief: { weather, calendar, tasks, vitamins, routine } });
-    setSaved(true);
-    setTimeout(() => setSaved(false), 2000);
-  }
-
-  function resetToday() {
-    storage.remove('daily_brief_date');
-    alert('Daily brief will appear again on next app launch.');
-  }
-
-  return (
-    <div>
-      <SectionTitle>Daily Brief <SavedBadge show={saved} /></SectionTitle>
-      <div style={{ fontSize: 13, color: 'var(--text-muted)', marginBottom: 24, lineHeight: 1.55 }}>
-        VALERIE greets you on first launch each day and offers a spoken brief. Toggle each section on or off.
-      </div>
-
-      <Row label="Weather" hint="Current temperature and conditions using your device location (Open-Meteo, no API key required)">
-        <Toggle value={weather} onChange={setWeather} />
-      </Row>
-      <Row label="Calendar" hint="Today's events from your Calendar tab">
-        <Toggle value={calendar} onChange={setCalendar} />
-      </Row>
-      <Row label="Tasks" hint="Outstanding high-priority tasks">
-        <Toggle value={tasks} onChange={setTasks} />
-      </Row>
-      <Row label="Vitamins & Supplements" hint="Morning supplements from your Health tab">
-        <Toggle value={vitamins} onChange={setVitamins} />
-      </Row>
-      <Row label="Morning Routine" hint="Active routine steps from the Routines tab">
-        <Toggle value={routine} onChange={setRoutine} />
-      </Row>
-
-      <div style={{ display: 'flex', gap: 10, marginTop: 8 }}>
-        <button onClick={handleSave} style={{ padding: '9px 24px', borderRadius: 8, border: 'none', background: 'var(--accent)', color: '#fff', fontSize: 13, fontWeight: 700, cursor: 'pointer' }}>
-          Save
-        </button>
-        <button onClick={resetToday} style={{ padding: '9px 20px', borderRadius: 8, border: '0.5px solid var(--card-border)', background: 'transparent', color: 'var(--text-secondary)', fontSize: 13, cursor: 'pointer' }}>
-          Show brief again today
-        </button>
-      </div>
-    </div>
-  );
-}
-
 // ─── Section: Sidebar Order ───────────────────────────────────────────────────
 function SidebarSection({ settings, onSave }) {
   const defaultOrder = ALL_TABS.map(t => t.id);
@@ -2909,8 +2085,6 @@ export default function SettingsTab({ settings: settingsProp }) {
     switch (activeSection) {
       case 'identity':      return wrap(<IdentitySection      settings={settings} onSave={handleSave} />);
       case 'appearance':    return wrap(<AppearanceSection    settings={settings} onSave={handleSave} />);
-      case 'voice':         return wrap(<VoiceSection         settings={settings} onSave={handleSave} />);
-      case 'ai':            return wrap(<AISection            settings={settings} onSave={handleSave} />);
       case 'units':         return wrap(<UnitsSection         settings={settings} onSave={handleSave} />);
       case 'progress':      return wrap(<ProgressSection      settings={settings} onSave={handleSave} />);
       case 'notifications': return wrap(<NotificationsSection settings={settings} onSave={handleSave} />);
@@ -2918,7 +2092,6 @@ export default function SettingsTab({ settings: settingsProp }) {
       case 'api_usage':     return wrap(<ApiUsageSection      settings={settings} />);
       case 'platforms':     return wrap(<PlatformsSection     settings={settings} onSave={handleSave} />);
       case 'data':          return wrap(<DataSection />);
-      case 'daily_brief':   return wrap(<DailyBriefSection   settings={settings} onSave={handleSave} />);
       case 'sidebar':       return wrap(<SidebarSection      settings={settings} onSave={handleSave} />);
       case 'security':      return wrap(<SecuritySection      settings={settings} onSave={handleSave} />);
       case 'account':       return wrap(<AccountSection />);

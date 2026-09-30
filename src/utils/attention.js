@@ -15,7 +15,7 @@ const dateStr = (offsetDays) => {
 };
 
 // Tabs that always stay visible in Focus Mode regardless of attention data.
-export const FOCUS_ALWAYS_VISIBLE = new Set(['dashboard', 'assistant']);
+export const FOCUS_ALWAYS_VISIBLE = new Set(['dashboard']);
 
 // dayOffset: 0 = today, 1 = tomorrow. Returns { tabs: Set<tabId>, count }.
 export function getAttentionTabs(dayOffset = 0) {

@@ -1,17 +1,16 @@
 import { useState, useEffect, useCallback, useRef, Component } from 'react';
 import { Icon as LineIcon } from './components/icons.jsx';
-import { platformInvoke, isMobile } from './utils/platform.js';
+import { isMobile } from './utils/platform.js';
 import { handleSpotifyCallback }    from './utils/spotify.js';
 import { storage, STORAGE_KEYS }    from './utils/storage.js';
 import { supabase }                 from './supabase/supabase.js';
 import MobileShell                  from './mobile/MobileShell.jsx';
 import Toaster                      from './components/Toaster.jsx';
-import ActionConfirm                from './components/ActionConfirm.jsx';
 import { applyTheme }            from './styles/themes.js';
 import { applyAppearance, setActiveGroup, backgroundClass } from './styles/appearance.js';
 import { stripLegacyClaudeKeys } from './utils/settingsSecurity.js';
 import { getTimeOfDay }          from './utils/time.js';
-import { useAI }                 from './ai/useAI.js';
+import { useOnline }             from './hooks/useOnline.js';
 import { useSupabaseStatus }    from './supabase/useSupabaseStatus.js';
 import { usePeakState }         from './hooks/usePeakState.js';
 import { useSleepSchedule }    from './hooks/useSleepSchedule.js';
@@ -28,7 +27,6 @@ import { groupOf, groupScreens, resolveTarget, DEFAULT_SCREEN } from './nav/grou
 
 // ─── Tab imports ──────────────────────────────────────────────────────────────
 import Dashboard  from './tabs/Dashboard.jsx';
-import Assistant  from './tabs/Assistant.jsx';
 import Tasks      from './tabs/Tasks.jsx';
 import Calendar   from './tabs/Calendar.jsx';
 import Notes      from './tabs/Notes.jsx';
@@ -53,7 +51,6 @@ import TodayView from './components/TodayView.jsx';
 
 const TAB_MAP = {
   dashboard:  Dashboard,
-  assistant:  Assistant,
   tasks:      Tasks,
   calendar:   Calendar,
   notes:      Notes,
@@ -196,8 +193,7 @@ export default function App() {
     return () => subscription.unsubscribe();
   }, []);
 
-  // ── AI brain ──────────────────────────────────────────────────────────────
-  const ai = useAI();
+  const internetOnline = useOnline();
 
   // ── Firebase status ───────────────────────────────────────────────────────
   const firebaseSynced = useSupabaseStatus();
@@ -250,16 +246,10 @@ export default function App() {
     return () => window.removeEventListener('focus', recover);
   }, []);
 
-  // ── Wire VALERIE's navigate action to the real tab-change function ─────────
-  useEffect(() => {
-    ai.registerCallback('navigate', goTo);
-  }, [ai.registerCallback]); // eslint-disable-line react-hooks/exhaustive-deps
-
   //  Keep VALERIE's context aware of the active tab; tab colour follows the group
   useEffect(() => {
     setActiveGroup(groupOf(activeTab).id);
-    ai.setActiveTab(activeTab);
-  }, [activeTab, ai.setActiveTab]); // eslint-disable-line react-hooks/exhaustive-deps
+  }, [activeTab]);
 
   // ── Ctrl+K global keyboard shortcut ───────────────────────────────────────
   useEffect(() => {
@@ -306,9 +296,6 @@ export default function App() {
           .then(({ data }) => { if (data?.value) applyAndSet(data.value); });
       });
     }
-
-    // Launch Ollama silently in the background — no terminal window
-    platformInvoke('launch_ollama').catch(() => {});
 
     // Log unhandled errors without suppressing React's own error handling
     const onError       = (e) => { console.error('[VALERIE] error:', e.error || e.message); };
@@ -404,10 +391,7 @@ export default function App() {
       <Sidebar
         activeGroup={activeGroup.id}
         onGroupClick={goTo}
-        claudeOnline={ai.claudeOnline}
-        ollamaOnline={ai.ollamaOnline}
-        internetOnline={ai.internetOnline}
-        lastPinged={ai.lastPinged}
+        internetOnline={internetOnline}
         firebaseSynced={firebaseSynced}
         hiddenTabs={settings?.hiddenTabs ?? []}
         peakState={peakState}
@@ -430,7 +414,6 @@ export default function App() {
             <ActiveTab
               settings={settings}
               onTabChange={goTo}
-              ai={ai}
               density={layoutDensity}
               peakState={peakState}
             />
@@ -438,7 +421,7 @@ export default function App() {
         </TabErrorBoundary>
 
         {/* Quick Capture — floats above all content */}
-        <QuickCapture ai={ai} />
+        <QuickCapture />
       </main>
 
       {/* Ctrl+K Command Palette — renders above everything */}
@@ -446,7 +429,6 @@ export default function App() {
         open={paletteOpen}
         onClose={() => setPaletteOpen(false)}
         onTabChange={goTo}
-        ai={ai}
       />
 
       {/* Proactive nudges + whole-life Weekly Review + unified Today view */}
@@ -462,7 +444,7 @@ export default function App() {
             // Clicking the overlay during sleep mode shows a brief "wake" indicator
             if (isSleepTime) {
               window.dispatchEvent(new CustomEvent('valerie:toast', {
-                detail: { message: 'Good morning, Sir. Sleep mode active.', type: 'sleep' },
+                detail: { message: 'Sleep mode is on.', type: 'sleep' },
               }));
             }
           }}
@@ -476,7 +458,6 @@ export default function App() {
       )}
 
       <Toaster />
-      <ActionConfirm />
     </div>
   );
 }

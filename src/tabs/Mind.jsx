@@ -1,5 +1,5 @@
 // Mind.jsx — Personal Operating System
-// Tabs: Constitution · Advisors · Ledger · Beliefs · Vault · Insights
+// Tabs: Constitution · Ledger · Beliefs · Vault · Insights · Breathe
 
 import { useState, useEffect, useRef, useMemo, useCallback } from 'react';
 import { useCollection } from '../supabase/useCollection.js';
@@ -90,120 +90,6 @@ function Tag({ label, colour }) {
   );
 }
 
-// ─── Advisor definitions ──────────────────────────────────────────────────────
-
-const ADVISORS = [
-  {
-    id: 'career', name: 'Career Coach', colour: '#4a9eff',
-    emoji: 'C',
-    prompt: `You are an experienced executive career coach with 20+ years helping high-performers. You ask powerful questions, challenge assumptions about career trajectory, identify blind spots, and push for clarity on what success actually means. You're direct, concise, and don't flatter. You speak in plain language — no corporate jargon. Max 3 paragraphs per response unless specifically asked for more.`,
-  },
-  {
-    id: 'learning', name: 'Learning Coach', colour: '#a78bfa',
-    emoji: 'L',
-    prompt: `You are a world-class learning strategist who understands cognitive science, deliberate practice, and skill acquisition. You help identify the most efficient path to mastery, detect tutorial hell, and design high-quality practice. You reference research when relevant but keep it practical. Max 3 paragraphs unless asked for more.`,
-  },
-  {
-    id: 'strategist', name: 'Strategist', colour: '#6BE3A4',
-    emoji: 'S',
-    prompt: `You are a sharp strategic advisor — think first-principles thinker meets competitive analyst. You see the long game, identify leverage points, spot patterns others miss, and prioritise ruthlessly. You think in systems and second-order effects. You cut through noise fast. Max 3 paragraphs unless asked for more.`,
-  },
-  {
-    id: 'skeptic', name: 'Skeptic', colour: '#f4a642',
-    emoji: '?',
-    prompt: `You are a rigorous intellectual skeptic. Your job is to stress-test ideas, find flaws in reasoning, identify motivated thinking, and ask the uncomfortable questions. You are not cynical — you are precise. You do not tear things down for sport; you do it to make the thinking sharper. Max 3 paragraphs unless asked for more.`,
-  },
-  {
-    id: 'future', name: 'Future Self', colour: '#e879f9',
-    emoji: 'F',
-    prompt: `You are this person's future self, 10 years from now. You've lived through the consequences of their current decisions. You speak with the wisdom of hindsight — you know what they're avoiding, what matters in retrospect, and what they'll wish they'd started sooner. You are honest, warm, and direct. You don't lecture — you share. Max 3 paragraphs unless asked for more.`,
-  },
-  {
-    id: 'devil', name: "Devil's Advocate", colour: '#e55a5a',
-    emoji: 'D',
-    prompt: `You are a devil's advocate. Your job is to argue the strongest possible case against whatever position is being considered. You find the best counterarguments, the fatal flaws, and the uncomfortable alternative interpretations. You are not trying to be right — you are trying to make the thinking sharper. Max 3 paragraphs unless asked for more.`,
-  },
-];
-
-// ─── AI Chat component (reusable) ─────────────────────────────────────────────
-
-function AIChat({ systemPrompt, placeholder, contextNote, starterPrompts = [] }) {
-  const [messages, setMessages] = useState([]);
-  const [input,    setInput]    = useState('');
-  const [loading,  setLoading]  = useState(false);
-  const endRef = useRef(null);
-
-  useEffect(() => { endRef.current?.scrollIntoView({ behavior: 'smooth' }); }, [messages]);
-
-  async function send(text) {
-    const msg = (text || input).trim();
-    if (!msg || loading) return;
-    setInput('');
-    const next = [...messages, { role: 'user', content: msg }];
-    setMessages(next);
-    setLoading(true);
-    try {
-      const reply = await askClaudeRaw(msg, systemPrompt, messages);
-      setMessages([...next, { role: 'assistant', content: reply }]);
-    } catch (err) {
-      setMessages([...next, { role: 'assistant', content: `Error: ${err.message}` }]);
-    } finally {
-      setLoading(false);
-    }
-  }
-
-  return (
-    <div style={{ display: 'flex', flexDirection: 'column', height: '100%', minHeight: 0 }}>
-      {contextNote && (
-        <div style={{ fontSize: 10.5, color: 'var(--text-muted)', marginBottom: 10,
-          padding: '6px 12px', borderRadius: 8, background: 'rgba(255,255,255,0.03)',
-          border: '0.5px solid rgba(255,255,255,0.06)', lineHeight: 1.5 }}>
-          {contextNote}
-        </div>
-      )}
-      {messages.length === 0 && starterPrompts.length > 0 && (
-        <div style={{ display: 'flex', flexWrap: 'wrap', gap: 6, marginBottom: 12 }}>
-          {starterPrompts.map((s, i) => (
-            <button key={i} onClick={() => send(s)} style={{
-              padding: '5px 11px', borderRadius: 20, cursor: 'pointer', fontSize: 11,
-              border: '0.5px solid rgba(255,255,255,0.1)', background: 'rgba(255,255,255,0.04)',
-              color: 'var(--text-secondary)', textAlign: 'left', lineHeight: 1.4,
-            }}>{s}</button>
-          ))}
-        </div>
-      )}
-      <div style={{ flex: 1, overflowY: 'auto', display: 'flex', flexDirection: 'column',
-        gap: 10, paddingBottom: 8, minHeight: 0 }}>
-        {messages.map((m, i) => (
-          <div key={i} style={{ display: 'flex', justifyContent: m.role === 'user' ? 'flex-end' : 'flex-start' }}>
-            <div style={{
-              maxWidth: '82%', padding: '10px 14px', fontSize: 13, lineHeight: 1.7,
-              color: 'rgba(255,255,255,0.85)', whiteSpace: 'pre-wrap',
-              borderRadius: m.role === 'user' ? '14px 14px 4px 14px' : '4px 14px 14px 14px',
-              background: m.role === 'user' ? 'color-mix(in srgb, var(--accent) 13%, transparent)' : 'rgba(255,255,255,0.04)',
-              border: `0.5px solid ${m.role === 'user' ? 'color-mix(in srgb, var(--accent) 27%, transparent)' : 'rgba(255,255,255,0.08)'}`,
-            }}>{m.content}</div>
-          </div>
-        ))}
-        {loading && <div style={{ padding: '4px 14px' }}><Spinner /></div>}
-        <div ref={endRef} />
-      </div>
-      <div style={{ display: 'flex', gap: 8, paddingTop: 8, borderTop: '0.5px solid rgba(255,255,255,0.06)' }}>
-        <input
-          value={input}
-          onChange={e => setInput(e.target.value)}
-          onKeyDown={e => { if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); send(); } }}
-          placeholder={placeholder || 'Ask...'}
-          style={{ ...INPUT, flex: 1 }}
-        />
-        <button onClick={() => send()} disabled={!input.trim() || loading} style={{ ...BTN, opacity: (!input.trim() || loading) ? 0.5 : 1 }}>
-          Send
-        </button>
-      </div>
-    </div>
-  );
-}
-
 // ═══════════════════════════════════════════════════════════════════════════════
 // 1. PERSONAL CONSTITUTION
 // ═══════════════════════════════════════════════════════════════════════════════
@@ -256,7 +142,7 @@ function Constitution({ constitution, onSave }) {
         <GlassCard style={{ background: 'rgba(167,139,250,0.05)', border: '0.5px solid rgba(167,139,250,0.2)' }}>
           <div style={{ fontSize: 12, color: 'var(--text-muted)', lineHeight: 1.7 }}>
             <strong style={{ color: 'rgba(167,139,250,0.9)', display: 'block', marginBottom: 6 }}>Start here.</strong>
-            Your constitution is the most important thing in this app. It tells VALERIE what you stand for before it gives you any advice. Every AI advisor reads it. The Contradiction Detector checks against it. Spend 15 minutes on this — it compounds.
+            Write down what you stand for. Insights and the Contradiction Detector check your decisions against it. Fifteen minutes here pays off for months.
           </div>
         </GlassCard>
       )}
@@ -281,230 +167,11 @@ function Constitution({ constitution, onSave }) {
         <button onClick={handleSave} style={BTN}>
           {saved ? 'Saved' : 'Save Constitution'}
         </button>
-        {saved && <span style={{ fontSize: 11, color: '#6BE3A4' }}>Saved — all advisors now know who you are.</span>}
+        {saved && <span style={{ fontSize: 11, color: '#6BE3A4' }}>Saved. Insights use it to check your decisions against your values.</span>}
       </div>
     </div>
   );
 }
-
-// ═══════════════════════════════════════════════════════════════════════════════
-// 2. BOARD OF ADVISORS
-// ═══════════════════════════════════════════════════════════════════════════════
-
-function BoardOfAdvisors({ constitution }) {
-  const [mode,          setMode]          = useState('select'); // select | chat | board
-  const [activeAdvisor, setActiveAdvisor] = useState(null);
-  const [boardQuery,    setBoardQuery]    = useState('');
-  const [boardResults,  setBoardResults]  = useState({});
-  const [boardLoading,  setBoardLoading]  = useState(false);
-  const [boardInput,    setBoardInput]    = useState('');
-
-  const constitutionContext = constitution
-    ? `\n\nUSER'S PERSONAL CONSTITUTION:\nIdentity: ${constitution.identity || ''}\nValues: ${constitution.values || ''}\nPrinciples: ${constitution.principles || ''}\nRules: ${constitution.rules || ''}\nNon-Negotiables: ${constitution.nonNegotiables || ''}`
-    : '';
-
-  async function runBoardMeeting(query) {
-    if (!query.trim()) return;
-    setBoardLoading(true);
-    setBoardResults({});
-    const promises = ADVISORS.map(async a => {
-      try {
-        const reply = await askClaudeRaw(query, a.prompt + constitutionContext);
-        return [a.id, { text: reply, done: true }];
-      } catch (err) {
-        return [a.id, { text: `Error: ${err.message}`, done: true }];
-      }
-    });
-    // Stream results as they come in
-    const settled = await Promise.allSettled(promises);
-    const results = {};
-    settled.forEach(r => { if (r.status === 'fulfilled') { const [id, val] = r.value; results[id] = val; } });
-    setBoardResults(results);
-    setBoardLoading(false);
-  }
-
-  if (mode === 'chat' && activeAdvisor) {
-    const adv = ADVISORS.find(a => a.id === activeAdvisor);
-    return (
-      <div style={{ display: 'flex', flexDirection: 'column', height: '100%', padding: '16px 24px 0' }}>
-        {/* Header */}
-        <div style={{ display: 'flex', alignItems: 'center', gap: 12, marginBottom: 16, flexShrink: 0 }}>
-          <button onClick={() => setMode('select')} style={{ ...BTN_GHOST, padding: '5px 12px', fontSize: 12 }}>
-            &larr; Back
-          </button>
-          <div style={{ width: 32, height: 32, borderRadius: 10, background: adv.colour + '22',
-            display: 'flex', alignItems: 'center', justifyContent: 'center',
-            fontWeight: 800, fontSize: 11, color: adv.colour }}>
-            {adv.emoji}
-          </div>
-          <div>
-            <div style={{ fontSize: 14, fontWeight: 600, color: 'rgba(255,255,255,0.9)' }}>{adv.name}</div>
-            <div style={{ fontSize: 10.5, color: 'var(--text-muted)' }}>Private session</div>
-          </div>
-        </div>
-        <AIChat
-          systemPrompt={adv.prompt + constitutionContext}
-          placeholder={`Ask ${adv.name}...`}
-          starterPrompts={ADVISOR_STARTERS[activeAdvisor] || []}
-        />
-      </div>
-    );
-  }
-
-  if (mode === 'board') {
-    return (
-      <div style={{ display: 'flex', flexDirection: 'column', height: '100%', padding: '16px 24px 20px', overflowY: 'auto' }}>
-        <div style={{ display: 'flex', alignItems: 'center', gap: 12, marginBottom: 16, flexShrink: 0 }}>
-          <button onClick={() => { setMode('select'); setBoardResults({}); }} style={{ ...BTN_GHOST, padding: '5px 12px', fontSize: 12 }}>
-            &larr; Back
-          </button>
-          <div style={{ fontSize: 14, fontWeight: 600, color: 'rgba(255,255,255,0.9)' }}>Board Meeting</div>
-          <div style={{ fontSize: 11, color: 'var(--text-muted)' }}>All 6 advisors respond simultaneously</div>
-        </div>
-
-        <div style={{ display: 'flex', gap: 8, marginBottom: 20, flexShrink: 0 }}>
-          <input
-            value={boardInput}
-            onChange={e => setBoardInput(e.target.value)}
-            onKeyDown={e => { if (e.key === 'Enter') { setBoardQuery(boardInput); runBoardMeeting(boardInput); } }}
-            placeholder="Present your question to the board..."
-            style={{ ...INPUT, flex: 1, fontSize: 14 }}
-          />
-          <button
-            onClick={() => { setBoardQuery(boardInput); runBoardMeeting(boardInput); }}
-            disabled={!boardInput.trim() || boardLoading}
-            style={{ ...BTN, opacity: (!boardInput.trim() || boardLoading) ? 0.5 : 1 }}>
-            {boardLoading ? 'Consulting...' : 'Convene'}
-          </button>
-        </div>
-
-        {boardLoading && (
-          <div style={{ display: 'flex', gap: 8, alignItems: 'center', fontSize: 12, color: 'var(--text-muted)', marginBottom: 16 }}>
-            <Spinner />
-            Polling all 6 advisors simultaneously...
-          </div>
-        )}
-
-        {Object.keys(boardResults).length > 0 && (
-          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 12 }}>
-            {ADVISORS.map(adv => {
-              const result = boardResults[adv.id];
-              return (
-                <GlassCard key={adv.id} style={{ borderTop: `2px solid ${adv.colour}` }}>
-                  <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 10 }}>
-                    <div style={{ width: 24, height: 24, borderRadius: 7, background: adv.colour + '22',
-                      display: 'flex', alignItems: 'center', justifyContent: 'center',
-                      fontWeight: 800, fontSize: 11, color: adv.colour }}>
-                      {adv.emoji}
-                    </div>
-                    <span style={{ fontSize: 12, fontWeight: 700, color: adv.colour }}>{adv.name}</span>
-                  </div>
-                  {result ? (
-                    <div style={{ fontSize: 12.5, color: 'var(--text-secondary)', lineHeight: 1.7, whiteSpace: 'pre-wrap' }}>
-                      {result.text}
-                    </div>
-                  ) : (
-                    <Spinner />
-                  )}
-                </GlassCard>
-              );
-            })}
-          </div>
-        )}
-
-        {!boardLoading && Object.keys(boardResults).length === 0 && !boardQuery && (
-          <div style={{ display: 'flex', flexWrap: 'wrap', gap: 6 }}>
-            {BOARD_STARTERS.map((s, i) => (
-              <button key={i} onClick={() => { setBoardInput(s); setBoardQuery(s); runBoardMeeting(s); }} style={{
-                padding: '6px 12px', borderRadius: 20, cursor: 'pointer', fontSize: 11,
-                border: '0.5px solid rgba(255,255,255,0.1)', background: 'rgba(255,255,255,0.04)',
-                color: 'var(--text-secondary)',
-              }}>{s}</button>
-            ))}
-          </div>
-        )}
-      </div>
-    );
-  }
-
-  // Advisor selection screen
-  return (
-    <div style={{ padding: '20px 24px 32px', display: 'flex', flexDirection: 'column', gap: 16 }}>
-      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
-        <div>
-          <div style={{ fontSize: 15, fontWeight: 500, color: 'rgba(255,255,255,0.9)', marginBottom: 4 }}>Board of Advisors</div>
-          <div style={{ fontSize: 12, color: 'var(--text-muted)' }}>Six perspectives. One question.</div>
-        </div>
-        <button onClick={() => setMode('board')} style={{
-          padding: '8px 16px', borderRadius: 9, cursor: 'pointer', fontSize: 12, fontWeight: 600,
-          background: 'rgba(167,139,250,0.15)', border: '0.5px solid rgba(167,139,250,0.3)',
-          color: '#a78bfa',
-        }}>
-          Board Meeting &rarr;
-        </button>
-      </div>
-
-      {!constitution?.values && (
-        <GlassCard style={{ background: 'rgba(242,192,99,0.05)', border: '0.5px solid rgba(242,192,99,0.2)' }}>
-          <div style={{ fontSize: 11.5, color: 'rgba(242,192,99,0.8)', lineHeight: 1.6 }}>
-            No constitution set — advisors will respond without knowing your values. Complete the Constitution tab first for personalised advice.
-          </div>
-        </GlassCard>
-      )}
-
-      <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 10 }}>
-        {ADVISORS.map(adv => (
-          <GlassCard
-            key={adv.id}
-            onClick={() => { setActiveAdvisor(adv.id); setMode('chat'); }}
-            style={{
-              cursor: 'pointer', padding: '16px 18px',
-              borderLeft: `3px solid ${adv.colour}`,
-              transition: 'background 0.15s',
-            }}
-          >
-            <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: 6 }}>
-              <div style={{ width: 32, height: 32, borderRadius: 10, background: adv.colour + '18',
-                display: 'flex', alignItems: 'center', justifyContent: 'center',
-                fontWeight: 800, fontSize: 11, color: adv.colour, flexShrink: 0 }}>
-                {adv.emoji}
-              </div>
-              <div style={{ fontSize: 13, fontWeight: 600, color: adv.colour }}>{adv.name}</div>
-            </div>
-            <div style={{ fontSize: 11, color: 'var(--text-muted)', lineHeight: 1.55 }}>
-              {ADVISOR_DESC[adv.id]}
-            </div>
-          </GlassCard>
-        ))}
-      </div>
-    </div>
-  );
-}
-
-const ADVISOR_DESC = {
-  career:    'Career trajectory, positioning, blind spots, and what success actually means to you.',
-  learning:  'Deliberate practice, skill acquisition, tutorial hell detection, efficient learning paths.',
-  strategist:'Long-game thinking, leverage points, ruthless prioritisation, systems and second-order effects.',
-  skeptic:   'Stress-tests your ideas, finds flaws in reasoning, asks the questions you are avoiding.',
-  future:    'Your future self — 10 years from now, speaking with the wisdom of hindsight.',
-  devil:     'Argues the strongest case against whatever you are considering. Makes your thinking sharper.',
-};
-
-const ADVISOR_STARTERS = {
-  career:    ['What should I focus on in the next 6 months?', 'Where is my biggest career blind spot?', 'Am I optimising for the right things?'],
-  learning:  ['Am I learning effectively or just consuming?', 'What should I be practising instead of studying?', 'Design me a deliberate practice plan for my weakest skill.'],
-  strategist:['What is the highest-leverage thing I could do right now?', 'Where am I playing too small?', 'What are the second-order effects of my current direction?'],
-  skeptic:   ['What am I not seeing about my current plan?', 'Where is my reasoning weakest right now?', 'What is the fatal flaw in my current approach?'],
-  future:    ['What will I regret most if I keep going the way I am?', 'What am I avoiding that I know I should face?', 'What do you wish I had started earlier?'],
-  devil:     ['Make the case against my current strategy.', 'Why will my plan fail?', 'What is the best argument against the path I am on?'],
-};
-
-const BOARD_STARTERS = [
-  'Should I go deeper on my current path or explore something new?',
-  'What is the most important decision I should make in the next 90 days?',
-  'Am I spending my time on the right things?',
-  'What is stopping me from reaching my full potential?',
-];
 
 // ═══════════════════════════════════════════════════════════════════════════════
 // 3. LIFE LEDGER (Decision History + Failure Database + Wisdom)
@@ -1123,7 +790,6 @@ Format each law clearly: "Law: [statement]" followed by the explanation. Be spec
 
 const MIND_TABS = [
   { id: 'constitution', label: 'CONSTITUTION' },
-  { id: 'advisors',     label: 'ADVISORS'     },
   { id: 'ledger',       label: 'LEDGER'       },
   { id: 'beliefs',      label: 'BELIEFS'      },
   { id: 'vault',        label: 'VAULT'        },
@@ -1174,19 +840,16 @@ export default function Mind({ settings = {} }) {
       </div>
 
       {/* Content */}
-      <div ref={scrollRef} style={{ flex: 1, overflowY: section === 'advisors' ? 'hidden' : 'auto' }}>
-        {section === 'advisors' && <BoardOfAdvisors constitution={constitution} />}
+      <div ref={scrollRef} style={{ flex: 1, overflowY: 'auto' }}>
         {/* Reading and writing screens: capped at a comfortable line length instead of the full window. */}
-        {section !== 'advisors' && (
-          <div style={{ maxWidth: 880 }}>
-            {section === 'constitution' && <Constitution constitution={constitution} onSave={saveConstitution} />}
-            {section === 'ledger'       && <LifeLedger />}
-            {section === 'beliefs'      && <Beliefs />}
-            {section === 'vault'        && <MemoryVault />}
-            {section === 'insights'     && <Insights constitution={constitution} settings={settings} />}
-            {section === 'breathe'      && <div style={{ padding: '20px 24px' }}><BreathingTool /></div>}
-          </div>
-        )}
+        <div style={{ maxWidth: 880 }}>
+          {section === 'constitution' && <Constitution constitution={constitution} onSave={saveConstitution} />}
+          {section === 'ledger'       && <LifeLedger />}
+          {section === 'beliefs'      && <Beliefs />}
+          {section === 'vault'        && <MemoryVault />}
+          {section === 'insights'     && <Insights constitution={constitution} settings={settings} />}
+          {section === 'breathe'      && <div style={{ padding: '20px 24px' }}><BreathingTool /></div>}
+        </div>
       </div>
 
       <style>{`

@@ -4,7 +4,6 @@
 
 import { useEffect, useRef, useState } from 'react';
 import { useDocument }                  from '../supabase/useDocument.js';
-import { speakText }                    from '../ai/speech.js';
 
 function timeToMins(hhmm) {
   const [h, m] = hhmm.split(':').map(Number);
@@ -52,7 +51,7 @@ export function useSleepSchedule(settings) {
       }
 
       // Guard against bedtime === wakeTime (would create a 24h sleep window and
-      // cause an infinite reminder loop draining ElevenLabs quota every 30s).
+      // cause the reminder to repeat every 30s).
       if (bedMins === wakeMins) {
         setDimLevel(0);
         setIsSleepTime(false);
@@ -99,9 +98,8 @@ export function useSleepSchedule(settings) {
         if (!remindedBedRef.current) {
           remindedBedRef.current = true;
           window.dispatchEvent(new CustomEvent('valerie:toast', {
-            detail: { message: 'Bedtime. Wind down and rest, Sir.', type: 'sleep' },
+            detail: { message: 'Bedtime. Time to wind down.', type: 'sleep' },
           }));
-          speakText('Bedtime, Sir. Time to rest.', settings?.voice || {}).catch(() => {});
         }
       } else if (minsUntilBed <= 30) {
         // Fade from 0   0.75 over the 30-minute window
@@ -112,7 +110,6 @@ export function useSleepSchedule(settings) {
           window.dispatchEvent(new CustomEvent('valerie:toast', {
             detail: { message: `Bedtime in ${mins} minute${mins !== 1 ? 's' : ''}.`, type: 'sleep' },
           }));
-          speakText(`Heads up, Sir — bedtime in ${mins} minutes.`, settings?.voice || {}).catch(() => {});
         }
       } else {
         setDimLevel(0);

@@ -367,7 +367,7 @@ function formatTime12(t) {
 }
 
 function buildPrompt({ dateStr, tasks, events, routines, settings, peakState }) {
-  const userName = settings?.userName || 'Sir';
+  const userName = settings?.userName || 'the user';
   const wakeTime = settings?.wakeTime || '07:00';
   const sleepTime = settings?.sleepTarget || '23:00';
   const peakWindow = peakState?.window || null;

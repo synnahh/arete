@@ -1,7 +1,6 @@
 // ─── MobileShell.jsx — iOS PWA shell with bottom tab navigation ───────────────
 import { Icon } from '../components/icons.jsx';
 import { useState, useEffect, useRef, useCallback } from 'react';
-import { useAI }              from '../ai/useAI.js';
 import { usePeakState }       from '../hooks/usePeakState.js';
 import { useNotifications }   from '../hooks/useNotifications.js';
 import { requestPushPermission, pushPermissionStatus, registerFCMToken } from '../utils/pushNotifications.js';
@@ -14,12 +13,10 @@ import MobileLM         from './screens/MobileLM.jsx';
 import GoalHQ           from '../tabs/GoalHQ.jsx';
 import MobileFinance    from './screens/MobileFinance.jsx';
 import MobileSettings   from './screens/MobileSettings.jsx';
-import MobileAI         from './screens/MobileAI.jsx';
 import MobileMind       from './screens/MobileMind.jsx';
 import MobilePortfolio  from './screens/MobilePortfolio.jsx';
 import MobileHabits     from './screens/MobileHabits.jsx';
 import Toaster          from '../components/Toaster.jsx';
-import ActionConfirm    from '../components/ActionConfirm.jsx';
 import MobileStyle      from './screens/MobileStyle.jsx';
 import { haptics }     from './utils/haptics.js';
 import { storage, STORAGE_KEYS } from '../utils/storage.js';
@@ -28,7 +25,7 @@ import { groupOf, groupScreens, resolveTarget, DEFAULT_SCREEN, SCREEN_LABELS } f
 import { setActiveGroup, backgroundClass } from '../styles/appearance.js';
 import { getTimeOfDay } from '../utils/time.js';
 
-//  Bottom bar: Home · Plan · Coach (the orb) · Finance · Mind
+//  Bottom bar: Home · Plan · Coach · Finance · Mind
 // Settings opens from the gear in the section row. Screen ids are unchanged;
 // see src/nav/groups.js.
 const stroke = (active) => ({ stroke: 'currentColor', strokeWidth: active ? 2 : 1.5 });
@@ -55,7 +52,16 @@ const BAR = [
       </svg>
     ),
   },
-  { id: 'coach', label: 'Coach', orb: true },
+  {
+    id: 'coach',
+    label: 'Coach',
+    // Same bar-and-plates mark as the desktop sidebar's Coach group.
+    icon: (active) => (
+      <svg width="22" height="22" viewBox="0 0 24 24" fill="none" aria-hidden="true">
+        <path d="M7 7v10M17 7v10M4 9.5v5M20 9.5v5M7 12h10" {...stroke(active)} strokeLinecap="round" />
+      </svg>
+    ),
+  },
   {
     id: 'finance',
     label: 'Finance',
@@ -80,135 +86,6 @@ const BAR = [
     ),
   },
 ];
-
-//  Coach button: the VALERIE orb, centre of the bar
-// Tap opens Coach; hold (450 ms) opens the VALERIE conversation sheet.
-const HOLD_MS = 450;
-
-// Orb shapes, matching Settings → Appearance → Orb shape
-function orbShapeStyle(shape, color, active) {
-  const fill = `radial-gradient(circle at 35% 30%, #ffffff 0%, ${color} 40%, var(--bg-base) 100%)`;
-  const glow = `0 0 20px var(--orb-glow)${active ? ', 0 0 0 2px var(--tab-accent)' : ''}`;
-  if (shape === 'ring') {
-    return { borderRadius: '50%', boxSizing: 'border-box', border: `4px solid ${color}`, background: 'var(--bg-sidebar)', boxShadow: glow };
-  }
-  if (shape === 'diamond') {
-    return { width: 42, height: 42, marginTop: -14, marginBottom: 6, transform: 'rotate(45deg)', borderRadius: 8, background: fill, boxShadow: glow };
-  }
-  if (shape === 'cube') {
-    return { clipPath: 'polygon(50% 0, 93% 25%, 93% 75%, 50% 100%, 7% 75%, 7% 25%)', background: fill, filter: 'drop-shadow(0 0 8px var(--orb-glow))' };
-  }
-  return { borderRadius: '50%', background: fill, boxShadow: glow };
-}
-
-function CoachOrb({ active, orbState, shape = 'sphere', onTap, onHold }) {
-  const timer = useRef(null);
-  const held  = useRef(false);
-  const color = orbState === 'listening' ? '#4a9eff'
-              : orbState === 'thinking'  ? '#f59e0b'
-              : 'var(--accent)';
-  const pulse = orbState === 'listening' || orbState === 'speaking';
-
-  function down() {
-    held.current = false;
-    timer.current = setTimeout(() => { held.current = true; haptics.success(); onHold(); }, HOLD_MS);
-  }
-  function up() {
-    clearTimeout(timer.current);
-    if (!held.current) onTap();
-  }
-  function cancel() { clearTimeout(timer.current); }
-
-  return (
-    <button
-      type="button"
-      aria-label="Coach. Hold to talk to VALERIE"
-      aria-current={active ? 'page' : undefined}
-      onPointerDown={down}
-      onPointerUp={up}
-      onPointerLeave={cancel}
-      onContextMenu={e => e.preventDefault()}
-      style={{
-        flex: 1, display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'flex-start',
-        gap: 4, background: 'none', border: 'none', cursor: 'pointer', paddingTop: 0,
-        color: active ? 'var(--tab-accent)' : 'var(--text-muted)',
-        WebkitTapHighlightColor: 'transparent', WebkitUserSelect: 'none', userSelect: 'none',
-        touchAction: 'manipulation',
-      }}
-    >
-      <span style={{ position: 'relative', width: 54, height: 54, marginTop: -20, ...orbShapeStyle(shape, color, active) }}>
-        {pulse && (
-          <span style={{
-            position: 'absolute', inset: -8, borderRadius: '50%',
-            background: color, opacity: 0.12,
-            animation: 'orbPulse 1.6s ease-in-out infinite', pointerEvents: 'none',
-          }} />
-        )}
-      </span>
-      <span style={{ fontSize: 11, fontWeight: active ? 600 : 400, letterSpacing: '0.02em' }}>Coach</span>
-    </button>
-  );
-}
-
-// ── VALERIE slide-up chat sheet ────────────────────────────────────────────────
-function VALERIESheet({ open, onClose, ai, settings }) {
-  return (
-    <>
-      {/* Backdrop */}
-      {open && (
-        <div
-          onClick={onClose}
-          style={{
-            position: 'fixed', inset: 0, zIndex: 290,
-            background: 'rgba(0,0,0,0.5)',
-            backdropFilter: 'blur(4px)',
-            WebkitBackdropFilter: 'blur(4px)',
-          }}
-        />
-      )}
-
-      {/* Sheet */}
-      <div style={{
-        position: 'fixed', left: 0, right: 0,
-        bottom: open ? 0 : '-88vh',
-        height: '88vh',
-        zIndex: 300,
-        background: 'var(--bg-sidebar)',
-        borderTop: '0.5px solid var(--card-border)',
-        borderRadius: '20px 20px 0 0',
-        transition: 'bottom 0.35s cubic-bezier(0.32,0.72,0,1)',
-        display: 'flex', flexDirection: 'column',
-        overflow: 'hidden',
-        paddingBottom: 'env(safe-area-inset-bottom)',
-      }}>
-        {/* Drag handle + close */}
-        <div style={{ padding: '12px 16px 0', display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 10 }}>
-          <div style={{ width: 36, height: 4, borderRadius: 2, background: 'var(--card-border)' }} />
-          <div style={{ width: '100%', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-            <div>
-              <div style={{ fontSize: 18, fontWeight: 300, color: 'var(--text-primary)' }}>VALERIE</div>
-              <div style={{ fontSize: 11, color: 'var(--text-muted)' }}>
-                {ai?.claudeOnline ? 'Claude online' : 'Offline mode'}
-              </div>
-            </div>
-            <button onClick={onClose} style={{
-              background: 'var(--hover-bg)', border: '0.5px solid var(--card-border)',
-              borderRadius: '50%', width: 30, height: 30,
-              display: 'flex', alignItems: 'center', justifyContent: 'center',
-              cursor: 'pointer', WebkitTapHighlightColor: 'transparent',
-              color: 'var(--text-muted)', fontSize: 16,
-            }}>×</button>
-          </div>
-        </div>
-
-        {/* AI screen content (no header since we have one above) */}
-        <div style={{ flex: 1, overflow: 'hidden' }}>
-          <MobileAI settings={settings} ai={ai} compact />
-        </div>
-      </div>
-    </>
-  );
-}
 
 // ── Pull-to-refresh ────────────────────────────────────────────────────────────
 function usePullToRefresh(scrollRef, onRefresh) {
@@ -266,16 +143,14 @@ const MOBILE_SCREENS = {
   portfolio: (p) => <MobilePortfolio {...p} />,
   settings:  (p) => <MobileSettings {...p} />,
 };
-// The assistant lives in the orb's conversation sheet on the phone.
-const MOBILE_EXCLUDED = ['assistant'];
+// Screens that exist on desktop only.
+const MOBILE_EXCLUDED = [];
 
 //  Shell
 export default function MobileShell({ settings, onSettingsChange }) {
   const [activeTab, setActiveTab]   = useState(DEFAULT_SCREEN);
-  const [valOpen,   setValOpen]     = useState(false);
   const scrollRef = useRef(null);
   const lastByGroupRef = useRef({});
-  const ai        = useAI();
   const peakState = usePeakState(settings);
 
   // Notification scheduler — drives SMS + push on mobile
@@ -300,8 +175,7 @@ export default function MobileShell({ settings, onSettingsChange }) {
 
   useEffect(() => {
     setActiveGroup(groupOf(activeTab).id);
-    ai.setActiveTab?.(activeTab);
-  }, [activeTab]); // eslint-disable-line react-hooks/exhaustive-deps
+  }, [activeTab]);
 
   const navOpts = () => ({
     hidden: [...(settings?.hiddenTabs ?? []), ...MOBILE_EXCLUDED],
@@ -310,7 +184,6 @@ export default function MobileShell({ settings, onSettingsChange }) {
 
   // Accepts a screen id or a group id; ignores anything unknown.
   function switchTab(target) {
-    if (target === 'assistant') { setValOpen(true); return; }
     const screen = resolveTarget(target, { ...navOpts(), lastByGroup: lastByGroupRef.current });
     if (!screen) return;
     haptics.tap();
@@ -318,15 +191,10 @@ export default function MobileShell({ settings, onSettingsChange }) {
     setActiveTab(screen);
   }
 
-  // VALERIE's navigate action drives the phone shell too
-  useEffect(() => {
-    ai.registerCallback?.('navigate', switchTab);
-  }, [ai.registerCallback]); // eslint-disable-line react-hooks/exhaustive-deps
-
   const { pullPct, refreshing, onTouchStart, onTouchMove, onTouchEnd } =
     usePullToRefresh(scrollRef, () => new Promise(r => setTimeout(r, 600)));
 
-  const screenProps = { settings, onSettingsChange, ai, peakState, onTabChange: switchTab };
+  const screenProps = { settings, onSettingsChange, peakState, onTabChange: switchTab };
   const activeGroup = groupOf(activeTab);
   const sections    = groupScreens(activeGroup.id, navOpts());
   const render      = MOBILE_SCREENS[activeTab];
@@ -339,10 +207,6 @@ export default function MobileShell({ settings, onSettingsChange }) {
       paddingTop: 'env(safe-area-inset-top)',
     }}>
       <style>{`
-        @keyframes orbPulse {
-          0%, 100% { transform: scale(1);   opacity: 0.15; }
-          50%       { transform: scale(1.4); opacity: 0.05; }
-        }
         @keyframes mSpin {
           to { transform: rotate(360deg); }
         }
@@ -404,10 +268,7 @@ export default function MobileShell({ settings, onSettingsChange }) {
       </div>
 
       <Toaster phone />
-      <ActionConfirm phone />
 
-      {/*  VALERIE slide-up sheet (hold the Coach orb)  */}
-      <VALERIESheet open={valOpen} onClose={() => setValOpen(false)} ai={ai} settings={settings} />
 
       {/* ── Bottom tab bar ── */}
       <nav aria-label="Tabs" style={{
@@ -423,12 +284,6 @@ export default function MobileShell({ settings, onSettingsChange }) {
       }}>
         {BAR.map(tab => {
           const active = activeGroup.id === tab.id;
-          if (tab.orb) {
-            return (
-              <CoachOrb key={tab.id} active={active} orbState={ai?.orbState || 'idle'} shape={settings?.orbShape}
-                onTap={() => switchTab('coach')} onHold={() => setValOpen(true)} />
-            );
-          }
           return (
             <button
               key={tab.id}

@@ -2,7 +2,6 @@
 
 import { useState, useEffect, useRef } from 'react';
 import { useCollection } from '../../supabase/useCollection.js';
-import { askClaudeRaw }  from '../../utils/claudeRaw.js';
 import { currencySymbol as currencySym, readCurrency } from '../../utils/currency.js';
 import { toLocalDateKey } from '../../utils/localDate.js';
 
@@ -261,89 +260,11 @@ function Holdings({ holdings, prices, refreshPrices, loading }) {
   );
 }
 
-// ─── AI Advisor ───────────────────────────────────────────────────────────────
-
-function AIAdvisor({ holdings, prices }) {
-  const [msgs, setMsgs] = useState([]);
-  const [input, setInput] = useState('');
-  const [loading, setLoading] = useState(false);
-  const endRef = useRef(null);
-  const currency = readCurrency();
-  const sym = currencySym(currency);
-
-  useEffect(() => endRef.current?.scrollIntoView({ behavior: 'smooth' }), [msgs]);
-
-  const portfolioCtx = holdings.map(h => {
-    const p = prices[h.ticker]?.price;
-    const qty = parseFloat(h.shares)||0;
-    const avg = parseFloat(h.avgPrice)||0;
-    return `${h.ticker}: ${qty} shares @ avg ${sym}${avg}, current ${p?`${sym}${p.toFixed(2)}`:'no price'}`;
-  }).join('\n');
-
-  const sys = `You are a portfolio analyst AI advisor. The user's current holdings:\n${portfolioCtx||'No positions yet.'}\nCurrency: ${currency}. Provide clear, direct, actionable analysis. Max 3 paragraphs.`;
-
-  async function send(text) {
-    const msg = (text||input).trim(); if (!msg||loading) return;
-    setInput('');
-    const next = [...msgs, { role:'user', content:msg }];
-    setMsgs(next); setLoading(true);
-    try {
-      const reply = await askClaudeRaw(msg, sys, msgs);
-      setMsgs([...next, { role:'assistant', content:reply }]);
-    } catch(e) {
-      setMsgs([...next, { role:'assistant', content:`Error: ${e.message}` }]);
-    } finally { setLoading(false); }
-  }
-
-  const starters = ['Analyse my portfolio','Where should I rebalance?','What are my biggest risks?'];
-
-  return (
-    <div style={{ display: 'flex', flexDirection: 'column', height: '100%' }}>
-      <div style={{ flex: 1, overflowY: 'auto', padding: '12px 16px', display: 'flex', flexDirection: 'column', gap: 10 }}>
-        {msgs.length === 0 && (
-          <div style={{ display: 'flex', flexDirection: 'column', gap: 7 }}>
-            {starters.map(s => (
-              <button key={s} onClick={() => send(s)} style={{
-                padding: '10px 14px', borderRadius: 12, fontSize: 13, textAlign: 'left', cursor: 'pointer',
-                border: '0.5px solid rgba(255,255,255,0.08)', background: 'rgba(255,255,255,0.04)',
-                color: 'var(--text-secondary)',
-              }}>{s}</button>
-            ))}
-          </div>
-        )}
-        {msgs.map((m,i) => (
-          <div key={i} style={{ display: 'flex', justifyContent: m.role==='user'?'flex-end':'flex-start' }}>
-            <div style={{
-              maxWidth: '88%', padding: '10px 14px', fontSize: 14, lineHeight: 1.65,
-              color: 'rgba(255,255,255,0.85)', whiteSpace: 'pre-wrap',
-              borderRadius: m.role==='user'?'18px 18px 4px 18px':'4px 18px 18px 18px',
-              background: m.role==='user'?'color-mix(in srgb, var(--accent) 13%, transparent)':'rgba(255,255,255,0.05)',
-              border: `0.5px solid ${m.role==='user'?'color-mix(in srgb, var(--accent) 27%, transparent)':'rgba(255,255,255,0.08)'}`,
-            }}>{m.content}</div>
-          </div>
-        ))}
-        {loading && <Spinner />}
-        <div ref={endRef} />
-      </div>
-      <div style={{ padding: '10px 16px calc(10px + env(safe-area-inset-bottom))', flexShrink: 0,
-        borderTop: '0.5px solid rgba(255,255,255,0.06)', display: 'flex', gap: 8 }}>
-        <input value={input} onChange={e=>setInput(e.target.value)} onKeyDown={e=>e.key==='Enter'&&send()}
-          placeholder="Ask about your portfolio..." style={{ ...INPUT, flex: 1, borderRadius: 20, padding: '11px 16px' }} />
-        <button onClick={()=>send()} disabled={!input.trim()||loading}
-          style={{ ...BTN, width:'auto', padding:'11px 18px', borderRadius:20, opacity:(!input.trim()||loading)?0.5:1 }}>
-          Send
-        </button>
-      </div>
-    </div>
-  );
-}
-
 // ─── Root ─────────────────────────────────────────────────────────────────────
 
 const SECTIONS = [
   { id: 'overview',  label: 'Overview',  emoji: '📊' },
   { id: 'holdings',  label: 'Holdings',  emoji: '📈' },
-  { id: 'advisor',   label: 'Advisor',   emoji: '🤖' },
 ];
 
 export default function MobilePortfolio() {
@@ -400,7 +321,6 @@ export default function MobilePortfolio() {
       <div style={{ flex: 1, overflowY: 'auto', WebkitOverflowScrolling: 'touch', paddingTop: 14 }}>
         {section === 'overview' && <Overview holdings={holdings} prices={prices} />}
         {section === 'holdings' && <Holdings holdings={holdings} prices={prices} refreshPrices={refreshPrices} loading={priceLoading} />}
-        {section === 'advisor'  && <AIAdvisor holdings={holdings} prices={prices} />}
       </div>
 
       <style>{`

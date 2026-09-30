@@ -1,6 +1,6 @@
-// Portfolio.jsx — Stock portfolio tracker + AI advisor
+// Portfolio.jsx — Stock portfolio tracker
 // Holdings stored in Supabase `portfolio_holdings` table.
-// Live prices via Finnhub. AI advice via Claude.
+// Live prices via Finnhub.
 
 import { useState, useEffect, useRef, useMemo, useCallback } from 'react';
 import { useCollection } from '../supabase/useCollection.js';
@@ -411,161 +411,14 @@ function Holdings({ holdings, enriched, onAdd, onRemove, onUpdate, fmt, loading 
   );
 }
 
-// ─── AI Advisor ───────────────────────────────────────────────────────────────
-
-function AIAdvisor({ enriched, fmt, settings, ai }) {
-  const [messages, setMessages] = useState([]);
-  const [input,    setInput]    = useState('');
-  const [loading,  setLoading]  = useState(false);
-  const endRef = useRef(null);
-
-  useEffect(() => {
-    endRef.current?.scrollIntoView({ behavior: 'smooth' });
-  }, [messages]);
-
-  // Build portfolio context string
-  const portfolioContext = useMemo(() => {
-    const totalValue = enriched.reduce((s, h) => s + (h.currentValue || 0), 0);
-    const totalPL    = enriched.reduce((s, h) => s + (h.pl || 0), 0);
-    const lines      = enriched.map(h =>
-      `- ${h.symbol}: ${h.shares} shares @ ${fmt(h.avgCost)} avg, current ${h.currentPrice ? fmt(h.currentPrice) : 'price unavailable'}, P&L: ${fmt(h.pl || 0)} (${(h.plPct || 0).toFixed(2)}%)`
-    ).join('\n');
-    const monthlyIncome = (settings?.monthlyIncome || 0);
-    return `Portfolio snapshot:\n${lines || 'No holdings yet.'}\nTotal value: ${fmt(totalValue)}\nTotal P&L: ${fmt(totalPL)}\n${monthlyIncome ? `Monthly income: ${fmt(monthlyIncome)}` : ''}`;
-  }, [enriched, fmt, settings]);
-
-  const SYSTEM = `You are VALERIE's financial advisor module. You have access to the user's portfolio data. Be concise, direct, and data-driven. Provide actionable insight. Never give legally binding advice — frame recommendations as analysis. Portfolio data:\n${portfolioContext}`;
-
-  const STARTERS = [
-    'Analyse my portfolio performance and highlight any concerns.',
-    'Based on my portfolio and income, what sectors am I overexposed to?',
-    'Which of my positions should I consider trimming or averaging down?',
-    'Suggest 3 ETFs or stocks that would diversify my current holdings.',
-    'What is my current portfolio risk profile?',
-  ];
-
-  async function send(text) {
-    const msg = text || input.trim();
-    if (!msg) return;
-    setInput('');
-    setMessages(prev => [...prev, { role: 'user', content: msg }]);
-    setLoading(true);
-
-    try {
-      let reply = '';
-      if (ai?.streamMessage) {
-        // Use VALERIE's AI with portfolio system context
-        reply = await ai.streamMessage(msg, SYSTEM, (chunk) => {
-          setMessages(prev => {
-            const last = prev[prev.length - 1];
-            if (last?.role === 'assistant') {
-              return [...prev.slice(0, -1), { role: 'assistant', content: last.content + chunk }];
-            }
-            return [...prev, { role: 'assistant', content: chunk }];
-          });
-        });
-      } else {
-        reply = 'AI not available. Check your Claude API key in Settings → AI.';
-        setMessages(prev => [...prev, { role: 'assistant', content: reply }]);
-      }
-    } catch (err) {
-      setMessages(prev => [...prev, { role: 'assistant', content: `Error: ${err.message}` }]);
-    } finally {
-      setLoading(false);
-    }
-  }
-
-  return (
-    <div style={{ display: 'flex', flexDirection: 'column', height: '100%', padding: '16px 24px 0' }}>
-
-      {/* Context banner */}
-      <GlassCard style={{ marginBottom: 12, padding: '12px 16px' }}>
-        <div style={{ fontSize: 11, fontWeight: 700, letterSpacing: '0.12em', color: 'var(--text-muted)', fontFamily: 'ui-monospace,monospace', marginBottom: 6 }}>
-          PORTFOLIO CONTEXT LOADED — {enriched.length} POSITIONS
-        </div>
-        <div style={{ fontSize: 11, color: 'var(--text-muted)', lineHeight: 1.6 }}>
-          VALERIE has access to your full portfolio including positions, P&L, and pricing. Ask anything about your investments.
-        </div>
-      </GlassCard>
-
-      {/* Starter prompts */}
-      {messages.length === 0 && (
-        <div style={{ display: 'flex', flexWrap: 'wrap', gap: 6, marginBottom: 14 }}>
-          {STARTERS.map((s, i) => (
-            <button key={i} onClick={() => send(s)} style={{
-              padding: '6px 12px', borderRadius: 20, border: '0.5px solid rgba(255,255,255,0.1)',
-              background: 'rgba(255,255,255,0.04)', color: 'var(--text-secondary)',
-              fontSize: 11, cursor: 'pointer', textAlign: 'left', lineHeight: 1.4,
-            }}>
-              {s}
-            </button>
-          ))}
-        </div>
-      )}
-
-      {/* Messages */}
-      <div style={{ flex: 1, overflowY: 'auto', display: 'flex', flexDirection: 'column', gap: 12, paddingBottom: 12 }}>
-        {messages.map((m, i) => (
-          <div key={i} style={{
-            display: 'flex',
-            justifyContent: m.role === 'user' ? 'flex-end' : 'flex-start',
-          }}>
-            <div style={{
-              maxWidth: '78%', padding: '10px 14px', borderRadius: m.role === 'user' ? '14px 14px 4px 14px' : '14px 14px 14px 4px',
-              background: m.role === 'user' ? 'color-mix(in srgb, var(--accent) 13%, transparent)' : 'rgba(255,255,255,0.04)',
-              border: `0.5px solid ${m.role === 'user' ? 'color-mix(in srgb, var(--accent) 27%, transparent)' : 'rgba(255,255,255,0.08)'}`,
-              fontSize: 13, color: 'rgba(255,255,255,0.85)', lineHeight: 1.65,
-              whiteSpace: 'pre-wrap',
-            }}>
-              {m.content}
-            </div>
-          </div>
-        ))}
-        {loading && (
-          <div style={{ display: 'flex', gap: 4, padding: '8px 14px', alignItems: 'center' }}>
-            {[0,1,2].map(i => (
-              <div key={i} style={{
-                width: 6, height: 6, borderRadius: '50%', background: 'var(--accent)',
-                animation: `bounce 0.9s ${i * 0.15}s ease-in-out infinite`,
-              }} />
-            ))}
-          </div>
-        )}
-        <div ref={endRef} />
-      </div>
-
-      {/* Input */}
-      <div style={{
-        display: 'flex', gap: 8, paddingBottom: 20, paddingTop: 8,
-        borderTop: '0.5px solid rgba(255,255,255,0.07)',
-      }}>
-        <input
-          value={input}
-          onChange={e => setInput(e.target.value)}
-          onKeyDown={e => { if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); send(); } }}
-          placeholder="Ask about your portfolio..."
-          style={{ ...INPUT, flex: 1 }}
-        />
-        <button onClick={() => send()} disabled={!input.trim() || loading} style={{
-          ...BTN, opacity: (!input.trim() || loading) ? 0.5 : 1,
-          padding: '8px 16px',
-        }}>
-          Send
-        </button>
-      </div>
-    </div>
-  );
-}
-
 // ─── Main Portfolio Tab ───────────────────────────────────────────────────────
 
 const TABS = [
   { id: 'overview',  label: 'OVERVIEW'  },
   { id: 'holdings',  label: 'HOLDINGS'  },
-  { id: 'advisor',   label: 'AI ADVISOR' },
 ];
 
-export default function Portfolio({ settings = {}, ai }) {
+export default function Portfolio({ settings = {} }) {
   const [section,   setSection]   = useState('overview');
   const [quotes,    setQuotes]    = useState({});
   const [quotesLoading, setQLoading] = useState(false);
@@ -661,7 +514,7 @@ export default function Portfolio({ settings = {}, ai }) {
       </div>
 
       {/* Content */}
-      <div style={{ flex: 1, overflowY: section === 'advisor' ? 'hidden' : 'auto' }}>
+      <div style={{ flex: 1, overflowY: 'auto' }}>
         {section === 'overview' && (
           <Overview enriched={enriched} fmt={fmt} currency={currency} />
         )}
@@ -675,9 +528,6 @@ export default function Portfolio({ settings = {}, ai }) {
             fmt={fmt}
             loading={quotesLoading}
           />
-        )}
-        {section === 'advisor' && (
-          <AIAdvisor enriched={enriched} fmt={fmt} settings={settings} ai={ai} />
         )}
       </div>
     </div>

@@ -14,11 +14,9 @@
 //          instead of cramming everything above it.
 //   - Also removed ~150 lines of dead code (RankBadge/XpBar/ProgressHeroCard
 //     and their SVG helpers) that were defined but never rendered here.
-import { useState, useEffect, useRef, useCallback } from 'react';
-import { getGreeting, formatDate } from '../utils/time.js';
+import { useState, useEffect } from 'react';
+import { getGreeting } from '../utils/time.js';
 import { storage, STORAGE_KEYS } from '../utils/storage.js';
-import { askClaude } from '../ai/claude.js';
-import { askOllama } from '../ai/ollama.js';
 import DayRing from '../components/DayRing.jsx';
 import GoalRing from '../components/GoalRing.jsx';
 import NextMoves from '../components/NextMoves.jsx';
@@ -29,7 +27,6 @@ import { getNowPlaying, pausePlayback, resumePlayback, skipNext, skipPrev, isSpo
 import { DEFAULT_OVERLOAD_EXERCISES } from './Workout.jsx';
 import { toLocalDateKey } from '../utils/localDate.js';
 import { useTasks } from '../hooks/useTasks.js';
-import { normalizeTasks } from '../domain/tasks.js';
 
 // ── Shared card (used only for the secondary, below-the-fold section) ──────
 function Card({ children, style = {}, className = '' }) {
@@ -379,66 +376,6 @@ function SectionDivider() {
   return <div style={{ height: '0.5px', background: 'var(--card-border)', flexShrink: 0 }} />;
 }
 
-function DailyBriefSection({ ai }) {
-  const [brief,   setBrief]   = useState(null);
-  const [loading, setLoading] = useState(false);
-  const generated = useRef(false);
-
-  const generateBrief = useCallback(async () => {
-    if (!ai?.sendMessage || loading) return;
-    setLoading(true);
-    const tasks   = normalizeTasks(storage.get(STORAGE_KEYS.TASKS, []));
-    const pending = tasks.filter(t => !t.done);
-    const greeting = getGreeting();
-    const dateStr  = formatDate();
-    const prompt = `${greeting}. Today is ${dateStr}. I have ${pending.length} pending task${pending.length !== 1 ? 's' : ''}.${pending.length > 0 ? ` Top items: ${pending.slice(0,3).map(t => t.text).join(', ')}.` : ''} Give me a sharp, motivating daily brief in 2-3 sentences. No fluff.`;
-    try {
-      let text = '';
-      if (ai.claudeOnline) {
-        text = await askClaude(prompt);
-      } else if (ai.ollamaOnline) {
-        text = await askOllama(prompt, []);
-      } else {
-        text = `${greeting}. ${pending.length} task${pending.length !== 1 ? 's' : ''} waiting. Stay sharp and move with intention.`;
-      }
-      setBrief(text);
-    } catch {
-      setBrief(`${greeting}. Let's make today count.`);
-    } finally {
-      setLoading(false);
-    }
-  }, [ai, loading]);
-
-  useEffect(() => {
-    if (!generated.current && ai) { generated.current = true; generateBrief(); }
-  }, [ai, generateBrief]);
-
-  return (
-    <div style={{ padding: '14px 18px', display: 'flex', flexDirection: 'column', gap: 8 }}>
-      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
-        <div style={{ fontSize: 10.5, color: 'var(--text-muted)', letterSpacing: '0.08em' }}>DAILY BRIEF</div>
-        <button
-          onClick={() => { generated.current = false; generateBrief(); }}
-          disabled={loading}
-          style={{ fontSize: 10.5, color: 'var(--accent)', background: 'none', border: 'none', cursor: loading ? 'default' : 'pointer', opacity: loading ? 0.5 : 1, padding: 0 }}
-        >
-          {loading ? 'Thinking…' : '↻ Refresh'}
-        </button>
-      </div>
-      {loading ? (
-        <div style={{ display: 'flex', alignItems: 'center', gap: 8, padding: '4px 0' }}>
-          <div style={{ width: 6, height: 6, borderRadius: '50%', background: 'var(--accent)', animation: 'orb-breathe 1.2s ease-in-out infinite' }} />
-          <span style={{ fontSize: 12.5, color: 'var(--text-muted)' }}>VALERIE is preparing your brief…</span>
-        </div>
-      ) : (
-        <p style={{ fontSize: 13, color: 'var(--text-secondary)', lineHeight: 1.65, margin: 0 }}>
-          {brief ?? 'Your daily brief will appear here.'}
-        </p>
-      )}
-    </div>
-  );
-}
-
 function PeakStateSection({ peakState, onTabChange }) {
   if (!peakState) return null;
   const { score, color, suggestion, factors } = peakState;
@@ -603,9 +540,8 @@ function SpotifySection({ onTabChange }) {
   );
 }
 
-function TodayPanel({ ai, peakState, onTabChange }) {
+function TodayPanel({ peakState, onTabChange }) {
   const sections = [
-    <DailyBriefSection key="brief" ai={ai} />,
     peakState ? <PeakStateSection key="peak" peakState={peakState} onTabChange={onTabChange} /> : null,
     <WorkoutSection key="workout" onTabChange={onTabChange} />,
     isSpotifyConnected() ? <SpotifySection key="spotify" onTabChange={onTabChange} /> : null,
@@ -812,7 +748,7 @@ function ProductivityWidget({ onTabChange, tasks }) {
 }
 
 // ── Main Dashboard ───────────────────────────────────────────────────────
-export default function Dashboard({ settings, onTabChange, ai, density = 'standard', peakState }) {
+export default function Dashboard({ settings, onTabChange, density = 'standard', peakState }) {
   const { tasks, toggle, addTask } = useTasks();
 
   const userName = storage.get(STORAGE_KEYS.USER, {})?.name || settings?.userName || storage.get(STORAGE_KEYS.SETTINGS, {})?.userName || '';
@@ -847,7 +783,7 @@ export default function Dashboard({ settings, onTabChange, ai, density = 'standa
         </div>
         <div className="home-col">
           <OverallCard />
-          <TodayPanel ai={ai} peakState={peakState} onTabChange={onTabChange} />
+          <TodayPanel peakState={peakState} onTabChange={onTabChange} />
           <ProductivityWidget onTabChange={onTabChange} tasks={tasks} />
           <Card><DayRing /></Card>
         </div>

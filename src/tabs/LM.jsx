@@ -199,81 +199,6 @@ Nutrition logs: ${nutrition.length}${nutrition.length ? ` (latest protein ${last
 Active experiments: ${experiments.filter(e => !e.verdict).length}, completed: ${experiments.filter(e => e.verdict).length}${healthSection}`;
 }
 
-const COACH_SYSTEM = (ctx) => `You are the user's elite personal Looksmaxxing Coach — a blunt, knowledgeable appearance-optimisation expert covering physique, skincare, hair, grooming, style, posture, confidence and social skills. You are evidence-based, never sleazy, never body-shaming. You give specific, actionable, prioritised guidance and you always ground your advice in the actual data below. If data is missing, tell the user exactly what to start tracking. Keep responses tight and skimmable — short paragraphs, numbered steps where useful. Max ~4 paragraphs unless asked for a full plan.
-
-${ctx}`;
-
-function CoachChat({ data }) {
-  const [messages, setMessages] = useState([]);
-  const [input, setInput] = useState('');
-  const [loading, setLoading] = useState(false);
-  const endRef = useRef(null);
-  useEffect(() => { endRef.current?.scrollIntoView({ behavior: 'smooth' }); }, [messages]);
-
-  const ctx = useMemo(() => buildCoachContext(data), [data]);
-
-  const STARTERS = [
-    "What's holding back my physique progress?",
-    'Which habits correlate with my best skin?',
-    'Build me a 30-day skin improvement plan',
-    'What are my biggest bottlenecks right now?',
-    'Give me a fat-loss roadmap',
-  ];
-
-  async function send(text) {
-    const msg = (text || input).trim();
-    if (!msg || loading) return;
-    setInput('');
-    const next = [...messages, { role: 'user', content: msg }];
-    setMessages(next);
-    setLoading(true);
-    try {
-      const reply = await askClaudeRaw(msg, COACH_SYSTEM(ctx), messages);
-      setMessages([...next, { role: 'assistant', content: reply }]);
-    } catch (err) {
-      setMessages([...next, { role: 'assistant', content: `Error: ${err.message}` }]);
-    } finally { setLoading(false); }
-  }
-
-  return (
-    <div style={{ display: 'flex', flexDirection: 'column', height: '100%', minHeight: 0, padding: '16px 24px 16px' }}>
-      <div style={{ fontSize: 10.5, color: 'var(--text-muted)', marginBottom: 10, padding: '7px 12px',
-        borderRadius: 8, background: 'rgba(255,255,255,0.03)', border: '0.5px solid rgba(255,255,255,0.06)', lineHeight: 1.5 }}>
-        Your coach reads your live tracker data — phase, scorecard, measurements, sleep, daily consistency, skin & nutrition logs. The more you log, the sharper the advice.
-      </div>
-      {messages.length === 0 && (
-        <div style={{ display: 'flex', flexWrap: 'wrap', gap: 6, marginBottom: 12 }}>
-          {STARTERS.map((s, i) => (
-            <button key={i} onClick={() => send(s)} style={{ padding: '5px 11px', borderRadius: 20, cursor: 'pointer',
-              fontSize: 11, border: '0.5px solid rgba(255,255,255,0.1)', background: 'rgba(255,255,255,0.04)',
-              color: 'var(--text-secondary)', textAlign: 'left' }}>{s}</button>
-          ))}
-        </div>
-      )}
-      <div style={{ flex: 1, overflowY: 'auto', display: 'flex', flexDirection: 'column', gap: 10, paddingBottom: 8, minHeight: 0 }}>
-        {messages.map((m, i) => (
-          <div key={i} style={{ display: 'flex', justifyContent: m.role === 'user' ? 'flex-end' : 'flex-start' }}>
-            <div style={{ maxWidth: '82%', padding: '10px 14px', fontSize: 13, lineHeight: 1.7,
-              color: 'rgba(255,255,255,0.85)', whiteSpace: 'pre-wrap',
-              borderRadius: m.role === 'user' ? '14px 14px 4px 14px' : '4px 14px 14px 14px',
-              background: m.role === 'user' ? 'color-mix(in srgb, var(--accent) 13%, transparent)' : 'rgba(255,255,255,0.04)',
-              border: `0.5px solid ${m.role === 'user' ? 'color-mix(in srgb, var(--accent) 27%, transparent)' : 'rgba(255,255,255,0.08)'}` }}>{m.content}</div>
-          </div>
-        ))}
-        {loading && <div style={{ padding: '4px 14px' }}><Spinner /></div>}
-        <div ref={endRef} />
-      </div>
-      <div style={{ display: 'flex', gap: 8, paddingTop: 8, borderTop: '0.5px solid rgba(255,255,255,0.06)' }}>
-        <input value={input} onChange={e => setInput(e.target.value)}
-          onKeyDown={e => { if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); send(); } }}
-          placeholder="Ask your looksmaxxing coach..." style={{ ...INPUT, flex: 1 }} />
-        <button onClick={() => send()} disabled={!input.trim() || loading}
-          style={{ ...BTN, opacity: (!input.trim() || loading) ? 0.5 : 1 }}>Send</button>
-      </div>
-    </div>
-  );
-}
-
 // ═══════════════════════════════════════════════════════════════════════════════
 // 1. DASHBOARD
 // ═══════════════════════════════════════════════════════════════════════════════
@@ -1359,7 +1284,6 @@ const LM_TABS = [
   { id: 'experiments', label: 'LAB'         },
   { id: 'daily',       label: 'DAILY'       },
   { id: 'analytics',   label: 'ANALYTICS'   },
-  { id: 'coach',       label: 'COACH'       },
 ];
 
 export default function LM() {
@@ -1427,7 +1351,7 @@ export default function LM() {
       </div>
 
       {/* Content */}
-      <div ref={scrollRef} style={{ flex: 1, overflowY: section === 'coach' ? 'hidden' : 'auto' }}>
+      <div ref={scrollRef} style={{ flex: 1, overflowY: 'auto' }}>
         {section === 'dashboard'   && <Dashboard profile={profile} saveProfile={saveProfile} metrics={metrics.items} daily={daily.items} data={aiData} goTo={setSection} health={health} />}
         {section === 'baseline'    && <Baseline profile={profile} saveProfile={saveProfile} />}
         {section === 'foundation'  && <Foundation profile={profile} saveProfile={saveProfile} sleep={sleep} nutrition={nutrition} health={health} />}
@@ -1442,7 +1366,6 @@ export default function LM() {
         {section === 'experiments' && <ExperimentLab experiments={experiments} />}
         {section === 'daily'       && <DailyTracker daily={daily} />}
         {section === 'analytics'   && <Analytics data={aiData} profile={profile} />}
-        {section === 'coach'       && <CoachChat data={aiData} />}
       </div>
 
       <style>{`

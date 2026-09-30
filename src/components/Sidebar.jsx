@@ -127,16 +127,12 @@ function TabGroup({ tabs, activeTab, onTabClick }) {
 }
 
 // ─── Connection status indicator ────────────────────────────────────────────
-function StatusIndicator({ claudeOnline, ollamaOnline, internetOnline, lastPinged, firebaseSynced }) {
+function StatusIndicator({ internetOnline, firebaseSynced }) {
   const [expanded, setExpanded] = useState(false);
 
-  // Overall dot colour: green = all good | amber = partial | red = offline
-  const overall = claudeOnline ? '#4caf7d' : ollamaOnline ? '#f4a642' : '#e55a5a';
-  const overallGlow = claudeOnline
-    ? 'rgba(76,175,125,0.55)'
-    : ollamaOnline
-    ? 'rgba(244,166,66,0.5)'
-    : 'rgba(229,90,90,0.45)';
+  // Green = online and synced | amber = online, still connecting | red = offline
+  const overall = !internetOnline ? '#e55a5a' : firebaseSynced ? '#4caf7d' : '#f4a642';
+  const overallGlow = !internetOnline ? 'rgba(229,90,90,0.45)' : firebaseSynced ? 'rgba(76,175,125,0.55)' : 'rgba(244,166,66,0.5)';
 
   const Row = ({ label, online, detail }) => (
     <div style={{ display: 'flex', alignItems: 'center', gap: 7 }}>
@@ -154,15 +150,6 @@ function StatusIndicator({ claudeOnline, ollamaOnline, internetOnline, lastPinge
       </span>
     </div>
   );
-
-  const pingAgo = lastPinged
-    ? (() => {
-        const s = Math.round((Date.now() - lastPinged.getTime()) / 1000);
-        if (s < 10) return 'just now';
-        if (s < 60) return `${s}s ago`;
-        return `${Math.round(s/60)}m ago`;
-      })()
-    : '—';
 
   return (
     <div style={{ position: 'relative' }}>
@@ -206,13 +193,7 @@ function StatusIndicator({ claudeOnline, ollamaOnline, internetOnline, lastPinge
             CONNECTION STATUS
           </span>
           <Row label="Internet"  online={internetOnline} />
-          <Row label="Claude"    online={claudeOnline}   detail={claudeOnline ? 'API ready' : 'unavailable'} />
-          <Row label="Ollama"    online={ollamaOnline}   detail={ollamaOnline ? 'llama3 local' : 'not running'} />
-          <Row label="Firebase"  online={firebaseSynced ?? false} detail={firebaseSynced ? 'synced' : internetOnline ? 'connecting…' : 'offline'} />
-          <div style={{ height: '0.5px', background: 'var(--sidebar-divider)', margin: '2px 0' }} />
-          <span style={{ fontSize: 10.5, color: 'var(--text-muted)' }}>
-            Last checked: {pingAgo}
-          </span>
+          <Row label="Sync"      online={firebaseSynced ?? false} detail={firebaseSynced ? 'synced' : internetOnline ? 'connecting…' : 'offline'} />
         </div>
       )}
     </div>
@@ -374,7 +355,7 @@ function PeakStateDot({ peakState }) {
   );
 }
 
-export default function Sidebar({ activeGroup, onGroupClick, claudeOnline, ollamaOnline, internetOnline, lastPinged, firebaseSynced, hiddenTabs = [], peakState }) {
+export default function Sidebar({ activeGroup, onGroupClick, internetOnline, firebaseSynced, hiddenTabs = [], peakState }) {
 
   // Sync the saved screen order from Supabase (cross-device). The order now
   // decides section order inside each group; App reads it from storage.
@@ -475,10 +456,7 @@ export default function Sidebar({ activeGroup, onGroupClick, claudeOnline, ollam
         {/* Connection status indicator */}
         <div style={{ marginBottom: 2 }}>
           <StatusIndicator
-            claudeOnline={claudeOnline ?? false}
-            ollamaOnline={ollamaOnline ?? false}
             internetOnline={internetOnline ?? navigator.onLine}
-            lastPinged={lastPinged}
             firebaseSynced={firebaseSynced ?? false}
           />
         </div>

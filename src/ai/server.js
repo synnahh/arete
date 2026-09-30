@@ -1,4 +1,4 @@
-// Authenticated client for the server-side AI gateway. Provider credentials
+// Authenticated client for the server-side AI tools (meal and skin photo, describe a meal, reviews). Provider credentials
 // never cross this boundary or enter the Vite bundle.
 import { supabase } from '../supabase/supabase.js';
 
@@ -19,11 +19,3 @@ export async function invokeAI(body) {
   return data;
 }
 
-export async function aiStatus() {
-  try {
-    const data = await invokeAI({ mode: 'status' });
-    return data?.ok === true;
-  } catch {
-    return false;
-  }
-}

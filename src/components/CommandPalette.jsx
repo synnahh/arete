@@ -13,11 +13,10 @@ const toast = (message, type = 'success') =>
   window.dispatchEvent(new CustomEvent('valerie:toast', { detail: { message, type } }));
 
 // ─── Static command definitions ────────────────────────────────────────────────
-function buildStaticCommands(onTabChange, ai) {
+function buildStaticCommands(onTabChange) {
   return [
     // Navigation
     { id: 'nav-dashboard',  label: 'Go to Dashboard',   category: 'Navigate', icon: 'home', action: () => onTabChange('dashboard')  },
-    { id: 'nav-assistant',  label: 'Talk to VALERIE',   category: 'Navigate', icon: 'assistant',  action: () => onTabChange('assistant')  },
     { id: 'nav-tasks',      label: 'Go to Tasks',       category: 'Navigate', icon: 'tasks',  action: () => onTabChange('tasks')      },
     { id: 'nav-calendar',   label: 'Go to Calendar',    category: 'Navigate', icon: 'calendar', action: () => onTabChange('calendar')   },
     { id: 'nav-notes',      label: 'Go to Notes',       category: 'Navigate', icon: 'notes', action: () => onTabChange('notes')      },
@@ -32,16 +31,12 @@ function buildStaticCommands(onTabChange, ai) {
     { id: 'nav-vault',      label: 'Go to Vault',       category: 'Navigate', icon: 'vault', action: () => onTabChange('vault')      },
     { id: 'nav-settings',   label: 'Go to Settings',    category: 'Navigate', icon: 'settings', action: () => onTabChange('settings')  },
 
-    // VALERIE actions
-    { id: 'action-brief',   label: 'Daily brief',             category: 'Action', icon: 'brief', action: () => { onTabChange('assistant'); ai?.sendMessage('Give me my daily brief.'); }           },
+    // Actions
     { id: 'action-focus',   label: 'Start focus session',     category: 'Action', icon: 'focus', action: () => onTabChange('focus')                                                                  },
     { id: 'action-mood',    label: 'Log mood',                category: 'Action', icon: 'mood', action: () => { onTabChange('progress'); }                                                          },
     { id: 'action-water',   label: 'Log water',               category: 'Action', icon: 'water', action: () => { onTabChange(screenForHealthSection('water')); }                                                          },
-    { id: 'action-howamdoing', label: 'How am I doing?',      category: 'Action', icon: 'chart', action: () => { onTabChange('assistant'); ai?.sendMessage('How am I doing overall?'); }            },
     { id: 'action-weekly',  label: 'Weekly Review (whole life)', category: 'Action', icon: 'review', action: () => window.dispatchEvent(new CustomEvent('valerie:weekly-review')) },
     { id: 'action-today',   label: "Today — everything due today", category: 'Action', icon: 'today', action: () => window.dispatchEvent(new CustomEvent('valerie:today')) },
-    { id: 'action-clear',   label: 'Clear conversation',      category: 'Action', icon: 'trash', action: () => ai?.clearHistory()                                                                     },
-    { id: 'action-addtask', label: 'Add a task (via VALERIE)', category: 'Action', icon: 'plus', action: () => { onTabChange('assistant'); ai?.sendMessage('I need to add a task.'); }             },
 
     // Data backup / restore
     { id: 'data-export', label: 'Export all data (backup)', category: 'Data', icon: 'download', action: () => { const n = exportBackup(); toast(`Backup downloaded — ${n} keys saved`); } },
@@ -165,12 +160,12 @@ const CAT_COLORS = {
 };
 
 // ─── CommandPalette component ──────────────────────────────────────────────────
-export default function CommandPalette({ open, onClose, onTabChange, ai }) {
+export default function CommandPalette({ open, onClose, onTabChange }) {
   const [query,    setQuery]    = useState('');
   const [selected, setSelected] = useState(0);
   const inputRef  = useRef(null);
 
-  const staticCommands = buildStaticCommands(onTabChange, ai);
+  const staticCommands = buildStaticCommands(onTabChange);
 
   // Build combined results list
   const results = [

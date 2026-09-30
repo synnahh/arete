@@ -26,7 +26,7 @@ function _refil(bucket) {
 
 /**
  * Consume one token for `service`. Throws if the rate limit is exceeded.
- * @param {string} service      - e.g. 'claude', 'elevenlabs'
+ * @param {string} service      - e.g. 'claude'
  * @param {number} maxPerMinute - max requests allowed per minute
  */
 export function consumeToken(service, maxPerMinute) {
@@ -40,5 +40,4 @@ export function consumeToken(service, maxPerMinute) {
 
 // Per-service convenience wrappers — call before each API request
 export const rateLimitClaude      = () => consumeToken('claude',      10);
-export const rateLimitElevenLabs  = () => consumeToken('elevenlabs',  20);
 export const rateLimitFinnhub     = () => consumeToken('finnhub',     30);

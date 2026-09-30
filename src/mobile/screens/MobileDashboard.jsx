@@ -1,17 +1,14 @@
 // ─── MobileDashboard.jsx — Full desktop widget parity for iOS PWA ────────────
-import { useState, useEffect, useRef, useCallback } from 'react';
+import { useState, useEffect } from 'react';
 import { storage, STORAGE_KEYS } from '../../utils/storage.js';
-import { getGreeting, formatDate } from '../../utils/time.js';
+import { getGreeting } from '../../utils/time.js';
 import { useCollection }  from '../../supabase/useCollection.js';
 import { useDocument }    from '../../supabase/useDocument.js';
-import { askClaude }      from '../../ai/claude.js';
-import { askOllama }      from '../../ai/ollama.js';
 import { getXP, getRank, TIER_CONFIG, TIER_THRESHOLDS } from '../../utils/xp.js';
 import { DEFAULT_OVERLOAD_EXERCISES } from '../../tabs/Workout.jsx';
 import DayRing from '../../components/DayRing.jsx';
 import { toLocalDateKey } from '../../utils/localDate.js';
 import { useTasks } from '../../hooks/useTasks.js';
-import { normalizeTasks } from '../../domain/tasks.js';
 import GoalRing from '../../components/GoalRing.jsx';
 import NextMoves from '../../components/NextMoves.jsx';
 import OverallCard from '../../components/OverallCard.jsx';
@@ -172,60 +169,6 @@ function StatStrip({ tasks }) {
   );
 }
 
-// ── Daily Brief ────────────────────────────────────────────────────────────────
-function DailyBriefCard({ ai }) {
-  const [brief, setBrief]     = useState(() => storage.get('valerie_daily_brief_text', null));
-  const [loading, setLoading] = useState(false);
-  const generated = useRef(false);
-
-  const generate = useCallback(async () => {
-    if (!ai || loading) return;
-    setLoading(true);
-    const tasks   = normalizeTasks(storage.get(STORAGE_KEYS.TASKS, []));
-    const pending = tasks.filter(t => !t.done);
-    const prompt  = `${getGreeting()}. Today is ${formatDate()}. I have ${pending.length} pending task${pending.length !== 1 ? 's' : ''}.${pending.length > 0 ? ` Top items: ${pending.slice(0,3).map(t=>t.text).join(', ')}.` : ''} Give me a sharp, motivating daily brief in 2-3 sentences. No fluff.`;
-    try {
-      let text = '';
-      if (ai.claudeOnline)                    text = await askClaude(prompt);
-      else if (ai.ollamaOnline)                text = await askOllama(prompt, []);
-      else                                     text = `${getGreeting()}. ${pending.length} task${pending.length!==1?'s':''} waiting. Stay sharp and move with intention.`;
-      setBrief(text);
-      storage.set('valerie_daily_brief_text', text);
-    } catch { setBrief(`${getGreeting()}. Let's make today count.`); }
-    finally { setLoading(false); }
-  }, [ai, loading]);
-
-  useEffect(() => {
-    if (!generated.current && ai) { generated.current = true; generate(); }
-  }, [ai, generate]);
-
-  return (
-    <MCard>
-      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 10 }}>
-        <MLabel style={{ marginBottom: 0 }}>Daily Brief</MLabel>
-        <button onClick={() => { generated.current = false; generate(); }} disabled={loading}
-          style={{ fontSize: 11, color: 'var(--accent)', background: 'none', border: 'none',
-            cursor: loading ? 'default' : 'pointer', opacity: loading ? 0.5 : 1, padding: 0,
-            WebkitTapHighlightColor: 'transparent' }}>
-          {loading ? 'Thinking…' : 'Refresh'}
-        </button>
-      </div>
-      {loading ? (
-        <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-          <div style={{ width: 6, height: 6, borderRadius: '50%', background: 'var(--accent)',
-            animation: 'mPulse 1.2s ease-in-out infinite' }} />
-          <span style={{ fontSize: 12, color: 'var(--text-muted)' }}>VALERIE is preparing your brief…</span>
-        </div>
-      ) : (
-        <p style={{ margin: 0, fontSize: 13, color: 'var(--text-secondary)', lineHeight: 1.65 }}>
-          {brief ?? 'Your daily brief will appear here.'}
-        </p>
-      )}
-    </MCard>
-  );
-}
-
-// ── Spotify card ───────────────────────────────────────────────────────────────
 // ── Today's Workout card ───────────────────────────────────────────────────────
 const DAY_KEYS = ['sun','mon','tue','wed','thu','fri','sat'];
 const SPLIT_COLOURS = { push:'#e25d7a', pull:'#4a9eff', legs:'#f4a642', rest:'rgba(255,255,255,0.2)', custom:'#9b5de5' };
@@ -541,7 +484,7 @@ function ProductivityWidget({ onTabChange, tasks }) {
 }
 
 // ── Main Dashboard ─────────────────────────────────────────────────────────────
-export default function MobileDashboard({ settings, ai, peakState, onTabChange }) {
+export default function MobileDashboard({ settings, peakState, onTabChange }) {
   const userName = settings?.userName || 'Rob';
   const { tasks, toggle, addTask } = useTasks();
 
@@ -567,9 +510,6 @@ export default function MobileDashboard({ settings, ai, peakState, onTabChange }
 
       {/* ── Stat strip (horizontal scroll) ── */}
       <StatStrip tasks={tasks} />
-
-      {/* ── Daily Brief ── */}
-      <DailyBriefCard ai={ai} />
 
 
       {/* ── Today Workout ── */}

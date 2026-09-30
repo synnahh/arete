@@ -147,7 +147,6 @@ const SECTIONS = [
   { id: 'baseline',    label: 'Baseline',    emoji: '🪞' },
   { id: 'lab',         label: 'Lab',         emoji: '🧪' },
   { id: 'analytics',   label: 'Analytics',   emoji: '📊' },
-  { id: 'coach',       label: 'Coach',       emoji: '🤖' },
 ];
 
 // ═══ DASHBOARD ════════════════════════════════════════════════════════════════
@@ -856,55 +855,6 @@ function Analytics({ data }) {
   );
 }
 
-// ═══ COACH ════════════════════════════════════════════════════════════════════
-
-function Coach({ data }) {
-  const [msgs, setMsgs] = useState([]);
-  const [input, setInput] = useState('');
-  const [loading, setLoading] = useState(false);
-  const endRef = useRef(null);
-  useEffect(() => endRef.current?.scrollIntoView({ behavior: 'smooth' }), [msgs]);
-  const sys = `You are the user's elite personal Looksmaxxing Coach — blunt, evidence-based, never sleazy or body-shaming. Specific, prioritised, actionable. Ground advice in the data below; if data is missing say what to track. Keep responses tight. Max ~4 paragraphs unless asked for a full plan.\n\n${buildCtx(data)}`;
-  const STARTERS = ["What's holding back my physique?", 'Which habits help my skin most?', 'Build a 30-day skin plan', 'What are my biggest bottlenecks?'];
-  async function send(text) {
-    const msg = (text || input).trim(); if (!msg || loading) return;
-    setInput(''); const next = [...msgs, { role: 'user', content: msg }]; setMsgs(next); setLoading(true);
-    try { setMsgs([...next, { role: 'assistant', content: await askClaudeRaw(msg, sys, msgs) }]); }
-    catch (e) { setMsgs([...next, { role: 'assistant', content: `Error: ${e.message}` }]); }
-    finally { setLoading(false); }
-  }
-  return (
-    <div style={{ padding: '16px 16px 40px', display: 'flex', flexDirection: 'column', gap: 10 }}>
-      <div style={{ fontSize: 11, color: MUTE, lineHeight: 1.5, padding: '8px 12px', borderRadius: 10, background: 'rgba(255,255,255,0.03)' }}>
-        Your coach reads your live tracker data. The more you log, the sharper the advice.
-      </div>
-      {msgs.length === 0 && (
-        <div style={{ display: 'flex', flexWrap: 'wrap', gap: 7 }}>
-          {STARTERS.map(s => (
-            <button key={s} onClick={() => send(s)} style={{ padding: '7px 12px', borderRadius: 20, fontSize: 12,
-              border: '0.5px solid rgba(255,255,255,0.1)', background: 'rgba(255,255,255,0.04)', color: 'var(--text-secondary)', cursor: 'pointer' }}>{s}</button>
-          ))}
-        </div>
-      )}
-      {msgs.map((m,i) => (
-        <div key={i} style={{ display: 'flex', justifyContent: m.role === 'user' ? 'flex-end' : 'flex-start' }}>
-          <div style={{ maxWidth: '88%', padding: '10px 14px', fontSize: 14, lineHeight: 1.6, color: 'rgba(255,255,255,0.85)', whiteSpace: 'pre-wrap',
-            borderRadius: m.role === 'user' ? '18px 18px 4px 18px' : '4px 18px 18px 18px',
-            background: m.role === 'user' ? 'color-mix(in srgb, var(--accent) 13%, transparent)' : 'rgba(255,255,255,0.05)',
-            border: `0.5px solid ${m.role === 'user' ? 'color-mix(in srgb, var(--accent) 27%, transparent)' : 'rgba(255,255,255,0.08)'}` }}>{m.content}</div>
-        </div>
-      ))}
-      {loading && <Spinner />}
-      <div ref={endRef} />
-      <div style={{ display: 'flex', gap: 8, marginTop: 4 }}>
-        <input value={input} onChange={e=>setInput(e.target.value)} onKeyDown={e => e.key === 'Enter' && send()}
-          placeholder="Ask your coach..." style={{ ...INPUT, flex: 1, borderRadius: 20 }} />
-        <button onClick={() => send()} disabled={!input.trim()||loading} style={{ ...BTN, width: 'auto', padding: '11px 18px', borderRadius: 20, opacity: (!input.trim()||loading)?0.5:1 }}>Send</button>
-      </div>
-    </div>
-  );
-}
-
 // ═══ ROOT ═════════════════════════════════════════════════════════════════════
 
 export default function MobileLM() {
@@ -969,7 +919,6 @@ export default function MobileLM() {
       {section === 'baseline'   && <Baseline profile={profile} save={save} />}
       {section === 'lab'        && <ExperimentLab experiments={experiments} />}
       {section === 'analytics'  && <Analytics data={aiData} />}
-      {section === 'coach'      && <Coach data={aiData} />}
 
       <style>{`
         @keyframes lmBounce { 0%,100% { transform:translateY(0); opacity:0.4; } 50% { transform:translateY(-4px); opacity:1; } }

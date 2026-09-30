@@ -279,15 +279,6 @@ export default function Focus({ settings }) {
 
     // Award XP
     addXP('FOCUS_SESSION');
-
-    // VALERIE spoken check-in
-    if (window.speechSynthesis && settings?.voiceEnabled !== false) {
-      const msg = new SpeechSynthesisUtterance(
-        `Focus session complete. ${durationMin} minutes of solid work, Rob.`
-      );
-      msg.rate = settings?.speechRate || 1;
-      window.speechSynthesis.speak(msg);
-    }
   }
 
   const activeTasks = tasks.filter?.(t => !t.completed) ?? [];
