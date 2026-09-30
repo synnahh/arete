@@ -11,6 +11,7 @@ import { toLocalDateKey } from '../utils/localDate.js';
 import TrainSession from './TrainSession.jsx';
 import { suggestNext } from '../domain/progression.js';
 import { suggestWeek, describeWeek } from '../domain/split.js';
+import ExerciseSuggest from '../components/ExerciseSuggest.jsx';
 
 //  Helpers 
 const todayStr = () => toLocalDateKey(new Date());
@@ -411,6 +412,7 @@ function ExercisesLibrary({ exercises, saveExercises }) {
     <Section title="Exercise Library" action={
       <button onClick={() => setShowAdd(true)} style={{ ...btnPrimary, fontSize: 11 }}>+ Add exercise</button>
     }>
+      <ExerciseSuggest exercises={exercises} saveExercises={saveExercises} />
       {/* Filter row */}
       <div style={{ display: 'flex', gap: 6, marginBottom: 18 }}>
         {['all','push','pull','legs'].map(f => (
