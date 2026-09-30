@@ -8,6 +8,7 @@ import { STORAGE_KEYS } from '../utils/storage.js';
 import { toLocalDateKey } from '../utils/localDate.js';
 import { updateSettings } from '../utils/settingsStore.js';
 import GoalEta from '../components/GoalEta.jsx';
+import CoachUpdates from '../components/CoachUpdates.jsx';
 import { cycleFor, todaysTargets, scheduledTrainingDaysPerWeek } from '../utils/todaysTargets.js';
 import { cycleTargets } from '../domain/goals.js';
 import {
@@ -239,7 +240,6 @@ function DayCycleCard({ goal, settings }) {
 
 //  The locked goal, progress since starting, and the weekly target check
 function GoalCard({ goal, settings, latestWeight, coach, adaptive, onChange }) {
-  const [dismissed, setDismissed] = useState(false);
   const t = GOAL_TEMPLATES[goal.template];
   const today = toLocalDateKey(new Date());
   const days = Math.max(0, Math.round((Date.parse(today) - Date.parse(goal.startedOn)) / 86400000));
@@ -248,15 +248,6 @@ function GoalCard({ goal, settings, latestWeight, coach, adaptive, onChange }) {
   const shownWeight = coach?.trend ?? latestWeight ?? goal.startWeightKg;
   const delta = (coach?.trend ?? latestWeight) && goal.startWeightKg ? +((coach?.trend ?? latestWeight) - goal.startWeightKg).toFixed(1) : null;
 
-  // Weekly check: propose new targets when real maintenance has drifted.
-  const drift = adaptive ? adaptive.kcal - goal.maintenanceKcal : 0;
-  const proposal = adaptive && Math.abs(drift) >= 100 && !dismissed
-    ? makeGoal({ ...goal, weightKg: latestWeight || goal.startWeightKg, maintenanceKcal: adaptive.kcal, maintenanceSource: 'adaptive', targetWeightKg: goal.targetWeightKg })
-    : null;
-
-  function applyProposal() {
-    updateSettings(settingsForGoal({ ...proposal, startedOn: goal.startedOn, startWeightKg: goal.startWeightKg, targetWeightKg: goal.targetWeightKg }, settings?.macros));
-  }
 
   return (
     <div style={{ display: 'flex', flexDirection: 'column', gap: 14 }}>
@@ -305,22 +296,8 @@ function GoalCard({ goal, settings, latestWeight, coach, adaptive, onChange }) {
 
       <DayCycleCard goal={goal} settings={settings} />
 
-      {proposal && (
-        <div role="status" style={{ ...card, borderColor: 'var(--tab-accent)' }}>
-          <div style={{ ...label, color: 'var(--tab-accent)', marginBottom: 8 }}>Suggestion · weekly check</div>
-          <div style={{ fontSize: 15, color: 'var(--text-primary)', lineHeight: 1.5 }}>
-            Over the last {adaptive.days} days you ate {adaptive.avgIntake} kcal a day and your weight moved {adaptive.slopeKgPerWeek} kg a week,
-            so your real maintenance is about <strong className="val-num">{adaptive.kcal} kcal</strong>, not {goal.maintenanceKcal}.
-          </div>
-          <div style={{ fontSize: 14, color: 'var(--text-secondary)', marginTop: 8 }} className="val-num">
-            New targets: {proposal.targets.kcal} kcal · {proposal.targets.protein} g protein · {proposal.targets.carbs} g carbs · {proposal.targets.fat} g fat
-          </div>
-          <div style={{ display: 'flex', gap: 10, marginTop: 14 }}>
-            <button type="button" onClick={applyProposal} style={primaryBtn}>Apply</button>
-            <button type="button" onClick={() => setDismissed(true)} style={ghostBtn}>Not now</button>
-          </div>
-        </div>
-      )}
+      {/* The coach applies maintenance and macro changes itself; they show here with Undo. */}
+      <CoachUpdates always />
     </div>
   );
 }

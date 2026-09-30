@@ -12,6 +12,7 @@ import { useTasks } from '../../hooks/useTasks.js';
 import GoalRing from '../../components/GoalRing.jsx';
 import NextMoves from '../../components/NextMoves.jsx';
 import OverallCard from '../../components/OverallCard.jsx';
+import CoachUpdates from '../../components/CoachUpdates.jsx';
 
 // ── Shared components ──────────────────────────────────────────────────────────
 function MCard({ children, style = {}, onClick }) {
@@ -506,6 +507,7 @@ export default function MobileDashboard({ settings, peakState, onTabChange }) {
       <GoalRing settings={settings} onTabChange={onTabChange} compact />
 
       <NextMoves onTabChange={onTabChange} compact />
+      <CoachUpdates compact />
       <OverallCard compact />
 
       {/* ── Stat strip (horizontal scroll) ── */}

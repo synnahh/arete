@@ -24,8 +24,8 @@ supabase secrets set OWNER_USER_ID=<your-user-uuid>
 Never deploy with `--no-verify-jwt`: the platform's signature check is what makes
 the token contents trustworthy.
 
-`voice-tts` (ElevenLabs) and `send-sms` (Twilio) follow the same rules; their
-secrets are listed in `docs/deploy-runbook.md`.
+`send-sms` (Twilio) follows the same rules; its secrets are listed in
+`docs/deploy-runbook.md`. `ai-chat` only runs one-shot tools (`mode: "raw"`); there is no chat assistant.
 
 Before deployment, configure server-only secrets in the Supabase project:
 
@@ -38,8 +38,8 @@ Use a newly rotated Anthropic key. Never prefix provider credentials with
 `VITE_`; Vite variables are public client configuration and are embedded in
 the desktop and PWA bundles.
 
-Raw mode also accepts one optional `image` (`{ mediaType, data }`, base64 JPEG/PNG/WebP up to about 3.5 MB) so Fuel can estimate a meal from a photo. If you deployed `ai-chat` before that was added, deploy it again.
+The tools mode also accepts one optional `image` (`{ mediaType, data }`, base64 JPEG/PNG/WebP up to about 3.5 MB) so Fuel can estimate a meal from a photo. If you deployed `ai-chat` before that was added, deploy it again.
 
-Deployment is intentionally manual. After deployment, sign in to Arete and use
-Settings → AI → Test connection. Until then, desktop Ollama remains the local
-fallback and the iOS/web AI service reports unavailable.
+Deployment is intentionally manual. After deployment, try Fuel > Photo on your phone:
+until the function is deployed the AI tools report that the service is unavailable, and
+everything else in the app works as normal.
