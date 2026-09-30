@@ -1,6 +1,6 @@
 {
   "$schema": "https://schema.tauri.app/config/2",
-  "productName": "VALERIE",
+  "productName": "Arete",
   "version": "0.1.0",
   "identifier": "com.valerie.assistant",
   "build": {
@@ -49,7 +49,7 @@
         "sidebarImage": "icons/nsis-sidebar.bmp",
         "installMode": "currentUser",
         "languages": ["English"],
-        "startMenuFolder": "VALERIE",
+        "startMenuFolder": "Arete",
         "compression": "lzma",
         "installerHooks": "nsis-hooks.nsi"
       }

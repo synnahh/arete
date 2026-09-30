@@ -1,7 +1,7 @@
 [package]
 name = "valerie"
 version = "0.1.0"
-description = "VALERIE — Personal AI Assistant"
+description = "Arete — gym, nutrition, looks and money with an AI coach"
 authors = ["Rob"]
 edition = "2021"
 
