@@ -8,6 +8,7 @@ import { STORAGE_KEYS } from '../utils/storage.js';
 import { toLocalDateKey } from '../utils/localDate.js';
 import ProgressPhotos from '../components/ProgressPhotos.jsx';
 import ProductCheck from '../components/ProductCheck.jsx';
+import SkinScan from '../components/SkinScan.jsx';
 import {
   ALL_DAYS, WHEN_LABEL, RATING_LABELS, newStep, usesPerDay, supplyUsage, stepsFor, completion, routineWarnings, ratingTrend, routineInsight,
 } from '../domain/skin.js';
@@ -210,6 +211,7 @@ export default function SkinRoutine({ profile, saveProfile, daily }) {
       )}
 
       <ProductCheck steps={steps} onAdd={addFromProduct} skinProfile={profile?.skinProfile || {}} onSkinProfile={(sp) => saveProfile({ ...profile, skinProfile: sp })} />
+      <SkinScan steps={steps} skinProfile={profile?.skinProfile || {}} />
 
       <div style={card}>
         <span style={label}>Routine builder</span>

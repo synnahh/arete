@@ -67,6 +67,7 @@ Skin Bliss scans products (barcode, search, shelf photo) for ingredient clashes,
 | Product scanner (barcode → ingredients) | **Have, partly verified** (2026-09-30, Look > Skin > Check a product): type or scan a barcode (Open Beauty Facts) or paste the ingredients; shows actives and clashes with your routine, then adds it to the routine and Supplies. The paste path is tested in the browser; the live barcode lookup and camera scan are not (no network or camera here), and iOS Safari has no barcode scanning, so the typed barcode is the phone path | — |
 | Score a product against your skin profile | **Have** (2026-09-30: Look > Skin > Check a product, with a Your skin profile; 0-100 with a reason for every point, no score without ingredients. Logic and tests done; not yet seen on screen) | — |
 | Opened-product expiry (period-after-opening) reminder | **Have** (2026-09-30: "use within N months" on a supply; shown in Supplies, Today and the attention count). Not verified: the Today panel on screen | — |
+| Photo-based skin analysis by the coach (scores, observations, suggestions, change since last time) | **Have, unverified live** (2026-09-30, Look > Skin > Skin photo analysis) | — |
 | Tiered routine builder (Essential → Complete → Power) | Missing | P3 |
 
 ## 4. Sleep, water and weight coaches
