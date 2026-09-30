@@ -1,4 +1,4 @@
-// Time utilities  greeting logic, time-of-day checks
+// Time utilities — greeting logic, time-of-day checks
 
 export function getTimeOfDay() {
   const h = new Date().getHours();

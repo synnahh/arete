@@ -1,6 +1,6 @@
-//  Workout Tab 
+// ─── Workout Tab ──────────────────────────────────────────────────────────────
 // Sub-sections: Overload Coach · Exercises · Split Planner
-// All data via Firebase  workout_logs collection + meta docs for library/program
+// All data via Firebase — workout_logs collection + meta docs for library/program
 
 import { useState, useEffect, useMemo, useCallback } from 'react';
 import { useCollection } from '../supabase/useCollection.js';
@@ -14,13 +14,13 @@ import { suggestWeek, describeWeek } from '../domain/split.js';
 import { EXERCISE_MUSCLES, MUSCLE_MAP, musclesForLog as getLogMuscles, musclesForExercise } from '../domain/muscles.js';
 import ExerciseSuggest from '../components/ExerciseSuggest.jsx';
 
-//  Helpers 
+// ── Helpers ───────────────────────────────────────────────────────────────────
 const todayStr = () => toLocalDateKey(new Date());
 const DAY_KEYS = ['sun', 'mon', 'tue', 'wed', 'thu', 'fri', 'sat'];
 const DAY_LABELS = { sun: 'Sun', mon: 'Mon', tue: 'Tue', wed: 'Wed', thu: 'Thu', fri: 'Fri', sat: 'Sat' };
 const SPLIT_COLOURS = { push: '#e25d7a', pull: '#4a9eff', legs: '#f4a642', rest: 'rgba(255,255,255,0.2)', custom: '#9b5de5' };
 
-//  Shared style tokens 
+// ── Shared style tokens ───────────────────────────────────────────────────────
 const inputSx = {
   width: '100%', background: 'var(--input-bg)', border: '0.5px solid var(--input-border)',
   borderRadius: 7, padding: '7px 10px', fontSize: 12.5, color: 'var(--text-primary)',
@@ -78,7 +78,7 @@ function Section({ title, children, action }) {
   );
 }
 
-//  Default exercise library 
+// ── Default exercise library ───────────────────────────────────────────────────
 export const DEFAULT_OVERLOAD_EXERCISES = [
   // Push
   { id:'bp',  name:'Bench Press',         gym:'both',       day:'push', bodyweight:false, startingWeight:40, repsMin:6, repsMax:8,  increment:2.5 },
@@ -103,7 +103,7 @@ export const DEFAULT_OVERLOAD_EXERCISES = [
 
 export const DEFAULT_SPLITS = { push: 'Push', pull: 'Pull', legs: 'Legs' };
 
-//  Default program template (PPL MonSat, rest Sun) 
+// ── Default program template (PPL Mon–Sat, rest Sun) ─────────────────────────
 const DEFAULT_PROGRAM_DAYS = {
   mon: { splitType: 'push', label: 'Push' },
   tue: { splitType: 'pull', label: 'Pull' },
@@ -114,21 +114,21 @@ const DEFAULT_PROGRAM_DAYS = {
   sun: { splitType: 'rest', label: 'Rest' },
 };
 
-//  Progression logic 
+// ── Progression logic ────────────────────────────────────────────────────────
 // Next-session target: the rules live in domain/progression.js (all working sets,
 // no drop after one bad day, plateau deload, layoff restart).
 export function computeProgression(ex, workoutLogs) {
   return suggestNext(ex, workoutLogs, toLocalDateKey(new Date()));
 }
 
-//  Stepper 
+// ── Stepper ───────────────────────────────────────────────────────────────────
 function Stepper({ value, onChange, min = 0, step = 1, label }) {
   return (
     <div style={{ display: 'flex', flexDirection: 'column', gap: 4 }}>
       {label && <span style={lblSx}>{label}</span>}
       <div style={{ display: 'flex', alignItems: 'center' }}>
         <button onClick={() => onChange(Math.max(min, parseFloat((value - step).toFixed(2))))}
-          style={{ width: 40, height: 42, borderRadius: '8px 0 0 8px', border: '0.5px solid var(--card-border)', background: 'var(--card-fill)', color: 'var(--text-primary)', fontSize: 18, cursor: 'pointer' }}></button>
+          style={{ width: 40, height: 42, borderRadius: '8px 0 0 8px', border: '0.5px solid var(--card-border)', background: 'var(--card-fill)', color: 'var(--text-primary)', fontSize: 18, cursor: 'pointer' }}>−</button>
         <div style={{ flex: 1, height: 42, display: 'flex', alignItems: 'center', justifyContent: 'center', border: '0.5px solid var(--card-border)', borderLeft: 'none', borderRight: 'none', background: 'var(--input-bg)', fontSize: 18, fontWeight: 700, color: 'var(--text-primary)', minWidth: 70 }}>
           {value}
         </div>
@@ -139,7 +139,7 @@ function Stepper({ value, onChange, min = 0, step = 1, label }) {
   );
 }
 
-//  Toggle group 
+// ── Toggle group ─────────────────────────────────────────────────────────────
 function ToggleGroup({ label, options, value, onChange }) {
   return (
     <div style={{ display: 'flex', gap: 8, alignItems: 'center', flex: 1 }}>
@@ -158,7 +158,7 @@ function ToggleGroup({ label, options, value, onChange }) {
   );
 }
 
-//  Add / Edit Exercise Modal 
+// ── Add / Edit Exercise Modal ─────────────────────────────────────────────────
 function ExerciseModal({ onClose, onSave, initial = null }) {
   const [name, setName]             = useState(initial?.name ?? '');
   const [gym, setGym]               = useState(initial?.gym ?? 'both');
@@ -325,7 +325,7 @@ title="Rename splits">✎</button>
               {prog.last && (
                 <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 14, padding: '8px 12px', borderRadius: 8, background: 'rgba(255,255,255,0.03)', border: '0.5px solid var(--card-border)' }}>
                   <span style={{ fontSize: 11, color: 'var(--text-muted)', letterSpacing: '0.06em' }}>LAST TIME</span>
-                  <span style={{ fontSize: 13, fontWeight: 600, color: 'var(--text-primary)' }}>{selected.bodyweight ? 'BW' : `${prog.last.topSet?.weight}kg`}  {prog.last.topSet?.reps}</span>
+                  <span style={{ fontSize: 13, fontWeight: 600, color: 'var(--text-primary)' }}>{selected.bodyweight ? 'BW' : `${prog.last.topSet?.weight}kg`} × {prog.last.topSet?.reps}</span>
                   <span style={{ fontSize: 10.5, color: 'var(--text-muted)' }}>{prog.last.date === todayStr() ? 'today' : prog.last.date?.slice(5)}</span>
                 </div>
               )}
@@ -359,7 +359,7 @@ title="Rename splits">✎</button>
               <GlassLabel>Next Session</GlassLabel>
               <div style={{ fontSize: 10, letterSpacing: '0.1em', color: 'rgba(255,255,255,0.35)', marginBottom: 6, textTransform: 'uppercase' }}>{selected.name}</div>
               <div style={{ fontSize: 26, fontWeight: 700, color: 'var(--text-primary)', marginBottom: 8 }}>
-                {selected.bodyweight ? 'Bodyweight' : `${prog.nextWeight}kg`}  {selected.repsMin} reps
+                {selected.bodyweight ? 'Bodyweight' : `${prog.nextWeight}kg`} × {selected.repsMin} reps
               </div>
               <span style={{
                 display: 'inline-block', padding: '2px 9px', borderRadius: 12, fontSize: 10, fontWeight: 700,
@@ -436,7 +436,7 @@ function ExercisesLibrary({ exercises, saveExercises }) {
             <div style={{ flex: 1, minWidth: 0 }}>
               <div style={{ fontSize: 13, fontWeight: 500, color: 'var(--text-primary)', marginBottom: 2 }}>{ex.name}</div>
               <div style={{ fontSize: 11, color: 'var(--text-muted)' }}>
-                {gymLabel[ex.gym]} · {ex.bodyweight ? 'Bodyweight' : `${ex.startingWeight}kg`} · {ex.repsMin}{ex.repsMax} reps
+                {gymLabel[ex.gym]} · {ex.bodyweight ? 'Bodyweight' : `${ex.startingWeight}kg`} · {ex.repsMin}–{ex.repsMax} reps
                 {!ex.bodyweight && ex.increment > 0 && ` · +${ex.increment}kg`}
               </div>
             </div>
@@ -604,7 +604,7 @@ function SplitPlanner({ programs, addProgram, updateProgram, removeProgram, exer
             {/* Day editor */}
             {editingDay && (
               <GlassCard style={{ marginBottom: 16 }}>
-                <GlassLabel>{DAY_LABELS[editingDay]}  Edit Day</GlassLabel>
+                <GlassLabel>{DAY_LABELS[editingDay]} — Edit Day</GlassLabel>
                 <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
                   <div>
                     <span style={lblSx}>SPLIT TYPE</span>
@@ -655,7 +655,7 @@ function SplitPlanner({ programs, addProgram, updateProgram, removeProgram, exer
               const today = activeProgram.days?.[todayKey];
               if (!today || today.splitType === 'rest') return (
                 <div style={{ padding: '16px 20px', borderRadius: 12, background: 'rgba(255,255,255,0.03)', border: '0.5px solid var(--card-border)', textAlign: 'center' }}>
-                  <div style={{ fontSize: 13, color: 'var(--text-muted)' }}>Rest day  recover and recharge.</div>
+                  <div style={{ fontSize: 13, color: 'var(--text-muted)' }}>Rest day — recover and recharge.</div>
                 </div>
               );
               const exCount = exercises.filter(e => e.day === today.splitType).length;
@@ -664,7 +664,7 @@ function SplitPlanner({ programs, addProgram, updateProgram, removeProgram, exer
                 <div style={{ padding: '16px 20px', borderRadius: 12, background: `${colour}12`, border: `0.5px solid ${colour}40`, display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
                   <div>
                     <div style={{ fontSize: 12, color: colour, fontWeight: 700, letterSpacing: '0.08em', textTransform: 'uppercase', marginBottom: 4 }}>Today</div>
-                    <div style={{ fontSize: 16, fontWeight: 600, color: 'var(--text-primary)' }}>{today.label} Day  {exCount} exercise{exCount !== 1 ? 's' : ''}</div>
+                    <div style={{ fontSize: 16, fontWeight: 600, color: 'var(--text-primary)' }}>{today.label} Day — {exCount} exercise{exCount !== 1 ? 's' : ''}</div>
                   </div>
                 </div>
               );
@@ -1077,7 +1077,7 @@ function WorkoutCalendar({ workoutLogs }) {
 }
 
 // """""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
-// ROOT  Workout Tab
+// ROOT — Workout Tab
 // """""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
 const SUB_NAV = [
   { id: 'session',  label: 'Session',        icon: '⏱️' },

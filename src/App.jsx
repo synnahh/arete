@@ -25,7 +25,7 @@ import CommandPalette            from './components/CommandPalette.jsx';
 import SectionBar                from './components/SectionBar.jsx';
 import { groupOf, groupScreens, resolveTarget, DEFAULT_SCREEN } from './nav/groups.js';
 
-//  Tab imports 
+// ─── Tab imports ──────────────────────────────────────────────────────────────
 import Dashboard  from './tabs/Dashboard.jsx';
 import Assistant  from './tabs/Assistant.jsx';
 import Tasks      from './tabs/Tasks.jsx';
@@ -77,10 +77,10 @@ const TAB_MAP = {
   places:     Places,
 };
 
-//  Tab-level error boundary 
+// ─── Tab-level error boundary ─────────────────────────────────────────────────
 // Catches any crash inside an active tab and shows a recovery UI instead of
 // taking down the entire app with a white screen.
-//  Root-level boundary  catches anything outside tabs, auto-reloads 
+// ── Root-level boundary — catches anything outside tabs, auto-reloads ──────────
 class RootErrorBoundary extends Component {
   constructor(props) { super(props); this.state = { error: null, reloading: false }; }
   static getDerivedStateFromError(err) { return { error: err }; }
@@ -195,19 +195,19 @@ export default function App() {
     return () => subscription.unsubscribe();
   }, []);
 
-  //  AI brain 
+  // ── AI brain ──────────────────────────────────────────────────────────────
   const ai = useAI();
 
-  //  Firebase status 
+  // ── Firebase status ───────────────────────────────────────────────────────
   const firebaseSynced = useSupabaseStatus();
 
-  //  Peak State  computed once at app level, shared to Sidebar + Dashboard 
+  // ── Peak State — computed once at app level, shared to Sidebar + Dashboard ─
   const peakState = usePeakState(settings);
 
-  //  Sleep Schedule  dims interface + fires reminders as bedtime approaches 
+  // ── Sleep Schedule — dims interface + fires reminders as bedtime approaches ─
   const { dimLevel, isSleepTime } = useSleepSchedule(settings);
 
-  //  Notification scheduler  habits, water, tasks, finance, storage alerts 
+  // ── Notification scheduler — habits, water, tasks, finance, storage alerts ──
   useNotifications(settings);
   useCoachReminders(settings);
 
@@ -229,7 +229,7 @@ export default function App() {
     }
   }, []);
 
-  //  WebView2 black-screen recovery on focus 
+  // ── WebView2 black-screen recovery on focus ───────────────────────────────
   // When Chrome (or any window) occludes VALERIE, WebView2 can suspend its GPU
   // swap chain. On refocus the frame stays black. Forcing a GPU composite layer
   // re-establishment via a transform toggle kicks the renderer back to life.
@@ -249,7 +249,7 @@ export default function App() {
     return () => window.removeEventListener('focus', recover);
   }, []);
 
-  //  Wire VALERIE's navigate action to the real tab-change function 
+  // ── Wire VALERIE's navigate action to the real tab-change function ─────────
   useEffect(() => {
     ai.registerCallback('navigate', goTo);
   }, [ai.registerCallback]); // eslint-disable-line react-hooks/exhaustive-deps
@@ -260,7 +260,7 @@ export default function App() {
     ai.setActiveTab(activeTab);
   }, [activeTab, ai.setActiveTab]); // eslint-disable-line react-hooks/exhaustive-deps
 
-  //  Ctrl+K global keyboard shortcut 
+  // ── Ctrl+K global keyboard shortcut ───────────────────────────────────────
   useEffect(() => {
     const handler = (e) => {
       // Ctrl+K (Windows/Linux) or Cmd+K (Mac)
@@ -306,7 +306,7 @@ export default function App() {
       });
     }
 
-    // Launch Ollama silently in the background  no terminal window
+    // Launch Ollama silently in the background — no terminal window
     platformInvoke('launch_ollama').catch(() => {});
 
     // Log unhandled errors without suppressing React's own error handling
@@ -320,7 +320,7 @@ export default function App() {
     };
   }, []);
 
-  //  Live settings sync  update state when Settings tab saves changes 
+  // ── Live settings sync — update state when Settings tab saves changes ──────
   useEffect(() => {
     const handler = (e) => {
       const updated = e.detail ?? storage.get(STORAGE_KEYS.SETTINGS, {});
@@ -332,7 +332,7 @@ export default function App() {
     return () => window.removeEventListener('valerie:settings-changed', handler);
   }, []);
 
-  //  Apply time-of-day background class 
+  // ── Apply time-of-day background class ────────────────────────────────────
   const tod = getTimeOfDay();
 
   // ── PIN gate takes priority over everything ──
@@ -370,7 +370,7 @@ export default function App() {
     );
   }
 
-  //  Mobile PWA shell  renders instead of desktop layout on phones/tablets 
+  // ── Mobile PWA shell — renders instead of desktop layout on phones/tablets ──
   if (isMobile()) {
     return (
       <MobileShell
@@ -383,7 +383,7 @@ export default function App() {
     );
   }
 
-  //  Main app shell 
+  // ── Main app shell ────────────────────────────────────────────────────────
   const ActiveTab = TAB_MAP[activeTab] || Dashboard;
   const activeGroup = groupOf(activeTab);
   const sectionScreens = groupScreens(activeGroup.id, {
@@ -391,7 +391,7 @@ export default function App() {
     order:  storage.get(STORAGE_KEYS.SIDEBAR_ORDER_DESKTOP, null),
   });
 
-  // Layout density for the active tab  drives CSS variable + prop
+  // Layout density for the active tab — drives CSS variable + prop
   const layoutDensity = settings?.tabLayouts?.[activeTab] || 'standard';
 
   return (
@@ -436,11 +436,11 @@ export default function App() {
           </div>
         </TabErrorBoundary>
 
-        {/* Quick Capture  floats above all content */}
+        {/* Quick Capture — floats above all content */}
         <QuickCapture ai={ai} />
       </main>
 
-      {/* Ctrl+K Command Palette  renders above everything */}
+      {/* Ctrl+K Command Palette — renders above everything */}
       <CommandPalette
         open={paletteOpen}
         onClose={() => setPaletteOpen(false)}
@@ -453,7 +453,7 @@ export default function App() {
       <WeeklyReview />
       <TodayView onTabChange={goTo} />
 
-      {/* Sleep dim overlay  fades in as bedtime approaches. Max 80% opacity (never fully black). */}
+      {/* Sleep dim overlay — fades in as bedtime approaches. Max 80% opacity (never fully black). */}
       {dimLevel > 0 && (
         <div
           onClick={() => {

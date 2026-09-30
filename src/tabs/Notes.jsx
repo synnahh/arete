@@ -1,11 +1,11 @@
-//  Notes Tab 
+// ─── Notes Tab ────────────────────────────────────────────────────────────────
 // Masonry grid · pinned row at top · slide-in panel editor · Firebase synced
 
 import { useState, useMemo, useCallback, useRef, useEffect } from 'react';
 import { useCollection } from '../supabase/useCollection.js';
 import { STORAGE_KEYS }  from '../utils/storage.js';
 
-//  Icons 
+// ── Icons ─────────────────────────────────────────────────────────────────────
 const Icon = ({ d, size = 15 }) => (
   <svg width={size} height={size} viewBox="0 0 24 24" fill="none"
     stroke="currentColor" strokeWidth={1.7} strokeLinecap="round" strokeLinejoin="round">
@@ -19,7 +19,7 @@ const ItalicIcon = () => <Icon d="M19 4h-9 M14 20H5 M15 4L9 20" size={13} />;
 const MicIcon    = () => <Icon d="M12 1a3 3 0 00-3 3v8a3 3 0 006 0V4a3 3 0 00-3-3z M19 10v2a7 7 0 01-14 0v-2 M12 19v4 M8 23h8" size={13} />;
 const CloseIcon  = () => <Icon d="M18 6L6 18 M6 6l12 12" size={14} />;
 
-//  Relative time 
+// ── Relative time ──────────────────────────────────────────────────────────────
 function relativeTime(ts) {
   if (!ts) return '';
   const diff = Date.now() - ts;
@@ -33,7 +33,7 @@ function relativeTime(ts) {
   return new Date(ts).toLocaleDateString('en-AU', { day: 'numeric', month: 'short' });
 }
 
-//  Preview snippet 
+// ── Preview snippet ────────────────────────────────────────────────────────────
 function stripMarkdown(text = '') {
   return text
     .replace(/#{1,6}\s/g, '')
@@ -44,7 +44,7 @@ function stripMarkdown(text = '') {
     .trim();
 }
 
-//  Note card 
+// ── Note card ─────────────────────────────────────────────────────────────────
 function NoteCard({ note, onClick, onPin, onDelete, pinned = false }) {
   const [hovered, setHovered] = useState(false);
   const preview = stripMarkdown(note.body).slice(0, 120);
@@ -90,7 +90,7 @@ function NoteCard({ note, onClick, onPin, onDelete, pinned = false }) {
           {relativeTime(note.updatedAt || note.createdAt)}
         </span>
 
-        {/* Action buttons  show on hover */}
+        {/* Action buttons — show on hover */}
         {hovered && (
           <div style={{ display: 'flex', gap: 4 }} onClick={e => e.stopPropagation()}>
             <button onClick={() => onPin(note)} title={note.pinned ? 'Unpin' : 'Pin'}
@@ -114,7 +114,7 @@ const tinyBtnStyle = {
   transition: 'color 0.15s ease',
 };
 
-//  Simple Markdown-aware textarea editor 
+// ── Simple Markdown-aware textarea editor ─────────────────────────────────────
 function NoteEditor({ note, onSave, onClose, onDelete }) {
   const [title, setTitle] = useState(note?.title ?? '');
   const [body, setBody]   = useState(note?.body  ?? '');
@@ -156,7 +156,7 @@ function NoteEditor({ note, onSave, onClose, onDelete }) {
     setBody(lines.join('\n'));
   };
 
-  // Render light Markdown preview in textarea (just visual syntax hints  no live render)
+  // Render light Markdown preview in textarea (just visual syntax hints — no live render)
   return (
     <div style={{
       display: 'flex', flexDirection: 'column', height: '100%',
@@ -221,7 +221,7 @@ function NoteEditor({ note, onSave, onClose, onDelete }) {
   );
 }
 
-//  Main Notes component 
+// ── Main Notes component ───────────────────────────────────────────────────────
 export default function Notes({ ai }) {
   const { items: notes, add, update, remove, synced } = useCollection('notes', STORAGE_KEYS.NOTES);
   const [search,     setSearch]     = useState('');
@@ -287,7 +287,7 @@ export default function Notes({ ai }) {
   return (
     <div style={{ display: 'flex', height: '100%', overflow: 'hidden', position: 'relative' }}>
 
-      {/*  Main notes grid  */}
+      {/* ── Main notes grid ──────────────────────────────────────────────────── */}
       <div style={{
         flex: 1, display: 'flex', flexDirection: 'column', overflow: 'hidden',
         transition: 'margin-right 0.22s ease',
@@ -368,7 +368,7 @@ export default function Notes({ ai }) {
                 </div>
               )}
 
-              {/* All other notes  CSS columns masonry */}
+              {/* All other notes — CSS columns masonry */}
               {unpinned.length > 0 && (
                 <div style={{ columns: '220px', columnGap: 12 }}>
                   {unpinned.map(n => (
@@ -392,7 +392,7 @@ export default function Notes({ ai }) {
         </div>
       </div>
 
-      {/*  Slide-in editor panel  */}
+      {/* ── Slide-in editor panel ─────────────────────────────────────────────── */}
       {panelOpen && (
         <div style={{
           position: 'absolute', top: 0, right: 0, bottom: 0, width: 380,

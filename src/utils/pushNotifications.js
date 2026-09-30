@@ -14,7 +14,7 @@ const VAPID_KEY = import.meta.env.VITE_FIREBASE_VAPID_KEY;
 export async function requestPushPermission() {
   if (!('Notification' in window) || !('serviceWorker' in navigator)) return 'unavailable';
   if (!VAPID_KEY) {
-    console.warn('[Push] VITE_FIREBASE_VAPID_KEY not set  push notifications disabled');
+    console.warn('[Push] VITE_FIREBASE_VAPID_KEY not set — push notifications disabled');
     return 'no-vapid-key';
   }
 

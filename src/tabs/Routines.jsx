@@ -1,4 +1,4 @@
-//  Routines Tab 
+// ─── Routines Tab ─────────────────────────────────────────────────────────────
 // Build named routines (Morning, Evening, Pre-workout, etc.) with ordered steps.
 // Each step has a time, label, and optional duration/notes.
 // Reminders can be set per-routine with day selection.
@@ -26,7 +26,7 @@ const BTN_GHOST = {
   background: 'rgba(255,255,255,0.06)', color: 'var(--text-secondary)', fontSize: 13,
 };
 
-//  Step editor 
+// ─── Step editor ──────────────────────────────────────────────────────────────
 function StepRow({ step, index, onChange, onRemove, onMove, total }) {
   return (
     <div style={{
@@ -47,12 +47,12 @@ function StepRow({ step, index, onChange, onRemove, onMove, total }) {
         style={{ ...INPUT, flex: 1 }} />
       <input placeholder="Notes" value={step.notes || ''} onChange={e => onChange(index, 'notes', e.target.value)}
         style={{ ...INPUT, flex: 1, fontSize: 12, color: 'var(--text-muted)' }} />
-      <button onClick={() => onRemove(index)} style={{ background: 'none', border: 'none', cursor: 'pointer', color: '#e55a5a', fontSize: 18, lineHeight: 1, padding: '0 4px' }}></button>
+      <button onClick={() => onRemove(index)} style={{ background: 'none', border: 'none', cursor: 'pointer', color: '#e55a5a', fontSize: 18, lineHeight: 1, padding: '0 4px' }}>×</button>
     </div>
   );
 }
 
-//  Routine card 
+// ─── Routine card ─────────────────────────────────────────────────────────────
 function RoutineCard({ routine, onEdit, onDelete }) {
   const today = new Date().toLocaleDateString('en-US', { weekday: 'short' }).toLowerCase();
   const isActiveToday = routine.reminder?.days?.includes(today);
@@ -106,7 +106,7 @@ function RoutineCard({ routine, onEdit, onDelete }) {
   );
 }
 
-//  Routine form 
+// ─── Routine form ─────────────────────────────────────────────────────────────
 function RoutineForm({ initial, onSave, onCancel }) {
   const [name,    setName]    = useState(initial?.name    || '');
   const [steps,   setSteps]   = useState(initial?.steps   || [{ time: '', label: '', notes: '' }]);
@@ -189,7 +189,7 @@ function RoutineForm({ initial, onSave, onCancel }) {
   );
 }
 
-//  Main Routines Tab 
+// ─── Main Routines Tab ────────────────────────────────────────────────────────
 export default function Routines({ settings }) {
   const routines = useCollection('routines', STORAGE_KEYS.ROUTINES);
   const [editing, setEditing] = useState(null); // null | 'new' | routine object

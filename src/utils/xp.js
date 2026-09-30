@@ -1,4 +1,4 @@
-//  VALERIE XP & Rank System 
+// ─── VALERIE XP & Rank System ─────────────────────────────────────────────────
 
 import { useState, useEffect } from 'react';
 import { supabase, getUserId, getUserIdSync } from '../supabase/supabase.js';
@@ -48,7 +48,7 @@ export function useXP() {
   return xp;
 }
 
-//  Tier thresholds (total XP to enter each tier) 
+// ─── Tier thresholds (total XP to enter each tier) ───────────────────────────
 export const TIER_THRESHOLDS = [0, 600, 1800, 4000, 8000, 14000, 22000, 38000];
 
 export const TIER_CONFIG = [
@@ -62,7 +62,7 @@ export const TIER_CONFIG = [
   { tier: 8, name: 'Ascendant', color: '#ffffff', shape: 'ascendant'},
 ];
 
-//  XP sources 
+// ─── XP sources ───────────────────────────────────────────────────────────────
 export const XP_SOURCES = {
   TASK_COMPLETED:     { amount: 10,  label: 'Task completed'           },
   HABIT_DAILY:        { amount: 25,  label: 'Habit maintained'         },
@@ -78,7 +78,7 @@ export const XP_SOURCES = {
   WATER_GOAL:         { amount: 10,  label: 'Water goal hit'           },
 };
 
-//  Read XP from localStorage 
+// ─── Read XP from localStorage ────────────────────────────────────────────────
 export function getXP() {
   try {
     const raw = localStorage.getItem(XP_KEY);
@@ -86,7 +86,7 @@ export function getXP() {
   } catch { return { total: 0, log: [] }; }
 }
 
-//  Add XP 
+// ─── Add XP ───────────────────────────────────────────────────────────────────
 export function addXP(sourceKey, overrideLabel) {
   const src = XP_SOURCES[sourceKey];
   if (!src) return;

@@ -1,7 +1,8 @@
-//  CommandPalette  Ctrl+K Spotlight-style overlay 
+// ─── CommandPalette — Ctrl+K Spotlight-style overlay ──────────────────────────
 // Searches commands + live app data (tasks, notes, events, essentials, lists).
-// Keyboard navigation: / to move, Enter to execute, Escape to close.
+// Keyboard navigation: ↑/↓ to move, Enter to execute, Escape to close.
 
+import { Icon } from './icons.jsx';
 import { useState, useEffect, useRef, useCallback } from 'react';
 import { storage, STORAGE_KEYS } from '../utils/storage.js';
 import { applyTheme } from '../styles/themes.js';
@@ -11,52 +12,52 @@ import { screenForHealthSection } from '../nav/healthSection.js';
 const toast = (message, type = 'success') =>
   window.dispatchEvent(new CustomEvent('valerie:toast', { detail: { message, type } }));
 
-//  Static command definitions 
+// ─── Static command definitions ────────────────────────────────────────────────
 function buildStaticCommands(onTabChange, ai) {
   return [
     // Navigation
-    { id: 'nav-dashboard',  label: 'Go to Dashboard',   category: 'Navigate', icon: '<', action: () => onTabChange('dashboard')  },
-    { id: 'nav-assistant',  label: 'Talk to VALERIE',   category: 'Navigate', icon: '',  action: () => onTabChange('assistant')  },
-    { id: 'nav-tasks',      label: 'Go to Tasks',       category: 'Navigate', icon: '',  action: () => onTabChange('tasks')      },
-    { id: 'nav-calendar',   label: 'Go to Calendar',    category: 'Navigate', icon: '=', action: () => onTabChange('calendar')   },
-    { id: 'nav-notes',      label: 'Go to Notes',       category: 'Navigate', icon: '=', action: () => onTabChange('notes')      },
-    { id: 'nav-health',     label: 'Go to Coach',       category: 'Navigate', icon: 'd', action: () => onTabChange('coach')      },
-    { id: 'nav-goal',       label: 'Go to Goal HQ',     category: 'Navigate', icon: 'd', action: () => onTabChange('goal')       },
-    { id: 'nav-finance',    label: 'Go to Finance',     category: 'Navigate', icon: '=', action: () => onTabChange('finance')    },
-    { id: 'nav-progress',   label: 'Go to Progress',    category: 'Navigate', icon: 'P', action: () => onTabChange('progress')   },
-    { id: 'nav-style',      label: 'Go to Style',       category: 'Navigate', icon: '=W', action: () => onTabChange('style')      },
-    { id: 'nav-essentials', label: 'Go to Supplies',    category: 'Navigate', icon: '=', action: () => onTabChange('essentials') },
-    { id: 'nav-lists',      label: 'Go to Lists',       category: 'Navigate', icon: '=', action: () => onTabChange('lists')      },
-    { id: 'nav-focus',      label: 'Go to Focus',       category: 'Navigate', icon: '', action: () => onTabChange('focus')      },
-    { id: 'nav-vault',      label: 'Go to Vault',       category: 'Navigate', icon: '=', action: () => onTabChange('vault')      },
-    { id: 'nav-settings',   label: 'Go to Settings',    category: 'Navigate', icon: '', action: () => onTabChange('settings')  },
+    { id: 'nav-dashboard',  label: 'Go to Dashboard',   category: 'Navigate', icon: 'home', action: () => onTabChange('dashboard')  },
+    { id: 'nav-assistant',  label: 'Talk to VALERIE',   category: 'Navigate', icon: 'assistant',  action: () => onTabChange('assistant')  },
+    { id: 'nav-tasks',      label: 'Go to Tasks',       category: 'Navigate', icon: 'tasks',  action: () => onTabChange('tasks')      },
+    { id: 'nav-calendar',   label: 'Go to Calendar',    category: 'Navigate', icon: 'calendar', action: () => onTabChange('calendar')   },
+    { id: 'nav-notes',      label: 'Go to Notes',       category: 'Navigate', icon: 'notes', action: () => onTabChange('notes')      },
+    { id: 'nav-health',     label: 'Go to Coach',       category: 'Navigate', icon: 'coach', action: () => onTabChange('coach')      },
+    { id: 'nav-goal',       label: 'Go to Goal HQ',     category: 'Navigate', icon: 'goal', action: () => onTabChange('goal')       },
+    { id: 'nav-finance',    label: 'Go to Finance',     category: 'Navigate', icon: 'finance', action: () => onTabChange('finance')    },
+    { id: 'nav-progress',   label: 'Go to Progress',    category: 'Navigate', icon: 'progress', action: () => onTabChange('progress')   },
+    { id: 'nav-style',      label: 'Go to Style',       category: 'Navigate', icon: 'style', action: () => onTabChange('style')      },
+    { id: 'nav-essentials', label: 'Go to Supplies',    category: 'Navigate', icon: 'essentials', action: () => onTabChange('essentials') },
+    { id: 'nav-lists',      label: 'Go to Lists',       category: 'Navigate', icon: 'lists', action: () => onTabChange('lists')      },
+    { id: 'nav-focus',      label: 'Go to Focus',       category: 'Navigate', icon: 'focus', action: () => onTabChange('focus')      },
+    { id: 'nav-vault',      label: 'Go to Vault',       category: 'Navigate', icon: 'vault', action: () => onTabChange('vault')      },
+    { id: 'nav-settings',   label: 'Go to Settings',    category: 'Navigate', icon: 'settings', action: () => onTabChange('settings')  },
 
     // VALERIE actions
-    { id: 'action-brief',   label: 'Daily brief',             category: 'Action', icon: '=', action: () => { onTabChange('assistant'); ai?.sendMessage('Give me my daily brief.'); }           },
-    { id: 'action-focus',   label: 'Start focus session',     category: 'Action', icon: '', action: () => onTabChange('focus')                                                                  },
-    { id: 'action-mood',    label: 'Log mood',                category: 'Action', icon: '=', action: () => { onTabChange('progress'); }                                                          },
-    { id: 'action-water',   label: 'Log water',               category: 'Action', icon: '=', action: () => { onTabChange(screenForHealthSection('water')); }                                                          },
-    { id: 'action-howamdoing', label: 'How am I doing?',      category: 'Action', icon: '=', action: () => { onTabChange('assistant'); ai?.sendMessage('How am I doing overall?'); }            },
+    { id: 'action-brief',   label: 'Daily brief',             category: 'Action', icon: 'brief', action: () => { onTabChange('assistant'); ai?.sendMessage('Give me my daily brief.'); }           },
+    { id: 'action-focus',   label: 'Start focus session',     category: 'Action', icon: 'focus', action: () => onTabChange('focus')                                                                  },
+    { id: 'action-mood',    label: 'Log mood',                category: 'Action', icon: 'mood', action: () => { onTabChange('progress'); }                                                          },
+    { id: 'action-water',   label: 'Log water',               category: 'Action', icon: 'water', action: () => { onTabChange(screenForHealthSection('water')); }                                                          },
+    { id: 'action-howamdoing', label: 'How am I doing?',      category: 'Action', icon: 'chart', action: () => { onTabChange('assistant'); ai?.sendMessage('How am I doing overall?'); }            },
     { id: 'action-weekly',  label: 'Weekly Review (whole life)', category: 'Action', icon: 'review', action: () => window.dispatchEvent(new CustomEvent('valerie:weekly-review')) },
     { id: 'action-today',   label: "Today — everything due today", category: 'Action', icon: 'today', action: () => window.dispatchEvent(new CustomEvent('valerie:today')) },
-    { id: 'action-clear',   label: 'Clear conversation',      category: 'Action', icon: '=', action: () => ai?.clearHistory()                                                                     },
-    { id: 'action-addtask', label: 'Add a task (via VALERIE)', category: 'Action', icon: '', action: () => { onTabChange('assistant'); ai?.sendMessage('I need to add a task.'); }             },
+    { id: 'action-clear',   label: 'Clear conversation',      category: 'Action', icon: 'trash', action: () => ai?.clearHistory()                                                                     },
+    { id: 'action-addtask', label: 'Add a task (via VALERIE)', category: 'Action', icon: 'plus', action: () => { onTabChange('assistant'); ai?.sendMessage('I need to add a task.'); }             },
 
     // Data backup / restore
-    { id: 'data-export', label: 'Export all data (backup)', category: 'Data', icon: 'backup', action: () => { const n = exportBackup(); toast(`Backup downloaded — ${n} keys saved`); } },
-    { id: 'data-import', label: 'Restore from backup file',  category: 'Data', icon: 'restore', action: () => importBackup((ok, info) => toast(ok ? `Restored ${info} keys — reloading…` : `Restore failed: ${info}`, ok ? 'success' : 'sleep')) },
+    { id: 'data-export', label: 'Export all data (backup)', category: 'Data', icon: 'download', action: () => { const n = exportBackup(); toast(`Backup downloaded — ${n} keys saved`); } },
+    { id: 'data-import', label: 'Restore from backup file',  category: 'Data', icon: 'upload', action: () => importBackup((ok, info) => toast(ok ? `Restored ${info} keys — reloading…` : `Restore failed: ${info}`, ok ? 'success' : 'sleep')) },
 
     // Theme switching
-    { id: 'theme-obsidian', label: 'Theme: Obsidian', category: 'Theme', icon: '<', action: () => { applyTheme('obsidian'); const s = storage.get(STORAGE_KEYS.SETTINGS, {}); storage.set(STORAGE_KEYS.SETTINGS, { ...s, theme: 'obsidian' }); } },
-    { id: 'theme-midnight', label: 'Theme: Midnight', category: 'Theme', icon: '<', action: () => { applyTheme('midnight'); const s = storage.get(STORAGE_KEYS.SETTINGS, {}); storage.set(STORAGE_KEYS.SETTINGS, { ...s, theme: 'midnight' }); } },
-    { id: 'theme-ember',    label: 'Theme: Ember',    category: 'Theme', icon: '<', action: () => { applyTheme('ember');    const s = storage.get(STORAGE_KEYS.SETTINGS, {}); storage.set(STORAGE_KEYS.SETTINGS, { ...s, theme: 'ember'    }); } },
-    { id: 'theme-phantom',  label: 'Theme: Phantom',  category: 'Theme', icon: '<', action: () => { applyTheme('phantom');  const s = storage.get(STORAGE_KEYS.SETTINGS, {}); storage.set(STORAGE_KEYS.SETTINGS, { ...s, theme: 'phantom'  }); } },
-    { id: 'theme-arctic',   label: 'Theme: Arctic',   category: 'Theme', icon: '<', action: () => { applyTheme('arctic');   const s = storage.get(STORAGE_KEYS.SETTINGS, {}); storage.set(STORAGE_KEYS.SETTINGS, { ...s, theme: 'arctic'   }); } },
-    { id: 'theme-crimson',  label: 'Theme: Crimson',  category: 'Theme', icon: '<', action: () => { applyTheme('crimson');  const s = storage.get(STORAGE_KEYS.SETTINGS, {}); storage.set(STORAGE_KEYS.SETTINGS, { ...s, theme: 'crimson'  }); } },
+    { id: 'theme-obsidian', label: 'Theme: Obsidian', category: 'Theme', icon: 'theme', action: () => { applyTheme('obsidian'); const s = storage.get(STORAGE_KEYS.SETTINGS, {}); storage.set(STORAGE_KEYS.SETTINGS, { ...s, theme: 'obsidian' }); } },
+    { id: 'theme-midnight', label: 'Theme: Midnight', category: 'Theme', icon: 'theme', action: () => { applyTheme('midnight'); const s = storage.get(STORAGE_KEYS.SETTINGS, {}); storage.set(STORAGE_KEYS.SETTINGS, { ...s, theme: 'midnight' }); } },
+    { id: 'theme-ember',    label: 'Theme: Ember',    category: 'Theme', icon: 'theme', action: () => { applyTheme('ember');    const s = storage.get(STORAGE_KEYS.SETTINGS, {}); storage.set(STORAGE_KEYS.SETTINGS, { ...s, theme: 'ember'    }); } },
+    { id: 'theme-phantom',  label: 'Theme: Phantom',  category: 'Theme', icon: 'theme', action: () => { applyTheme('phantom');  const s = storage.get(STORAGE_KEYS.SETTINGS, {}); storage.set(STORAGE_KEYS.SETTINGS, { ...s, theme: 'phantom'  }); } },
+    { id: 'theme-arctic',   label: 'Theme: Arctic',   category: 'Theme', icon: 'theme', action: () => { applyTheme('arctic');   const s = storage.get(STORAGE_KEYS.SETTINGS, {}); storage.set(STORAGE_KEYS.SETTINGS, { ...s, theme: 'arctic'   }); } },
+    { id: 'theme-crimson',  label: 'Theme: Crimson',  category: 'Theme', icon: 'theme', action: () => { applyTheme('crimson');  const s = storage.get(STORAGE_KEYS.SETTINGS, {}); storage.set(STORAGE_KEYS.SETTINGS, { ...s, theme: 'crimson'  }); } },
   ];
 }
 
-//  App-wide data search 
+// ─── App-wide data search ──────────────────────────────────────────────────────
 function searchAppData(query, onTabChange) {
   if (!query || query.length < 2) return [];
   const q = query.toLowerCase();
@@ -72,7 +73,7 @@ function searchAppData(query, onTabChange) {
         id: `task-${t.id}`,
         label: t.title,
         category: 'Task',
-        icon: t.priority === 'high' ? '=4' : t.priority === 'medium' ? '=' : '=',
+        icon: 'task',
         meta: t.priority,
         action: () => onTabChange('tasks'),
       }));
@@ -88,7 +89,7 @@ function searchAppData(query, onTabChange) {
         id: `note-${n.id}`,
         label: n.title || 'Untitled note',
         category: 'Note',
-        icon: '=',
+        icon: 'note',
         action: () => onTabChange('notes'),
       }));
   } catch {}
@@ -103,7 +104,7 @@ function searchAppData(query, onTabChange) {
         id: `event-${e.id}`,
         label: e.title,
         category: 'Event',
-        icon: '=',
+        icon: 'event',
         meta: e.date,
         action: () => onTabChange('calendar'),
       }));
@@ -119,7 +120,7 @@ function searchAppData(query, onTabChange) {
         id: `ess-${i.id}`,
         label: i.name,
         category: 'Supply',
-        icon: '=',
+        icon: 'essentials',
         action: () => onTabChange('essentials'),
       }));
   } catch {}
@@ -134,7 +135,7 @@ function searchAppData(query, onTabChange) {
         id: `list-${i.id}`,
         label: i.title,
         category: i.category || 'List',
-        icon: '=',
+        icon: 'lists',
         action: () => onTabChange('lists'),
       }));
   } catch {}
@@ -142,7 +143,7 @@ function searchAppData(query, onTabChange) {
   return results;
 }
 
-//  Fuzzy command filter 
+// ─── Fuzzy command filter ──────────────────────────────────────────────────────
 function filterCommands(commands, query) {
   if (!query) return commands.slice(0, 8);
   const q = query.toLowerCase();
@@ -151,7 +152,7 @@ function filterCommands(commands, query) {
   );
 }
 
-//  Category colours 
+// ─── Category colours ──────────────────────────────────────────────────────────
 const CAT_COLORS = {
   Navigate: '#5b9cf6',
   Action:   'var(--accent)',
@@ -163,7 +164,7 @@ const CAT_COLORS = {
   List:     '#5b9cf6',
 };
 
-//  CommandPalette component 
+// ─── CommandPalette component ──────────────────────────────────────────────────
 export default function CommandPalette({ open, onClose, onTabChange, ai }) {
   const [query,    setQuery]    = useState('');
   const [selected, setSelected] = useState(0);
@@ -262,7 +263,7 @@ export default function CommandPalette({ open, onClose, onTabChange, ai }) {
                   color: 'var(--text-muted)', fontSize: 18, lineHeight: 1, padding: 0,
                 }}
               >
-                
+                ×
               </button>
             )}
             <kbd style={{
@@ -291,8 +292,8 @@ export default function CommandPalette({ open, onClose, onTabChange, ai }) {
                   }}
                 >
                   {/* Icon */}
-                  <span style={{ fontSize: 15, width: 22, textAlign: 'center', flexShrink: 0 }}>
-                    {item.icon}
+                  <span style={{ width: 22, display: 'flex', justifyContent: 'center', flexShrink: 0, color: selected === idx ? 'var(--accent)' : 'var(--text-secondary)' }}>
+                    <Icon name={item.icon} size={16} />
                   </span>
 
                   {/* Label */}

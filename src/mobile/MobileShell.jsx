@@ -1,4 +1,4 @@
-//  MobileShell.jsx  iOS PWA shell with bottom tab navigation 
+// ─── MobileShell.jsx — iOS PWA shell with bottom tab navigation ───────────────
 import { useState, useEffect, useRef, useCallback } from 'react';
 import { useAI }              from '../ai/useAI.js';
 import { usePeakState }       from '../hooks/usePeakState.js';
@@ -149,7 +149,7 @@ function CoachOrb({ active, orbState, shape = 'sphere', onTap, onHold }) {
   );
 }
 
-//  VALERIE slide-up chat sheet 
+// ── VALERIE slide-up chat sheet ────────────────────────────────────────────────
 function VALERIESheet({ open, onClose, ai, settings }) {
   return (
     <>
@@ -196,7 +196,7 @@ function VALERIESheet({ open, onClose, ai, settings }) {
               display: 'flex', alignItems: 'center', justifyContent: 'center',
               cursor: 'pointer', WebkitTapHighlightColor: 'transparent',
               color: 'var(--text-muted)', fontSize: 16,
-            }}></button>
+            }}>×</button>
           </div>
         </div>
 
@@ -209,7 +209,7 @@ function VALERIESheet({ open, onClose, ai, settings }) {
   );
 }
 
-//  Pull-to-refresh 
+// ── Pull-to-refresh ────────────────────────────────────────────────────────────
 function usePullToRefresh(scrollRef, onRefresh) {
   const startY   = useRef(null);
   const pulling  = useRef(false);
@@ -277,7 +277,7 @@ export default function MobileShell({ settings, onSettingsChange }) {
   const ai        = useAI();
   const peakState = usePeakState(settings);
 
-  // Notification scheduler  drives SMS + push on mobile
+  // Notification scheduler — drives SMS + push on mobile
   useNotifications(settings);
 
   // Request push permission once on first installed PWA launch
@@ -285,7 +285,7 @@ export default function MobileShell({ settings, onSettingsChange }) {
     if (!isInstalledPWA()) return;
     const alreadyAsked = localStorage.getItem('valerie_push_asked');
     if (alreadyAsked) {
-      // Permission already granted  refresh the FCM token silently
+      // Permission already granted — refresh the FCM token silently
       if (pushPermissionStatus() === 'granted') registerFCMToken();
       return;
     }
@@ -373,7 +373,7 @@ export default function MobileShell({ settings, onSettingsChange }) {
         </button>
       </div>
 
-      {/*  Screen content with pull-to-refresh  */}
+      {/* ── Screen content with pull-to-refresh ── */}
       <div
         ref={scrollRef}
         style={{ flex: 1, overflowY: 'auto', overflowX: 'hidden',
@@ -412,7 +412,7 @@ export default function MobileShell({ settings, onSettingsChange }) {
       {/*  VALERIE slide-up sheet (hold the Coach orb)  */}
       <VALERIESheet open={valOpen} onClose={() => setValOpen(false)} ai={ai} settings={settings} />
 
-      {/*  Bottom tab bar  */}
+      {/* ── Bottom tab bar ── */}
       <nav aria-label="Tabs" style={{
         position: 'fixed', bottom: 0, left: 0, right: 0,
         height: 'calc(72px + env(safe-area-inset-bottom))',

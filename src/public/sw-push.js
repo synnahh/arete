@@ -1,4 +1,4 @@
-//  sw-push.js  Push notification handler (merged into PWA service worker) 
+// ─── sw-push.js — Push notification handler (merged into PWA service worker) ──
 // This file is injected into the Workbox-generated service worker via
 // vite-plugin-pwa's importScripts option.
 

@@ -1,4 +1,4 @@
-//  VALERIE  Finance Tab 
+// ─── VALERIE — Finance Tab ────────────────────────────────────────────────────
 import { useState, useMemo, useEffect, useRef, useCallback } from 'react';
 import { useCollection }     from '../supabase/useCollection.js';
 import { STORAGE_KEYS, storage } from '../utils/storage.js';
@@ -10,7 +10,7 @@ import { toLocalDateKey } from '../utils/localDate.js';
 import { projectedSpend } from '../domain/ahead.js';
 import { suppliesWithUsage } from '../utils/supplies.js';
 
-//  Categories 
+// ─── Categories ──────────────────────────────────────────────────────────────
 const CATEGORIES = [
   { id: 'food',          label: 'Food & Drink',   colour: '#f4a642', icon: '🍔' },
   { id: 'transport',     label: 'Transport',       colour: '#5b9cf6', icon: '🚗' },
@@ -55,7 +55,7 @@ const TABS = [
   { id: 'purchases',     label: 'PURCHASES'      },
 ];
 
-//  Utilities 
+// ─── Utilities ────────────────────────────────────────────────────────────────
 const todayISO = () => toLocalDateKey(new Date());
 
 function getCurrencySymbol(code) {
@@ -66,7 +66,7 @@ function makeFmt(code) {
   return (n) => `${sym}${Math.abs(n || 0).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
 }
 function fmtDate(str) {
-  if (!str) return '';
+  if (!str) return '—';
   const d = new Date(str);
   const today = new Date();
   if (str === todayISO()) return 'Today';
@@ -98,7 +98,7 @@ function advanceDate(iso, cycle) {
 }
 
 
-//  Shared glass card style 
+// ─── Shared glass card style ──────────────────────────────────────────────────
 const GLASS = {
   background: 'rgba(255,255,255,0.04)',
   borderRadius: 16,
@@ -120,7 +120,7 @@ function GlassCard({ children, style }) {
   );
 }
 
-// Section label  monospace uppercase with left rule
+// Section label — monospace uppercase with left rule
 function SectionLabel({ children }) {
   return (
     <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: 14 }}>
@@ -133,7 +133,7 @@ function SectionLabel({ children }) {
   );
 }
 
-//  Smooth area chart SVG 
+// ─── Smooth area chart SVG ────────────────────────────────────────────────────
 function AreaChart({ data, width = 320, height = 88, colour }) {
   if (!data || data.length < 2) return <div style={{ width, height }} />;
   const max  = Math.max(...data);
@@ -181,7 +181,7 @@ function AreaChart({ data, width = 320, height = 88, colour }) {
   );
 }
 
-//  Donut 
+// ─── Donut ────────────────────────────────────────────────────────────────────
 function MiniDonut({ segments, size = 80, thickness = 14 }) {
   const total = segments.reduce((s, c) => s + c.value, 0) || 1;
   const r = (size - thickness) / 2;
@@ -208,7 +208,7 @@ function MiniDonut({ segments, size = 80, thickness = 14 }) {
   );
 }
 
-//  Shared input / button styles (glass) 
+// ─── Shared input / button styles (glass) ─────────────────────────────────────
 const INPUT = {
   padding: '9px 12px', borderRadius: 9, border: 'none',
   background: 'rgba(0,0,0,0.3)', color: 'rgba(255,255,255,0.85)',
@@ -223,7 +223,7 @@ const BTN_GHOST = {
   background: 'rgba(255,255,255,0.06)', color: 'rgba(255,255,255,0.5)', fontSize: 13,
 };
 
-//  Stock ticker strip 
+// ─── Stock ticker strip ───────────────────────────────────────────────────────
 function StockTicker({ watchlist, finnhubKey }) {
   const [quotes, setQuotes]   = useState({});
   const [loading, setLoading] = useState(false);
@@ -278,7 +278,7 @@ function StockTicker({ watchlist, finnhubKey }) {
         if (!q) return (
           <div key={sym} style={{ display: 'flex', gap: 6, alignItems: 'baseline', flexShrink: 0 }}>
             <span style={{ fontSize: 11, fontWeight: 500, color: 'var(--text-secondary)' }}>{sym}</span>
-            <span style={{ fontSize: 10, color: 'var(--text-muted)' }}></span>
+            <span style={{ fontSize: 10, color: 'var(--text-muted)' }}>—</span>
           </div>
         );
         const up = q.d >= 0;
@@ -301,7 +301,7 @@ function StockTicker({ watchlist, finnhubKey }) {
   );
 }
 
-//  Overview panel 
+// ─── Overview panel ───────────────────────────────────────────────────────────
 function Overview({ transactions, goals, subscriptions, purchases = [], fmt, currencySymbol }) {
   const now        = new Date();
   const monthStart = toLocalDateKey(new Date(now.getFullYear(), now.getMonth(), 1));
@@ -366,7 +366,7 @@ function Overview({ transactions, goals, subscriptions, purchases = [], fmt, cur
   return (
     <div style={{ display: 'flex', flexDirection: 'column', gap: 0, padding: '20px 24px 32px' }}>
 
-      {/*  Hero card  */}
+      {/* ── Hero card ─────────────────────────────────────────────────────────── */}
       <GlassCard style={{ marginBottom: 10 }}>
         <div style={{ fontSize: 9.5, fontWeight: 700, letterSpacing: '0.18em', textTransform: 'uppercase', color: 'rgba(255,255,255,0.35)', fontFamily: 'ui-monospace,monospace', marginBottom: 8 }}>
           THIS MONTH · NET BALANCE
@@ -377,12 +377,12 @@ function Overview({ transactions, goals, subscriptions, purchases = [], fmt, cur
           </div>
           <div style={{ marginBottom: 6, display: 'flex', gap: 6 }}>
             <span style={{ fontSize: 11, padding: '3px 9px', borderRadius: 999, background: `${netColour}18`, color: netColour, fontFamily: 'ui-monospace,monospace', fontWeight: 700, letterSpacing: '0.04em' }}>
-              {income > 0 ? `${Math.round((net / income) * 100)}% saved` : ''}
+              {income > 0 ? `${Math.round((net / income) * 100)}% saved` : '—'}
             </span>
           </div>
         </div>
         <div style={{ fontSize: 11.5, color: 'rgba(255,255,255,0.3)', fontFamily: 'ui-monospace,monospace' }}>
-          {now.toLocaleDateString('en-GB', { month: 'long', year: 'numeric' })} &nbsp;·&nbsp; All-time net: {allNet >= 0 ? '+' : ''}{fmt(Math.abs(allNet))}
+          {now.toLocaleDateString('en-GB', { month: 'long', year: 'numeric' })} &nbsp;·&nbsp; All-time net: {allNet >= 0 ? '+' : '−'}{fmt(Math.abs(allNet))}
         </div>
 
         {/* Chart + allocation row */}
@@ -414,7 +414,7 @@ function Overview({ transactions, goals, subscriptions, purchases = [], fmt, cur
         </div>
       </GlassCard>
 
-      {/*  Stats strip  */}
+      {/* ── Stats strip ──────────────────────────────────────────────────────── */}
       <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3,1fr)', gap: 8, marginBottom: 10 }}>
         {[
           { label: 'INCOME',        value: fmt(income),         colour: '#6BE3A4' },
@@ -449,7 +449,7 @@ function Overview({ transactions, goals, subscriptions, purchases = [], fmt, cur
         </GlassCard>
       )}
 
-      {/*  Renewal alerts  */}
+      {/* ── Renewal alerts ───────────────────────────────────────────────────── */}
       {renewalsSoon.length > 0 && (
         <GlassCard style={{ marginBottom: 10, background: 'rgba(242,192,99,0.06)' }}>
           <SectionLabel>Upcoming renewals</SectionLabel>
@@ -465,7 +465,7 @@ function Overview({ transactions, goals, subscriptions, purchases = [], fmt, cur
         </GlassCard>
       )}
 
-      {/*  Savings goals  */}
+      {/* ── Savings goals ────────────────────────────────────────────────────── */}
       {goals.length > 0 && (
         <GlassCard style={{ marginBottom: 10 }}>
           <SectionLabel>Savings goals</SectionLabel>
@@ -490,12 +490,12 @@ function Overview({ transactions, goals, subscriptions, purchases = [], fmt, cur
         </GlassCard>
       )}
 
-      {/*  Recent activity  */}
+      {/* ── Recent activity ──────────────────────────────────────────────────── */}
       <GlassCard>
         <SectionLabel>Recent activity</SectionLabel>
         {recent.length === 0 ? (
           <div style={{ textAlign: 'center', padding: '20px 0', fontSize: 12, color: 'rgba(255,255,255,0.25)', fontFamily: 'ui-monospace,monospace', letterSpacing: '0.1em', textTransform: 'uppercase' }}>
-            No transactions yet  add some in Spending
+            No transactions yet — add some in Spending
           </div>
         ) : (
           <Stagger step={32} style={{ display: 'flex', flexDirection: 'column', gap: 0 }}>
@@ -519,7 +519,7 @@ function Overview({ transactions, goals, subscriptions, purchases = [], fmt, cur
                   </div>
                   <div style={{ fontSize: 10.5, color: 'rgba(255,255,255,0.28)', flexShrink: 0, fontFamily: 'ui-monospace,monospace', marginRight: 6 }}>{fmtDate(t.date)}</div>
                   <div style={{ fontSize: 13.5, fontWeight: 600, flexShrink: 0, color: isIncome ? '#6BE3A4' : 'rgba(255,255,255,0.75)', fontVariantNumeric: 'tabular-nums', minWidth: 72, textAlign: 'right' }}>
-                    {isIncome ? '+' : ''}{fmt(t.amount)}
+                    {isIncome ? '+' : '−'}{fmt(t.amount)}
                   </div>
                 </div>
               );
@@ -613,7 +613,7 @@ function Spending({ transactions, onAdd, fmt }) {
                 background: type === t ? (t === 'income' ? '#4caf7d' : '#e55a5a') : 'rgba(255,255,255,0.06)',
                 color: type === t ? '#fff' : 'var(--text-secondary)',
               }}>
-                {t === 'expense' ? ' Expense' : '+ Income'}
+                {t === 'expense' ? '− Expense' : '+ Income'}
               </button>
             ))}
           </div>
@@ -674,7 +674,7 @@ function Spending({ transactions, onAdd, fmt }) {
               </div>
               <span style={{ fontSize: 10.5, color: 'rgba(255,255,255,0.28)', fontFamily: 'ui-monospace,monospace', marginRight: 6 }}>{fmtDate(t.date)}</span>
               <span style={{ fontSize: 13.5, fontWeight: 600, color: t.type === 'income' ? '#6BE3A4' : 'rgba(255,255,255,0.75)', minWidth: 68, textAlign: 'right', fontVariantNumeric: 'tabular-nums' }}>
-                {t.type === 'income' ? '+' : ''}{fmt(t.amount)}
+                {t.type === 'income' ? '+' : '−'}{fmt(t.amount)}
               </span>
             </div>
           );
@@ -684,7 +684,7 @@ function Spending({ transactions, onAdd, fmt }) {
   );
 }
 
-//  Savings panel 
+// ─── Savings panel ────────────────────────────────────────────────────────────
 function Savings({ goals, onAdd, onUpdate, onRemove, fmt }) {
   const [showForm, setShowForm] = useState(false);
   const [name, setName]         = useState('');
@@ -777,7 +777,7 @@ function Savings({ goals, onAdd, onUpdate, onRemove, fmt }) {
   );
 }
 
-//  Subscriptions panel 
+// ─── Subscriptions panel ──────────────────────────────────────────────────────
 function Subscriptions({ subs, onAdd, onUpdate, onRemove, fmt }) {
   const [showForm, setShowForm] = useState(false);
   const [name, setName]         = useState('');
@@ -882,7 +882,7 @@ function Subscriptions({ subs, onAdd, onUpdate, onRemove, fmt }) {
   );
 }
 
-//  Main Finance Tab 
+// ─── Main Finance Tab ─────────────────────────────────────────────────────────
 
 // """""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
 // PLANNED PURCHASES
@@ -1442,7 +1442,7 @@ export default function Finance({ settings = {} }) {
   return (
     <div style={{ display: 'flex', flexDirection: 'column', height: '100%', overflow: 'hidden', background: 'var(--bg-base)' }}>
 
-      {/*  Top header  */}
+      {/* ── Top header ─────────────────────────────────────────────────────── */}
       <div style={{ padding: '18px 24px 0', flexShrink: 0 }}>
         <div style={{ fontSize: 20, fontWeight: 300, color: 'rgba(255,255,255,0.9)', letterSpacing: '-0.01em', marginBottom: 14 }}>
           Finance
@@ -1469,7 +1469,7 @@ export default function Finance({ settings = {} }) {
         </div>
       </div>
 
-      {/*  Stock ticker  */}
+      {/* ── Stock ticker ──────────────────────────────────────────────────── */}
       {section === 'overview' && (
         <StockTicker watchlist={watchlist} finnhubKey={finnhubKey} />
       )}
@@ -1481,7 +1481,7 @@ export default function Finance({ settings = {} }) {
         </div>
       )}
 
-      {/*  Scrollable content  */}
+      {/* ── Scrollable content ──────────────────────────────────────────────── */}
       <div style={{ flex: 1, overflowY: 'auto' }}>
         {section === 'overview' && (
           <Overview transactions={txn.items} goals={goals.items} subscriptions={subs.items} purchases={purchases.items} fmt={fmt} currencySymbol={currencySymbol} />

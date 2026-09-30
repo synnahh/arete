@@ -1,4 +1,4 @@
-//  MobileFinance.jsx  Finance tab for VALERIE iOS PWA 
+// ─── MobileFinance.jsx — Finance tab for VALERIE iOS PWA ─────────────────────
 import { useState, useMemo } from 'react';
 import { useCollection } from '../../supabase/useCollection.js';
 import { STORAGE_KEYS }  from '../../utils/storage.js';
@@ -52,7 +52,7 @@ function todayISO() { return toLocalDateKey(new Date()); }
 const isIncomeTx = (t) => (t.type ? t.type === 'income' : String(t.category).toLowerCase() === 'income');
 
 function fmtDate(str) {
-  if (!str) return '';
+  if (!str) return '—';
   const today = toLocalDateKey(new Date());
   const yesterday = new Date(); yesterday.setDate(yesterday.getDate() - 1);
   const yStr = toLocalDateKey(yesterday);
@@ -72,7 +72,7 @@ function daysUntil(dateStr) {
   return Math.ceil((new Date(dateStr) - new Date()) / 86400000);
 }
 
-//  Cards 
+// ── Cards ──────────────────────────────────────────────────────────────────────
 function MCard({ children, style = {} }) {
   return (
     <div style={{ background: 'var(--bg-panel)', border: '0.5px solid var(--card-border)',
@@ -91,7 +91,7 @@ function MLabel({ children }) {
   );
 }
 
-//  Donut 
+// ── Donut ──────────────────────────────────────────────────────────────────────
 function Donut({ segments, size = 96, thickness = 13, centerLabel, centerSub }) {
   const r = (size - thickness) / 2, cx = size / 2, cy = size / 2, circ = 2 * Math.PI * r;
   const total = segments.reduce((s, g) => s + g.value, 0);
@@ -127,7 +127,7 @@ function Donut({ segments, size = 96, thickness = 13, centerLabel, centerSub }) 
   );
 }
 
-//  Overview 
+// ── Overview ───────────────────────────────────────────────────────────────────
 function OverviewTab({ transactions, subscriptions, purchases, settings }) {
   const currency = settings?.currency || DEFAULT_CURRENCY;
   const sym = currencySym(currency);
@@ -438,7 +438,7 @@ function SpendingTab({ transactions, settings, onAdd }) {
   );
 }
 
-//  Subscriptions 
+// ── Subscriptions ──────────────────────────────────────────────────────────────
 function AddSubscriptionSheet({ onAdd, onClose }) {
   const [name, setName]   = useState('');
   const [amount, setAmount] = useState('');
@@ -550,7 +550,7 @@ function SubscriptionsTab({ subscriptions, settings, onAdd }) {
       <MCard style={{ padding: 0 }}>
         {sorted.length === 0 ? (
           <div style={{ padding: '20px 18px', fontSize: 13, color: 'var(--text-muted)' }}>
-            No subscriptions tracked yet  add them on desktop
+            No subscriptions tracked yet — add them on desktop
           </div>
         ) : sorted.map((sub, i) => {
           const days = sub.nextBilling ? daysUntil(sub.nextBilling) : null;
@@ -582,7 +582,7 @@ function SubscriptionsTab({ subscriptions, settings, onAdd }) {
   );
 }
 
-//  Purchases 
+// ── Purchases ──────────────────────────────────────────────────────────────────
 function PurchasesTab({ purchases, settings }) {
   const currency = settings?.currency || DEFAULT_CURRENCY;
   const sym = currencySym(currency);
@@ -632,7 +632,7 @@ function PurchasesTab({ purchases, settings }) {
                   </div>
                 </div>
                 <div style={{ fontSize: 14, color: 'var(--text-primary)', flexShrink: 0 }}>
-                  {p.price ? fmt(p.price) : ''}
+                  {p.price ? fmt(p.price) : '—'}
                 </div>
               </div>
             );
@@ -665,7 +665,7 @@ function PurchasesTab({ purchases, settings }) {
       {purchases.length === 0 && (
         <MCard style={{ padding: '20px 18px' }}>
           <div style={{ fontSize: 13, color: 'var(--text-muted)' }}>
-            No purchases tracked yet  add from desktop
+            No purchases tracked yet — add from desktop
           </div>
         </MCard>
       )}
@@ -673,7 +673,7 @@ function PurchasesTab({ purchases, settings }) {
   );
 }
 
-//  Main 
+// ── Main ───────────────────────────────────────────────────────────────────────
 export default function MobileFinance({ settings }) {
   const [sub, setSub] = useState('Overview');
 

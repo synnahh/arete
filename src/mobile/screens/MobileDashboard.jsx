@@ -1,4 +1,4 @@
-//  MobileDashboard.jsx  Full desktop widget parity for iOS PWA 
+// ─── MobileDashboard.jsx — Full desktop widget parity for iOS PWA ────────────
 import { useState, useEffect, useRef, useCallback } from 'react';
 import { storage, STORAGE_KEYS } from '../../utils/storage.js';
 import { getGreeting, formatDate } from '../../utils/time.js';
@@ -16,7 +16,7 @@ import GoalRing from '../../components/GoalRing.jsx';
 import NextMoves from '../../components/NextMoves.jsx';
 import OverallCard from '../../components/OverallCard.jsx';
 
-//  Shared components 
+// ── Shared components ──────────────────────────────────────────────────────────
 function MCard({ children, style = {}, onClick }) {
   return (
     <div onClick={onClick} style={{
@@ -37,7 +37,7 @@ function MLabel({ children, style = {} }) {
   );
 }
 
-//  Live clock 
+// ── Live clock ─────────────────────────────────────────────────────────────────
 function LiveClock() {
   const [now, setNow] = useState(new Date());
   useEffect(() => {
@@ -61,7 +61,7 @@ function LiveClock() {
   );
 }
 
-//  Stat cards strip 
+// ── Stat cards strip ───────────────────────────────────────────────────────────
 const QUOTES = [
   { text: "Discipline equals freedom.", author: "Jocko Willink" },
   { text: "The impediment to action advances action.", author: "Marcus Aurelius" },
@@ -138,7 +138,7 @@ function StatStrip({ tasks }) {
         <MLabel style={{ marginBottom: 6 }}>Quote</MLabel>
         <p style={{ margin: 0, fontSize: 12, color: 'var(--text-secondary)', fontStyle: 'italic',
           lineHeight: 1.55, flex: 1 }}>"{quote.text}"</p>
-        <div style={{ fontSize: 10.5, color: 'var(--text-muted)', marginTop: 8 }}> {quote.author}</div>
+        <div style={{ fontSize: 10.5, color: 'var(--text-muted)', marginTop: 8 }}>— {quote.author}</div>
       </div>
 
       {/* Verse */}
@@ -172,7 +172,7 @@ function StatStrip({ tasks }) {
   );
 }
 
-//  Daily Brief 
+// ── Daily Brief ────────────────────────────────────────────────────────────────
 function DailyBriefCard({ ai }) {
   const [brief, setBrief]     = useState(() => storage.get('valerie_daily_brief_text', null));
   const [loading, setLoading] = useState(false);
@@ -225,7 +225,7 @@ function DailyBriefCard({ ai }) {
   );
 }
 
-//  Spotify card 
+// ── Spotify card ───────────────────────────────────────────────────────────────
 function SpotifyCard() {
   return (
     <MCard style={{ flexDirection: 'row', display: 'flex', alignItems: 'center', gap: 12 }}>
@@ -241,7 +241,7 @@ function SpotifyCard() {
   );
 }
 
-//  Today's Workout card 
+// ── Today's Workout card ───────────────────────────────────────────────────────
 const DAY_KEYS = ['sun','mon','tue','wed','thu','fri','sat'];
 const SPLIT_COLOURS = { push:'#e25d7a', pull:'#4a9eff', legs:'#f4a642', rest:'rgba(255,255,255,0.2)', custom:'#9b5de5' };
 
@@ -273,7 +273,7 @@ function TodayWorkoutCard({ onTabChange }) {
         <div style={{ fontSize: 9, fontWeight: 700, letterSpacing: '0.1em', textTransform: 'uppercase',
           color: isRest ? 'rgba(255,255,255,0.3)' : colour, marginBottom: 4 }}>Today's Workout</div>
         <div style={{ fontSize: 14, fontWeight: 600, color: 'var(--text-primary)' }}>
-          {isRest ? 'Rest Day' : `${label}  ${exCount} exercise${exCount !== 1 ? 's' : ''}`}
+          {isRest ? 'Rest Day' : `${label} — ${exCount} exercise${exCount !== 1 ? 's' : ''}`}
         </div>
       </div>
       <div style={{ fontSize: 14, color: colour, opacity: 0.7 }}> </div>
@@ -281,7 +281,7 @@ function TodayWorkoutCard({ onTabChange }) {
   );
 }
 
-//  Peak State card (full, matching desktop) 
+// ── Peak State card (full, matching desktop) ───────────────────────────────────
 function PeakStateCard({ peakState, onTabChange }) {
   if (!peakState) return null;
   const { score, color, suggestion, factors } = peakState;
@@ -343,7 +343,7 @@ function PeakStateCard({ peakState, onTabChange }) {
   );
 }
 
-//  Tasks panel (full, matching desktop) 
+// ── Tasks panel (full, matching desktop) ───────────────────────────────────────
 const PRIORITY_COLOR = { high: '#e55', med: '#f90', low: '#5a9' };
 
 function TasksPanel({ onTabChange, tasks, toggle, addTask: addTaskToStore }) {
@@ -377,7 +377,7 @@ function TasksPanel({ onTabChange, tasks, toggle, addTask: addTaskToStore }) {
       <div style={{ maxHeight: 280, overflowY: 'auto' }}>
         {visible.length === 0 ? (
           <div style={{ padding: '16px', fontSize: 13, color: 'var(--text-muted)' }}>
-            All clear  you're on top of everything.
+            All clear — you're on top of everything.
           </div>
         ) : visible.map((t) => {
           const pCol = PRIORITY_COLOR[t.priority] ?? PRIORITY_COLOR.low;
@@ -429,7 +429,7 @@ function TasksPanel({ onTabChange, tasks, toggle, addTask: addTaskToStore }) {
   );
 }
 
-//  Productivity widget (full, matching desktop) 
+// ── Productivity widget (full, matching desktop) ───────────────────────────────
 const TAG_COLOURS = ['var(--accent)','#f59e0b','#10b981','#6366f1','#ec4899','#14b8a6','#f97316','#8b5cf6'];
 
 function DonutChart({ segments, size = 88, thickness = 14 }) {
@@ -559,7 +559,7 @@ function ProductivityWidget({ onTabChange, tasks }) {
   );
 }
 
-//  Main Dashboard 
+// ── Main Dashboard ─────────────────────────────────────────────────────────────
 export default function MobileDashboard({ settings, ai, peakState, onTabChange }) {
   const userName = settings?.userName || 'Rob';
   const { tasks, toggle, addTask } = useTasks();
@@ -568,7 +568,7 @@ export default function MobileDashboard({ settings, ai, peakState, onTabChange }
     <div style={{ padding: '16px', display: 'flex', flexDirection: 'column', gap: 12 }}>
       <style>{`@keyframes mPulse { 0%,100%{opacity:1} 50%{opacity:0.3} }`}</style>
 
-      {/*  Header  */}
+      {/* ── Header ── */}
       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start',
         paddingTop: 4, marginBottom: 4 }}>
         <div>
@@ -584,30 +584,30 @@ export default function MobileDashboard({ settings, ai, peakState, onTabChange }
       <NextMoves onTabChange={onTabChange} compact />
       <OverallCard compact />
 
-      {/*  Stat strip (horizontal scroll)  */}
+      {/* ── Stat strip (horizontal scroll) ── */}
       <StatStrip tasks={tasks} />
 
-      {/*  Daily Brief  */}
+      {/* ── Daily Brief ── */}
       <DailyBriefCard ai={ai} />
 
-      {/*  Spotify  */}
+      {/* ── Spotify ── */}
       <SpotifyCard />
 
-      {/*  Today Workout  */}
+      {/* ── Today Workout ── */}
       <TodayWorkoutCard onTabChange={onTabChange} />
 
-      {/*  Peak State  */}
+      {/* ── Peak State ── */}
       <PeakStateCard peakState={peakState} onTabChange={onTabChange} />
 
-      {/*  Day Ring  */}
+      {/* ── Day Ring ── */}
       <MCard style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '24px 16px' }}>
         <DayRing />
       </MCard>
 
-      {/*  Tasks Panel  */}
+      {/* ── Tasks Panel ── */}
       <TasksPanel onTabChange={onTabChange} tasks={tasks} toggle={toggle} addTask={addTask} />
 
-      {/*  Productivity  */}
+      {/* ── Productivity ── */}
       <ProductivityWidget onTabChange={onTabChange} tasks={tasks} />
     </div>
   );

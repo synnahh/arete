@@ -1,5 +1,5 @@
 //  Health Tab 
-// 8 sub-sections: Overview  Habits  Nutrition  Water  Body  Supplements  Sleep  Stimulant
+// 8 sub-sections: Overview · Habits · Nutrition · Water · Body · Supplements · Sleep · Stimulant
 
 import { useState, useEffect, useCallback, useMemo, useRef } from 'react';
 import { useCollection }                  from '../supabase/useCollection.js';
@@ -31,7 +31,7 @@ import { calcWaterGoal, waterAdvice, DEFAULT_WATER_PROFILE } from '../domain/wat
 import { currentWaterGoal, trainedToday, sleepWindow } from '../utils/waterGoal.js';
 import WeightChart from '../components/WeightChart.jsx';
 
-//  Helpers 
+// ── Helpers ───────────────────────────────────────────────────────────────────
 const todayStr = () => toLocalDateKey(new Date());
 const nowStr   = () => new Date().toLocaleTimeString('en-AU', { hour: '2-digit', minute: '2-digit', hour12: false });
 
@@ -46,7 +46,7 @@ const PlusIcon   = () => <Icon d="M12 5v14 M5 12h14" />;
 const MicIcon    = () => <Icon d="M12 1a3 3 0 00-3 3v8a3 3 0 006 0V4a3 3 0 00-3-3z M19 10v2a7 7 0 01-14 0v-2 M12 19v4 M8 23h8" />;
 const ScanIcon   = () => <Icon d="M3 7V5a2 2 0 012-2h2 M17 3h2a2 2 0 012 2v2 M21 17v2a2 2 0 01-2 2h-2 M7 21H5a2 2 0 01-2-2v-2 M7 12h10" />;
 
-//  Glass card (matches Finance tab aesthetic) 
+// ── Glass card (matches Finance tab aesthetic) ─────────────────────────────────
 const GLASS = {
   background: 'rgba(255,255,255,0.04)',
   borderRadius: 16,
@@ -75,7 +75,7 @@ function GlassLabel({ children }) {
   );
 }
 
-//  Shared style tokens 
+// ── Shared style tokens ────────────────────────────────────────────────────────
 const inputSx = {
   width: '100%', background: 'var(--input-bg)', border: '0.5px solid var(--input-border)',
   borderRadius: 7, padding: '7px 10px', fontSize: 12.5, color: 'var(--text-primary)',
@@ -100,7 +100,7 @@ const lblSx = {
   letterSpacing: '0.06em', marginBottom: 4,
 };
 
-//  Section wrapper 
+// ── Section wrapper ───────────────────────────────────────────────────────────
 function Section({ title, children, action }) {
   return (
     <div style={{ height: '100%', display: 'flex', flexDirection: 'column', overflow: 'hidden' }}>
@@ -118,7 +118,7 @@ function Section({ title, children, action }) {
   );
 }
 
-//  Stat card 
+// ── Stat card ─────────────────────────────────────────────────────────────────
 function StatCard({ label, value, unit, colour = 'var(--accent)', ring, children }) {
   return (
     <div style={{ ...cardSx, display: 'flex', alignItems: 'center', gap: 14, flex: 1, minWidth: 130 }}>
@@ -139,8 +139,8 @@ function StatCard({ label, value, unit, colour = 'var(--accent)', ring, children
   );
 }
 
-// PPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPP
-//  Demo data shown when nothing is logged 
+// ═══════════════════════════════════════════════════════════════════════════════
+// ── Demo data shown when nothing is logged ────────────────────────────────────
 const DEMO_SLEEP = { date:'demo', efficiency:82, duration:445, bedTime:'22:45', wakeTime:'07:00',
   stages:{ deep:62, rem:88, core:228, awake:67 } };
 const DEMO_NUTRITION = { calories:1650, protein:95, carbs:182, fat:54, meals:[
@@ -153,8 +153,8 @@ const DEMO_NUTRITION = { calories:1650, protein:95, carbs:182, fat:54, meals:[
 const DEMO_BODY = { weight:82.4, bodyFat:14.8, muscle:68.2 };
 const DEMO_WATER = 1850;
 
-// 1. OVERVIEW  dense command centre
-// PPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPP
+// 1. OVERVIEW — dense command centre
+// ═══════════════════════════════════════════════════════════════════════════════
 function Overview({ habits, waterLogs, nutritionLogs, sleepData, settings, supplements, suppLogs, stimLogs, workoutLogs, bodyMetrics, onNav, onTabChange, appleHealth }) {
   const today = todayStr();
 
@@ -284,7 +284,7 @@ function Overview({ habits, waterLogs, nutritionLogs, sleepData, settings, suppl
           </div>
         )}
 
-        {/*  SLEEP QUALITY  */}
+        {/* ── SLEEP QUALITY ── */}
         <div>
           <GlassLabel>Sleep Quality</GlassLabel>
           <GlassCard style={{cursor:'pointer'}} onClick={()=>onNav('sleep')}>
@@ -301,14 +301,14 @@ function Overview({ habits, waterLogs, nutritionLogs, sleepData, settings, suppl
                     />
                   </svg>
                   <div style={{position:'absolute',inset:0,display:'flex',flexDirection:'column',alignItems:'center',justifyContent:'center',pointerEvents:'none'}}>
-                    <div style={{fontSize:20,fontWeight:700,color:effColour(lastSleep.efficiency??0),lineHeight:1}}>{lastSleep.efficiency??''}%</div>
+                    <div style={{fontSize:20,fontWeight:700,color:effColour(lastSleep.efficiency??0),lineHeight:1}}>{lastSleep.efficiency??'—'}%</div>
                     <div style={{fontSize:8,color:'rgba(255,255,255,0.3)',letterSpacing:'0.08em',marginTop:3}}>EFF</div>
                   </div>
                 </div>
                 <div style={{flex:1,minWidth:0}}>
                   <div style={{display:'flex',alignItems:'baseline',gap:12,marginBottom:4}}>
                     <span style={{fontSize:38,fontWeight:200,color:'rgba(255,255,255,0.92)',lineHeight:1}}>{sleepH}h <span style={{fontSize:26}}>{sleepM}m</span></span>
-                    <span style={{fontSize:12,color:'rgba(255,255,255,0.35)',fontFamily:'ui-monospace,monospace'}}>{lastSleep.bedTime??''}  {lastSleep.wakeTime??''}</span>
+                    <span style={{fontSize:12,color:'rgba(255,255,255,0.35)',fontFamily:'ui-monospace,monospace'}}>{lastSleep.bedTime??'—'} → {lastSleep.wakeTime??'—'}</span>
                   </div>
                   {lastSleep.stages ? (
                     <>
@@ -339,14 +339,14 @@ function Overview({ habits, waterLogs, nutritionLogs, sleepData, settings, suppl
                 </div>
                 <div>
                   <div style={{fontSize:15,color:'rgba(255,255,255,0.3)',marginBottom:6}}>No sleep logged yet</div>
-                  <div style={{fontSize:12,color:'rgba(255,255,255,0.18)'}}>Log via Sleep tab or sync Apple Health on iOS </div>
+                  <div style={{fontSize:12,color:'rgba(255,255,255,0.18)'}}>Log via Sleep tab or sync Apple Health on iOS →</div>
                 </div>
               </div>
             )}
           </GlassCard>
         </div>
 
-        {/*  VITALS  */}
+        {/* ── VITALS ── */}
         <div>
           <GlassLabel>Vitals</GlassLabel>
           <div style={{display:'flex',gap:10}}>
@@ -358,11 +358,11 @@ function Overview({ habits, waterLogs, nutritionLogs, sleepData, settings, suppl
           </div>
         </div>
 
-        {/*  STATUS chips  */}
+        {/* ── STATUS chips ── */}
         <div style={{display:'flex',gap:8,flexWrap:'wrap'}}>
-          <Stat label="Habits"      value={`${todayHabits.done}/${todayHabits.total}`} sub={todayHabits.done===todayHabits.total&&todayHabits.total>0?' all done':`${todayHabits.total-todayHabits.done} left`} colour="#4caf7d" nav={()=>onNav('habits')} />
-          <Stat label="Supplements" value={`${todaySupps.done}/${todaySupps.total}`}   sub={todaySupps.done===todaySupps.total&&todaySupps.total>0?' all taken':'remaining'} colour="#9b5de5" nav={()=>onNav('supplements')} />
-          <Stat label="Workout"     value={workedOutToday?'Done ':'Not yet'} colour={workedOutToday?'#4caf7d':'rgba(255,255,255,0.35)'} sub={workedOutToday?'logged today':'no session'} nav={()=>onTabChange?.('workout')} />
+          <Stat label="Habits"      value={`${todayHabits.done}/${todayHabits.total}`} sub={todayHabits.done===todayHabits.total&&todayHabits.total>0?'✓ all done':`${todayHabits.total-todayHabits.done} left`} colour="#4caf7d" nav={()=>onNav('habits')} />
+          <Stat label="Supplements" value={`${todaySupps.done}/${todaySupps.total}`}   sub={todaySupps.done===todaySupps.total&&todaySupps.total>0?'✓ all taken':'remaining'} colour="#9b5de5" nav={()=>onNav('supplements')} />
+          <Stat label="Workout"     value={workedOutToday?'Done ✓':'Not yet'} colour={workedOutToday?'#4caf7d':'rgba(255,255,255,0.35)'} sub={workedOutToday?'logged today':'no session'} nav={()=>onTabChange?.('workout')} />
           <div style={{flex:'1 1 0',minWidth:0,padding:'14px 16px',background:'rgba(255,255,255,0.03)',borderRadius:12,border:`0.5px solid ${todayStims.caffeine>caffLimit*0.9?'rgba(244,166,66,0.4)':'rgba(255,255,255,0.07)'}`}}>
             <div style={{fontSize:9,fontWeight:700,letterSpacing:'0.16em',textTransform:'uppercase',color:'rgba(255,255,255,0.28)',fontFamily:'ui-monospace,monospace',marginBottom:7}}>Caffeine</div>
             <div style={{display:'flex',alignItems:'baseline',gap:4}}>
@@ -383,7 +383,7 @@ function Overview({ habits, waterLogs, nutritionLogs, sleepData, settings, suppl
           )}
         </div>
 
-        {/*  BODY metrics  */}
+        {/* ── BODY metrics ── */}
         {latestBody && (
           <div>
             <GlassLabel>Body</GlassLabel>
@@ -393,7 +393,7 @@ function Overview({ habits, waterLogs, nutritionLogs, sleepData, settings, suppl
                 onMouseLeave={e=>e.currentTarget.style.background='rgba(255,255,255,0.03)'}>
                 <div style={{fontSize:9,fontWeight:700,letterSpacing:'0.16em',textTransform:'uppercase',color:'rgba(255,255,255,0.28)',fontFamily:'ui-monospace,monospace',marginBottom:10}}>Weight</div>
                 <div style={{fontSize:34,fontWeight:200,color:'rgba(255,255,255,0.9)',lineHeight:1}}>{latestBody.weight}<span style={{fontSize:15,color:'rgba(255,255,255,0.3)',marginLeft:4}}>kg</span></div>
-                {latestBody.date&&<div style={{fontSize:10.5,color:'rgba(255,255,255,0.25)',marginTop:6,fontFamily:'ui-monospace,monospace'}}>{latestBody.date===today?'logged today':latestBody.date?.slice(5)??''}</div>}
+                {latestBody.date&&<div style={{fontSize:10.5,color:'rgba(255,255,255,0.25)',marginTop:6,fontFamily:'ui-monospace,monospace'}}>{latestBody.date===today?'logged today':latestBody.date?.slice(5)??'—'}</div>}
               </div>
               {latestBody.bodyFat!=null&&(
                 <div onClick={()=>onNav('body')} style={{flex:1,padding:'20px 18px',background:'rgba(255,255,255,0.03)',borderRadius:14,border:'0.5px solid rgba(255,255,255,0.07)',cursor:'pointer'}}
@@ -416,7 +416,7 @@ function Overview({ habits, waterLogs, nutritionLogs, sleepData, settings, suppl
           </div>
         )}
 
-        {/*  TODAY'S MEALS  */}
+        {/* ── TODAY'S MEALS ── */}
         <div>
           <GlassLabel>Today's meals</GlassLabel>
           <GlassCard>
@@ -424,7 +424,7 @@ function Overview({ habits, waterLogs, nutritionLogs, sleepData, settings, suppl
               <div style={{display:'flex',flexDirection:'column',gap:0}}>
                 {todayMeals.map((m,i)=>(
                   <div key={m.id||i} style={{display:'flex',alignItems:'center',gap:14,padding:'11px 0',borderBottom:i<todayMeals.length-1?'0.5px solid rgba(255,255,255,0.05)':'none'}}>
-                    <span style={{fontSize:10.5,color:'rgba(255,255,255,0.25)',fontFamily:'ui-monospace,monospace',minWidth:40}}>{m.time??''}</span>
+                    <span style={{fontSize:10.5,color:'rgba(255,255,255,0.25)',fontFamily:'ui-monospace,monospace',minWidth:40}}>{m.time??'—'}</span>
                     <span style={{flex:1,fontSize:13,color:'rgba(255,255,255,0.75)',overflow:'hidden',textOverflow:'ellipsis',whiteSpace:'nowrap'}}>{m.name}</span>
                     <div style={{display:'flex',gap:12,flexShrink:0}}>
                       {[{v:m.calories,u:'kcal',c:'#f4a642'},{v:m.protein,u:'p',c:'#4a9eff'},{v:m.carbs,u:'c',c:'#4caf7d'},{v:m.fat,u:'f',c:'#9b5de5'}].map(({v,u,c})=>(
@@ -441,7 +441,7 @@ function Overview({ habits, waterLogs, nutritionLogs, sleepData, settings, suppl
               </div>
             )}
             <div style={{display:'flex',justifyContent:'flex-end',marginTop:10}}>
-              <button onClick={()=>onNav('nutrition')} style={{fontSize:11,color:'var(--accent)',background:'none',border:'none',cursor:'pointer',padding:0}}>View nutrition </button>
+              <button onClick={()=>onNav('nutrition')} style={{fontSize:11,color:'var(--accent)',background:'none',border:'none',cursor:'pointer',padding:0}}>View nutrition →</button>
             </div>
           </GlassCard>
         </div>
@@ -452,18 +452,18 @@ function Overview({ habits, waterLogs, nutritionLogs, sleepData, settings, suppl
 }
 
 
-// PPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPP
+// ═══════════════════════════════════════════════════════════════════════════════
 // 2. HABITS
-// PPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPP
+// ═══════════════════════════════════════════════════════════════════════════════
 function Habits({ habits, addHabit, updateHabit, removeHabit }) {
   const [adding, setAdding] = useState(false);
-  const [form, setForm]     = useState({ name: '', icon: '', frequency: 'daily' });
+  const [form, setForm]     = useState({ name: '', icon: '✅', frequency: 'daily' });
   const today = todayStr();
 
   // Streak rules live in domain/habits.js: a missed day now breaks the streak.
   const toggle = (habit) => updateHabit(habit.id, toggleDay(habit, today));
 
-  const ICONS = ['','<','=','=','>','=','<','<','>W','=','','='];
+  const ICONS = ['✅','🏃','💧','📚','🧘','💪','🎯','🌙','🥗','🚭','☕','🛌'];
 
   return (
     <Section title="Habits" action={
@@ -501,7 +501,7 @@ function Habits({ habits, addHabit, updateHabit, removeHabit }) {
             <button onClick={async () => {
               if (!form.name.trim()) return;
               await addHabit({ name: form.name.trim(), icon: form.icon, frequency: form.frequency, streak: 0, lastCompleted: '' });
-              setForm({ name: '', icon: '', frequency: 'daily' });
+              setForm({ name: '', icon: '✅', frequency: 'daily' });
               setAdding(false);
             }} style={{ ...btnPrimary, flex: 1 }}>Add</button>
           </div>
@@ -543,7 +543,7 @@ function Habits({ habits, addHabit, updateHabit, removeHabit }) {
                   color: 'var(--accent)', display: 'flex', alignItems: 'center', justifyContent: 'center',
                   fontSize: 14, transition: 'all 0.15s ease',
                 }}>
-                  {done ? '' : ''}
+                  {done ? '✓' : ''}
                 </button>
                 <button onClick={() => removeHabit(h.id)} style={{
                   background: 'none', border: 'none', cursor: 'pointer',
@@ -558,9 +558,9 @@ function Habits({ habits, addHabit, updateHabit, removeHabit }) {
   );
 }
 
-// PPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPP
+// ═══════════════════════════════════════════════════════════════════════════════
 // 3. NUTRITION
-// PPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPP
+// ═══════════════════════════════════════════════════════════════════════════════
 // searchOpenFoodFacts / lookupBarcode now live in utils/openFoodFacts.js so the
 // mobile build's barcode scanner uses the exact same logic (see import above).
 
@@ -826,7 +826,7 @@ function Nutrition({ nutritionLogs, addNutritionLog, updateNutritionLog, setting
       <div style={{ display: 'flex', gap: 6 }}>
         <button onClick={() => { setShowAdd(true); setAddMode('my'); }} style={btnPrimary}>+ Log food</button>
         <button onClick={() => setShowSaveMeal(v => !v)} style={{ ...btnGhost, fontSize: 11 }}>
-          {showSaveMeal ? '' : ' Save meal'}
+          {showSaveMeal ? '✕' : '⊕ Save meal'}
         </button>
       </div>
     }>
@@ -938,7 +938,7 @@ function Nutrition({ nutritionLogs, addNutritionLog, updateNutritionLog, setting
             <div>
               {savedMeals.length === 0 ? (
                 <div style={{ padding: '20px 0', textAlign: 'center', color: 'var(--text-muted)', fontSize: 12 }}>
-                  No saved meals yet  save a meal above for quick logging.
+                  No saved meals yet — save a meal above for quick logging.
                 </div>
               ) : (
                 <div style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
@@ -950,13 +950,13 @@ function Nutrition({ nutritionLogs, addNutritionLog, updateNutritionLog, setting
                       <div style={{ flex: 1, minWidth: 0 }}>
                         <div style={{ fontSize: 12.5, color: 'var(--text-primary)', fontWeight: 500 }}>{m.name}</div>
                         <div style={{ fontSize: 10.5, color: 'var(--text-muted)', marginTop: 2 }}>
-                          {m.calories} kcal  P{m.protein}g  C{m.carbs}g  F{m.fat}g
+                          {m.calories} kcal · P{m.protein}g · C{m.carbs}g · F{m.fat}g
                         </div>
                       </div>
                       <button onClick={() => { logSavedMeal(m); setShowAdd(false); }} style={{ ...btnPrimary, padding: '5px 12px', fontSize: 11 }}>
                         + Log
                       </button>
-                      <button onClick={() => removeSavedMeal(m.id)} style={{ ...btnGhost, padding: '5px 8px', fontSize: 11, color: 'var(--text-muted)' }}></button>
+                      <button onClick={() => removeSavedMeal(m.id)} style={{ ...btnGhost, padding: '5px 8px', fontSize: 11, color: 'var(--text-muted)' }}>✕</button>
                     </div>
                   ))}
                 </div>
@@ -982,7 +982,7 @@ function Nutrition({ nutritionLogs, addNutritionLog, updateNutritionLog, setting
               onBlur={e => e.target.style.borderColor = 'var(--input-border)'}
             />
             <button onClick={doSearch} style={btnPrimary} disabled={searching}>
-              {searching ? '&' : 'Search'}
+              {searching ? '…' : 'Search'}
             </button>
           </div>
 
@@ -994,7 +994,7 @@ function Nutrition({ nutritionLogs, addNutritionLog, updateNutritionLog, setting
             }}>
               <div style={{ fontSize: 12.5, color: 'var(--text-primary)' }}>{r.name}</div>
               <div style={{ fontSize: 10.5, color: 'var(--text-muted)', marginTop: 2 }}>
-                {r.per100.calories} kcal  P {r.per100.protein}g  C {r.per100.carbs}g  F {r.per100.fat}g  per 100g
+                {r.per100.calories} kcal · P {r.per100.protein}g · C {r.per100.carbs}g · F {r.per100.fat}g — per 100g
               </div>
             </div>
           ))}
@@ -1062,9 +1062,9 @@ function Nutrition({ nutritionLogs, addNutritionLog, updateNutritionLog, setting
   );
 }
 
-// PPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPP
+// ═══════════════════════════════════════════════════════════════════════════════
 // 4. WORKOUT
-// PPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPP
+// ═══════════════════════════════════════════════════════════════════════════════
 const LOCAL_EXERCISES = [
   { id:'bp',   name:'Barbell Bench Press',     muscle:'chest',      secondary:'triceps, shoulders', equipment:'barbell' },
   { id:'sq',   name:'Barbell Back Squat',      muscle:'quads',      secondary:'glutes, hamstrings', equipment:'barbell' },
@@ -1109,8 +1109,8 @@ async function fetchExercisesFromDB(apiKey) {
 }
 
 // 5. WATER
-// PPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPP
-// Water goal formula: weight(kg)35 + activity bonus + caffeine bonus
+// ═══════════════════════════════════════════════════════════════════════════════
+// Water goal formula: weight(kg)×35 + activity bonus + caffeine bonus
 
 
 function Water({ waterLogs, addWaterLog, settings }) {
@@ -1144,14 +1144,14 @@ function Water({ waterLogs, addWaterLog, settings }) {
   return (
     <Section title="Water" action={
       <button onClick={()=>setShowSettings(v=>!v)} style={{...btnGhost,fontSize:11}}>
-        {showSettings?' Close':' Settings'}
+        {showSettings?'✕ Close':'⚙ Settings'}
       </button>
     }>
 
-      {/*  Profile / Settings panel  */}
+      {/* ── Profile / Settings panel ── */}
       {showSettings&&(
         <GlassCard style={{marginBottom:14}}>
-          <GlassLabel>Personal profile  daily goal calculator</GlassLabel>
+          <GlassLabel>Personal profile — daily goal calculator</GlassLabel>
           <div style={{display:'grid',gridTemplateColumns:'1fr 1fr',gap:10,marginBottom:10}}>
             {/* Weight */}
             <div>
@@ -1199,7 +1199,7 @@ function Water({ waterLogs, addWaterLog, settings }) {
             <label style={lblSx}>Average daily caffeine (mg)</label>
             <input type="number" value={profile.caffeineMg} onChange={e=>saveProfile({...profile,caffeineMg:+e.target.value})} style={inputSx}/>
             <div style={{fontSize:10,color:'var(--text-muted)',marginTop:4}}>
-               1 coffee H 95mg  espresso H 75mg  energy drink H 160mg. Above 200mg adds to daily water target.
+              ☕ 1 coffee ≈ 95mg · espresso ≈ 75mg · energy drink ≈ 160mg. Above 200mg adds to daily water target.
             </div>
           </div>
           {/* Calculated goal */}
@@ -1210,7 +1210,7 @@ function Water({ waterLogs, addWaterLog, settings }) {
         </GlassCard>
       )}
 
-      {/*  Main hero: ring centred  */}
+      {/* ── Main hero: ring centred ── */}
       <div style={{display:'flex',flexDirection:'column',alignItems:'center',gap:6,marginBottom:22,padding:'20px 0'}}>
         <div style={{position:'relative'}}>
           <RingChart value={total} max={goal} size={200} thickness={14} colour={colour}
@@ -1228,7 +1228,7 @@ function Water({ waterLogs, addWaterLog, settings }) {
         )}
       </div>
 
-      {/*  Quick log + entry  */}
+      {/* ── Quick log + entry ── */}
       <GlassCard style={{marginBottom:14}}>
         <GlassLabel>Quick log</GlassLabel>
         <div style={{display:'flex',gap:8,flexWrap:'wrap',marginBottom:12}}>
@@ -1254,7 +1254,7 @@ function Water({ waterLogs, addWaterLog, settings }) {
         </div>
       </GlassCard>
 
-      {/*  Today's log  */}
+      {/* ── Today's log ── */}
       <GlassCard>
         <GlassLabel>Today's intake</GlassLabel>
         {todayLogs.length===0?(
@@ -1277,13 +1277,13 @@ function Water({ waterLogs, addWaterLog, settings }) {
   );
 }
 
-// PPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPP
+// ═══════════════════════════════════════════════════════════════════════════════
 // 6. BODY
-// PPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPP
+// ═══════════════════════════════════════════════════════════════════════════════
 const BODY_TABS = [
-  { id:'weight',       label:'Weight',       emoji:'' },
-  { id:'measurements', label:'Measurements', emoji:'=' },
-  { id:'photos',       label:'Photos',       emoji:'=' },
+  { id:'weight',       label:'Weight' },
+  { id:'measurements', label:'Measurements' },
+  { id:'photos',       label:'Photos' },
 ];
 
 function Body({ bodyMetrics, addBodyMetric, settings }) {
@@ -1327,7 +1327,7 @@ function Body({ bodyMetrics, addBodyMetric, settings }) {
 
   return (
     <Section title="Body" action={
-      bodyTab==='weight'?<button onClick={()=>setAdding(v=>!v)} style={btnPrimary}>{adding?' Close':'+ Log'}</button>:
+      bodyTab==='weight'?<button onClick={()=>setAdding(v=>!v)} style={btnPrimary}>{adding?'✕ Close':'+ Log'}</button>:
       null
     }>
       {/* Sub-tab bar */}
@@ -1338,11 +1338,11 @@ function Body({ bodyMetrics, addBodyMetric, settings }) {
             background:bodyTab===t.id?'var(--active-bg)':'transparent',
             color:bodyTab===t.id?'var(--accent)':'var(--text-muted)',
             fontSize:12,fontWeight:bodyTab===t.id?600:400,transition:'all 0.15s',
-          }}>{t.emoji} {t.label}</button>
+          }}>{t.label}</button>
         ))}
       </div>
 
-      {/*  Weight tab  */}
+      {/* ── Weight tab ── */}
       {bodyTab==='weight'&&(
         <>
           {useBodyDemo && (
@@ -1416,18 +1416,18 @@ function Body({ bodyMetrics, addBodyMetric, settings }) {
             </GlassCard>
           ) : weightData.length>1?(
             <GlassCard>
-              <GlassLabel>Weight trend  last {weightData.length} entries</GlassLabel>
+              <GlassLabel>Weight trend — last {weightData.length} entries</GlassLabel>
               <BarChart data={weightData} maxHeight={80}/>
             </GlassCard>
           ):(
             <div style={{textAlign:'center',padding:32,opacity:0.35}}>
-              <div style={{fontSize:28}}></div>
+              <div style={{fontSize:28}}>⚖</div>
               <p style={{fontSize:12,color:'var(--text-muted)',marginTop:8}}>Log a few entries to see your trend.</p>
             </div>
           )}
 
           <div style={{padding:'10px 14px',borderRadius:8,background:'rgba(255,255,255,0.02)',border:'0.5px solid var(--card-border)',fontSize:11.5,color:'var(--text-muted)',marginTop:10}}>
-            =5 Eufy body metrics sync automatically from Apple Health on iOS. Log manually on desktop until iPhone is set up.
+            🔵 Eufy body metrics sync automatically from Apple Health on iOS. Log manually on desktop until iPhone is set up.
       </div>
 
       {/* History */}
@@ -1438,7 +1438,7 @@ function Body({ bodyMetrics, addBodyMetric, settings }) {
               {sorted.slice(0,8).map((m,i)=>(
                 <div key={m.id||i} style={{display:'flex',justifyContent:'space-between',padding:'5px 0',borderBottom:i<Math.min(sorted.length,8)-1?'0.5px solid rgba(255,255,255,0.05)':'none'}}>
                   <span style={{fontSize:11,color:'var(--text-muted)',fontFamily:'ui-monospace,monospace'}}>{m.date}</span>
-                  <span style={{fontSize:11.5,color:'var(--text-secondary)'}}>{m.weight&&`${m.weight}kg`}{m.bodyFat&&`  ${m.bodyFat}% fat`}{m.muscle&&`  ${m.muscle}% muscle`}</span>
+                  <span style={{fontSize:11.5,color:'var(--text-secondary)'}}>{m.weight&&`${m.weight}kg`}{m.bodyFat&&` · ${m.bodyFat}% fat`}{m.muscle&&` · ${m.muscle}% muscle`}</span>
                 </div>
               ))}
             </GlassCard>
@@ -1446,7 +1446,7 @@ function Body({ bodyMetrics, addBodyMetric, settings }) {
         </>
       )}
 
-      {/*  Measurements tab  */}
+      {/* ── Measurements tab ── */}
       {bodyTab==='measurements'&&(
         <div style={{display:'flex',flexDirection:'column',gap:10}}>
           <GlassLabel>Current measurements</GlassLabel>
@@ -1455,7 +1455,7 @@ function Body({ bodyMetrics, addBodyMetric, settings }) {
               <div key={f.key} style={{...cardSx}}>
                 <label style={lblSx}>{f.label} ({f.unit})</label>
                 <input type="number" value={measures[f.key]??''} onChange={e=>saveMeasures({...measures,[f.key]:e.target.value})}
-                  placeholder="" style={{...inputSx,fontSize:16,fontWeight:300,padding:'6px 8px'}}/>
+                  placeholder="—" style={{...inputSx,fontSize:16,fontWeight:300,padding:'6px 8px'}}/>
               </div>
             ))}
           </div>
@@ -1463,43 +1463,43 @@ function Body({ bodyMetrics, addBodyMetric, settings }) {
         </div>
       )}
 
-      {/*  Photos tab  */}
+      {/* ── Photos tab ── */}
       {bodyTab==='photos'&&<ProgressPhotos bodyMetrics={bodyMetrics} />}
     </Section>
   );
 }
 
-// PPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPP
-// 7. SUPPLEMENTS  tap-to-take stack
-// PPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPP
+// ═══════════════════════════════════════════════════════════════════════════════
+// 7. SUPPLEMENTS — tap-to-take stack
+// ═══════════════════════════════════════════════════════════════════════════════
 const SUPP_COLOURS = ['#4a9eff','#4caf7d','#f4a642','#9b5de5','#e55a5a','#00c9a7','#f7b731'];
 const TIME_SLOTS   = [
-  { id: 'morning', label: 'Morning', emoji: '<', range: '710 AM' },
-  { id: 'midday',  label: 'Midday',  emoji: '', range: '11 AM2 PM' },
-  { id: 'evening', label: 'Evening', emoji: '<', range: '710 PM' },
+  { id: 'morning', label: 'Morning', emoji: '🌅', range: '7–10 AM' },
+  { id: 'midday',  label: 'Midday',  emoji: '☀️', range: '11 AM–2 PM' },
+  { id: 'evening', label: 'Evening', emoji: '🌙', range: '7–10 PM' },
   { id: 'anytime', label: 'Anytime', emoji: '',  range: '' },
 ];
 const SUPP_SUGGESTIONS = [
-  { name:'Creatine',         dose:'5g',   info:'Post-workout  increases strength' },
-  { name:'Magnesium',        dose:'400mg',info:'Evening  sleep quality + recovery', micros:{ magnesium:400 } },
-  { name:'Vitamin D3',       dose:'5000IU',info:'Morning  with fat for absorption', micros:{ vitaminD:125 } },
-  { name:'Omega-3',          dose:'2g',   info:'Morning  with food' },
-  { name:'Zinc',             dose:'15mg', info:'Evening  immune + testosterone', micros:{ zinc:15 } },
-  { name:'Ashwagandha',      dose:'600mg',info:'Evening  cortisol + stress' },
-  { name:'L-Citrulline',     dose:'68g', info:'Morning  ~30 min pre-workout' },
-  { name:'L-Carnitine',      dose:'12g', info:'Morning  with carbs' },
+  { name:'Creatine',         dose:'5g',   info:'Post-workout · increases strength' },
+  { name:'Magnesium',        dose:'400mg',info:'Evening · sleep quality + recovery', micros:{ magnesium:400 } },
+  { name:'Vitamin D3',       dose:'5000IU',info:'Morning · with fat for absorption', micros:{ vitaminD:125 } },
+  { name:'Omega-3',          dose:'2g',   info:'Morning · with food' },
+  { name:'Zinc',             dose:'15mg', info:'Evening · immune + testosterone', micros:{ zinc:15 } },
+  { name:'Ashwagandha',      dose:'600mg',info:'Evening · cortisol + stress' },
+  { name:'L-Citrulline',     dose:'6–8g', info:'Morning · ~30 min pre-workout' },
+  { name:'L-Carnitine',      dose:'1–2g', info:'Morning · with carbs' },
   { name:'Glutamine',        dose:'5g',   info:'Post-workout or bedtime' },
-  { name:'Vitamin C',        dose:'1000mg',info:'Morning  antioxidant', micros:{ vitaminC:1000 } },
-  { name:'B-Complex',        dose:'1 cap',info:'Morning  energy metabolism', micros:{ thiamin:50, riboflavin:50, niacin:50, b6:50, folate:400, b12:100 } },
-  { name:'Probiotics',       dose:'1 cap',info:'Morning  empty stomach' },
-  { name:'Collagen',         dose:'10g',  info:'Morning  with vitamin C' },
-  { name:'Berberine',        dose:'500mg',info:'With meals  blood sugar' },
-  { name:'NMN',              dose:'500mg',info:'Morning  NAD+ precursor' },
+  { name:'Vitamin C',        dose:'1000mg',info:'Morning · antioxidant', micros:{ vitaminC:1000 } },
+  { name:'B-Complex',        dose:'1 cap',info:'Morning · energy metabolism', micros:{ thiamin:50, riboflavin:50, niacin:50, b6:50, folate:400, b12:100 } },
+  { name:'Probiotics',       dose:'1 cap',info:'Morning · empty stomach' },
+  { name:'Collagen',         dose:'10g',  info:'Morning · with vitamin C' },
+  { name:'Berberine',        dose:'500mg',info:'With meals · blood sugar' },
+  { name:'NMN',              dose:'500mg',info:'Morning · NAD+ precursor' },
   { name:'Protein Powder',   dose:'30g',  info:'Post-workout or morning' },
   { name:'Pre-workout',      dose:'1 scoop',info:'30 min before training' },
-  { name:'Iron',             dose:'18mg', info:'Morning  with vitamin C', micros:{ iron:18, vitaminC:60 } },
-  { name:'Calcium',          dose:'500mg',info:'With food  bone health', micros:{ calcium:500 } },
-  { name:'Vitamin K2',       dose:'100µg',info:'Morning  with D3', micros:{ vitaminK:100 } },
+  { name:'Iron',             dose:'18mg', info:'Morning · with vitamin C', micros:{ iron:18, vitaminC:60 } },
+  { name:'Calcium',          dose:'500mg',info:'With food · bone health', micros:{ calcium:500 } },
+  { name:'Vitamin K2',       dose:'100µg',info:'Morning · with D3', micros:{ vitaminK:100 } },
 ];
 
 function Supplements({ supplements, suppLogs, addSupplement, removeSupplement, addSuppLog }) {
@@ -1554,12 +1554,12 @@ function Supplements({ supplements, suppLogs, addSupplement, removeSupplement, a
       <div style={{display:'flex',gap:6,alignItems:'center'}}>
         {totalSupps>0&&<span style={{fontSize:11,color:'var(--text-muted)'}}>{totalTaken}/{totalSupps} taken</span>}
         <button onClick={()=>{setShowForm(v=>!v);setSearch('');}} style={btnPrimary}>
-          {showForm?' Close':'+ Add'}
+          {showForm?'✕ Close':'+ Add'}
         </button>
       </div>
     }>
 
-      {/*  Add form  */}
+      {/* ── Add form ── */}
       {showForm&&(
         <GlassCard style={{marginBottom:14}}>
           <GlassLabel>Add to stack</GlassLabel>
@@ -1581,7 +1581,7 @@ function Supplements({ supplements, suppLogs, addSupplement, removeSupplement, a
                     onMouseLeave={e=>e.currentTarget.style.background='transparent'}
                   >
                     <span style={{fontSize:13,color:'var(--text-primary)'}}>{s.name}</span>
-                    <span style={{fontSize:10.5,color:'var(--text-muted)'}}>{s.dose}  {s.info}</span>
+                    <span style={{fontSize:10.5,color:'var(--text-muted)'}}>{s.dose} · {s.info}</span>
                   </div>
                 ))}
               </div>
@@ -1648,10 +1648,10 @@ function Supplements({ supplements, suppLogs, addSupplement, removeSupplement, a
         </GlassCard>
       )}
 
-      {/*  Stack grouped by time  */}
+      {/* ── Stack grouped by time ── */}
       {supplements.length===0&&!showForm?(
         <div style={{textAlign:'center',padding:40,opacity:0.4}}>
-          <div style={{fontSize:32}}>=</div>
+          <div style={{fontSize:32}}>💊</div>
           <p style={{fontSize:13,color:'var(--text-muted)',marginTop:8}}>No supplements in your stack yet.</p>
         </div>
       ):(
@@ -1674,7 +1674,7 @@ function Supplements({ supplements, suppLogs, addSupplement, removeSupplement, a
                     Mark all taken
                   </button>
                 )}
-                {allTaken&&<span style={{fontSize:10.5,color:'#4caf7d'}}> All taken</span>}
+                {allTaken&&<span style={{fontSize:10.5,color:'#4caf7d'}}>✓ All taken</span>}
               </div>
 
               {/* Supplement rows */}
@@ -1697,7 +1697,7 @@ function Supplements({ supplements, suppLogs, addSupplement, removeSupplement, a
                         display:'flex',alignItems:'center',justifyContent:'center',
                         transition:'all 0.2s',
                       }}>
-                        {taken&&<span style={{fontSize:13,color:'#fff',lineHeight:1}}></span>}
+                        {taken&&<span style={{fontSize:13,color:'#fff',lineHeight:1}}>✓</span>}
                       </div>
 
                       {/* Colour dot */}
@@ -1713,10 +1713,10 @@ function Supplements({ supplements, suppLogs, addSupplement, removeSupplement, a
                             </span>
                           )}
                         </div>
-                        {s.dose&&<div style={{fontSize:10.5,color:'var(--text-muted)',marginTop:1}}>{s.dose}{s.notes?`  ${s.notes}`:''}</div>}
+                        {s.dose&&<div style={{fontSize:10.5,color:'var(--text-muted)',marginTop:1}}>{s.dose}{s.notes?` · ${s.notes}`:''}</div>}
                       </div>
 
-                      {/* Running low badge  if quantity tracked */}
+                      {/* Running low badge — if quantity tracked */}
                       {s.runningLow&&(
                         <span style={{fontSize:9.5,fontWeight:700,padding:'2px 7px',borderRadius:4,background:'rgba(244,166,66,0.15)',color:'#f4a642',letterSpacing:'0.04em',flexShrink:0}}>
                            Running low
@@ -1752,9 +1752,9 @@ function Supplements({ supplements, suppLogs, addSupplement, removeSupplement, a
   );
 }
 
-// PPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPP
+// ═══════════════════════════════════════════════════════════════════════════════
 // 8. SLEEP
-// PPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPP
+// ═══════════════════════════════════════════════════════════════════════════════
 function Sleep({ sleepData, settings }) {
   const sorted = useMemo(() =>
     [...(sleepData || [])].sort((a, b) => (b.date ?? '').localeCompare(a.date ?? '')),
@@ -1763,7 +1763,7 @@ function Sleep({ sleepData, settings }) {
   const latest = sorted[0];
   const effColour = (eff) => eff >= 85 ? '#4caf7d' : eff >= 75 ? '#f4a642' : '#e55a5a';
 
-  //  Sleep Scheduler state 
+  // ── Sleep Scheduler state ────────────────────────────────────────────────
   const { data: schedule, save: saveSchedule } = useDocument('sleep_schedule', 'sleep_schedule', null);
   const [bedtime,   setBedtime]   = useState('');
   const [wakeTime,  setWakeTime]  = useState('');
@@ -1827,7 +1827,7 @@ function Sleep({ sleepData, settings }) {
               <span style={{ fontSize: 16 }}>{(displayLatest.duration ?? 0) % 60}m</span>
             </div>
             <div style={{ fontSize: 11.5, color: 'var(--text-muted)' }}>
-              {displayLatest.bedTime}  {displayLatest.wakeTime}
+              {displayLatest.bedTime} → {displayLatest.wakeTime}
             </div>
           </div>
         </div>
@@ -1877,7 +1877,7 @@ function Sleep({ sleepData, settings }) {
           <div style={{ fontSize: 10, color: 'var(--text-muted)', letterSpacing: '0.07em' }}>SLEEP SCHEDULER</div>
           {schedule?.bedtime && (
             <span style={{ fontSize: 10.5, color: '#4a9eff', background: 'rgba(74,158,255,0.1)', borderRadius: 6, padding: '2px 8px' }}>
-              {schedule.bedtime}  {schedule.wakeTime || ''}
+              {schedule.bedtime} → {schedule.wakeTime || '—'}
             </span>
           )}
         </div>
@@ -1914,16 +1914,16 @@ function Sleep({ sleepData, settings }) {
             fontSize: 12, fontWeight: 700, transition: 'all 0.15s',
           }}
         >
-          {schedSaved ? 'Saved ' : 'Save Schedule'}
+          {schedSaved ? 'Saved ✓' : 'Save Schedule'}
         </button>
       </div>
     </Section>
   );
 }
 
-// PPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPP
+// ═══════════════════════════════════════════════════════════════════════════════
 // 9. STIMULANT TRACKER
-// PPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPP
+// ═══════════════════════════════════════════════════════════════════════════════
 const DEFAULT_STIM_PRESETS = [
   { id:'coffee',         name:'Coffee',        type:'caffeine', amount:95,  unit:'mg' },
   { id:'espresso',       name:'Espresso',       type:'caffeine', amount:63,  unit:'mg' },
@@ -1939,7 +1939,7 @@ function Stimulant({ stimLogs, addStimLog, removeStimLog, settings }) {
   const caffLimit = settings?.caffeineLimitMg ?? 400;
   const nicLimit  = settings?.nicotineLimitMg ?? 20;
 
-  // Hidden preset IDs  persisted per user
+  // Hidden preset IDs — persisted per user
   const [hiddenPresets, setHiddenPresets] = useState(
     () => JSON.parse(localStorage.getItem('valerie_hidden_stim_presets') || '[]')
   );
@@ -2003,7 +2003,7 @@ function Stimulant({ stimLogs, addStimLog, removeStimLog, settings }) {
 
   return (
     <Section title="Stimulants">
-      {/* Summary  two large stat cards */}
+      {/* Summary — two large stat cards */}
       <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 14, marginBottom: 20 }}>
         {/* Caffeine */}
         <GlassCard style={{ marginBottom: 0 }}>
@@ -2015,7 +2015,7 @@ function Stimulant({ stimLogs, addStimLog, removeStimLog, settings }) {
           <div style={{ height: 5, borderRadius: 3, background: 'rgba(255,255,255,0.07)', overflow: 'hidden' }}>
             <div style={{ height: '100%', width: `${Math.min((caffTotal/caffLimit)*100,100)}%`, background: caffColour, borderRadius: 3, transition: 'width 0.5s' }}/>
           </div>
-          {caffTotal > caffLimit * 0.9 && <div style={{ fontSize: 10.5, color: '#f4a642', marginTop: 6 }}> Near limit  consider stopping</div>}
+          {caffTotal > caffLimit * 0.9 && <div style={{ fontSize: 10.5, color: '#f4a642', marginTop: 6 }}>Near your limit. Consider stopping for today.</div>}
         </GlassCard>
 
         {/* Nicotine */}
@@ -2061,7 +2061,7 @@ function Stimulant({ stimLogs, addStimLog, removeStimLog, settings }) {
               <text key={l} x={(i/4)*caffLineW} y={caffLineH+15} fontSize="9" fill="rgba(255,255,255,0.25)" textAnchor="middle" fontFamily="ui-monospace,monospace">{l}</text>
             ))}
           </svg>
-          <div style={{ fontSize: 10, color: 'rgba(244,166,66,0.5)', marginTop: 2 }}> dashed = daily limit ({caffLimit}mg)</div>
+          <div style={{ fontSize: 10, color: 'rgba(244,166,66,0.5)', marginTop: 2 }}>— dashed = daily limit ({caffLimit}mg)</div>
         </GlassCard>
       )}
 
@@ -2089,7 +2089,7 @@ function Stimulant({ stimLogs, addStimLog, removeStimLog, settings }) {
                   background:'#e55a5a', color:'#fff', fontSize:11, lineHeight:1,
                   display:'flex', alignItems:'center', justifyContent:'center',
                 }}
-              ></button>
+              >×</button>
             )}
           </div>
         ))}
@@ -2100,7 +2100,7 @@ function Stimulant({ stimLogs, addStimLog, removeStimLog, settings }) {
             color: manageMode ? 'var(--accent)' : 'var(--text-secondary)',
           }}
           title="Manage presets"
-        ></button>
+        >⚙</button>
         <button onClick={() => setShowCustom(p => !p)} style={{ ...btnGhost, borderRadius:20, fontSize:11.5 }}>+ Custom</button>
       </div>
 
@@ -2143,7 +2143,7 @@ function Stimulant({ stimLogs, addStimLog, removeStimLog, settings }) {
         <div style={{ display:'flex', justifyContent:'space-between', alignItems:'center', marginBottom:8 }}>
           <div style={{ fontSize:10, color:'var(--text-muted)', letterSpacing:'0.07em' }}>TODAY</div>
           {todayLogs.length > 0 && (
-            <span style={{ fontSize:10, color:'var(--text-muted)' }}>Tap  to remove an entry</span>
+            <span style={{ fontSize:10, color:'var(--text-muted)' }}>Tap × to remove an entry</span>
           )}
         </div>
         {todayLogs.length === 0 ? (
@@ -2157,7 +2157,7 @@ function Stimulant({ stimLogs, addStimLog, removeStimLog, settings }) {
               <div>
                 <span style={{ fontSize:12.5, color:'var(--text-primary)' }}>{l.name}</span>
                 <span style={{ fontSize:10.5, color:'var(--text-muted)', marginLeft:8 }}>
-                  {l.type === 'caffeine' ? '' : '='} {l.amount}{l.unit}
+                  {l.amount}{l.unit}
                 </span>
               </div>
               <div style={{ display:'flex', alignItems:'center', gap:10 }}>
@@ -2174,7 +2174,7 @@ function Stimulant({ stimLogs, addStimLog, removeStimLog, settings }) {
                     }}
                     onMouseEnter={e => e.currentTarget.style.background='rgba(229,90,90,0.3)'}
                     onMouseLeave={e => e.currentTarget.style.background='rgba(229,90,90,0.12)'}
-                  ></button>
+                  >×</button>
                 )}
               </div>
             </div>
@@ -2185,13 +2185,13 @@ function Stimulant({ stimLogs, addStimLog, removeStimLog, settings }) {
   );
 }
 
-// PPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPP
+// ═══════════════════════════════════════════════════════════════════════════════
 // MAIN HEALTH TAB
-// PPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPP
+// ═══════════════════════════════════════════════════════════════════════════════
 
-// PPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPP
-// MEAL PLANNER  AI-generated personalised weekly plan
-// PPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPP
+// ═══════════════════════════════════════════════════════════════════════════════
+// MEAL PLANNER — AI-generated personalised weekly plan
+// ═══════════════════════════════════════════════════════════════════════════════
 const MEAL_TYPES = ['breakfast','lunch','dinner','snack'];
 const MEAL_TYPE_COLOUR = { breakfast:'#f4a642', lunch:'#4caf7d', dinner:'#4a9eff', snack:'#9b5de5' };
 const DAYS = ['Monday','Tuesday','Wednesday','Thursday','Friday','Saturday','Sunday'];
@@ -2235,7 +2235,7 @@ Rules:
 - Day totals must be close to targets (within 10%)
 - Use realistic, specific meal names (not "Healthy Meal")
 - Descriptions should be practical and appetising
-- Vary meals across the week  no repeated meals
+- Vary meals across the week — no repeated meals
 - Adjust protein timing around workouts where relevant
 - Include realistic estimatedCost per meal in ${currency} (typical local supermarket prices)
 - List every ingredient with qty and unit (g or ml; unit "" for whole items like eggs); use the same plain ingredient names across the week so they add up into one shopping list
@@ -2307,7 +2307,7 @@ function MealPlanner({ settings, savedMeals = [], addSavedMeal, bodyMetrics = []
       setActiveDay(0);
       savePlanDoc({ generatedOn: toLocalDateKey(new Date()), plan: newPlan });
     } catch (err) {
-      setError(err.message || 'Generation failed  try again.');
+      setError(err.message || 'Generation failed — try again.');
     } finally {
       setGenerating(false);
     }
@@ -2405,7 +2405,7 @@ function MealPlanner({ settings, savedMeals = [], addSavedMeal, bodyMetrics = []
           {latestBody?.weight && (
             <div style={{ fontSize: 11, color: 'rgba(255,255,255,0.3)', marginBottom: 12 }}>
               Using body weight: <span style={{ color: 'var(--accent)' }}>{latestBody.weight}kg</span>
-              {supplements.length > 0 && <>  Supplements: <span style={{ color: 'var(--accent)' }}>{supplements.slice(0,3).map(s=>s.name).join(', ')}{supplements.length > 3 ? ` +${supplements.length-3}` : ''}</span></>}
+              {supplements.length > 0 && <> · Supplements: <span style={{ color: 'var(--accent)' }}>{supplements.slice(0,3).map(s=>s.name).join(', ')}{supplements.length > 3 ? ` +${supplements.length-3}` : ''}</span></>}
             </div>
           )}
           <button onClick={generate} disabled={generating} style={{
@@ -2465,7 +2465,7 @@ function MealPlanner({ settings, savedMeals = [], addSavedMeal, bodyMetrics = []
                 <div>
                   {/* Day totals */}
                   <GlassCard style={{ marginBottom: 14 }}>
-                    <GlassLabel>{day.day}  Daily Totals</GlassLabel>
+                    <GlassLabel>{day.day} — Daily Totals</GlassLabel>
                     <div style={{ display: 'flex', gap: 10, flexWrap: 'wrap' }}>
                       {[['Calories', day.totals?.calories, calorieGoal, '#f4a642', ''], ['Protein', day.totals?.protein, proteinGoal, '#4a9eff', 'g'], ['Carbs', day.totals?.carbs, carbGoal, '#4caf7d', 'g'], ['Fat', day.totals?.fat, fatGoal, '#9b5de5', 'g']].map(([l, v, t, c, u]) => (
                         <div key={l} style={{ flex: 1, padding: '12px 14px', borderRadius: 10, background: 'rgba(255,255,255,0.03)', border: `0.5px solid ${totalColour(v, t)}30` }}>
@@ -2528,7 +2528,7 @@ function MealPlanner({ settings, savedMeals = [], addSavedMeal, bodyMetrics = []
                               background: isSaved ? 'rgba(76,175,125,0.12)' : 'transparent',
                               color: isSaved ? '#4caf7d' : alreadySaved ? 'rgba(255,255,255,0.2)' : 'rgba(255,255,255,0.6)',
                             }}>
-                              {isSaved ? ' Saved' : alreadySaved ? ' In My Meals' : ' Save meal'}
+                              {isSaved ? '✓ Saved' : alreadySaved ? '✓ In My Meals' : '⊕ Save meal'}
                             </button>
                           </div>
                         </div>
@@ -2552,11 +2552,11 @@ function MealPlanner({ settings, savedMeals = [], addSavedMeal, bodyMetrics = []
   );
 }
 
-// PPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPP
-// PEAK STATE  24h performance graph + factor breakdown
-// PPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPP
+// ═══════════════════════════════════════════════════════════════════════════════
+// PEAK STATE — 24h performance graph + factor breakdown
+// ═══════════════════════════════════════════════════════════════════════════════
 
-// Compute circadian performance 0100 for a given hour (024)
+// Compute circadian performance 0–100 for a given hour (0–24)
 // Two-peak model: primary peak ~10am, secondary ~5pm, low at ~4am and ~2pm
 function circadianScore(hour, sleepEfficiency = 75) {
   const norm = (sleepEfficiency - 50) / 50; // -1 to 1
@@ -2666,7 +2666,7 @@ function PeakStateSection({ stimLogs, sleepData, peakState }) {
                   stroke="rgba(255,255,255,0.05)" strokeWidth="1" />
               ))}
 
-              {/* Area fill  past */}
+              {/* Area fill — past */}
               <path d={areaD} fill="url(#peakGrad)" />
 
               {/* Line */}

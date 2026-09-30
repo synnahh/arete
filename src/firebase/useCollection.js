@@ -1,4 +1,4 @@
-//  useCollection  generic real-time Firestore collection hook 
+// ─── useCollection — generic real-time Firestore collection hook ──────────────
 // Pattern: localStorage for instant load   Firestore for real-time sync
 // Falls back to localStorage-only if Firestore is unavailable
 
@@ -12,15 +12,15 @@ import { db, getUserIdSync } from './firebase.js';
 import { storage } from '../utils/storage.js';
 
 /**
- * @param {string} collectionName   e.g. 'tasks', 'notes', 'events'
- * @param {string} storageKey       STORAGE_KEYS value for localStorage backup
+ * @param {string} collectionName  — e.g. 'tasks', 'notes', 'events'
+ * @param {string} storageKey      — STORAGE_KEYS value for localStorage backup
  * @returns {{ items, add, update, remove, synced, error }}
  */
 export function useCollection(collectionName, storageKey) {
   const userId  = getUserIdSync();
   const colRef  = collection(db, 'users', userId, collectionName);
 
-  // Load from localStorage immediately  zero-lag initial render
+  // Load from localStorage immediately — zero-lag initial render
   const [items, setItems]   = useState(() => storage.get(storageKey, []));
   const [synced, setSynced] = useState(false);
   const [error, setError]   = useState(null);
@@ -29,9 +29,9 @@ export function useCollection(collectionName, storageKey) {
   const itemsRef = useRef(items);
   useEffect(() => { itemsRef.current = items; }, [items]);
 
-  //  Real-time Firestore subscription 
+  // ── Real-time Firestore subscription ──────────────────────────────────────
   // userId and collectionName are stable for the life of the app (single user,
-  // fixed collection names), so [] is intentional  but listed here for clarity.
+  // fixed collection names), so [] is intentional — but listed here for clarity.
   useEffect(() => {
     const q = query(colRef, orderBy('createdAt', 'desc'));
     const unsub = onSnapshot(
@@ -47,13 +47,13 @@ export function useCollection(collectionName, storageKey) {
         console.warn(`[Firestore/${collectionName}]`, err.message);
         setError(err.message);
         setSynced(false);
-        // Keep using localStorage data  don't clear it
+        // Keep using localStorage data — don't clear it
       },
     );
     return () => unsub();
   }, [userId, collectionName]); // eslint-disable-line react-hooks/exhaustive-deps
 
-  //  CRUD 
+  // ── CRUD ──────────────────────────────────────────────────────────────────
   const add = useCallback(async (data) => {
     const payload = { ...data, createdAt: Date.now(), updatedAt: Date.now() };
     try {
@@ -72,7 +72,7 @@ export function useCollection(collectionName, storageKey) {
 
   const update = useCallback(async (id, updates) => {
     const payload = { ...updates, updatedAt: Date.now() };
-    // Optimistic update first  feels instant
+    // Optimistic update first — feels instant
     const next = itemsRef.current.map(i => i.id === id ? { ...i, ...payload } : i);
     setItems(next);
     storage.set(storageKey, next);
@@ -80,7 +80,7 @@ export function useCollection(collectionName, storageKey) {
       await updateDoc(doc(db, 'users', userId, collectionName, id), payload);
     } catch (err) {
       console.warn(`[Firestore/${collectionName}/update]`, err.message);
-      // Already updated locally  will sync when back online
+      // Already updated locally — will sync when back online
     }
   }, [userId, collectionName, storageKey]);
 

@@ -1,7 +1,7 @@
-//  useNotifications  VALERIE notification scheduler 
+// ─── useNotifications — VALERIE notification scheduler ───────────────────────
 // Checks conditions every 60s and fires toasts, SMS, and push notifications.
 // Each tab has its own config: { enabled, hour, message, ... }
-// Deduped per day via localStorage flags  won't spam on every tick.
+// Deduped per day via localStorage flags — won't spam on every tick.
 
 import { useEffect, useRef } from 'react';
 import { storage, STORAGE_KEYS } from '../utils/storage.js';
@@ -117,7 +117,7 @@ export function useNotifications(settings) {
             const msg = resolveMsg(water.message || 'VALERIE: Only {value}ml logged. Goal is {goal}ml.', { value: todayML, goal });
             toast(msg);
             await maybeSMS(s, msg);
-            await maybePush('Drink Water =', msg);
+            await maybePush('Drink water', msg);
           }
         }
 
@@ -133,7 +133,7 @@ export function useNotifications(settings) {
             const msg = resolveMsg(nutrition.message || 'VALERIE: No calories logged yet. {value} kcal remaining.', { value: calGoal });
             toast(msg);
             await maybeSMS(s, msg);
-            await maybePush('Log Your Meals <}', msg);
+            await maybePush('Log your meals', msg);
           }
         }
 
@@ -149,7 +149,7 @@ export function useNotifications(settings) {
             const msg = resolveMsg(supplements.message || 'VALERIE: {value} supplement(s) not taken yet today.', { value: missed.length });
             toast(msg);
             await maybeSMS(s, msg);
-            await maybePush('Supplements =', msg);
+            await maybePush('Supplements', msg);
           }
         }
 
@@ -163,7 +163,7 @@ export function useNotifications(settings) {
             const msg = resolveMsg(habits.message || 'VALERIE: {value} habit(s) still pending today.', { value: missed.length });
             toast(msg);
             await maybeSMS(s, msg);
-            await maybePush('Habits ', msg);
+            await maybePush('Habits', msg);
           }
         }
 
@@ -179,7 +179,7 @@ export function useNotifications(settings) {
             const msg = resolveMsg(tasks.message || 'VALERIE: {value} task(s) need your attention.', { value: count });
             toast(msg);
             await maybeSMS(s, msg);
-            await maybePush('Tasks =', msg);
+            await maybePush('Tasks', msg);
           }
         }
 
@@ -193,7 +193,7 @@ export function useNotifications(settings) {
             const msg = sleep.message || 'VALERIE: Log last night\'s sleep to track your recovery.';
             toast(msg);
             await maybeSMS(s, msg);
-            await maybePush('Log Sleep =4', msg);
+            await maybePush('Log your sleep', msg);
           }
         }
 
@@ -207,7 +207,7 @@ export function useNotifications(settings) {
             const msg = workout.message || 'VALERIE: No workout logged today. Rest day or forgot?';
             toast(msg);
             await maybeSMS(s, msg);
-            await maybePush('Workout <', msg);
+            await maybePush('Workout', msg);
           }
         }
 
@@ -226,7 +226,7 @@ export function useNotifications(settings) {
               const msg = resolveMsg(cal.message || 'VALERIE: {value} starts in {time} minutes.', { value: ev.title ?? ev.summary ?? 'An event', time: diff });
               toast(msg);
               await maybeSMS(s, msg);
-              await maybePush('Upcoming Event =', msg);
+              await maybePush('Upcoming event', msg);
             }
           }
         }
@@ -245,11 +245,11 @@ export function useNotifications(settings) {
             const msg = resolveMsg(finance.message || 'VALERIE: Weekly spend so far: {value}.', { value: `${sym}${weekSpend.toFixed(2)}` });
             toast(msg);
             await maybeSMS(s, msg);
-            await maybePush('Finance Summary =', msg);
+            await maybePush('Finance summary', msg);
           }
         }
 
-        //  Storage quota warning 
+        // ── Storage quota warning ─────────────────────────────────────────
         if (!fired('storage_warn')) {
           const used = Object.keys(localStorage)
             .filter(k => k.startsWith('valerie_'))
@@ -257,7 +257,7 @@ export function useNotifications(settings) {
           if (used > 3_000_000) {
             setFlag('storage_warn');
             const mb  = (used / 1_000_000).toFixed(1);
-            const msg = `Storage at ${mb}MB  consider clearing old data in Settings.`;
+            const msg = `Storage at ${mb}MB — consider clearing old data in Settings.`;
             toast(msg, 'error');
             await maybeAlertSMS(s, msg);
           }

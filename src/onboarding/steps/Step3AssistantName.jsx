@@ -26,7 +26,7 @@ export default function Step3AssistantName({ data, update, next, back }) {
           What's my name?
         </h2>
         <p style={{ fontSize: 14, color: 'var(--text-secondary)', lineHeight: 1.6 }}>
-          I'm <span style={{ color: 'var(--accent)' }}>VALERIE</span> by default  but you can call me anything.
+          I'm <span style={{ color: 'var(--accent)' }}>VALERIE</span> by default — but you can call me anything.
           {' '}This can be changed anytime in Settings.
         </p>
       </div>
@@ -49,7 +49,7 @@ export default function Step3AssistantName({ data, update, next, back }) {
           />
           <div style={{ display: 'flex', gap: 12 }}>
             <PrimaryButton onClick={handleCustom} disabled={!val.trim()}>
-              Use this name 
+              Use this name →
             </PrimaryButton>
             <button onClick={() => { setVal('VALERIE'); setEditing(false); }}
               style={{
@@ -64,7 +64,7 @@ export default function Step3AssistantName({ data, update, next, back }) {
         </>
       ) : (
         <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
-          <PrimaryButton onClick={handleKeep}>Keep VALERIE </PrimaryButton>
+          <PrimaryButton onClick={handleKeep}>Keep VALERIE →</PrimaryButton>
           <button onClick={() => { setVal(''); setEditing(true); }}
             style={{
               padding: '10px 16px', borderRadius: 10, border: 'none',

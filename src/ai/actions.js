@@ -1,6 +1,6 @@
-//  actions.js  VALERIE action layer 
+// ─── actions.js — VALERIE action layer ────────────────────────────────────────
 // Parses structured action objects from Claude's JSON response and executes them.
-// This is how VALERIE actually controls the app  not just talks about it.
+// This is how VALERIE actually controls the app — not just talks about it.
 
 import { supabase, getUserId } from '../supabase/supabase.js';
 import { storage, STORAGE_KEYS } from '../utils/storage.js';
@@ -12,7 +12,7 @@ import { updateSettings } from '../utils/settingsStore.js';
 import { waterRow, sleepRow, nutritionDay } from '../domain/dayLogs.js';
 import { needsConfirmation, describeAction } from './confirm.js';
 
-//  Callback registry 
+// ─── Callback registry ─────────────────────────────────────────────────────────
 // Components register handlers here so VALERIE can trigger UI actions.
 const _registry = {};
 
@@ -71,7 +71,7 @@ async function upsertDayRow(table, storageKey, date, build) {
   return synced;
 }
 
-//  parseResponse 
+// ─── parseResponse ─────────────────────────────────────────────────────────────
 /**
  * Parse Claude's JSON response into { speech, actions, remember }.
  * Falls back gracefully if Claude didn't return valid JSON.
@@ -102,7 +102,7 @@ export function parseResponse(raw) {
   };
 }
 
-//  executeActions 
+// ─── executeActions ────────────────────────────────────────────────────────────
 /**
  * Execute an array of action objects from VALERIE's response.
  * Runs sequentially to avoid race conditions.
@@ -145,7 +145,7 @@ async function _executeOne(action) {
       break;
     }
 
-    //  Add task 
+    // ── Add task ───────────────────────────────────────────────────────────
     case 'addTask': {
       // The model is prompted with `title`; accept `text` too. Write the
       // canonical {text, done} shape the Tasks UI reads (was {title, completed},
@@ -171,7 +171,7 @@ async function _executeOne(action) {
       break;
     }
 
-    //  Log mood 
+    // ── Log mood ───────────────────────────────────────────────────────────
     case 'logMood': {
       const value = Math.min(10, Math.max(1, Number(action.value) || 5));
       const today = toLocalDateKey(new Date());
@@ -179,14 +179,14 @@ async function _executeOne(action) {
       break;
     }
 
-    //  Log water 
+    // ── Log water ──────────────────────────────────────────────────────────
     case 'logWater': {
       const today = toLocalDateKey(new Date());
       await insertActionRow('water_logs', STORAGE_KEYS.WATER, sanitizePayload(waterRow({ date: today, amountMl: action.amount })));
       break;
     }
 
-    //  Start focus session (navigates to Focus tab) 
+    // ── Start focus session (navigates to Focus tab) ───────────────────────
     case 'startFocus': {
       _registry.navigate?.('focus');
       // Also store a pending duration so Focus tab can auto-start if it reads it
@@ -196,13 +196,13 @@ async function _executeOne(action) {
       break;
     }
 
-    //  Open settings 
+    // ── Open settings ──────────────────────────────────────────────────────
     case 'openSettings': {
       _registry.navigate?.('settings');
       break;
     }
 
-    //  Add transaction (income or expense) 
+    // ── Add transaction (income or expense) ───────────────────────────────
     case 'addTransaction': {
       const amount = Math.abs(Number(action.amount));
       if (!amount) break;
@@ -239,7 +239,7 @@ async function _executeOne(action) {
       break;
     }
 
-    //  Toggle a boolean setting 
+    // ── Toggle a boolean setting ──────────────────────────────────────────
     case 'toggleSetting': {
       const key = action.key;
       if (!key || !describeAction(action, storage.get(STORAGE_KEYS.SETTINGS, {}))) break; // never for secret-like keys
@@ -248,7 +248,7 @@ async function _executeOne(action) {
       break;
     }
 
-    //  Change a specific setting value 
+    // ── Change a specific setting value ───────────────────────────────────
     case 'changeSetting': {
       const { key: sKey, value: sVal } = action;
       if (!sKey || !describeAction(action, storage.get(STORAGE_KEYS.SETTINGS, {}))) break; // safe key and plain value only

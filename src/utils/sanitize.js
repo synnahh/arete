@@ -1,4 +1,4 @@
-//  sanitize.js  Input sanitization 
+// ─── sanitize.js — Input sanitization ────────────────────────────────────────
 // Strips XSS vectors and injection attempts from any string before it is
 // written to Firebase, localStorage, or rendered as HTML.
 

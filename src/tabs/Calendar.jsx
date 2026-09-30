@@ -11,7 +11,7 @@ const GCAL_SCOPE     = 'https://www.googleapis.com/auth/calendar';
 const GCAL_API       = 'https://www.googleapis.com/calendar/v3';
 const GCAL_TOKEN_KEY = 'valerie_gcal_token';
 
-//  Icons 
+// ── Icons ─────────────────────────────────────────────────────────────────────
 const Icon = ({ d, size = 15 }) => (
   <svg width={size} height={size} viewBox="0 0 24 24" fill="none"
     stroke="currentColor" strokeWidth={1.7} strokeLinecap="round" strokeLinejoin="round">
@@ -23,10 +23,10 @@ const EditIcon  = () => <Icon d="M11 4H4a2 2 0 00-2 2v14a2 2 0 002 2h14a2 2 0 00
 const CloseIcon = () => <Icon d="M18 6L6 18 M6 6l12 12" />;
 const MicIcon   = () => <Icon d="M12 1a3 3 0 00-3 3v8a3 3 0 006 0V4a3 3 0 00-3-3z M19 10v2a7 7 0 01-14 0v-2 M12 19v4 M8 23h8" />;
 
-//  Colour swatches 
+// ── Colour swatches ───────────────────────────────────────────────────────────
 const EVENT_COLOURS = ['#4a9eff', '#4caf7d', '#f4a642', '#e55a5a', '#9b5de5', '#00c9a7', '#f7b731'];
 
-//  Date helpers 
+// ── Date helpers ──────────────────────────────────────────────────────────────
 function todayStr()    { return toLocalDateKey(new Date()); }
 function tomorrowStr() { const d = new Date(); d.setDate(d.getDate() + 1); return toLocalDateKey(d); }
 
@@ -65,7 +65,7 @@ function applyFilter(events, filter) {
   }
 }
 
-//  Google Calendar token helpers 
+// ── Google Calendar token helpers ─────────────────────────────────────────────
 function saveGcalToken(token) {
   localStorage.setItem(GCAL_TOKEN_KEY, JSON.stringify({
     access_token: token.access_token,
@@ -83,7 +83,7 @@ function loadGcalToken() {
 }
 function clearGcalToken() { localStorage.removeItem(GCAL_TOKEN_KEY); }
 
-//  Google Calendar API helpers 
+// ── Google Calendar API helpers ───────────────────────────────────────────────
 async function gcalFetch(path, options = {}, token) {
   const res = await fetch(`${GCAL_API}${path}`, {
     ...options,
@@ -149,7 +149,7 @@ async function deleteGcalEvent(token, googleId) {
   });
 }
 
-//  Event card 
+// ── Event card ────────────────────────────────────────────────────────────────
 function EventCard({ event, onEdit, onDelete }) {
   const [hovered, setHovered] = useState(false);
   const colour = event.colour || '#4a9eff';
@@ -216,7 +216,7 @@ function EventCard({ event, onEdit, onDelete }) {
       {/* Time */}
       {event.time && (
         <div style={{ fontSize: 12, color: 'var(--text-muted)', flexShrink: 0 }}>
-          {event.time}{event.endTime ? `  ${event.endTime}` : ''}
+          {event.time}{event.endTime ? ` – ${event.endTime}` : ''}
         </div>
       )}
 
@@ -243,7 +243,7 @@ const tinyBtnStyle = {
   display: 'flex', alignItems: 'center', justifyContent: 'center',
 };
 
-//  Event panel (add/edit) 
+// ── Event panel (add/edit) ────────────────────────────────────────────────────
 function EventPanel({ event, onSave, onClose }) {
   const isEdit = !!event?.id;
   const [form, setForm] = useState({
@@ -270,7 +270,7 @@ function EventPanel({ event, onSave, onClose }) {
         <span style={{ fontSize: 10, color: 'var(--text-muted)', letterSpacing: '0.07em' }}>
           {isEdit ? 'EDIT EVENT' : 'NEW EVENT'}
         </span>
-        <button onClick={onClose} style={{ ...tinyBtnStyle, fontSize: 16 }}></button>
+        <button onClick={onClose} style={{ ...tinyBtnStyle, fontSize: 16 }}>×</button>
       </div>
 
       <div>
@@ -329,7 +329,7 @@ const lblStyle = { display: 'block', fontSize: 10, color: 'var(--text-muted)', l
 const ghostBtnStyle   = { padding: '7px 0', borderRadius: 7, border: '0.5px solid var(--card-border)', background: 'transparent', color: 'var(--text-secondary)', cursor: 'pointer', fontSize: 12 };
 const primaryBtnStyle = { padding: '7px 0', borderRadius: 7, border: '0.5px solid var(--card-border)', background: 'var(--active-bg)', color: 'var(--accent)', cursor: 'pointer', fontSize: 12, fontWeight: 500 };
 
-//  Main Calendar component 
+// ── Main Calendar component ────────────────────────────────────────────────────
 // ─────────────────────────────────────────────────────────────
 //  AI Day Planner
 // ─────────────────────────────────────────────────────────────
@@ -652,7 +652,7 @@ export default function Calendar({ ai, settings, peakState }) {
   const [voiceActive, setVoice]       = useState(false);
   const tokenClientRef = useRef(null);
 
-  //  Google Calendar OAuth (GIS) 
+  // ── Google Calendar OAuth (GIS) ────────────────────────────────────────────
   useEffect(() => {
     if (!GCAL_CLIENT_ID || GCAL_CLIENT_ID === 'YOUR_GOOGLE_CLIENT_ID_HERE') return;
     if (!window.google?.accounts?.oauth2) return;
@@ -681,7 +681,7 @@ export default function Calendar({ ai, settings, peakState }) {
     setGcalEvents([]);
   }, []);
 
-  //  Fetch Google Calendar events when token exists 
+  // ── Fetch Google Calendar events when token exists ─────────────────────────
   useEffect(() => {
     if (!gcalToken) return;
     setGcalLoading(true);
@@ -721,7 +721,7 @@ export default function Calendar({ ai, settings, peakState }) {
   const filtered = useMemo(() => applyFilter(allEvents, filter), [allEvents, filter]);
   const grouped  = useMemo(() => groupByDate(filtered), [filtered]);
 
-  //  Save event 
+  // ── Save event ─────────────────────────────────────────────────────────────
   const handleSave = useCallback(async (form) => {
     const isEdit = panel?.mode === 'edit';
     const payload = {
@@ -747,7 +747,7 @@ export default function Calendar({ ai, settings, peakState }) {
     setPanel(null);
   }, [add, update, panel, gcalToken]);
 
-  //  Delete event 
+  // ── Delete event ───────────────────────────────────────────────────────────
   const handleDelete = useCallback(async (event) => {
     if (event.source === 'task') return; // tasks are managed in the Tasks tab
     if (event.source === 'google' || event.googleId) {
@@ -764,7 +764,7 @@ export default function Calendar({ ai, settings, peakState }) {
     }
   }, [remove, gcalToken]);
 
-  //  Voice command 
+  // ── Voice command ──────────────────────────────────────────────────────────
   const handleVoice = useCallback(() => {
     if (!ai?.startListening) return;
     setVoice(true);
@@ -824,7 +824,7 @@ export default function Calendar({ ai, settings, peakState }) {
       {/* Agenda sub-tab */}
       {subTab === 'agenda' && (
       <div style={{ display: 'flex', flex: 1, overflow: 'hidden', position: 'relative' }}>
-      {/*  Main agenda  */}
+      {/* ── Main agenda ───────────────────────────────────────────────────── */}
       <div style={{
         flex: 1, display: 'flex', flexDirection: 'column', overflow: 'hidden',
         transition: 'margin-right 0.22s ease',
@@ -865,7 +865,7 @@ export default function Calendar({ ai, settings, peakState }) {
               background: 'rgba(66,133,244,0.1)', border: '0.5px solid rgba(66,133,244,0.3)',
               color: '#4a9eff', transition: 'all 0.15s ease',
             }}>
-              {gcalLoading ? 'Syncing...' : ' Google Calendar'}
+              {gcalLoading ? 'Syncing…' : 'Sync Google Calendar'}
             </button>
           ) : (
             <button onClick={connectGcal} style={{
@@ -960,7 +960,7 @@ export default function Calendar({ ai, settings, peakState }) {
         </div>
       </div>
 
-      {/*  Slide-in panel  */}
+      {/* ── Slide-in panel ────────────────────────────────────────────────── */}
       {panel && (
         <div style={{
           position: 'absolute', top: 0, right: 0, bottom: 0, width: 260,

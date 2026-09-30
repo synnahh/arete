@@ -1,12 +1,12 @@
-//  VALERIE Chart Primitives  custom SVG, zero dependencies 
+// ─── VALERIE Chart Primitives — custom SVG, zero dependencies ────────────────
 
-//  Polar coordinate helper 
+// ── Polar coordinate helper ───────────────────────────────────────────────────
 function polar(cx, cy, r, angleDeg) {
   const rad = (angleDeg * Math.PI) / 180;
   return { x: cx + r * Math.cos(rad), y: cy + r * Math.sin(rad) };
 }
 
-//  Ring / Progress Arc 
+// ── Ring / Progress Arc ───────────────────────────────────────────────────────
 export function RingChart({
   value = 0, max = 100,
   size = 120, thickness = 9,
@@ -56,7 +56,7 @@ export function RingChart({
   );
 }
 
-//  Horizontal Progress Bar 
+// ── Horizontal Progress Bar ───────────────────────────────────────────────────
 export function ProgressBar({
   value = 0, max = 100,
   colour = 'var(--accent)',
@@ -82,7 +82,7 @@ export function ProgressBar({
   );
 }
 
-//  Proportional Stage Bar (sleep stages, macro breakdown) 
+// ── Proportional Stage Bar (sleep stages, macro breakdown) ────────────────────
 export function StageBar({ stages = [], height = 16 }) {
   const total = stages.reduce((s, st) => s + (st.value || 0), 0);
   if (!total) return (
@@ -105,7 +105,7 @@ export function StageBar({ stages = [], height = 16 }) {
   );
 }
 
-//  Bar Chart (vertical bars) 
+// ── Bar Chart (vertical bars) ─────────────────────────────────────────────────
 export function BarChart({
   data = [],
   maxHeight = 80,
@@ -162,7 +162,7 @@ export function BarChart({
   );
 }
 
-//  Donut Chart (spending by category) 
+// ── Donut Chart (spending by category) ───────────────────────────────────────
 export function DonutChart({
   segments = [],
   size = 160,
@@ -183,7 +183,7 @@ export function DonutChart({
     </div>
   );
 
-  // Build arc paths from -90 (top)
+  // Build arc paths from -90° (top)
   let currentAngle = -90;
   const GAP = total > 1 ? 2 : 0; // gap in degrees between segments
 
@@ -236,7 +236,7 @@ export function DonutChart({
   );
 }
 
-//  Milestone Line (savings goals) 
+// ── Milestone Line (savings goals) ────────────────────────────────────────────
 export function MilestoneLine({ milestones = [], progress = 0, colour = 'var(--accent)' }) {
   if (!milestones.length) return null;
 

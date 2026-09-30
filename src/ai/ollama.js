@@ -1,4 +1,4 @@
-//  Ollama  local AI via Rust commands (bypasses WebView HTTP restrictions) 
+// ─── Ollama — local AI via Rust commands (bypasses WebView HTTP restrictions) ──
 // Uses dynamic import so Tauri SDK is not bundled into the PWA build.
 
 const OLLAMA_MODEL = 'llama3';
@@ -19,7 +19,7 @@ When Rob asks you to do something, put one action object per thing in "actions".
 Combine speech + actions: say what you're doing, then include the action(s).
 If you cannot format as JSON, just respond naturally in plain text.`;
 
-//  askOllama 
+// ─── askOllama ─────────────────────────────────────────────────────────────────
 export async function askOllama(message, history = [], { context = '', coaching = '' } = {}) {
   const base = coaching ? `${OLLAMA_SYSTEM}\n\nCoaching method (background, do not recite):\n${coaching}` : OLLAMA_SYSTEM;
   const systemContent = context
@@ -37,7 +37,7 @@ export async function askOllama(message, history = [], { context = '', coaching 
   return invoke('ask_ollama', { messages, model: OLLAMA_MODEL });
 }
 
-//  pingOllama 
+// ─── pingOllama ───────────────────────────────────────────────────────────────
 export async function pingOllama() {
   try {
     const { invoke } = await import('@tauri-apps/api/core');
@@ -47,7 +47,7 @@ export async function pingOllama() {
   }
 }
 
-//  checkOllamaModel 
+// ─── checkOllamaModel ─────────────────────────────────────────────────────────
 export async function checkOllamaModel() {
   try {
     const { invoke } = await import('@tauri-apps/api/core');

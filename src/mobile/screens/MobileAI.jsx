@@ -3,7 +3,7 @@
 import { useState, useRef, useEffect } from 'react';
 import { storage, STORAGE_KEYS }          from '../../utils/storage.js';
 
-//  Orb 
+// ── Orb ────────────────────────────────────────────────────────────────────────
 function Orb({ state }) {
   const color = state === 'listening' ? '#4a9eff'
               : state === 'thinking'  ? '#f59e0b'
@@ -37,7 +37,7 @@ function Orb({ state }) {
   );
 }
 
-//  Message bubble 
+// ── Message bubble ─────────────────────────────────────────────────────────────
 function Bubble({ msg }) {
   const isUser = msg.role === 'user';
   return (
@@ -86,7 +86,7 @@ export default function MobileAI({ settings, ai, compact = false }) {
         }
       `}</style>
 
-      {/* Header  hidden when compact (sheet has its own) */}
+      {/* Header — hidden when compact (sheet has its own) */}
       {!compact && (
         <div style={{ padding: '16px 16px 0', paddingTop: 20 }}>
           <div style={{ fontSize: 22, fontWeight: 300, color: 'var(--text-primary)', marginBottom: 4 }}>
@@ -98,7 +98,7 @@ export default function MobileAI({ settings, ai, compact = false }) {
         </div>
       )}
 
-      {/* Orb  shown when no messages or always on top */}
+      {/* Orb — shown when no messages or always on top */}
       {messages.length === 0 && (
         <div style={{ flex: 1, display: 'flex', flexDirection: 'column',
           alignItems: 'center', justifyContent: 'center', gap: 16, padding: '0 32px' }}>

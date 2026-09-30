@@ -1,5 +1,5 @@
-//  useAI  VALERIE's core AI brain hook 
-// Full pipeline: voice  context  AI  action parsing  speech cleaning  TTS
+// ─── useAI — VALERIE's core AI brain hook ─────────────────────────────────────
+// Full pipeline: voice → context → AI → action parsing → speech cleaning → TTS
 // Supports continuous voice session mode (ChatGPT Voice-style).
 // Two-layer memory: session (short-term) + localStorage (long-term).
 
@@ -31,32 +31,32 @@ const WAKE_WORDS = ['hey val', 'hey valerie', 'hey valerie,', 'ok val', 'ok vale
 
 export function useAI() {
 
-  //  Connection state 
+  // ── Connection state ────────────────────────────────────────────────────────
   const [claudeOnline,   setClaudeOnline]   = useState(false);
   const [ollamaOnline,   setOllamaOnline]   = useState(false);
   const [internetOnline, setInternetOnline] = useState(navigator.onLine);
   const [lastPinged,     setLastPinged]     = useState(null);
 
-  //  Orb visual state 
+  // ── Orb visual state ────────────────────────────────────────────────────────
   const [orbState, setOrbState] = useState('idle'); // idle | listening | thinking | speaking
 
-  //  Conversation 
+  // ── Conversation ────────────────────────────────────────────────────────────
   const [messages,    setMessages]    = useState(() => storage.get(STORAGE_KEYS.CONVERSATIONS, []));
   const [loading,     setLoading]     = useState(false);
   const [lastEngine,  setLastEngine]  = useState(null);
 
-  //  Voice session state 
+  // ── Voice session state ─────────────────────────────────────────────────────
   const [voiceSessionActive, setVoiceSessionActive] = useState(false);
   const voiceSessionRef  = useRef(false); // ref for closure access in callbacks
   const silenceTimerRef  = useRef(null);
 
-  //  Long-term memory 
+  // ── Long-term memory ────────────────────────────────────────────────────────
   const [ltMemory, setLtMemory] = useState(() => storage.get('valerie_memory', { facts: [] }));
 
-  //  Active tab (for context injection) 
+  // ── Active tab (for context injection) ─────────────────────────────────────
   const activeTabRef = useRef('dashboard');
 
-  //  Refs for stable closure access 
+  // ── Refs for stable closure access ─────────────────────────────────────────
   const messagesRef      = useRef(messages);
   const claudeOnlineRef  = useRef(claudeOnline);
   const ollamaOnlineRef  = useRef(ollamaOnline);
@@ -71,7 +71,7 @@ export function useAI() {
   useEffect(() => { orbStateRef.current      = orbState;      }, [orbState]);
   useEffect(() => { loadingRef.current       = loading;       }, [loading]);
 
-  //  Callback registry  components register action handlers here 
+  // ── Callback registry — components register action handlers here ────────────
   const callbacksRef = useRef({});
 
   const registerCallback = useCallback((name, fn) => {
@@ -80,7 +80,7 @@ export function useAI() {
     registerActionHandler(name, fn);
   }, []);
 
-  //  Internet detection 
+  // ── Internet detection ──────────────────────────────────────────────────────
   useEffect(() => {
     const on  = () => setInternetOnline(true);
     const off = () => setInternetOnline(false);
@@ -89,31 +89,31 @@ export function useAI() {
     return () => { window.removeEventListener('online', on); window.removeEventListener('offline', off); };
   }, []);
 
-  //  Ping Claude + Ollama (on mount and every 30s) 
+  // ── Ping Claude + Ollama (on mount and every 30s) ───────────────────────────
   const pingAll = useCallback(async () => {
     try {
       const [claude, ollama] = await Promise.all([pingClaude(), pingOllama()]);
       setClaudeOnline(claude);
       setOllamaOnline(ollama);
       setLastPinged(new Date());
-    } catch { /* swallow  network errors during alt-tab should never crash the app */ }
+    } catch { /* swallow — network errors during alt-tab should never crash the app */ }
   }, []);
 
   useEffect(() => {
     pingAll();
-    // 60s interval (was 30s)  skip when tab is hidden to avoid burning API quota
+    // 60s interval (was 30s) — skip when tab is hidden to avoid burning API quota
     const id = setInterval(() => { if (!document.hidden) pingAll(); }, 60_000);
     return () => clearInterval(id);
   }, [pingAll]);
 
   useEffect(() => { if (internetOnline) pingAll(); }, [internetOnline, pingAll]);
 
-  //  Persist conversations 
+  // ── Persist conversations ───────────────────────────────────────────────────
   useEffect(() => {
     if (messages.length > 0) storage.set(STORAGE_KEYS.CONVERSATIONS, messages.slice(-60));
   }, [messages]);
 
-  //  Core send pipeline 
+  // ── Core send pipeline ──────────────────────────────────────────────────────
   const sendMessage = useCallback(async (text) => {
     if (!text?.trim() || loadingRef.current) return;
 
@@ -213,7 +213,7 @@ export function useAI() {
     }
   }, []); // eslint-disable-line react-hooks/exhaustive-deps
 
-  //  Voice session  continuous listening loop 
+  // ── Voice session — continuous listening loop ───────────────────────────────
 
   const recognitionRef = useRef(null);
 
@@ -235,7 +235,7 @@ export function useAI() {
     rec.lang           = 'en-AU';
 
     rec.onresult = (e) => {
-      // Got speech  clear silence timer
+      // Got speech — clear silence timer
       if (silenceTimerRef.current) {
         clearTimeout(silenceTimerRef.current);
         silenceTimerRef.current = null;
@@ -260,7 +260,7 @@ export function useAI() {
 
     rec.onend = () => {
       // Speech recognition ended without a result (silence)
-      // Start a timer  if we haven't heard anything in VOICE_SILENCE_TIMEOUT, end the session
+      // Start a timer — if we haven't heard anything in VOICE_SILENCE_TIMEOUT, end the session
       if (voiceSessionRef.current && orbStateRef.current === 'listening') {
         silenceTimerRef.current = setTimeout(() => {
           if (voiceSessionRef.current) {
@@ -276,7 +276,7 @@ export function useAI() {
         if (voiceSessionRef.current) _startListeningCycle();
         return;
       }
-      // Other errors  retry after a brief pause
+      // Other errors — retry after a brief pause
       if (voiceSessionRef.current) {
         setTimeout(() => { if (voiceSessionRef.current) _startListeningCycle(); }, 1000);
       }
@@ -314,10 +314,10 @@ export function useAI() {
     setOrbState('idle');
   }, []);
 
-  //  Wake word detection  continuous background listener 
+  // ── Wake word detection — continuous background listener ───────────────────
   const wakeRecRef    = useRef(null);
   const micGrantedRef = useRef(false); // true once getUserMedia succeeds
-  const isStartingRef = useRef(false); // mutex  prevents race-condition double-starts
+  const isStartingRef = useRef(false); // mutex — prevents race-condition double-starts
 
   // Pre-request mic permission via getUserMedia so WebView2 shows the OS prompt.
   // SpeechRecognition alone doesn't trigger the permission dialog in Tauri/WebView2.
@@ -388,17 +388,17 @@ export function useAI() {
       wakeRecRef.current = null;
       console.warn('[VALERIE wake word] SpeechRecognition error:', e.error);
       if (e.error === 'no-speech' || e.error === 'aborted') {
-        // Normal  just restart
+        // Normal — just restart
         if (!voiceSessionRef.current) setTimeout(_startWakeWordListener, 300);
       } else if (e.error === 'not-allowed' || e.error === 'service-not-allowed') {
-        // Mic permission denied  retry after requesting permission properly
+        // Mic permission denied — retry after requesting permission properly
         console.error('[VALERIE wake word] Mic access denied. Will retry after permission request.');
         micGrantedRef.current = false;
         _requestMicPermission().then(granted => {
           if (granted && !voiceSessionRef.current) setTimeout(_startWakeWordListener, 500);
         });
       } else if (e.error === 'network') {
-        // Speech service network issue  back off longer
+        // Speech service network issue — back off longer
         if (!voiceSessionRef.current) setTimeout(_startWakeWordListener, 3000);
       }
       // Any other error: don't restart (avoid tight error loops)
@@ -452,7 +452,7 @@ export function useAI() {
     }
   }, [voiceSessionActive, _startWakeWordListener, _stopWakeWordListener]);
 
-  // Stop wake word when window loses focus (alt-tab crash fix)  restart on return
+  // Stop wake word when window loses focus (alt-tab crash fix) — restart on return
   useEffect(() => {
     const onHide = () => {
       _stopWakeWordListener();
@@ -464,7 +464,7 @@ export function useAI() {
         setTimeout(_startWakeWordListener, 600);
       }
     };
-    // Named reference required  anonymous functions can't be removed
+    // Named reference required — anonymous functions can't be removed
     const handleVisibility = () => document.hidden ? onHide() : onShow();
     document.addEventListener('visibilitychange', handleVisibility);
     window.addEventListener('blur', onHide);
@@ -476,7 +476,7 @@ export function useAI() {
     };
   }, [_startWakeWordListener, _stopWakeWordListener]);
 
-  //  Single-shot voice input (non-session, original behaviour) 
+  // ── Single-shot voice input (non-session, original behaviour) ───────────────
   const startListening = useCallback((onResult) => {
     if (VOICE_DISABLED) return;          // iOS/mobile: text-only, no voice input
     const SR = window.SpeechRecognition || window.webkitSpeechRecognition;
@@ -507,13 +507,13 @@ export function useAI() {
     setOrbState('idle');
   }, []);
 
-  //  Clear conversation 
+  // ── Clear conversation ──────────────────────────────────────────────────────
   const clearHistory = useCallback(() => {
     setMessages([]);
     storage.remove(STORAGE_KEYS.CONVERSATIONS);
   }, []);
 
-  //  Set active tab (called from App.jsx when tab changes) 
+  // ── Set active tab (called from App.jsx when tab changes) ───────────────────
   const setActiveTab = useCallback((tab) => {
     activeTabRef.current = tab;
   }, []);

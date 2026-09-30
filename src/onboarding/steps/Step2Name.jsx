@@ -48,7 +48,7 @@ export default function Step2Name({ data, update, next, back }) {
       />
 
       <PrimaryButton onClick={handleNext} disabled={!val.trim()}>
-        Continue 
+        Continue →
       </PrimaryButton>
     </div>
   );
@@ -66,7 +66,7 @@ export function BackButton({ onClick }) {
     onMouseEnter={e => e.target.style.color = 'var(--text-secondary)'}
     onMouseLeave={e => e.target.style.color = 'var(--text-muted)'}
     >
-       Back
+      ← Back
     </button>
   );
 }

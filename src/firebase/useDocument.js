@@ -1,4 +1,4 @@
-//  useDocument  single-document Firestore sync hook 
+// ─── useDocument — single-document Firestore sync hook ───────────────────────
 // Pattern: localStorage for instant load   Firestore for real-time sync
 // Stores docs under users/{deviceId}/meta/{metaKey}
 
@@ -8,15 +8,15 @@ import { db, getUserIdSync } from './firebase.js';
 import { storage } from '../utils/storage.js';
 
 /**
- * @param {string} metaKey     Firestore doc name under users/{uid}/meta/
- * @param {string} storageKey  STORAGE_KEYS value for localStorage cache
+ * @param {string} metaKey    — Firestore doc name under users/{uid}/meta/
+ * @param {string} storageKey — STORAGE_KEYS value for localStorage cache
  * @param {*}      defaultValue
  * @returns {{ data, save, synced }}
  */
 export function useDocument(metaKey, storageKey, defaultValue = null) {
   const userId = getUserIdSync();
 
-  // Stable docRef  rebuilt only if userId/metaKey change (they don't in practice)
+  // Stable docRef — rebuilt only if userId/metaKey change (they don't in practice)
   const docRefRef = useRef(doc(db, 'users', userId, 'meta', metaKey));
   useEffect(() => {
     docRefRef.current = doc(db, 'users', userId, 'meta', metaKey);

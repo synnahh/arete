@@ -1,6 +1,6 @@
 /**
  * VaIerieOrb.jsx
- * 
+ * ─────────────────────────────────────────────────────────────
  * VALERIE Audio Visualiser Orb Component
  *
  * Props:
@@ -14,11 +14,11 @@
  *   import VaIerieOrb from '@/components/VaIerieOrb'
  *   <VaIerieOrb state="idle" theme="obsidian" />
  *
- * State is driven externally  wire it to your AI call lifecycle:
- *   idle       default, no call in progress
- *   listening  SpeechRecognition is active (user speaking)
- *   thinking   Claude / Ollama API call in flight
- *   speaking   TTS (SpeechSynthesis / ElevenLabs) is playing
+ * State is driven externally — wire it to your AI call lifecycle:
+ *   idle      → default, no call in progress
+ *   listening → SpeechRecognition is active (user speaking)
+ *   thinking  → Claude / Ollama API call in flight
+ *   speaking  → TTS (SpeechSynthesis / ElevenLabs) is playing
  *
  * Theme is driven by the global theme setting in localStorage/Firebase.
  * Pull the current theme from your settings store and pass it as a prop.
@@ -26,7 +26,7 @@
 
 import { useEffect, useRef } from 'react'
 
-//  Theme definitions  mirrors the 6 locked themes in the Build Prompt 
+// ── Theme definitions — mirrors the 6 locked themes in the Build Prompt ──
 const THEMES = {
   obsidian: { bg: '#06020e', ac: [210, 210, 210] },
   midnight: { bg: '#020614', ac: [100, 160, 255] },
@@ -36,7 +36,7 @@ const THEMES = {
   crimson:  { bg: '#0e0202', ac: [220,  70,  70] },
 }
 
-//  HUD copy per state 
+// ── HUD copy per state ──
 const HUD = {
   idle:      { dot: '#888',    lines: ['SYSTEM STANDBY', 'CORE STABLE', 'AWAITING INPUT'],          right: [] },
   listening: { dot: '#00ff88', lines: [' AUDIO DETECTED', 'SCANNING...', 'ANALYZING FREQUENCIES'], right: [{ l: 'INPUT GAIN', v: 72 }, { l: 'SIGNAL STR.', v: 88 }, { l: 'NOISE RED.', v: 55 }] },
@@ -74,7 +74,7 @@ export default function VaIerieOrb({
     const ctx  = cv.getContext('2d')
     const wCtx = wCv ? wCv.getContext('2d') : null
 
-    //  Helpers 
+    // ── Helpers ──────────────────────────────────────────────
     const rgb = (ac, a = 1) => `rgba(${ac[0]},${ac[1]},${ac[2]},${a})`
 
     function starPts(cx, cy, R, r, twist) {
@@ -142,7 +142,7 @@ export default function VaIerieOrb({
       c.beginPath(); c.ellipse(cx, cy + R * 0.85, R * 0.9, R * 0.14, 0, 0, Math.PI * 2); c.stroke()
     }
 
-    //  Idle: lightning bolts from tips 
+    // ── Idle: lightning bolts from tips ──
     const bolts = Array.from({ length: 5 }, (_, i) => ({ tipIdx: i * 2, life: 0, maxLife: 30 + Math.random() * 50, path: [] }))
     function updateBolts(pts) {
       bolts.forEach(b => {
@@ -168,7 +168,7 @@ export default function VaIerieOrb({
       })
     }
 
-    //  Listening: expanding rings 
+    // ── Listening: expanding rings ──
     function drawListenRings(c, cx, cy, R, ac, T) {
       for (let i = 0; i < 3; i++) {
         const phase = (T * 0.35 + i / 3) % 1
@@ -177,7 +177,7 @@ export default function VaIerieOrb({
       }
     }
 
-    //  Thinking: circuit rings + scan 
+    // ── Thinking: circuit rings + scan ──
     function drawThinkRings(c, cx, cy, R, ac, T, thinkA) {
       for (let i = 0; i < 5; i++) {
         const phase = (T * 0.25 + i / 5) % 1
@@ -204,7 +204,7 @@ export default function VaIerieOrb({
       c.beginPath(); c.moveTo(cx - R, sy); c.lineTo(cx + R, sy); c.stroke(); c.restore()
     }
 
-    //  Speaking: slow breathing bars + rotating beams 
+    // ── Speaking: slow breathing bars + rotating beams ──
     function drawSpeakBars(c, cx, cy, R, ac, T) {
       for (let i = 0; i < 56; i++) {
         const ang = (i / 56) * Math.PI * 2
@@ -226,7 +226,7 @@ export default function VaIerieOrb({
       }
     }
 
-    //  Flank waveforms 
+    // ── Flank waveforms ──
     function drawFlankWave(c, cx, cy, R, ac, T, mode) {
       const side = R * 1.15
       const wH = mode === 'speaking' ? 42 : 32
@@ -243,7 +243,7 @@ export default function VaIerieOrb({
       })
     }
 
-    //  Chromatic aberration 
+    // ── Chromatic aberration ──
     function drawChromatic(c, drawFn, amt) {
       const tmp = document.createElement('canvas'); tmp.width = size; tmp.height = size
       const tc = tmp.getContext('2d'); drawFn(tc)
@@ -252,7 +252,7 @@ export default function VaIerieOrb({
       c.restore(); c.drawImage(tmp, 0, 0)
     }
 
-    //  Small waveform 
+    // ── Small waveform ──
     function drawWaveSmall(T, ac, mode) {
       if (!wCtx) return
       const ww = wCv.width
@@ -267,7 +267,7 @@ export default function VaIerieOrb({
       wCtx.globalAlpha = mode === 'idle' ? 0.35 : 0.7; wCtx.stroke(); wCtx.globalAlpha = 1
     }
 
-    //  Main animation loop 
+    // ── Main animation loop ──────────────────────────────────
     function frame() {
       TRef.current += 0.016
       thinkARef.current += 0.028

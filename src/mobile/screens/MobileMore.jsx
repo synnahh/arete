@@ -5,7 +5,7 @@ import { useCollection } from '../../supabase/useCollection.js';
 import { haptics }       from '../utils/haptics.js';
 import { normalizeTasks } from '../../domain/tasks.js';
 
-//  Shared card 
+// ── Shared card ────────────────────────────────────────────────────────────────
 function MCard({ children, style = {}, onClick }) {
   return (
     <div onClick={onClick} style={{
@@ -17,7 +17,7 @@ function MCard({ children, style = {}, onClick }) {
   );
 }
 
-//  Back header with swipe-back support 
+// ── Back header with swipe-back support ────────────────────────────────────────
 function SubHeader({ title, onBack }) {
   return (
     <div style={{ display: 'flex', alignItems: 'center', gap: 10,
@@ -41,7 +41,7 @@ function SubHeader({ title, onBack }) {
   );
 }
 
-//  Sub-screen wrapper with swipe-back 
+// ── Sub-screen wrapper with swipe-back ─────────────────────────────────────────
 function SubScreen({ title, onBack, children }) {
   const ref      = useRef(null);
   const startX   = useRef(null);
@@ -94,7 +94,7 @@ function SubScreen({ title, onBack, children }) {
   );
 }
 
-//  Tasks sub-screen 
+// ── Tasks sub-screen ───────────────────────────────────────────────────────────
 export function TasksScreen({ onBack }) {
   // Was raw localStorage (storage.get/set) — tasks added on the phone never
   // reached Supabase, so they never appeared on desktop. Same table/schema as
@@ -164,7 +164,7 @@ export function TasksScreen({ onBack }) {
         <MCard style={{ padding: 0 }}>
           {filtered.length === 0 ? (
             <div style={{ padding: '20px 18px', fontSize: 13, color: 'var(--text-muted)' }}>
-              {filter === 'pending' ? 'All clear  you\'re on top of everything.' : 'No tasks here.'}
+              {filter === 'pending' ? 'All clear — you\'re on top of everything.' : 'No tasks here.'}
             </div>
           ) : (
             filtered.map((t, i) => (
@@ -201,7 +201,7 @@ export function TasksScreen({ onBack }) {
   );
 }
 
-//  Placeholder sub-screen 
+// ── Placeholder sub-screen ─────────────────────────────────────────────────────
 export function PlaceholderScreen({ title, onBack }) {
   return (
     <SubScreen title={title} onBack={onBack}>

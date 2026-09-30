@@ -1,4 +1,4 @@
-//  Tasks Tab 
+// ─── Tasks Tab ────────────────────────────────────────────────────────────────
 // Split view: list left · detail/add panel right
 // Firebase synced · localStorage fallback · voice commands
 
@@ -8,7 +8,7 @@ import { STORAGE_KEYS }  from '../utils/storage.js';
 import { toLocalDateKey } from '../utils/localDate.js';
 import { normalizeTasks } from '../domain/tasks.js';
 
-//  Helpers 
+// ── Helpers ───────────────────────────────────────────────────────────────────
 const PRIORITY = {
   high: { label: 'High', color: 'var(--priority-high)' },
   med:  { label: 'Med',  color: 'var(--priority-med)'  },
@@ -50,7 +50,7 @@ function applyFilter(tasks, filter) {
   }
 }
 
-//  Icons 
+// ── Icons ─────────────────────────────────────────────────────────────────────
 const Icon = ({ d, size = 15 }) => (
   <svg width={size} height={size} viewBox="0 0 24 24" fill="none"
     stroke="currentColor" strokeWidth={1.7} strokeLinecap="round" strokeLinejoin="round">
@@ -62,7 +62,7 @@ const TrashIcon  = () => <Icon d="M3 6h18 M8 6V4a1 1 0 011-1h6a1 1 0 011 1v2 M19
 const MicIcon    = () => <Icon d="M12 1a3 3 0 00-3 3v8a3 3 0 006 0V4a3 3 0 00-3-3z M19 10v2a7 7 0 01-14 0v-2 M12 19v4 M8 23h8" />;
 const EditIcon   = () => <Icon d="M11 4H4a2 2 0 00-2 2v14a2 2 0 002 2h14a2 2 0 002-2v-7 M18.5 2.5a2.12 2.12 0 013 3L12 15l-4 1 1-4z" />;
 
-//  Pill badge 
+// ── Pill badge ────────────────────────────────────────────────────────────────
 function PriorityPill({ priority }) {
   const p = PRIORITY[priority] ?? PRIORITY.low;
   return (
@@ -78,7 +78,7 @@ function PriorityPill({ priority }) {
   );
 }
 
-//  Empty state 
+// ── Empty state ───────────────────────────────────────────────────────────────
 function EmptyState({ filter, onAdd }) {
   const messages = {
     all:       { icon: "✅", text: "No pending tasks.", sub: "You're clear." },
@@ -101,7 +101,7 @@ function EmptyState({ filter, onAdd }) {
   );
 }
 
-//  Task row 
+// ── Task row ──────────────────────────────────────────────────────────────────
 function TaskRow({ task, selected, onSelect, onToggle }) {
   const [hovered, setHovered] = useState(false);
 
@@ -174,7 +174,7 @@ function TaskRow({ task, selected, onSelect, onToggle }) {
   );
 }
 
-//  Detail / Add panel 
+// ── Detail / Add panel ────────────────────────────────────────────────────────
 function TaskPanel({ mode, task, onSave, onDelete, onClose, onToggle }) {
   const isAdd  = mode === 'add';
   const isView = mode === 'view';
@@ -197,7 +197,7 @@ function TaskPanel({ mode, task, onSave, onDelete, onClose, onToggle }) {
         justifyContent: 'center', gap: 12, height: '100%',
         padding: '24px 16px', opacity: 0.4,
       }}>
-        <span style={{ fontSize: 24 }}></span>
+        <span style={{ fontSize: 24 }}>☑</span>
         <p style={{ fontSize: 12, color: 'var(--text-muted)', textAlign: 'center', lineHeight: 1.5 }}>
           Select a task to view details
         </p>
@@ -230,7 +230,7 @@ function TaskPanel({ mode, task, onSave, onDelete, onClose, onToggle }) {
               <TrashIcon />
             </button>
           )}
-          <button onClick={onClose} style={{ ...iconBtnStyle, fontSize: 16, lineHeight: 1 }} title="Close"></button>
+          <button onClick={onClose} style={{ ...iconBtnStyle, fontSize: 16, lineHeight: 1 }} title="Close">×</button>
         </div>
       </div>
 
@@ -403,7 +403,7 @@ const primaryBtnStyle = {
   fontSize: 12, fontWeight: 500, transition: 'all 0.15s ease',
 };
 
-//  Main Tasks component 
+// ── Main Tasks component ───────────────────────────────────────────────────────
 export default function Tasks({ ai }) {
   const { items: rawTasks, add, update, remove, synced } = useCollection('tasks', STORAGE_KEYS.TASKS);
   // Legacy assistant rows are {title, completed}; show them like UI rows.
@@ -431,7 +431,7 @@ export default function Tasks({ ai }) {
     if (becomingDone && panel?.task?.id === task.id) setPanel(null);
   }, [update, add, panel]);
 
-  //  Save (add or edit) 
+  // ── Save (add or edit) ─────────────────────────────────────────────────────
   const handleSave = useCallback(async (form) => {
     if (!form.text?.trim()) return;
     if (form.id) {
@@ -451,13 +451,13 @@ export default function Tasks({ ai }) {
     }
   }, [add, update, panel]);
 
-  //  Delete 
+  // ── Delete ─────────────────────────────────────────────────────────────────
   const handleDelete = useCallback(async (id) => {
     await remove(id);
     setPanel(null);
   }, [remove]);
 
-  //  Voice command 
+  // ── Voice command ──────────────────────────────────────────────────────────
   const handleVoice = useCallback(() => {
     if (!ai?.startListening) return;
     setVoice(true);
@@ -485,7 +485,7 @@ export default function Tasks({ ai }) {
   return (
     <div style={{ display: 'flex', height: '100%', overflow: 'hidden' }}>
 
-      {/*  Left: task list  */}
+      {/* ── Left: task list ────────────────────────────────────────────────── */}
       <div style={{
         flex: 1, display: 'flex', flexDirection: 'column',
         borderRight: '0.5px solid var(--sidebar-divider)', overflow: 'hidden',
@@ -569,7 +569,7 @@ export default function Tasks({ ai }) {
         </div>
       </div>
 
-      {/*  Right: detail / add panel  */}
+      {/* ── Right: detail / add panel ──────────────────────────────────────── */}
       <div style={{
         width: 220, flexShrink: 0,
         background: 'var(--bg-panel)',

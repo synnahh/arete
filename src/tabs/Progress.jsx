@@ -1,4 +1,4 @@
-//  VALERIE  Progress Tab 
+// ─── VALERIE — Progress Tab ───────────────────────────────────────────────────
 import { useState, useEffect, useMemo } from 'react';
 import { useCollection } from '../supabase/useCollection.js';
 import { storage, STORAGE_KEYS } from '../utils/storage.js';
@@ -9,7 +9,7 @@ import { withLiveStreaks, isDone } from '../domain/habits.js';
 import { AnimatedNumber } from '../components/Motion.jsx';
 import { toLocalDateKey, isOnLocalDay } from '../utils/localDate.js';
 
-//  Glass label 
+// ─── Glass label ─────────────────────────────────────────────────────────────
 function GlassLabel({ children }) {
   return (
     <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: 14 }}>
@@ -20,7 +20,7 @@ function GlassLabel({ children }) {
   );
 }
 
-//  SVG Badge System 
+// ─── SVG Badge System ─────────────────────────────────────────────────────────
 // All badges use a 100x100 viewBox centred at (50, 50)
 const toRad = d => d * Math.PI / 180;
 
@@ -118,7 +118,7 @@ function Badge({ tier, subRank = 1, size = 80, pulse = false }) {
     </>;
 
   } else if (tier === 5) {
-    // 8-point barbed star  very sharp (Fang)
+    // 8-point barbed star — very sharp (Fang)
     const outer = ptsToD(starPts(c, c, 40, 7, 8, -90));
     const inner = ptsToD(starPts(c, c, 26, 5, 8, -90));
     shapes = <>
@@ -153,7 +153,7 @@ function Badge({ tier, subRank = 1, size = 80, pulse = false }) {
     </>;
 
   } else if (tier === 8) {
-    // Ascendant  16-pt outer + 8-pt inner + diamond + glowing core
+    // Ascendant — 16-pt outer + 8-pt inner + diamond + glowing core
     const outer   = ptsToD(starPts(c, c, 40, 22, 16, -90));
     const mid     = ptsToD(starPts(c, c, 28, 15,  8, -90));
     const diamond = ptsToD([[c, c-14],[c+10, c],[c, c+14],[c-10, c]]);
@@ -176,7 +176,7 @@ function Badge({ tier, subRank = 1, size = 80, pulse = false }) {
   );
 }
 
-//  Tier track 
+// ─── Tier track ───────────────────────────────────────────────────────────────
 function TierTrack({ currentTier, currentSubRank }) {
   return (
     <div style={{ display: 'flex', gap: 6, alignItems: 'center', flexWrap: 'wrap', justifyContent: 'center' }}>
@@ -199,7 +199,7 @@ function TierTrack({ currentTier, currentSubRank }) {
   );
 }
 
-//  Mood check-in 
+// ─── Mood check-in ────────────────────────────────────────────────────────────
 const MOODS = ['😞','😔','😐','🙂','😊','😄','🤩'];
 
 function MoodCheckin({ moodLogs, onLog }) {
@@ -270,7 +270,7 @@ function MoodCheckin({ moodLogs, onLog }) {
   );
 }
 
-//  Overview sub-tab 
+// ─── Overview sub-tab ─────────────────────────────────────────────────────────
 function Overview({ xp, rank, habits, moodLogs, onLogMood, focusSessions }) {
   const today     = toLocalDateKey(new Date());
   const todayFoc  = focusSessions.filter(s => s.date === today).length;
@@ -447,7 +447,7 @@ function Streaks({ habits, streaks }) {
   );
 }
 
-//  Goals sub-tab 
+// ─── Goals sub-tab ────────────────────────────────────────────────────────────
 function Goals({ goals, onAdd, onUpdate, onRemove }) {
   const [showForm, setShowForm] = useState(false);
   const [name,     setName]     = useState('');
@@ -588,7 +588,7 @@ function Goals({ goals, onAdd, onUpdate, onRemove }) {
   );
 }
 
-//  Stats sub-tab 
+// ─── Stats sub-tab ────────────────────────────────────────────────────────────
 function Stats({ focusSessions, habits }) {
   const xp  = getXP();
   const now = new Date();
@@ -630,7 +630,7 @@ function Stats({ focusSessions, habits }) {
         borderRadius: 12, padding: '16px 18px',
       }}>
         <div style={{ fontSize: 11, color: 'var(--text-muted)', letterSpacing: '0.06em', marginBottom: 14 }}>
-          XP  LAST 7 DAYS
+          XP — LAST 7 DAYS
         </div>
         <div style={{ display: 'flex', alignItems: 'flex-end', gap: 6, height: 80 }}>
           {last7.map((d, i) => {
@@ -681,7 +681,7 @@ function Stats({ focusSessions, habits }) {
   );
 }
 
-//  Rank sub-tab 
+// ─── Rank sub-tab ─────────────────────────────────────────────────────────────
 function RankView({ xp, rank }) {
   const subRankLabels = ['I', 'II', 'III'];
 
@@ -782,7 +782,7 @@ function RankView({ xp, rank }) {
   );
 }
 
-//  Main Progress Tab  single scrollable page 
+// ─── Main Progress Tab — single scrollable page ───────────────────────────────
 export default function Progress() {
   const [xp, setXp] = useState(() => getXP());
 
@@ -811,13 +811,13 @@ export default function Progress() {
       {/* Main scroll area */}
       <div style={{ flex: 1, overflowY: 'auto', padding: '24px 28px', display: 'flex', flexDirection: 'column', gap: 32 }}>
 
-        {/*  RANK  */}
+        {/* ── RANK ── */}
         <section>
           <GlassLabel>Rank</GlassLabel>
           <RankView xp={xp} rank={rank} />
         </section>
 
-        {/*  OVERVIEW  mood + today's stats  */}
+        {/* ── OVERVIEW — mood + today's stats ── */}
         <section>
           <GlassLabel>Today</GlassLabel>
           <Overview
@@ -829,13 +829,13 @@ export default function Progress() {
           />
         </section>
 
-        {/*  STREAKS  */}
+        {/* ── STREAKS ── */}
         <section>
           <GlassLabel>Streaks</GlassLabel>
           <Streaks habits={withLiveStreaks(habits.items, toLocalDateKey(new Date()))} streaks={streaks} />
         </section>
 
-        {/*  GOALS  */}
+        {/* ── GOALS ── */}
         <section>
           <GlassLabel>Goals</GlassLabel>
           <Goals
@@ -846,7 +846,7 @@ export default function Progress() {
           />
         </section>
 
-        {/*  STATS  */}
+        {/* ── STATS ── */}
         <section>
           <GlassLabel>Stats</GlassLabel>
           <Stats focusSessions={sessions.items} habits={withLiveStreaks(habits.items, toLocalDateKey(new Date()))} />

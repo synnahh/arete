@@ -1,7 +1,7 @@
-//  context.js  Dynamic live context builder 
+// ─── context.js — Dynamic live context builder ─────────────────────────────────
 // Before every AI request, we assemble a real-time snapshot of the app's state.
 // This is injected into VALERIE's system prompt so she always speaks from
-// current knowledge  never generically.
+// current knowledge — never generically.
 
 import { storage, STORAGE_KEYS } from '../utils/storage.js';
 import { toLocalDateKey, isOnLocalDay } from '../utils/localDate.js';
@@ -18,11 +18,11 @@ import { suppliesWithUsage } from '../utils/supplies.js';
 import { withLiveStreaks } from '../domain/habits.js';
 import { currentWaterGoal } from '../utils/waterGoal.js';
 
-//  buildContext 
+// ─── buildContext ──────────────────────────────────────────────────────────────
 /**
  * Assembles a live context string from localStorage data.
  * @param {object} opts
- * @param {string} [opts.activeTab]  currently visible tab
+ * @param {string} [opts.activeTab] — currently visible tab
  * @returns {string}
  */
 export function buildContext({ activeTab = 'dashboard' } = {}) {
@@ -37,7 +37,7 @@ export function buildContext({ activeTab = 'dashboard' } = {}) {
     '',
   ];
 
-  //  Tasks 
+  // ── Tasks ────────────────────────────────────────────────────────────────
   try {
     // normalizeTasks reads both the UI shape {text, done} and the legacy
     // assistant shape {title, completed}. Previously this read only the legacy
@@ -47,10 +47,10 @@ export function buildContext({ activeTab = 'dashboard' } = {}) {
     const high  = open.filter(t => t.priority === 'high');
     lines.push(`Pending tasks: ${open.length} total${high.length ? `, ${high.length} high priority` : ''}`);
     const preview = open.slice(0, 4).map(t => `"${t.text}"${t.priority === 'high' ? ' [HIGH]' : ''}`).join(', ');
-    if (preview) lines.push(`   ${preview}`);
+    if (preview) lines.push(`  → ${preview}`);
   } catch {}
 
-  //  Calendar events 
+  // ── Calendar events ───────────────────────────────────────────────────────
   try {
     const events   = storage.get(STORAGE_KEYS.EVENTS, []);
     const today    = toLocalDateKey(now);
@@ -65,7 +65,7 @@ export function buildContext({ activeTab = 'dashboard' } = {}) {
     }
   } catch {}
 
-  //  Habits / streaks 
+  // ── Habits / streaks ──────────────────────────────────────────────────────
   try {
     const habits = withLiveStreaks(storage.get(STORAGE_KEYS.HABITS, []), toLocalDateKey(now));
     if (habits.length) {
@@ -79,7 +79,7 @@ export function buildContext({ activeTab = 'dashboard' } = {}) {
     }
   } catch {}
 
-  //  Focus session 
+  // ── Focus session ─────────────────────────────────────────────────────────
   try {
     const sessions = storage.get(STORAGE_KEYS.FOCUS_SESSIONS, []);
     const todayStr = toLocalDateKey(now);
@@ -89,7 +89,7 @@ export function buildContext({ activeTab = 'dashboard' } = {}) {
     }
   } catch {}
 
-  //  Health / water 
+  // ── Health / water ────────────────────────────────────────────────────────
   // Water is stored as a flat array of {date, amount, ...} objects by useCollection
   try {
     const waterLogs = storage.get(STORAGE_KEYS.WATER, []);
@@ -104,7 +104,7 @@ export function buildContext({ activeTab = 'dashboard' } = {}) {
     }
   } catch {}
 
-  //  Sleep 
+  // ── Sleep ─────────────────────────────────────────────────────────────────
   try {
     const sleepLogs = storage.get(STORAGE_KEYS.SLEEP, []);
     const logs = Array.isArray(sleepLogs) ? sleepLogs : [];
@@ -118,19 +118,19 @@ export function buildContext({ activeTab = 'dashboard' } = {}) {
     }
   } catch {}
 
-  //  Mood 
+  // ── Mood ──────────────────────────────────────────────────────────────────
   try {
     const moodLogs = storage.get(STORAGE_KEYS.MOOD_LOGS, []);
     const todayStr = toLocalDateKey(now);
     const todayMood = moodLogs.find(m => m.date === todayStr);
     if (todayMood) {
-      lines.push(`Mood today: ${todayMood.emoji || ''} (${todayMood.value || ''}/10)`);
+      lines.push(`Mood today: ${todayMood.emoji || ''} (${todayMood.value || '—'}/10)`);
     } else {
       lines.push('Mood today: Not yet logged');
     }
   } catch {}
 
-  //  XP / rank 
+  // ── XP / rank ─────────────────────────────────────────────────────────────
   try {
     const xpData = storage.get('xp', { total: 0 });
     if (xpData.total > 0) {
@@ -138,7 +138,7 @@ export function buildContext({ activeTab = 'dashboard' } = {}) {
     }
   } catch {}
 
-  //  Finance snapshot 
+  // ── Finance snapshot ──────────────────────────────────────────────────────
   try {
     const transactions = storage.get(STORAGE_KEYS.TRANSACTIONS, []);
     const now7 = new Date(Date.now() - 7 * 24 * 60 * 60 * 1000);

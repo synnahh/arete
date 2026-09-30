@@ -1,6 +1,6 @@
-// Style tab  Session 5
+// Style tab — Session 5
 // Sub-tabs: Discover (occasion search + AI outfit visualisation + optional Google Custom Search)
-//           My Board (saved items  Wishlist / Purchased / Pass)
+//           My Board (saved items — Wishlist / Purchased / Pass)
 
 import { useState, useEffect } from 'react';
 import { useCollection }        from '../supabase/useCollection.js';
@@ -10,7 +10,7 @@ import {
   OCCASIONS, CATEGORIES, STATUS_CONFIG, getCurrSymbol, pollinationsUrl, buildResults,
 } from '../domain/style.js';
 
-//  Google Custom Search 
+// ─── Google Custom Search ──────────────────────────────────────────────────────
 
 async function searchGoogle(query, key, cx) {
   const url =
@@ -37,7 +37,7 @@ async function searchGoogle(query, key, cx) {
   }));
 }
 
-//  SaveModal 
+// ─── SaveModal ─────────────────────────────────────────────────────────────────
 
 function SaveModal({ result, onSave, onClose }) {
   const [category, setCategory] = useState('Clothing');
@@ -185,7 +185,7 @@ function SaveModal({ result, onSave, onClose }) {
   );
 }
 
-//  ResultCard 
+// ─── ResultCard ────────────────────────────────────────────────────────────────
 
 function ResultCard({ result, onSave }) {
   const [loaded, setLoaded]   = useState(false);
@@ -273,7 +273,7 @@ function ResultCard({ result, onSave }) {
   );
 }
 
-//  BoardCard 
+// ─── BoardCard ─────────────────────────────────────────────────────────────────
 
 function BoardCard({ item, selected, onSelect, currSymbol = '$' }) {
   const cfg = STATUS_CONFIG[item.status] || STATUS_CONFIG.wishlist;
@@ -339,7 +339,7 @@ function BoardCard({ item, selected, onSelect, currSymbol = '$' }) {
   );
 }
 
-//  DetailPanel 
+// ─── DetailPanel ───────────────────────────────────────────────────────────────
 
 function DetailPanel({ item, onUpdate, onRemove, onClose, currSymbol = '$' }) {
   const [fields, setFields] = useState({
@@ -409,7 +409,7 @@ function DetailPanel({ item, onUpdate, onRemove, onClose, currSymbol = '$' }) {
             color: 'var(--text-secondary)', cursor: 'pointer', padding: 0,
           }}
         >
-          
+          ×
         </button>
       </div>
 
@@ -567,7 +567,7 @@ function DetailPanel({ item, onUpdate, onRemove, onClose, currSymbol = '$' }) {
   );
 }
 
-//  AddManualModal 
+// ─── AddManualModal ────────────────────────────────────────────────────────────
 
 function AddManualModal({ onAdd, onClose, currSymbol = '$' }) {
   const [form, setForm] = useState({
@@ -810,7 +810,7 @@ function AddManualModal({ onAdd, onClose, currSymbol = '$' }) {
   );
 }
 
-//  DiscoverView 
+// ─── DiscoverView ──────────────────────────────────────────────────────────────
 
 function DiscoverView({ settings, onSaveResult, currSymbol = '$' }) {
   const [occasion,    setOccasion]    = useState('');
@@ -835,7 +835,7 @@ function DiscoverView({ settings, onSaveResult, currSymbol = '$' }) {
           .filter(Boolean).join(' ');
         res = await searchGoogle(q, settings.googleSearchKey, settings.googleSearchCx);
       } else {
-        // Synchronous  but images load async via <img> tags
+        // Synchronous — but images load async via <img> tags
         res = buildResults(occasion, query.trim());
       }
       setResults(res);
@@ -1018,7 +1018,7 @@ function DiscoverView({ settings, onSaveResult, currSymbol = '$' }) {
   );
 }
 
-//  BoardView 
+// ─── BoardView ─────────────────────────────────────────────────────────────────
 
 function BoardView({ items, onAdd, onUpdate, onRemove, currSymbol = '$' }) {
   const [boardCat,      setBoardCat]      = useState('All');
@@ -1139,7 +1139,7 @@ function BoardView({ items, onAdd, onUpdate, onRemove, currSymbol = '$' }) {
               <span style={{ fontSize: 40, opacity: 0.15 }}>🔍</span>
               <p style={{ margin: 0, fontSize: 13 }}>
                 {items.length === 0
-                  ? 'Your board is empty  discover looks and save them here'
+                  ? 'Your board is empty — discover looks and save them here'
                   : 'No items match this filter'}
               </p>
               {items.length === 0 && (
@@ -1195,7 +1195,7 @@ function BoardView({ items, onAdd, onUpdate, onRemove, currSymbol = '$' }) {
   );
 }
 
-//  StyleTab 
+// ─── StyleTab ──────────────────────────────────────────────────────────────────
 
 export default function StyleTab({ settings }) {
   const { items, add, update, remove } = useCollection('style_board', STORAGE_KEYS.STYLE_BOARD);

@@ -1,4 +1,4 @@
-//  useSleepSchedule  bedtime dimming + reminder system 
+// ─── useSleepSchedule — bedtime dimming + reminder system ────────────────────
 // Reads bedtime/wakeTime from Firebase meta/sleep_schedule.
 // Dims the interface and fires voice + toast reminders as bedtime approaches.
 
@@ -14,7 +14,7 @@ function timeToMins(hhmm) {
 export function useSleepSchedule(settings) {
   const { data: schedule, save } = useDocument('sleep_schedule', 'sleep_schedule', null);
 
-  const [dimLevel,    setDimLevel]    = useState(0);   // 01
+  const [dimLevel,    setDimLevel]    = useState(0);   // 0–1
   const [isSleepTime, setIsSleepTime] = useState(false);
 
   const reminded30Ref  = useRef(false);
@@ -41,7 +41,7 @@ export function useSleepSchedule(settings) {
       const bedMins  = timeToMins(bedtime);
       const wakeMins = timeToMins(wakeTime || '07:00');
 
-      // Sanity guard  bedtime must be in a reasonable evening/night window (18:0003:00).
+      // Sanity guard — bedtime must be in a reasonable evening/night window (18:00–03:00).
       // Prevents garbage Firebase data or testing artifacts from blacking out the screen at noon.
       const bedH = Math.floor(bedMins / 60);
       if (bedH >= 3 && bedH < 18) {
@@ -77,7 +77,7 @@ export function useSleepSchedule(settings) {
         return;
       }
 
-      // We're awake  reset sleep mode
+      // We're awake — reset sleep mode
       if (prevSleepRef.current) {
         setDimLevel(0);
         setIsSleepTime(false);
@@ -112,7 +112,7 @@ export function useSleepSchedule(settings) {
           window.dispatchEvent(new CustomEvent('valerie:toast', {
             detail: { message: `Bedtime in ${mins} minute${mins !== 1 ? 's' : ''}.`, type: 'sleep' },
           }));
-          speakText(`Heads up, Sir  bedtime in ${mins} minutes.`, settings?.voice || {}).catch(() => {});
+          speakText(`Heads up, Sir — bedtime in ${mins} minutes.`, settings?.voice || {}).catch(() => {});
         }
       } else {
         setDimLevel(0);

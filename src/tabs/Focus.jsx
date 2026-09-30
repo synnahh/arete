@@ -1,4 +1,4 @@
-//  VALERIE  Focus Tab 
+// ─── VALERIE — Focus Tab ──────────────────────────────────────────────────────
 import { useState, useEffect, useRef, useCallback } from 'react';
 import { useCollection } from '../supabase/useCollection.js';
 import { STORAGE_KEYS }  from '../utils/storage.js';
@@ -6,7 +6,7 @@ import { addXP }         from '../utils/xp.js';
 import { storage }       from '../utils/storage.js';
 import { toLocalDateKey } from '../utils/localDate.js';
 
-//  Ambient sound engine (AudioContext  fully offline) 
+// ─── Ambient sound engine (AudioContext — fully offline) ──────────────────────
 function createNoiseBuffer(audioCtx, type) {
   const sampleRate = audioCtx.sampleRate;
   const len        = sampleRate * 3; // 3-second loop
@@ -81,7 +81,7 @@ function buildAmbient(audioCtx, type) {
   return { source, gainNode };
 }
 
-//  Ambient sounds list 
+// ─── Ambient sounds list ──────────────────────────────────────────────────────
 const SOUNDS = [
   { id: 'off',      label: 'Off',       icon: '🔇', engine: null      },
   { id: 'white',    label: 'Rain',      icon: '🌧️', engine: 'white'   },
@@ -90,7 +90,7 @@ const SOUNDS = [
   { id: 'binaural', label: 'Focus',     icon: '🎧', engine: 'binaural'},
 ];
 
-//  SVG ring timer 
+// ─── SVG ring timer ───────────────────────────────────────────────────────────
 function RingTimer({ remaining, total, running, size = 260 }) {
   const cx  = size / 2;
   const r   = (size - 22) / 2;
@@ -134,7 +134,7 @@ function RingTimer({ remaining, total, running, size = 260 }) {
   );
 }
 
-//  Session dots 
+// ─── Session dots ─────────────────────────────────────────────────────────────
 function SessionDots({ completed, total = 4 }) {
   const show = Math.max(total, completed);
   return (
@@ -156,7 +156,7 @@ function SessionDots({ completed, total = 4 }) {
   );
 }
 
-//  Main Focus Tab 
+// ─── Main Focus Tab ───────────────────────────────────────────────────────────
 export default function Focus({ settings }) {
   const sessions = useCollection('focus_sessions', STORAGE_KEYS.FOCUS_SESSIONS);
   const tasks    = storage.get(STORAGE_KEYS.TASKS, []);
@@ -410,7 +410,7 @@ export default function Focus({ settings }) {
           borderRadius: 12, padding: '12px 24px', textAlign: 'center',
         }}>
           <div style={{ fontSize: 14, color: '#4caf7d', fontWeight: 400 }}>
-            Session complete  +15 XP earned
+            Session complete — +15 XP earned
           </div>
           <div style={{ fontSize: 12, color: 'var(--text-muted)', marginTop: 4 }}>
             {durationMin} minutes of focused work

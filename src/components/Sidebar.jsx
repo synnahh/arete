@@ -3,51 +3,24 @@ import { createPortal } from 'react-dom';
 import { storage, STORAGE_KEYS } from '../utils/storage.js';
 import { supabase, getUserId, getUserIdSync } from '../supabase/supabase.js';
 import { getAttentionTabs, FOCUS_ALWAYS_VISIBLE } from '../utils/attention.js';
+import { ICON_PATHS } from './icons.jsx';
 import { GROUPS, groupScreens, groupOf, ALL_SCREENS, SCREEN_LABELS } from '../nav/groups.js';
 
-//  Icons (inline SVG  no external dep needed for now) 
+// ─── Icons: the shared set in components/icons.jsx ────────────────────────────
 const Icon = ({ d, size = 20 }) => (
   <svg width={size} height={size} viewBox="0 0 24 24" fill="none"
-    stroke="currentColor" strokeWidth={1.6} strokeLinecap="round" strokeLinejoin="round">
+    stroke="currentColor" strokeWidth={1.75} strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
     <path d={d} />
   </svg>
 );
+const ICONS = ICON_PATHS;
 
-const ICONS = {
-  dashboard:  "M3 9l9-7 9 7v11a2 2 0 01-2 2H5a2 2 0 01-2-2z M9 22V12h6v10",
-  // 3D extruded V  front face + back face offset + three connector lines
-  assistant:  "M4 5L12 19L20 5 M6 3L14 17L22 3 M4 5L6 3 M20 5L22 3 M12 19L14 17",
-  tasks:      "M9 11l3 3L22 4 M21 12v7a2 2 0 01-2 2H5a2 2 0 01-2-2V5a2 2 0 012-2h11",
-  calendar:   "M8 2v4 M16 2v4 M3 10h18 M5 4h14a2 2 0 012 2v14a2 2 0 01-2 2H5a2 2 0 01-2-2V6a2 2 0 012-2z",
-  notes:      "M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8z M14 2v6h6 M16 13H8 M16 17H8 M10 9H8",
-  health:     "M20.84 4.61a5.5 5.5 0 00-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 00-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 000-7.78z",
-  workout:    "M6.5 6.5h11v11h-11z M2 12h4 M18 12h4 M12 2v4 M12 18v4",
-  finance:    "M12 2v20 M17 5H9.5a3.5 3.5 0 000 7h5a3.5 3.5 0 010 7H6",
-  portfolio:  "M18 20V10 M12 20V4 M6 20v-6",
-  progress:   "M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z",
-  style:      "M20.84 7l-3-4H6.16L3 7l3.5 2V20h11V9L20.84 7zM9 4c0 1.65 1.35 3 3 3s3-1.35 3-3",
-  essentials: "M21 16V8a2 2 0 00-1-1.73l-7-4a2 2 0 00-2 0l-7 4A2 2 0 003 8v8a2 2 0 001 1.73l7 4a2 2 0 002 0l7-4A2 2 0 0021 16z",
-  lists:      "M8 6h13 M8 12h13 M8 18h13 M3 6h.01 M3 12h.01 M3 18h.01",
-  focus:      "M12 22c5.523 0 10-4.477 10-10S17.523 2 12 2 2 6.477 2 12s4.477 10 10 10z M12 6v6l4 2",
-  vault:      "M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z",
-  settings:   "M12 20a8 8 0 100-16 8 8 0 000 16z M12 14a2 2 0 100-4 2 2 0 000 4z",
-  routines:   "M4 4h16v2H4z M4 8h10v2H4z M4 12h16v2H4z M4 16h10v2H4z M17 15l4 4-4 4",
-  mind:       "M9.5 2a2.5 2.5 0 015 0v.5A7.5 7.5 0 0117 9.5v1.5h1a1 1 0 011 1v3a1 1 0 01-1 1h-1v.5a3.5 3.5 0 01-3.5 3.5h-3A3.5 3.5 0 017 16.5V16H6a1 1 0 01-1-1v-3a1 1 0 011-1h1V9.5A7.5 7.5 0 019.5 2.5V2z",
-  places:     "M12 2C8.13 2 5 5.13 5 9c0 5.25 7 13 7 13s7-7.75 7-13c0-3.87-3.13-7-7-7zm0 9.5c-1.38 0-2.5-1.12-2.5-2.5s1.12-2.5 2.5-2.5 2.5 1.12 2.5 2.5-1.12 2.5-2.5 2.5z",
-  // Sharp 'chad' face — chiselled jaw silhouette + brow ticks
-  lm:         "M7 4L17 4L18 10.5L14.5 19L12 21L9.5 19L6 10.5Z M8.8 9H10.6 M13.4 9H15.2",
-  // Navigation groups
-  home:       "M3 9l9-7 9 7v11a2 2 0 01-2 2H5a2 2 0 01-2-2z M9 22V12h6v10",
-  plan:       "M8 2v4 M16 2v4 M3 10h18 M5 4h14a2 2 0 012 2v14a2 2 0 01-2 2H5a2 2 0 01-2-2V6a2 2 0 012-2z",
-  coach:      "M7 7v10 M17 7v10 M4 9.5v5 M20 9.5v5 M7 12h10",
-};
-
-//  All reorderable tabs in default order 
+// ─── All reorderable tabs in default order ────────────────────────────────────
 // Every screen, labelled by group (Settings uses this for hiding and ordering).
 export const ALL_TABS = ALL_SCREENS.map(id => ({ id, label: `${groupOf(id).label} · ${SCREEN_LABELS[id] ?? id}` }));
 
 
-//  Single tab button 
+// ─── Single tab button ────────────────────────────────────────────────────────
 function TabButton({ tab, active, onClick }) {
   const [tooltipPos, setTooltipPos] = useState(null);
   const btnRef = useRef(null);
@@ -88,7 +61,7 @@ function TabButton({ tab, active, onClick }) {
         <Icon d={ICONS[tab.id]} size={18} />
       </button>
 
-      {/* Tooltip rendered via portal  escapes sidebar overflow */}
+      {/* Tooltip rendered via portal — escapes sidebar overflow */}
       {tooltipPos && createPortal(
         <div
           onMouseEnter={handleEnter}
@@ -142,7 +115,7 @@ function TabButton({ tab, active, onClick }) {
   );
 }
 
-//  Group of tabs with a subtle divider 
+// ─── Group of tabs with a subtle divider ─────────────────────────────────────
 function TabGroup({ tabs, activeTab, onTabClick }) {
   return (
     <div style={{ display: 'flex', flexDirection: 'column', gap: 4, padding: '4px 0' }}>
@@ -153,7 +126,7 @@ function TabGroup({ tabs, activeTab, onTabClick }) {
   );
 }
 
-//  Connection status indicator 
+// ─── Connection status indicator ────────────────────────────────────────────
 function StatusIndicator({ claudeOnline, ollamaOnline, internetOnline, lastPinged, firebaseSynced }) {
   const [expanded, setExpanded] = useState(false);
 
@@ -189,7 +162,7 @@ function StatusIndicator({ claudeOnline, ollamaOnline, internetOnline, lastPinge
         if (s < 60) return `${s}s ago`;
         return `${Math.round(s/60)}m ago`;
       })()
-    : '';
+    : '—';
 
   return (
     <div style={{ position: 'relative' }}>

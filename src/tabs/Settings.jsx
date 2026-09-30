@@ -1,4 +1,4 @@
-//  Settings Tab  Session 6 
+// ─── Settings Tab — Session 6 ────────────────────────────────────────────────
 // Full 11-section settings hub. Every change persists to localStorage instantly.
 // Split view: left nav (130px) + right scrollable content.
 
@@ -15,7 +15,7 @@ async function invoke(cmd, args) {
   return tauriInvoke(cmd, args);
 }
 
-// Local error boundary  catches crashes inside any settings section
+// Local error boundary — catches crashes inside any settings section
 class SectionErrorBoundary extends Component {
   constructor(props) { super(props); this.state = { error: null }; }
   static getDerivedStateFromError(e) { return { error: e }; }
@@ -54,7 +54,7 @@ import { currencySymbol as currencySym } from '../utils/currency.js';
 import { toLocalDateKey } from '../utils/localDate.js';
 import { updateSettings } from '../utils/settingsStore.js';
 
-//  Sections 
+// ─── Sections ────────────────────────────────────────────────────────────────
 const SECTIONS = [
   { id: 'identity',      label: 'Identity',         icon: '👤' },
   { id: 'appearance',    label: 'Appearance',       icon: '🎨' },
@@ -73,7 +73,7 @@ const SECTIONS = [
   { id: 'account',       label: 'Account',          icon: '☁'  },
 ];
 
-//  Currency & Unit constants 
+// ─── Currency & Unit constants ────────────────────────────────────────────────
 export const CURRENCIES = [
   { code: 'AUD', symbol: 'A$', label: 'AUD — Australian Dollar' },
   { code: 'USD', symbol: '$',  label: 'USD — US Dollar'         },
@@ -81,7 +81,7 @@ export const CURRENCIES = [
   { code: 'EUR', symbol: '€',  label: 'EUR — Euro'              },
 ];
 
-//  Shared UI primitives 
+// ─── Shared UI primitives ─────────────────────────────────────────────────────
 
 function Row({ label, hint, children }) {
   return (
@@ -222,7 +222,7 @@ function SavedBadge({ show }) {
   );
 }
 
-//  Section: Identity 
+// ─── Section: Identity ────────────────────────────────────────────────────────
 export function IdentitySection({ settings, onSave }) {
   const [form, setForm] = useState({
     assistantName:    settings.assistantName    || 'VALERIE',
@@ -270,7 +270,7 @@ export function IdentitySection({ settings, onSave }) {
         <Toggle value={form.greeting} onChange={v => set('greeting', v)} />
       </Row>
 
-      <Row label="Custom context" hint="Personal info VALERIE always knows  e.g. 'I work nights. I lift 4x a week.'">
+      <Row label="Custom context" hint="Personal info VALERIE always knows — e.g. 'I work nights. I lift 4x a week.'">
         <textarea
           value={form.customPrompt}
           onChange={e => set('customPrompt', e.target.value)}
@@ -301,7 +301,7 @@ export function IdentitySection({ settings, onSave }) {
   );
 }
 
-//  Font options from design spec 
+// ─── Font options from design spec ───────────────────────────────────────────
 const FONTS = [
   { value: "'Exo 2', sans-serif",     label: 'Exo 2',    description: 'Sharp · geometric · tech forward' },
   { value: "'DM Sans', sans-serif",   label: 'DM Sans',  description: 'Clean · minimal · professional'  },
@@ -311,7 +311,7 @@ const FONTS = [
   { value: "'Geist Sans', sans-serif",label: 'Geist',    description: 'Ultra minimal · Vercel'          },
 ];
 
-//  Section: Appearance 
+// ─── Section: Appearance ──────────────────────────────────────────────────────
 export function AppearanceSection({ settings, onSave }) {
   const [theme,       setTheme]       = useState(settings.theme             || 'obsidian');
   const [orbShape,    setOrbShape]    = useState(settings.orbShape           || 'sphere');
@@ -358,7 +358,7 @@ export function AppearanceSection({ settings, onSave }) {
       <SectionTitle>Appearance <SavedBadge show={saved} /></SectionTitle>
 
       {/* Theme grid */}
-      <Row label="Theme" hint="Switches instantly  no reload">
+      <Row label="Theme" hint="Switches instantly — no reload">
         <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: 10 }}>
           {Object.values(THEMES).map(t => (
             <button
@@ -390,7 +390,7 @@ export function AppearanceSection({ settings, onSave }) {
       </Row>
 
       {/* Custom accent colour */}
-      <Row label="Custom accent colour" hint="Overrides the theme's default accent  applies to orb, highlights, active states">
+      <Row label="Custom accent colour" hint="Overrides the theme's default accent — applies to orb, highlights, active states">
         <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
           <input
             type="color"
@@ -449,7 +449,7 @@ export function AppearanceSection({ settings, onSave }) {
       </Row>
 
       {/* Headings */}
-      <Row label="Headings" hint="Font for screen titles  body text keeps the font above">
+      <Row label="Headings" hint="Font for screen titles. Body text keeps the font above.">
         <PillGroup
           value={headingFont}
           onChange={(v) => { setHeadingFont(v); onSave({ headingFont: v }); }}
@@ -528,11 +528,11 @@ export function AppearanceSection({ settings, onSave }) {
   );
 }
 
-//  Section: Voice 
+// ─── Section: Voice ────────────────────────────────────────────────────────────
 export function VoiceSection({ settings, onSave }) {
 
-  //  ElevenLabs state 
-  // Key is stored in the OS keychain  never in settings/Firebase
+  // ── ElevenLabs state ──────────────────────────────────────────────────────
+  // Key is stored in the OS keychain — never in settings/Firebase
   const [el11Key,     setEl11Key]     = useState('');
   const [el11VoiceId, setEl11VoiceId] = useState(settings.voice?.elevenlabsVoiceId || settings.elevenlabsVoiceId || import.meta.env.VITE_ELEVENLABS_VOICE_ID || 'yj30vwTGJxSHezdAGsv9');
   const [el11Voices,  setEl11Voices]  = useState([]);
@@ -541,13 +541,13 @@ export function VoiceSection({ settings, onSave }) {
   const [el11Playing, setEl11Playing] = useState(false);
   const [el11PreviewErr, setEl11PreviewErr] = useState('');
 
-  //  Browser TTS fallback state 
+  // ── Browser TTS fallback state ────────────────────────────────────────────
   const [sysVoices,   setSysVoices]   = useState([]);
   const [voiceURI,    setVoiceURI]    = useState(settings.voice?.voiceURI || '');
   const [rate,        setRate]        = useState(settings.voice?.rate     ?? 0.95);
   const [pitch,       setPitch]       = useState(settings.voice?.pitch    ?? 1.0);
 
-  //  Azure state 
+  // ── Azure state ───────────────────────────────────────────────────────────
   const [azureKey,       setAzureKey]       = useState(settings.voice?.azureKey    || settings.azureKey    || '');
   const [azureRegion,    setAzureRegion]    = useState(settings.voice?.azureRegion || settings.azureRegion || 'australiaeast');
   const [azureVoiceName, setAzureVoiceName] = useState(settings.voice?.azureVoiceName || 'en-AU-NatashaNeural');
@@ -565,7 +565,7 @@ export function VoiceSection({ settings, onSave }) {
         headers: { 'xi-api-key': key },
         signal: AbortSignal.timeout(10000),
       });
-      if (!res.ok) throw new Error(`ElevenLabs API ${res.status}  check your key`);
+      if (!res.ok) throw new Error(`ElevenLabs API ${res.status} — check your key`);
       const data = await res.json();
       const sorted = (data.voices || []).sort((a, b) => a.name.localeCompare(b.name));
       setEl11Voices(sorted);
@@ -611,7 +611,7 @@ export function VoiceSection({ settings, onSave }) {
   // el11Status: null | 'plan_required' | 'bad_key' | 'no_voice' | 'ok'
   const [el11Status, setEl11Status] = useState(null);
 
-  // Preview using ElevenLabs  plays real audio from her voice
+  // Preview using ElevenLabs — plays real audio from her voice
   const handleEl11Preview = async () => {
     if (!el11Key || el11Playing) return;
     setEl11Playing(true);
@@ -637,7 +637,7 @@ export function VoiceSection({ settings, onSave }) {
         }
         if (res.status === 401) { setEl11Status('bad_key'); setEl11Playing(false); return; }
         if (res.status === 422) { setEl11Status('no_voice'); setEl11Playing(false); return; }
-        setEl11PreviewErr(`Preview failed (${res.status})  check your connection and try again.`);
+        setEl11PreviewErr(`Preview failed (${res.status}) — check your connection and try again.`);
         setEl11Playing(false);
         return;
       }
@@ -647,13 +647,13 @@ export function VoiceSection({ settings, onSave }) {
       const audio = new Audio(url);
       audio.onended = () => { URL.revokeObjectURL(url); setEl11Playing(false); };
       audio.onerror = () => {
-        setEl11PreviewErr('Audio playback failed  check that audio is not muted');
+        setEl11PreviewErr('Audio playback failed — check that audio is not muted');
         setEl11Playing(false);
       };
       const p = audio.play();
       if (p?.catch) p.catch(err => { setEl11PreviewErr(`Playback blocked: ${err.message}`); setEl11Playing(false); });
     } catch (err) {
-      setEl11PreviewErr('Preview failed  check your connection.');
+      setEl11PreviewErr('Preview failed — check your connection.');
       setEl11Playing(false);
     }
   };
@@ -751,7 +751,7 @@ export function VoiceSection({ settings, onSave }) {
       <SectionTitle>Voice <SavedBadge show={saved} /></SectionTitle>
 
       {/* Active engine banner */}
-      {/*  Active engine banner  */}
+      {/* ─── Active engine banner ──────────────────────────────────────────── */}
       {(() => {
         const isAzureConfigured = !!azureKey.trim();
         const engineLabel  = isEl11Active ? 'ElevenLabs' : isAzureConfigured ? 'Azure Neural' : 'System TTS';
@@ -760,9 +760,9 @@ export function VoiceSection({ settings, onSave }) {
         const engineBg     = isEl11Active || isAzureConfigured ? '#4caf7d14' : 'var(--hover-bg)';
         const engineBorder = isEl11Active || isAzureConfigured ? '#4caf7d44' : 'var(--card-border)';
         const engineSub    = isEl11Active
-          ? `Priority: ElevenLabs   Azure Neural   System TTS${selectedVoiceName ? ` · ${selectedVoiceName}` : ''}`
+          ? `Priority: ElevenLabs → Azure Neural → System TTS${selectedVoiceName ? ` · ${selectedVoiceName}` : ''}`
           : isAzureConfigured
-          ? `Priority: Azure Neural (${azureVoiceName})   System TTS  ElevenLabs not configured`
+          ? `Priority: Azure Neural (${azureVoiceName}) → System TTS — ElevenLabs not configured`
           : 'Add an ElevenLabs or Azure key below for VALERIE\'s real voice';
         return (
           <div style={{
@@ -776,7 +776,7 @@ export function VoiceSection({ settings, onSave }) {
             }} />
             <div style={{ flex: 1 }}>
               <div style={{ fontSize: 13, fontWeight: 600, color: 'var(--text-primary)' }}>
-                {engineLabel}  Active
+                {engineLabel} — Active
               </div>
               <div style={{ fontSize: 11, color: 'var(--text-muted)', marginTop: 1 }}>
                 {engineSub}
@@ -786,7 +786,7 @@ export function VoiceSection({ settings, onSave }) {
         );
       })()}
 
-      {/*  ElevenLabs block  */}
+      {/* ─── ElevenLabs block ─────────────────────────────────────────────── */}
       <div style={{
         border: `1px solid ${isEl11Active ? 'var(--accent)55' : 'var(--card-border)'}`,
         borderRadius: 12, padding: '16px 18px', marginBottom: 20,
@@ -835,7 +835,7 @@ export function VoiceSection({ settings, onSave }) {
         {/* Voice dropdown */}
         <div style={{ marginBottom: 12 }}>
           <div style={{ fontSize: 11, color: 'var(--text-secondary)', marginBottom: 5 }}>
-            Voice {el11Voices.length > 0 ? `(${el11Voices.length} available)` : ' click Load voices to fetch'}
+            Voice {el11Voices.length > 0 ? `(${el11Voices.length} available)` : '— click Load voices to fetch'}
           </div>
           <select
             value={el11VoiceId}
@@ -857,7 +857,7 @@ export function VoiceSection({ settings, onSave }) {
                 <option key={v.voice_id ?? v.name} value={v.voice_id ?? ''}>
                   {String(v.name ?? '')}
                   {v.voice_id === defaultVoiceId ? ' & VALERIE default' : ''}
-                  {accent ? `  ${accent}` : ''}
+                  {accent ? ` — ${accent}` : ''}
                 </option>
                 );
               })
@@ -881,7 +881,7 @@ export function VoiceSection({ settings, onSave }) {
         >
           {el11Playing ? '🔊 Playing…' : "🔊 Preview VALERIE's voice"}
         </button>
-        {/* Clean status banner  no raw API text ever shown */}
+        {/* Clean status banner — no raw API text ever shown */}
         {(el11Status || el11PreviewErr) && (
           <div style={{
             marginTop: 10, padding: '10px 14px', borderRadius: 8, fontSize: 12, lineHeight: 1.5,
@@ -896,7 +896,7 @@ export function VoiceSection({ settings, onSave }) {
               : { background: 'rgba(229,90,90,0.08)', border: '0.5px solid rgba(229,90,90,0.35)', color: '#e55a5a' }),
           }}>
             {el11Status === 'ok'           && '✓ Voice preview played successfully.'}
-            {el11Status === 'plan_required' && 'ElevenLabs plan required  this model is not available on your current tier. VALERIE will use system TTS as fallback.'}
+            {el11Status === 'plan_required' && 'ElevenLabs plan required — this model is not available on your current tier. VALERIE will use system TTS as fallback.'}
             {el11Status === 'bad_key'       && 'API key rejected. Double-check your ElevenLabs key above and try again.'}
             {el11Status === 'no_voice'      && 'Voice ID not found. Click Load voices and select a different one.'}
             {!el11Status && el11PreviewErr  && el11PreviewErr}
@@ -904,7 +904,7 @@ export function VoiceSection({ settings, onSave }) {
         )}
       </div>
 
-      {/*  Azure Neural TTS  */}
+      {/* ─── Azure Neural TTS ─────────────────────────────────────────────── */}
       {(() => {
         const isAzureActive = !!azureKey.trim();
         return (
@@ -938,7 +938,7 @@ export function VoiceSection({ settings, onSave }) {
             {/* Region */}
             <div style={{ marginBottom: 12 }}>
               <div style={{ fontSize: 11, color: 'var(--text-secondary)', marginBottom: 5 }}>
-                Region <span style={{ color: 'var(--text-muted)' }}> must match your Azure resource region</span>
+                Region <span style={{ color: 'var(--text-muted)' }}>— must match your Azure resource region</span>
               </div>
               <select
                 value={azureRegion}
@@ -963,7 +963,7 @@ export function VoiceSection({ settings, onSave }) {
                   ['japaneast',       'Japan East'],
                   ['canadacentral',   'Canada Central'],
                 ].map(([val, label]) => (
-                  <option key={val} value={val}>{label}  {val}</option>
+                  <option key={val} value={val}>{label} — {val}</option>
                 ))}
               </select>
             </div>
@@ -981,19 +981,19 @@ export function VoiceSection({ settings, onSave }) {
                 }}
               >
                 <optgroup label="Australian English">
-                  <option value="en-AU-NatashaNeural">Natasha  en-AU Female & VALERIE default</option>
-                  <option value="en-AU-WilliamNeural">William  en-AU Male</option>
+                  <option value="en-AU-NatashaNeural">Natasha — en-AU Female ★ VALERIE default</option>
+                  <option value="en-AU-WilliamNeural">William — en-AU Male</option>
                 </optgroup>
                 <optgroup label="British English">
-                  <option value="en-GB-SoniaNeural">Sonia  en-GB Female</option>
-                  <option value="en-GB-RyanNeural">Ryan  en-GB Male</option>
-                  <option value="en-GB-LibbyNeural">Libby  en-GB Female</option>
+                  <option value="en-GB-SoniaNeural">Sonia — en-GB Female</option>
+                  <option value="en-GB-RyanNeural">Ryan — en-GB Male</option>
+                  <option value="en-GB-LibbyNeural">Libby — en-GB Female</option>
                 </optgroup>
                 <optgroup label="US English">
-                  <option value="en-US-JennyNeural">Jenny  en-US Female</option>
-                  <option value="en-US-AriaNeural">Aria  en-US Female</option>
-                  <option value="en-US-GuyNeural">Guy  en-US Male</option>
-                  <option value="en-US-SaraNeural">Sara  en-US Female</option>
+                  <option value="en-US-JennyNeural">Jenny — en-US Female</option>
+                  <option value="en-US-AriaNeural">Aria — en-US Female</option>
+                  <option value="en-US-GuyNeural">Guy — en-US Male</option>
+                  <option value="en-US-SaraNeural">Sara — en-US Female</option>
                 </optgroup>
               </select>
             </div>
@@ -1027,16 +1027,16 @@ export function VoiceSection({ settings, onSave }) {
                   : { background: 'rgba(229,90,90,0.08)', border: '0.5px solid rgba(229,90,90,0.35)', color: '#e55a5a' }),
               }}>
                 {azureStatus === 'ok'         && '✓ Azure voice preview played successfully.'}
-                {azureStatus === 'bad_key'    && 'API key rejected  check your Azure subscription key.'}
-                {azureStatus === 'bad_region' && 'Region not found  make sure the region matches your Azure resource (e.g. australiaeast).'}
-                {azureStatus === 'error'      && 'Preview failed  check your key and region, then try again.'}
+                {azureStatus === 'bad_key'    && 'API key rejected — check your Azure subscription key.'}
+                {azureStatus === 'bad_region' && 'Region not found — make sure the region matches your Azure resource (e.g. australiaeast).'}
+                {azureStatus === 'error'      && 'Preview failed — check your key and region, then try again.'}
               </div>
             )}
           </div>
         );
       })()}
 
-      {/*  System TTS fallback  */}
+      {/* ─── System TTS fallback ──────────────────────────────────────────── */}
       <div style={{ marginBottom: 24 }}>
         <div style={{
           fontSize: 11, fontWeight: 700, color: 'var(--text-muted)',
@@ -1053,7 +1053,7 @@ export function VoiceSection({ settings, onSave }) {
             borderRadius: 8, color: 'var(--text-primary)', fontSize: 13,
           }}
         >
-          <option value=""> System default </option>
+          <option value="">— System default —</option>
           {enSysVoices.map(v => (
             <option key={v.voiceURI} value={v.voiceURI}>{v.name} ({v.lang})</option>
           ))}
@@ -1114,7 +1114,7 @@ export function VoiceSection({ settings, onSave }) {
   );
 }
 
-//  Section: AI 
+// ─── Section: AI ───────────────────────────────────────────────────────────────
 export function AISection({ settings, onSave }) {
   const [ollamaModel,   setOllamaModel]   = useState(settings.ollamaModel   || 'llama3');
   const [preferOffline, setPreferOffline] = useState(settings.preferOffline ?? false);
@@ -1185,7 +1185,7 @@ export function AISection({ settings, onSave }) {
         )}
       </Row>
 
-      <Row label="Ollama model" hint="Local AI model  Ollama must be running at localhost:11434">
+      <Row label="Ollama model" hint="Local AI model — Ollama must be running at localhost:11434">
         {ollamaModels.length > 0 ? (
           <select
             value={ollamaModel}
@@ -1206,7 +1206,7 @@ export function AISection({ settings, onSave }) {
         )}
       </Row>
 
-      <Row label="Prefer offline model" hint="Use Ollama first  only switch to Claude for complex tasks">
+      <Row label="Prefer offline model" hint="Use Ollama first — only switch to Claude for complex tasks">
         <Toggle value={preferOffline} onChange={setPreferOffline} />
       </Row>
 
@@ -1214,7 +1214,7 @@ export function AISection({ settings, onSave }) {
         <Toggle value={smartRouting} onChange={setSmartRouting} />
       </Row>
 
-      <Row label="Daily token budget" hint="Approximate max tokens per day  VALERIE warns when approaching">
+      <Row label="Daily token budget" hint="Approximate max tokens per day — VALERIE warns when approaching">
         <Slider value={tokenBudget} onChange={setTokenBudget} min={10000} max={500000} step={10000} suffix=" tok" />
       </Row>
 
@@ -1232,7 +1232,7 @@ export function AISection({ settings, onSave }) {
   );
 }
 
-//  Section: Units & Currency 
+// ─── Section: Units & Currency ────────────────────────────────────────────────
 export function UnitsSection({ settings, onSave }) {
   const [currency, setCurrency] = useState(settings.currency || 'AUD');
   const [units,    setUnits]    = useState(settings.units    || 'metric');
@@ -1278,7 +1278,7 @@ export function UnitsSection({ settings, onSave }) {
                 }}>
                   {c.code}
                 </div>
-                <div style={{ fontSize: 11, color: 'var(--text-muted)' }}>{c.label.split('  ')[1]}</div>
+                <div style={{ fontSize: 11, color: 'var(--text-muted)' }}>{c.label.split(' — ')[1]}</div>
               </div>
               {currency === c.code && (
 <div style={{ marginLeft: "auto", color: "var(--accent)", fontSize: 16 }}>✓</div>
@@ -1331,7 +1331,7 @@ export function UnitsSection({ settings, onSave }) {
   );
 }
 
-//  Section: Notifications 
+// ─── Section: Notifications ───────────────────────────────────────────────────
 const TAB_REMINDERS_DEFAULT = {
   water:       { enabled: true,  hour: 12, message: 'VALERIE: Only {value}ml logged. Goal is {goal}ml.' },
   nutrition:   { enabled: true,  hour: 13, message: 'VALERIE: No calories logged yet. {value} kcal remaining.' },
@@ -1555,7 +1555,7 @@ export function NotificationsSection({ settings, onSave }) {
             </div>
           </Block>
 
-          {/*  Twilio credentials  */}
+          {/* ── Twilio credentials ── */}
           <Block label="Twilio Credentials">
             <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
               <Row label="Account SID" hint="From twilio.com/console">
@@ -1570,7 +1570,7 @@ export function NotificationsSection({ settings, onSave }) {
             </div>
           </Block>
 
-          {/*  Twilio numbers  */}
+          {/* ── Twilio numbers ── */}
           <Block label="Twilio SMS Numbers">
             <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
               <Row label="Reminders number" hint="Used for all tab reminders">
@@ -1588,7 +1588,7 @@ export function NotificationsSection({ settings, onSave }) {
             <textarea style={textareaSx} value={msgAlert} onChange={e => setMsgAlert(e.target.value)} />
           </Block>
 
-          {/*  Test SMS button  */}
+          {/* ── Test SMS button ── */}
           <div style={{ marginBottom: 20, display: 'flex', alignItems: 'center', gap: 12 }}>
             <button
               onClick={handleTestSMS}
@@ -1644,7 +1644,7 @@ function SpotifyOAuth() {
   );
 }
 
-//  Section: Integrations 
+// ─── Section: Integrations ────────────────────────────────────────────────────
 export function IntegrationsSection({ settings, onSave }) {
   const [googleSearchKey, setGoogleSearchKey] = useState(settings.googleSearchKey || '');
   const [googleSearchCx,  setGoogleSearchCx]  = useState(settings.googleSearchCx  || '');
@@ -1808,16 +1808,16 @@ export function IntegrationsSection({ settings, onSave }) {
           API KEYS
         </div>
 
-        <Row label="Google Custom Search  API key" hint="Enables real shopping results in the Style tab. Free tier: 100 searches/day">
+        <Row label="Google Custom Search — API key" hint="Enables real shopping results in the Style tab. Free tier: 100 searches/day">
           <Input value={googleSearchKey} onChange={setGoogleSearchKey} placeholder="AIza…" masked />
         </Row>
-        <Row label="Google Custom Search  Engine ID (cx)" hint="Create at programmablesearchengine.google.com">
+        <Row label="Google Custom Search — Engine ID (cx)" hint="Create at programmablesearchengine.google.com">
           <Input value={googleSearchCx} onChange={setGoogleSearchCx} placeholder="12345:abcdef" />
         </Row>
         <Row label="ExerciseDB API key" hint="Exercise library with GIFs for workout planning. Free tier available at rapidapi.com">
           <Input value={exerciseDbKey} onChange={setExerciseDbKey} placeholder="Your RapidAPI key" masked />
         </Row>
-        <Row label="Finnhub API key" hint="Free real-time stock quotes  sign up at finnhub.io (no credit card). 60 calls/min free tier.">
+        <Row label="Finnhub API key" hint="Free real-time stock quotes — sign up at finnhub.io (no credit card). 60 calls/min free tier.">
           <Input value={finnhubKey} onChange={setFinnhubKey} placeholder="Your Finnhub API key" masked />
         </Row>
       </div>
@@ -1847,7 +1847,7 @@ export function IntegrationsSection({ settings, onSave }) {
             {watchlist.map(sym => (
               <div key={sym} style={{ display: 'flex', alignItems: 'center', gap: 6, padding: '5px 12px', borderRadius: 20, background: 'rgba(255,255,255,0.06)', border: '0.5px solid var(--card-border)' }}>
                 <span style={{ fontSize: 12, color: 'var(--text-primary)', fontWeight: 500 }}>{sym}</span>
-                <button onClick={() => removeTicker(sym)} style={{ background: 'none', border: 'none', cursor: 'pointer', color: '#e55a5a', fontSize: 14, lineHeight: 1, padding: 0 }}></button>
+                <button onClick={() => removeTicker(sym)} style={{ background: 'none', border: 'none', cursor: 'pointer', color: '#e55a5a', fontSize: 14, lineHeight: 1, padding: 0 }}>×</button>
               </div>
             ))}
           </div>
@@ -1875,10 +1875,10 @@ export function IntegrationsSection({ settings, onSave }) {
           <div style={{ fontSize: 11, color: 'var(--text-secondary)', lineHeight: 1.65, marginBottom: 14 }}>
             <strong style={{ color: 'var(--text-primary)', display: 'block', marginBottom: 6 }}>Setup (one-time):</strong>
             1. Download <strong>Health Auto Export</strong> (free) from the App Store<br />
-            2. Open   <strong>Automations   New Automation   REST API</strong><br />
+            2. Open <strong>Automations → New Automation → REST API</strong><br />
             3. Paste the webhook URL below, set Method to <strong>POST</strong>, Format to <strong>JSON</strong><br />
             4. Select metrics: Sleep, Steps, Heart Rate, HRV, Active Energy, Weight, Body Fat<br />
-            5. Set frequency: <strong>Hourly</strong>   Save   Enable
+            5. Set frequency to <strong>Hourly</strong>, then Save and Enable
           </div>
 
           <div style={{
@@ -1903,7 +1903,7 @@ export function IntegrationsSection({ settings, onSave }) {
         background: 'var(--hover-bg)', borderRadius: 10, padding: '14px 16px',
         marginBottom: 20, fontSize: 12, color: 'var(--text-muted)', lineHeight: 1.55,
       }}>
-        <strong style={{ color: 'var(--text-secondary)' }}>Webhooks</strong>  Connect to Zapier, Make, or n8n.
+        <strong style={{ color: 'var(--text-secondary)' }}>Webhooks</strong> — Connect to Zapier, Make, or n8n.
         Define outgoing webhook URLs for task completion, mood logs, focus sessions, and custom events.
         <br />
         <span style={{ color: 'var(--accent)', cursor: 'pointer', marginTop: 6, display: 'inline-block' }}>
@@ -1925,7 +1925,7 @@ export function IntegrationsSection({ settings, onSave }) {
   );
 }
 
-//  Section: API Usage 
+// ─── Section: API Usage ────────────────────────────────────────────────────────
 // NOTE: Anthropic does not expose a public credit balance endpoint via API key.
 // Usage data is only available at console.anthropic.com.
 // This section shows locally tracked token estimates and links to the console.
@@ -1942,7 +1942,7 @@ function ApiUsageSection({ settings }) {
 
       <div style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
 
-          {/* Console link  primary action */}
+          {/* Console link — primary action */}
           <div style={{
             padding: '18px 20px', borderRadius: 12,
             background: 'var(--accent)08', border: '1px solid var(--accent)33',
@@ -1951,7 +1951,7 @@ function ApiUsageSection({ settings }) {
               Monitor your usage
             </div>
             <div style={{ fontSize: 12, color: 'var(--text-secondary)', marginBottom: 14, lineHeight: 1.55 }}>
-              Anthropic's API doesn't expose a public balance endpoint  exact credit usage,
+              Anthropic's API doesn't expose a public balance endpoint — exact credit usage,
               remaining balance, and per-model breakdown are only available at the Console.
             </div>
             <a
@@ -2016,18 +2016,18 @@ function ApiUsageSection({ settings }) {
   );
 }
 
-//  Section: Progress & Rank 
+// ─── Section: Progress & Rank ─────────────────────────────────────────────────
 // Per the Progress Tab Design spec: tier names renameable, XP thresholds
 // adjustable, XP per action adjustable, option to hide rank system entirely.
 export function ProgressSection({ settings, onSave }) {
   const rankSettings  = settings.rankSettings || {};
   const xpSettings    = settings.xpSettings   || {};
 
-  // Tier names  defaults from TIER_CONFIG, overridable
+  // Tier names — defaults from TIER_CONFIG, overridable
   const [tierNames,    setTierNames]    = useState(() =>
     TIER_CONFIG.map(t => rankSettings.tierNames?.[t.tier] || t.name)
   );
-  // XP thresholds  defaults from TIER_CONFIG
+  // XP thresholds — defaults from TIER_CONFIG
   const [thresholds,   setThresholds]   = useState(() =>
     TIER_CONFIG.map((t, i) => rankSettings.thresholds?.[t.tier] ?? TIER_THRESHOLDS[i] ?? 0)
   );
@@ -2183,7 +2183,7 @@ export function ProgressSection({ settings, onSave }) {
   );
 }
 
-//  Section: Platforms 
+// ─── Section: Platforms ───────────────────────────────────────────────────────
 // Every screen except Settings (never hideable), labelled by group.
 const PLATFORM_TABS = ALL_TABS.filter(t => t.id !== 'settings');
 
@@ -2200,7 +2200,7 @@ function PlatformsSection({ settings, onSave }) {
   const [autostartOk, setAutostartOk] = useState(false);
   const [isFullscreen, setIsFullscreen] = useState(false);
 
-  //  Updater state 
+  // ── Updater state ──────────────────────────────────────────────────────────
   const [updateState,   setUpdateState]   = useState('idle'); // idle | checking | available | installing | uptodate | error
   const [updateInfo,    setUpdateInfo]    = useState(null);   // { version, notes }
   const [updateError,   setUpdateError]   = useState('');
@@ -2270,7 +2270,7 @@ function PlatformsSection({ settings, onSave }) {
     }
   };
 
-  // Toggle a tab's visibility  save immediately so Sidebar updates in real time
+  // Toggle a tab's visibility — save immediately so Sidebar updates in real time
   const toggleTab = (tabId, visible) => {
     const next = visible
       ? hiddenTabs.filter(id => id !== tabId)
@@ -2279,7 +2279,7 @@ function PlatformsSection({ settings, onSave }) {
     onSave({ hiddenTabs: next });
   };
 
-  // Update layout for a tab  save immediately
+  // Update layout for a tab — save immediately
   const setLayout = (tabId, layout) => {
     const next = { ...tabLayouts, [tabId]: layout };
     setTabLayouts(next);
@@ -2320,7 +2320,7 @@ function PlatformsSection({ settings, onSave }) {
           <div>
             <div style={{ fontSize: 13, fontWeight: 600, color: 'var(--text-primary)' }}>Fullscreen mode</div>
             <div style={{ fontSize: 11, color: 'var(--text-muted)', marginTop: 2 }}>
-              Toggle true fullscreen  borderless windowed by default
+              Toggle true fullscreen — borderless windowed by default
             </div>
           </div>
           <Toggle value={isFullscreen} onChange={handleFullscreenToggle} />
@@ -2377,7 +2377,7 @@ function PlatformsSection({ settings, onSave }) {
           WINDOWS TAB VISIBILITY
         </div>
         <div style={{ fontSize: 11, color: 'var(--text-muted)', marginBottom: 12 }}>
-          Hidden tabs disappear from the sidebar  their data is preserved and restored when re-enabled.
+          Hidden tabs disappear from the sidebar — their data is preserved and restored when re-enabled.
         </div>
         <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
           {PLATFORM_TABS.map(tab => {
@@ -2404,7 +2404,7 @@ function PlatformsSection({ settings, onSave }) {
                   <Toggle value={visible} onChange={v => toggleTab(tab.id, v)} />
                 </div>
 
-                {/* Layout density row  only shown when tab is visible */}
+                {/* Layout density row — only shown when tab is visible */}
                 {visible && (
                   <div style={{
                     display: 'flex', alignItems: 'center', gap: 8,
@@ -2440,7 +2440,7 @@ function PlatformsSection({ settings, onSave }) {
   );
 }
 
-//  Section: Data 
+// ─── Section: Data ────────────────────────────────────────────────────────────
 export function DataSection() {
   const [exported, setExported] = useState(false);
 
@@ -2487,7 +2487,7 @@ export function DataSection() {
           padding: '14px 16px', borderRadius: 10, border: '1px dashed var(--card-border)',
           color: 'var(--text-muted)', fontSize: 12, textAlign: 'center',
         }}>
-          Import  coming in next session
+          Import — coming in next session
         </div>
       </Row>
 
@@ -2516,7 +2516,7 @@ export function DataSection() {
   );
 }
 
-//  Section: Daily Brief 
+// ─── Section: Daily Brief ─────────────────────────────────────────────────────
 export function DailyBriefSection({ settings, onSave }) {
   const cfg = settings.dailyBrief ?? {};
   const [weather,  setWeather]  = useState(cfg.weather  !== false);
@@ -2572,13 +2572,13 @@ export function DailyBriefSection({ settings, onSave }) {
   );
 }
 
-//  Section: Sidebar Order 
+// ─── Section: Sidebar Order ───────────────────────────────────────────────────
 function SidebarSection({ settings, onSave }) {
   const defaultOrder = ALL_TABS.map(t => t.id);
   const [order, setOrder] = useState(() => {
     try {
       let saved = storage.get(STORAGE_KEYS.SIDEBAR_ORDER_DESKTOP, null);
-      // Firestore may have stored { order: [...] }  unwrap if needed
+      // Firestore may have stored { order: [...] } — unwrap if needed
       if (saved && !Array.isArray(saved) && Array.isArray(saved.order)) saved = saved.order;
       if (Array.isArray(saved) && saved.length) {
         const known = new Set(saved);
@@ -2637,7 +2637,7 @@ function SidebarSection({ settings, onSave }) {
       <SectionTitle>Sidebar Order <SavedBadge show={saved} /></SectionTitle>
       <div style={{ fontSize: 13, color: 'var(--text-muted)', marginBottom: 20, lineHeight: 1.55 }}>
         Drag to reorder sidebar tabs. Vault and Settings are always pinned at the bottom.
-        Order is saved per platform  desktop and iOS have separate orders.
+        Order is saved per platform — desktop and iOS have separate orders.
       </div>
 
       <div style={{ display: 'flex', flexDirection: 'column', gap: 6, marginBottom: 20 }}>
@@ -2675,7 +2675,7 @@ function SidebarSection({ settings, onSave }) {
   );
 }
 
-//  Section: Security 
+// ─── Section: Security ────────────────────────────────────────────────────────
 export function SecuritySection({ settings, onSave }) {
   const [autoLock,   setAutoLock]   = useState(settings.vaultAutoLockMinutes ?? 5);
   const [deletePhrase, setDeletePhrase] = useState('');
@@ -2698,7 +2698,7 @@ export function SecuritySection({ settings, onSave }) {
       alert('Please type the exact phrase: DELETE MY ACCOUNT');
       return;
     }
-    if (window.confirm('Final confirmation  this action is irreversible. All data will be destroyed.')) {
+    if (window.confirm('Final confirmation — this action is irreversible. All data will be destroyed.')) {
       storage.clear();
       localStorage.clear();
       window.location.reload();
@@ -2783,7 +2783,7 @@ export function SecuritySection({ settings, onSave }) {
         Save Security Settings
       </button>
 
-      {/* Account deletion  locked behind confirmation phrase */}
+      {/* Account deletion — locked behind confirmation phrase */}
       <div style={{
         padding: '20px', borderRadius: 12,
         border: '1px solid rgba(229,90,90,0.3)',
@@ -2827,7 +2827,7 @@ export function SecuritySection({ settings, onSave }) {
   );
 }
 
-//  Main Settings Tab 
+// ─── Main Settings Tab ────────────────────────────────────────────────────────
 
 // --- Section: Account --------------------------------------------------------
 export function AccountSection() {
@@ -2889,7 +2889,7 @@ export default function SettingsTab({ settings: settingsProp }) {
     return () => window.removeEventListener('valerie:settings-section', handler);
   }, []);
 
-  // Load settings from localStorage  source of truth
+  // Load settings from localStorage — source of truth
   const [settings, setSettings] = useState(() => storage.get(STORAGE_KEYS.SETTINGS, {}));
 
   // Persist partial updates to localStorage + Firestore and notify App in real time
@@ -2928,7 +2928,7 @@ export default function SettingsTab({ settings: settingsProp }) {
   return (
     <div style={{ height: '100%', display: 'flex', overflow: 'hidden' }}>
 
-      {/*  Left nav  */}
+      {/* ── Left nav ──────────────────────────────────────────────────────── */}
       <nav style={{
         width: 160, flexShrink: 0,
         borderRight: '0.5px solid var(--sidebar-divider)',
@@ -2967,7 +2967,7 @@ export default function SettingsTab({ settings: settingsProp }) {
         </div>
       </nav>
 
-      {/*  Right content  */}
+      {/* ── Right content ─────────────────────────────────────────────────── */}
       <div style={{ flex: 1, overflowY: 'auto', padding: '28px 36px' }}>
         {renderSection()}
       </div>

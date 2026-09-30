@@ -1,6 +1,6 @@
-//  haptics.js  Vibration feedback for iOS PWA 
+// ─── haptics.js — Vibration feedback for iOS PWA ─────────────────────────────
 // navigator.vibrate is supported on Android; iOS PWA has no haptics API.
-// We call it anyway  it silently no-ops on iOS, works on Android PWA.
+// We call it anyway — it silently no-ops on iOS, works on Android PWA.
 
 export const haptics = {
   tap:     () => navigator.vibrate?.([8]),

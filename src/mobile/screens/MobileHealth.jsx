@@ -24,7 +24,7 @@ import { weeklyMicros, microCoach } from '../../domain/micros.js';
 
 const nowStr = () => new Date().toLocaleTimeString('en-AU', { hour: '2-digit', minute: '2-digit', hour12: false });
 
-//  Shared primitives 
+// ── Shared primitives ──────────────────────────────────────────────────────────
 function MCard({ children, style = {} }) {
   return (
     <div style={{ background: 'var(--bg-panel)', border: '0.5px solid var(--card-border)',
@@ -57,10 +57,10 @@ function ProgressBar({ value, max, color = 'var(--accent)' }) {
   );
 }
 
-//  Sub-nav 
+// ── Sub-nav ────────────────────────────────────────────────────────────────────
 const SUB_TABS = ['Overview', 'Sleep', 'Nutrition', 'Water', 'Body'];
 
-//  Sleep ring 
+// ── Sleep ring ─────────────────────────────────────────────────────────────────
 function SleepRing({ pct, size = 76, thickness = 7 }) {
   const r    = (size - thickness) / 2;
   const circ = 2 * Math.PI * r;
@@ -85,7 +85,7 @@ function SleepRing({ pct, size = 76, thickness = 7 }) {
   );
 }
 
-//  Sleep stage bar 
+// ── Sleep stage bar ────────────────────────────────────────────────────────────
 function SleepStageBar({ sleep }) {
   const stages = [
     { key: 'deep',  label: 'Deep',  color: '#5b9cf6', hours: sleep?.deepSleep  || 0 },
@@ -119,7 +119,7 @@ function SleepStageBar({ sleep }) {
   );
 }
 
-//  Vital stat mini-card 
+// ── Vital stat mini-card ───────────────────────────────────────────────────────
 function VitalCard({ label, value, unit, sub, color = 'var(--text-primary)', barValue, barMax, barColor }) {
   return (
     <div style={{ background: 'var(--bg-panel)', border: '0.5px solid var(--card-border)',
@@ -138,7 +138,7 @@ function VitalCard({ label, value, unit, sub, color = 'var(--text-primary)', bar
   );
 }
 
-//  Overview tab 
+// ── Overview tab ───────────────────────────────────────────────────────────────
 function OverviewTab({ settings, today }) {
   const { items: waterLogs     = [] } = useCollection('water_logs',      'valerie_water_logs');
   const { items: nutritionLogs = [] } = useCollection('nutrition_logs',  'valerie_nutrition_logs');
@@ -149,7 +149,7 @@ function OverviewTab({ settings, today }) {
   const { items: workoutLogs   = [] } = useCollection('workout_logs',    STORAGE_KEYS.WORKOUT_LOGS);
   const { items: stimLogs      = [] } = useCollection('stimulant_logs',  STORAGE_KEYS.STIMULANTS);
 
-  //  Sleep 
+  // ── Sleep ──────────────────────────────────────────────────────────────────
   const lastSleep = useMemo(() =>
     [...sleepData].sort((a, b) => (b.date || '').localeCompare(a.date || ''))[0],
   [sleepData]);
@@ -177,14 +177,14 @@ function OverviewTab({ settings, today }) {
   const totCarb = todayMeals.reduce((s, m) => s + (m.carbs    || 0), 0);
   const totFat  = todayMeals.reduce((s, m) => s + (m.fat      || 0), 0);
 
-  //  Supplements 
+  // ── Supplements ────────────────────────────────────────────────────────────
   const suppTaken    = supplements.filter(s => s.takenDates?.includes(today)).length;
   const suppRemaining = supplements.length - suppTaken;
 
-  //  Habits 
+  // ── Habits ─────────────────────────────────────────────────────────────────
   const habitsDone = habits.filter(h => h.completedDates?.includes(today)).length;
 
-  //  Workout 
+  // ── Workout ────────────────────────────────────────────────────────────────
   const todayWorkout = workoutLogs.find(w => w.date === today);
 
   //  Caffeine
@@ -193,7 +193,7 @@ function OverviewTab({ settings, today }) {
     stimLogs.filter(l => l.date === today).reduce((s, l) => s + (l.caffeineMg || 0), 0),
   [stimLogs, today]);
 
-  //  Body 
+  // ── Body ───────────────────────────────────────────────────────────────────
   const latestBody = useMemo(() =>
     [...bodyMetrics].sort((a, b) => (b.date || '').localeCompare(a.date || ''))[0],
   [bodyMetrics]);
@@ -201,7 +201,7 @@ function OverviewTab({ settings, today }) {
   return (
     <div style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
 
-      {/*  Sleep Quality  */}
+      {/* ── Sleep Quality ── */}
       <div>
         <SectionLabel>Sleep Quality</SectionLabel>
         <MCard style={{ display: 'flex', gap: 14, alignItems: 'flex-start' }}>
@@ -228,7 +228,7 @@ function OverviewTab({ settings, today }) {
         </MCard>
       </div>
 
-      {/*  Vitals  */}
+      {/* ── Vitals ── */}
       <div>
         <SectionLabel>Vitals</SectionLabel>
         <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 8 }}>
@@ -253,7 +253,7 @@ function OverviewTab({ settings, today }) {
         </div>
       </div>
 
-      {/*  Secondary vitals  */}
+      {/* ── Secondary vitals ── */}
       <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 8 }}>
         <VitalCard label="Habits" value={`${habitsDone}/${habits.length}`}
           sub={habits.length > 0 ? `${habits.length - habitsDone} left` : 'None set up'}
@@ -271,7 +271,7 @@ function OverviewTab({ settings, today }) {
           barValue={todayWater} barMax={waterGoal} barColor="#4a9eff" />
       </div>
 
-      {/*  Body  */}
+      {/* ── Body ── */}
       {latestBody && (
         <div>
           <SectionLabel>Body</SectionLabel>
@@ -289,7 +289,7 @@ function OverviewTab({ settings, today }) {
         </div>
       )}
 
-      {/*  Today's Meals  */}
+      {/* ── Today's Meals ── */}
       {todayMeals.length > 0 && (
         <div>
           <SectionLabel>Today's Meals</SectionLabel>
@@ -324,7 +324,7 @@ function OverviewTab({ settings, today }) {
   );
 }
 
-//  Sleep tab 
+// ── Sleep tab ──────────────────────────────────────────────────────────────────
 function SleepTab({ today }) {
   const { items: sleepData = [] } = useCollection('sleep_data', STORAGE_KEYS.SLEEP);
   const sorted = useMemo(() =>
@@ -672,7 +672,7 @@ function NutritionTab({ settings, today }) {
   );
 }
 
-//  Water tab 
+// ── Water tab ──────────────────────────────────────────────────────────────────
 function WaterTab({ settings, today }) {
   const { items: waterLogs = [], add: addWaterLog, remove: removeWaterLog } = useCollection('water_logs', STORAGE_KEYS.WATER);
   const goalMl     = currentWaterGoal(settings);
@@ -754,7 +754,7 @@ function WaterTab({ settings, today }) {
   );
 }
 
-//  Body tab 
+// ── Body tab ───────────────────────────────────────────────────────────────────
 function BodyTab({ today, settings }) {
   const { items: bodyMetrics = [], add: addBodyMetric } = useCollection('body_metrics', STORAGE_KEYS.BODY);
   const sorted = useMemo(() =>
@@ -869,7 +869,7 @@ function BodyTab({ today, settings }) {
   );
 }
 
-//  Main 
+// ── Main ───────────────────────────────────────────────────────────────────────
 // Coach screens on the phone show a subset of these tabs (MobileShell).
 export default function MobileHealth({ settings, tabs = SUB_TABS, title = 'Health' }) {
   const [sub, setSub] = useState(tabs[0]);

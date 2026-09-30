@@ -1,4 +1,4 @@
-// Theme definitions  each is a complete visual package
+// Theme definitions — each is a complete visual package
 // The 'key' maps to the data-theme attribute on <html>
 
 export const THEMES = {
