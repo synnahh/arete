@@ -6,6 +6,27 @@ anon-key token (which every client bundle contains) and accepts only a
 signed-in user's token (`role = authenticated`), so the AI budget can only be
 spent by the account owner.
 
+## Who can call these functions
+
+Every function here checks for a signed-in user's token, but a signed-in user is
+anyone who can create an account on the Supabase project. Because Arete is a
+single-user app, do one of these (both is better):
+
+1. Turn off public sign-ups: Supabase dashboard > Authentication > Providers >
+   Email > disable "Allow new users to sign up" (after your own account exists).
+2. Set the `OWNER_USER_ID` secret to your user id (Authentication > Users). The
+   functions then return 403 to every other account.
+
+```powershell
+supabase secrets set OWNER_USER_ID=<your-user-uuid>
+```
+
+Never deploy with `--no-verify-jwt`: the platform's signature check is what makes
+the token contents trustworthy.
+
+`voice-tts` (ElevenLabs) and `send-sms` (Twilio) follow the same rules; their
+secrets are listed in `docs/deploy-runbook.md`.
+
 Before deployment, configure server-only secrets in the Supabase project:
 
 ```powershell

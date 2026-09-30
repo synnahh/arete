@@ -75,7 +75,11 @@ function signedInUser(authorization: string | null): string | null {
 Deno.serve(async (req) => {
   if (req.method === 'OPTIONS') return new Response('ok', { headers: corsHeaders });
   if (req.method !== 'POST') return json({ error: 'Method not allowed' }, 405);
-  if (!signedInUser(req.headers.get('Authorization'))) return json({ error: 'Authentication required' }, 401);
+  const user = signedInUser(req.headers.get('Authorization'));
+  if (!user) return json({ error: 'Authentication required' }, 401);
+  // Optional lock to one account (see README): only OWNER_USER_ID may call when it is set.
+  const owner = Deno.env.get('OWNER_USER_ID');
+  if (owner && owner !== user) return json({ error: 'Not allowed' }, 403);
 
   const apiKey = Deno.env.get('ANTHROPIC_API_KEY');
   const model = Deno.env.get('ANTHROPIC_MODEL');

@@ -17,6 +17,13 @@ npx supabase functions deploy ai-chat
 ```
 This one deploy carries everything added since it was last deployed: photo input (meal scan, skin photo) and the coaching brief.
 
+### 2a. Lock the functions to your account (do this)
+Anyone who can create an account on the Supabase project would count as "signed in". Turn off public sign-ups (Authentication > Providers > Email > disable new sign-ups, once your own account exists) and set your user id as the owner:
+```bash
+npx supabase secrets set OWNER_USER_ID=<your user uuid from Authentication > Users>
+```
+All three functions then answer 403 to everyone else. Never deploy with `--no-verify-jwt`.
+
 ### 2b. Voice and text messages (optional, takes the keys out of the app)
 These two functions hold the ElevenLabs and Twilio credentials in Supabase instead of the app. The app uses them when they exist and falls back to the old settings when they do not.
 ```bash

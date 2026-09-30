@@ -5,7 +5,7 @@
 // Secrets: TWILIO_ACCOUNT_SID, TWILIO_AUTH_TOKEN, SMS_TO (owner's number, +61...),
 //          TWILIO_FROM_REMINDERS, TWILIO_FROM_SENTRY (optional; falls back to reminders).
 // Request: POST { body: string (max 320 chars), channel?: 'reminders' | 'sentry' }
-import { corsHeaders, json, signedInUser } from '../_shared/http.ts';
+import { corsHeaders, isOwner, json, signedInUser } from '../_shared/http.ts';
 
 const MAX_BODY = 320;
 const E164 = /^\+[1-9]\d{7,14}$/;
@@ -13,7 +13,9 @@ const E164 = /^\+[1-9]\d{7,14}$/;
 Deno.serve(async (req) => {
   if (req.method === 'OPTIONS') return new Response('ok', { headers: corsHeaders });
   if (req.method !== 'POST') return json({ error: 'Method not allowed' }, 405);
-  if (!signedInUser(req.headers.get('Authorization'))) return json({ error: 'Authentication required' }, 401);
+  const user = signedInUser(req.headers.get('Authorization'));
+  if (!user) return json({ error: 'Authentication required' }, 401);
+  if (!isOwner(user)) return json({ error: 'Not allowed' }, 403);
 
   const sid = Deno.env.get('TWILIO_ACCOUNT_SID');
   const token = Deno.env.get('TWILIO_AUTH_TOKEN');

@@ -3,7 +3,7 @@
 //
 // Secrets: ELEVENLABS_API_KEY (required), ELEVENLABS_VOICE_ID (optional default).
 // Request: POST { text: string (max 1500 chars), voiceId?: string }
-import { corsHeaders, json, signedInUser } from '../_shared/http.ts';
+import { corsHeaders, isOwner, json, signedInUser } from '../_shared/http.ts';
 
 const MAX_TEXT = 1500;
 const MODEL = 'eleven_monolingual_v1';
@@ -13,7 +13,9 @@ const VOICE_ID = /^[A-Za-z0-9]{10,40}$/;
 Deno.serve(async (req) => {
   if (req.method === 'OPTIONS') return new Response('ok', { headers: corsHeaders });
   if (req.method !== 'POST') return json({ error: 'Method not allowed' }, 405);
-  if (!signedInUser(req.headers.get('Authorization'))) return json({ error: 'Authentication required' }, 401);
+  const user = signedInUser(req.headers.get('Authorization'));
+  if (!user) return json({ error: 'Authentication required' }, 401);
+  if (!isOwner(user)) return json({ error: 'Not allowed' }, 403);
 
   const apiKey = Deno.env.get('ELEVENLABS_API_KEY');
   if (!apiKey) return json({ error: 'Voice service is not configured' }, 503);
