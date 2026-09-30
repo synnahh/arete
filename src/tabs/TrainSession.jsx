@@ -3,12 +3,12 @@
 //  sets as a ghost); one tap on ✓ logs a set, starts the rest timer and
 //  checks for a PR. Logic: src/domain/training.js. Data: workout_logs rows,
 //  one per exercise per day, same shape every other screen already reads.
-import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import { useCallback, useEffect, useMemo, useRef, useState, Fragment } from 'react';
 import { toLocalDateKey } from '../utils/localDate.js';
 import {
   bests, detectPR, plannedRows, previousSets, restSeconds, setsOf, todaysLog, topSetOf, volume,
 } from '../domain/training.js';
-import { plateaus, applyReadiness, liftHistory } from '../domain/progression.js';
+import { plateaus, applyReadiness, liftHistory, validRpe } from '../domain/progression.js';
 import { isBarbell, platesFor, warmupSets, parsePlates, barFrom, DEFAULT_PLATES_KG } from '../domain/plates.js';
 import { updateSettings } from '../utils/settingsStore.js';
 import { storage, STORAGE_KEYS } from '../utils/storage.js';
@@ -131,7 +131,7 @@ function EquipmentSettings({ eq }) {
 }
 
 //  One exercise card
-function ExerciseCard({ ex, prog, rows, onChange, onTick, onAddSet, onRemoveSet, prs, compact, history, eq }) {
+function ExerciseCard({ ex, prog, rows, onChange, onTick, onRate, onAddSet, onRemoveSet, prs, compact, history, eq }) {
   const doneSets = rows.filter(r => r.done);
   const [showChart, setShowChart] = useState(false);
   const barbell = !ex.bodyweight && isBarbell(ex.name);
@@ -178,7 +178,8 @@ function ExerciseCard({ ex, prog, rows, onChange, onTick, onAddSet, onRemoveSet,
         {rows.map((r, i) => {
           const pr = prs[i];
           return (
-            <div role="row" key={i} style={{
+            <Fragment key={i}>
+            <div role="row" style={{
               display: 'grid', gridTemplateColumns: '28px minmax(0,1fr) 76px 64px 40px', gap: 8, alignItems: 'center',
               padding: '4px 6px', margin: '0 -6px', borderRadius: 10,
               background: r.done ? 'color-mix(in srgb, var(--tab-accent) 10%, transparent)' : 'transparent',
@@ -203,6 +204,22 @@ function ExerciseCard({ ex, prog, rows, onChange, onTick, onAddSet, onRemoveSet,
                 <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.6" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true"><path d="M5 12.5 10 17l9-10" /></svg>
               </button>
             </div>
+            {r.done && (
+              <div role="group" aria-label={`Set ${i + 1} effort`} style={{ display: 'flex', alignItems: 'center', gap: 6, padding: '0 6px 6px 36px', flexWrap: 'wrap' }}>
+                <span style={{ fontSize: 11.5, color: 'var(--text-secondary)' }} title="Rate of perceived exertion: 10 means nothing left in the tank">How hard?</span>
+                {[6, 7, 8, 9, 10].map(v => {
+                  const on = validRpe(r.rpe) === v;
+                  return (
+                    <button key={v} type="button" aria-pressed={on} aria-label={`RPE ${v}`} onClick={() => onRate(i, v)} style={{
+                      minWidth: 36, height: 32, borderRadius: 999, cursor: 'pointer', fontFamily: 'inherit', fontSize: 13, WebkitTapHighlightColor: 'transparent',
+                      border: `0.5px solid ${on ? 'var(--tab-accent)' : 'var(--card-border)'}`, fontWeight: on ? 700 : 500,
+                      background: on ? 'var(--tab-accent)' : 'transparent', color: on ? 'var(--on-tab-accent)' : 'var(--text-secondary)',
+                    }}>{v}</button>
+                  );
+                })}
+              </div>
+            )}
+            </Fragment>
           );
         })}
       </div>
@@ -282,7 +299,7 @@ export default function TrainSession({
           rowIds.current[ex.id] = existing.id;
           setsOf(existing).forEach((s, i) => {
             if (!rows[i]) rows[i] = { weight: s.weight, reps: s.reps, prev: null, done: false };
-            rows[i] = { ...rows[i], weight: s.weight, reps: s.reps, done: true };
+            rows[i] = { ...rows[i], weight: s.weight, reps: s.reps, rpe: validRpe(s.rpe) ?? '', done: true };
           });
         }
         confirmedRows.current[ex.id] = rows.map(r => ({ ...r, justDone: false }));
@@ -324,7 +341,10 @@ export default function TrainSession({
 
   // Serialise writes per exercise so quick ticks never race or duplicate.
   function persist(ex, rows) {
-    const sets = rows.filter(r => r.done).map(r => ({ weight: Number(r.weight) || 0, reps: Number(r.reps) || 0 }));
+    const sets = rows.filter(r => r.done).map(r => {
+      const rpe = validRpe(r.rpe);
+      return { weight: Number(r.weight) || 0, reps: Number(r.reps) || 0, ...(rpe != null ? { rpe } : {}) };
+    });
     const payload = {
       date, exerciseName: ex.name, muscle: ex.day, muscles: musclesFor(ex),
       topSet: topSetOf(sets), sets,
@@ -389,6 +409,22 @@ export default function TrainSession({
     rerender(n => n + 1);
   }
 
+  // How hard a finished set felt (RPE). Saved with the set; tapping the same number clears it.
+  async function rate(ex, i, value) {
+    const rows = planRef.current[ex.id];
+    if (!rows?.[i]?.done) return;
+    const rpe = validRpe(rows[i].rpe) === value ? '' : value;
+    const nextRows = rows.map((r, j) => (j === i ? { ...r, rpe } : r));
+    const revision = (mutationRevision.current[ex.id] ?? 0) + 1;
+    mutationRevision.current[ex.id] = revision;
+    setRows(ex.id, () => nextRows);
+    const ok = await persist(ex, nextRows);
+    if (ok) { confirmedRows.current[ex.id] = nextRows.map(r => ({ ...r, justDone: false })); return; }
+    if (mutationRevision.current[ex.id] !== revision) return;
+    setRows(ex.id, () => (confirmedRows.current[ex.id] ?? []).map(r => ({ ...r, justDone: false })));
+    rerender(n => n + 1);
+  }
+
   // Session totals
   const allDone = todays.flatMap(ex => (plan[ex.id] ?? []).filter(r => r.done).map(r => ({ weight: Number(r.weight) || 0, reps: Number(r.reps) || 0 })));
   const prCount = Object.values(prs).reduce((s, m) => s + Object.values(m).filter(Boolean).length, 0);
@@ -443,8 +479,8 @@ export default function TrainSession({
         {todays.map(ex => plan[ex.id] && (
           <ExerciseCard key={ex.id} ex={ex} prog={progFor(ex)} rows={plan[ex.id]} prs={prs[ex.id] ?? {}} compact={compact}
             onChange={(i, patch) => setRows(ex.id, rs => rs.map((r, j) => j === i ? { ...r, ...patch } : r))}
-            onTick={(i) => tick(ex, i)}
-            onAddSet={() => setRows(ex.id, rs => [...rs, { ...(rs[rs.length - 1] ?? { weight: 0, reps: ex.repsMin }), prev: null, done: false, justDone: false }])}
+            onTick={(i) => tick(ex, i)} onRate={(i, v) => rate(ex, i, v)}
+            onAddSet={() => setRows(ex.id, rs => [...rs, { ...(rs[rs.length - 1] ?? { weight: 0, reps: ex.repsMin }), prev: null, done: false, justDone: false, rpe: '' }])}
             onRemoveSet={() => setRows(ex.id, rs => rs.slice(0, -1))} history={liftHistory(workoutLogs, ex.name)} eq={equipment} />
         ))}
 

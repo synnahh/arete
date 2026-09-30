@@ -150,3 +150,36 @@ describe('liftHistory', () => {
     expect(liftHistory([], 'Bench')).toEqual([]);
   });
 });
+
+describe('effort (RPE)', () => {
+  const rated = (n, rpes) => ({ date: day(n), exerciseName: 'Bench', sets: rpes.map(rpe => ({ weight: 60, reps: 12, rpe })) });
+
+  it('validates ratings', async () => {
+    const { validRpe } = await import('./progression.js');
+    expect([validRpe(8), validRpe('8.5'), validRpe(''), validRpe(null), validRpe(5), validRpe(11), validRpe(8.3), validRpe('x')]).toEqual([8, 8.5, null, null, null, null, null, null]);
+  });
+
+  it('holds instead of adding weight when every set hit the top but felt like a 10', () => {
+    const p = suggestNext(ex, [rated(0, [10, 10, 9.5])], day(2));
+    expect(p.action).toBe('HOLD');
+    expect(p.nextWeight).toBe(60);
+    expect(p.hint).toMatch(/felt like a 9\.8/);
+  });
+
+  it('adds weight as normal at a hard-but-fine effort, and says so when it felt easy', () => {
+    expect(suggestNext(ex, [rated(0, [8, 8, 9])], day(2))).toMatchObject({ action: 'ADD WEIGHT', nextWeight: 62.5 });
+    const easy = suggestNext(ex, [rated(0, [7, 6.5, 7])], day(2));
+    expect(easy.action).toBe('ADD WEIGHT');
+    expect(easy.hint).toMatch(/felt easy/);
+  });
+
+  it('ignores effort when fewer than half the working sets were rated, or none were', () => {
+    expect(suggestNext(ex, [rated(0, [10, null, null])], day(2)).action).toBe('ADD WEIGHT');
+    expect(suggestNext(ex, [rated(0, [null, null, null])], day(2)).action).toBe('ADD WEIGHT');
+    expect(suggestNext(ex, [rated(0, [10, 10, null])], day(2)).action).toBe('HOLD');
+  });
+
+  it('never lets a junk rating change anything', () => {
+    expect(suggestNext(ex, [rated(0, [15, 'x', -1])], day(2)).action).toBe('ADD WEIGHT');
+  });
+});

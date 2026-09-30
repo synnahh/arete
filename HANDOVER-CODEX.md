@@ -275,3 +275,8 @@ Removed: `mobile/screens/MobileWorkout.jsx` and the unused More grid in `MobileM
 - **Overall** (`domain/overall.js`, `hooks/useOverall.js`, `components/OverallCard.jsx`, Home under Next moves): 0-99 from five weighted pillars over 28 days vs the 28 before. A pillar with no record on or before the window's end is left out (so a first month shows no change); a lapse after tracking started scores low. Weights in `WEIGHTS`.
 - **Breathing** (`domain/breathing.js`, `components/BreathingTool.jsx`, Mind > Breathe): box, 4-7-8, quick reset; timing is pure and tested. It uses requestAnimationFrame, which does not run in a hidden tab (the exercise resumes correctly from elapsed time when visible).
 - Seen in a browser with stand-in data: all three. Not seen: phone layout, real synced data.
+
+### RPE per set (2026-09-30)
+- Finished sets in Train have a "How hard?" row (6-10, tap again to clear). Stored as `rpe` on each entry of `workout_logs.sets` (optional; older logs have none). `validRpe` in `domain/progression.js` is the one validator.
+- `suggestNext`: when every working set hit the top of the range but the average effort was 9.5+, it HOLDs and says to repeat the weight; at 7 or under it still adds weight and notes it felt easy. Effort counts only when at least half the working sets were rated.
+- Verified in a browser with a stubbed Supabase (set logged, rating saved, cleared, new set does not inherit it) and 5 new tests. To test writes in a browser: `await import("/src/supabase/supabase.js")`, then replace `supabase.auth.getSession` and `supabase.from` with an in-memory chain before tapping.

@@ -8,6 +8,8 @@
 //   - Two sessions in a row with missed reps at that weight → drop ~10%.
 //   - No new estimated best in 4+ sessions over 2+ weeks → plateau; deload 10%.
 //   - Weeks away → restart lighter (5% / 10% / 20% at 3 / 6 / 12 weeks).
+//   - Optional effort (RPE 6-10, 10 = nothing left) per set: sets that hit the top of the range
+//     but felt like a 10 are repeated once before adding weight; sets that felt easy say so.
 // Suggestions only: nothing is written, and the lifter can always override.
 
 import { e1rm, setsOf } from './training.js';
@@ -21,12 +23,19 @@ const WORK_SET_FLOOR = 0.9; // sets under 90% of the day's heaviest are back-off
 const roundTo = (x, step) => +(Math.round(x / step) * step).toFixed(2);
 const num = (v) => Number(v) || 0;
 
+/** A usable RPE (6 to 10, half steps allowed) or null. */
+export const validRpe = (v) => {
+  if (v === '' || v == null) return null;
+  const n = Number(v);
+  return Number.isFinite(n) && n >= 6 && n <= 10 && Number.isInteger(n * 2) ? n : null;
+};
+
 /** One entry per training day for an exercise, oldest first. */
 export function sessionsOf(logs = [], name) {
   const byDate = new Map();
   for (const l of logs) {
     if (l?.exerciseName !== name || dayIndex(l.date) == null) continue;
-    const sets = setsOf(l).map(s => ({ weight: num(s.weight), reps: num(s.reps) })).filter(s => s.reps > 0);
+    const sets = setsOf(l).map(s => ({ weight: num(s.weight), reps: num(s.reps), rpe: validRpe(s.rpe) })).filter(s => s.reps > 0);
     if (!sets.length) continue;
     const cur = byDate.get(l.date) || { date: l.date, sets: [], row: l };
     cur.sets.push(...sets);
@@ -42,7 +51,10 @@ function summarise(s) {
   // e1RM is only trustworthy for moderate reps; fall back to whatever exists.
   const pool = work.filter(x => x.reps <= 12);
   const est = Math.max(0, ...(pool.length ? pool : work).map(x => e1rm(x.weight, x.reps)));
-  return { ...s, topWeight, work, minReps: Math.min(...work.map(x => x.reps)), e1rm: est };
+  // Average effort, only when at least half the working sets were rated (one stray rating says little).
+  const rated = work.filter(x => x.rpe != null);
+  const avgRpe = rated.length && rated.length * 2 >= work.length ? +(rated.reduce((a, x) => a + x.rpe, 0) / rated.length).toFixed(1) : null;
+  return { ...s, topWeight, work, minReps: Math.min(...work.map(x => x.reps)), e1rm: est, avgRpe };
 }
 
 /**
@@ -133,8 +145,12 @@ export function suggestNext(ex, logs, today) {
   // Every working set at the top of the range: earn more weight.
   if (last.work.every(x => x.reps >= repsMax)) {
     if (ex.bodyweight || cur === 0) return out('HOLD', cur, repsMax, `All sets at ${repsMax} reps. Add load or a harder variation.`);
+    if (last.avgRpe != null && last.avgRpe >= 9.5) {
+      return out('HOLD', cur, repsMax, `Every set hit ${repsMax}, but they felt like a ${last.avgRpe} out of 10. Repeat ${cur}kg once and aim for smoother reps before adding weight.`);
+    }
     const w = roundTo(cur + inc, 0.01);
-    return out('ADD WEIGHT', w, repsMin, `Every set hit ${repsMax}. Add ${inc}kg: ${w}kg for ${repsMin}+ reps.`);
+    const easy = last.avgRpe != null && last.avgRpe <= 7 ? ` They felt easy (${last.avgRpe} out of 10), so this jump is safe.` : '';
+    return out('ADD WEIGHT', w, repsMin, `Every set hit ${repsMax}. Add ${inc}kg: ${w}kg for ${repsMin}+ reps.${easy}`);
   }
 
   // Stalled: a planned deload beats grinding at the same weight.
