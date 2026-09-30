@@ -17,6 +17,16 @@ npx supabase functions deploy ai-chat
 ```
 This one deploy carries everything added since it was last deployed: photo input (meal scan, skin photo) and the coaching brief.
 
+### 2b. Voice and text messages (optional, takes the keys out of the app)
+These two functions hold the ElevenLabs and Twilio credentials in Supabase instead of the app. The app uses them when they exist and falls back to the old settings when they do not.
+```bash
+npx supabase secrets set ELEVENLABS_API_KEY=<new key> ELEVENLABS_VOICE_ID=<voice id>
+npx supabase secrets set TWILIO_ACCOUNT_SID=<sid> TWILIO_AUTH_TOKEN=<token> SMS_TO=+61XXXXXXXXX TWILIO_FROM_REMINDERS=+1XXXXXXXXXX
+npx supabase functions deploy voice-tts
+npx supabase functions deploy send-sms
+```
+`SMS_TO` is your own number: the function can only ever text that number. `TWILIO_FROM_SENTRY` is an optional second sender. Then switch on Settings > Notifications > Text messages. Once voice works, delete the ElevenLabs key from Settings and `.env` (`VITE_ELEVENLABS_API_KEY`) and clear the Twilio SID and token fields.
+
 ## 3. Database
 Open the Supabase dashboard > SQL editor and run, one after the other:
 1. `supabase/user_meta.sql`

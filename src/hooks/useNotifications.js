@@ -7,6 +7,7 @@ import { useEffect, useRef } from 'react';
 import { storage, STORAGE_KEYS } from '../utils/storage.js';
 import { isTauri } from '../utils/platform.js';
 import { sendSMS } from '../utils/twilio.js';
+import { sendServerSMS } from '../utils/serverVoice.js';
 import { currencySymbol as currencySym } from '../utils/currency.js';
 import { toLocalDateKey } from '../utils/localDate.js';
 import { currentWaterGoal } from '../utils/waterGoal.js';
@@ -36,6 +37,13 @@ function resolveMsg(template, tokens = {}) {
 }
 
 async function maybeSMS(settings, message) {
+  if (window.__valerieSleepMode) return;
+  // Opt-in: text messages go out through the send-sms server function (credentials in Supabase
+  // secrets) only when switched on in Settings; the credentials below are the older path.
+  if (settings?.notifications?.sms === true) {
+    const server = await sendServerSMS(message, 'reminders');
+    if (server.ok || !server.unavailable) return;
+  }
   const { twilioAccountSid, twilioAuthToken, twilioReminders, phoneNumber } = settings;
   if (!twilioAccountSid || !twilioAuthToken || !phoneNumber || !twilioReminders) return;
   if (window.__valerieSleepMode) return;
@@ -46,10 +54,14 @@ async function maybeSMS(settings, message) {
 }
 
 async function maybeAlertSMS(settings, message) {
-  const { twilioAccountSid, twilioAuthToken, twilioSentry, phoneNumber } = settings;
-  if (!twilioAccountSid || !twilioAuthToken || !phoneNumber || !twilioSentry) return;
   const template = settings.smsMessages?.alert || 'VALERIE ALERT: {message}';
   const body = template.replace('{message}', message);
+  if (settings?.notifications?.sms === true) {
+    const server = await sendServerSMS(body, 'sentry');
+    if (server.ok || !server.unavailable) return;
+  }
+  const { twilioAccountSid, twilioAuthToken, twilioSentry, phoneNumber } = settings;
+  if (!twilioAccountSid || !twilioAuthToken || !phoneNumber || !twilioSentry) return;
   await sendSMS({
     to: phoneNumber, from: twilioSentry, body,
     accountSid: twilioAccountSid, authToken: twilioAuthToken,

@@ -1347,6 +1347,7 @@ const TAB_REMINDERS_DEFAULT = {
 export function NotificationsSection({ settings, onSave }) {
   const [enabled,          setEnabled]          = useState(settings.notifications?.enabled ?? true);
   const [nudges,           setNudges]           = useState(settings.notifications?.proactiveNudges ?? true);
+  const [sms,              setSms]              = useState(settings.notifications?.sms === true);
   const [coach,            setCoach]            = useState(() => ({ ...DEFAULT_COACH_REMINDERS, ...(settings.notifications?.coach ?? {}) }));
   const [tabReminders,     setTabReminders]     = useState(() => {
     const saved = settings.notifications?.tabs ?? {};
@@ -1376,7 +1377,7 @@ export function NotificationsSection({ settings, onSave }) {
 
   const handleSave = () => {
     onSave({
-      notifications: { enabled, proactiveNudges: nudges, tabs: tabReminders, coach },
+      notifications: { enabled, proactiveNudges: nudges, tabs: tabReminders, coach, sms },
       twilioReminders, twilioSentry, twilioAccountSid, twilioAuthToken, phoneNumber,
       smsMessages: { alert: msgAlert },
     });
@@ -1468,6 +1469,12 @@ export function NotificationsSection({ settings, onSave }) {
                 ))}
               </div>
             )}
+          </Block>
+
+          <Block label="Text messages">
+            <Row label="Send reminders as texts" hint="Uses the send-sms server function, which holds the Twilio details and can only text your own number. Off until you set that up (docs/deploy-runbook.md).">
+              <Toggle value={sms} onChange={setSms} />
+            </Row>
           </Block>
 
           {/*  iOS Push  */}

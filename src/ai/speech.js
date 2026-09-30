@@ -5,6 +5,7 @@
 
 import { platformFetch, platformInvoke } from '../utils/platform.js';
 import { rateLimitElevenLabs } from '../utils/rateLimit.js';
+import { fetchServerTTS } from '../utils/serverVoice.js';
 
 //  VALERIE's voice identity 
 // Default voice ID  locked in as VALERIE's voice. Overridable in Settings.
@@ -236,10 +237,14 @@ export async function speakText(text, voiceSettings = {}, { onStart, onEnd, onEr
   // Cancel anything currently speaking
   cancelCurrentSpeech();
 
+  // Priority 0: the voice-tts server function, which keeps the ElevenLabs key out of the app.
+  // null when it is not set up, so the older client-key path below still works.
+  const serverBlob = _el11Disabled ? null : await fetchServerTTS(text, voiceSettings.elevenlabsVoiceId);
+
   //  Priority 1: ElevenLabs 
-  if (apiKey && !_el11Disabled) {
+  if ((serverBlob || apiKey) && !_el11Disabled) {
     try {
-      const audioBlob = await _fetchElevenLabsAudio(text, apiKey, voiceId);
+      const audioBlob = serverBlob || await _fetchElevenLabsAudio(text, apiKey, voiceId);
       const audioUrl  = URL.createObjectURL(audioBlob);
       const audio     = new Audio(audioUrl);
       _currentAudio   = audio;
