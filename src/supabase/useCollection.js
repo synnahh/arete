@@ -1,9 +1,16 @@
-//  useCollection  Supabase realtime collection hook 
+//  useCollection  Supabase realtime collection hook
 // Drop-in replacement for src/firebase/useCollection.js
 // Table structure: id (uuid), user_id (text), data (jsonb), created_at (timestamptz)
 // Each Firestore collection maps to a Supabase table of the same name.
+//
+// One shared store per table. However many components call useCollection('x'),
+// there is one fetch and one realtime channel for it, and a change made through
+// any of them shows in all of them straight away. (Before, every component kept
+// its own copy, fetched and subscribed on its own: Home and Fuel and Train each
+// opened their own channel for the same table, and a save in one reached the
+// others only when realtime got round to it.)
 
-import { useState, useEffect, useCallback, useRef } from 'react';
+import { useCallback, useEffect, useReducer } from 'react';
 import { supabase, getUserId } from './supabase.js';
 import { storage } from '../utils/storage.js';
 
@@ -20,190 +27,144 @@ function reportDataError(collection, op, message) {
   } catch {}
 }
 
-// Every component that calls useCollection('x') has its own state. A save in one
-// (say the sleep logger) used to reach the others (say the readiness card) only
-// via the realtime refetch, so offline or before that arrived they showed stale
-// data. Instances of the same collection now tell each other about each change.
-const peers = new Set();
+const rowToItem = (row) => ({ id: row.id, ...row.data });
 
-// supabase.channel(topic) hands back the EXISTING channel for a repeated topic, so a
-// second hook on the same table would try to add a callback to an already-joined
-// channel (an error), and the first one to unmount would remove it for everyone.
-// Each hook instance gets its own topic.
-let instanceCounter = 0;
+//  The store
+const stores = new Map(); // collection name -> store
 
+function storeFor(name) {
+  let s = stores.get(name);
+  if (!s) {
+    s = { name, keys: new Set(), items: [], synced: false, listeners: new Set(), refs: 0, session: 0, channel: null, userId: null, running: false, stopTimer: null };
+    stores.set(name, s);
+  }
+  return s;
+}
+
+const notify = (s) => s.listeners.forEach(fn => fn());
+
+function mirrorOf(s) {
+  for (const k of s.keys) {
+    const v = storage.get(k, []);
+    if (Array.isArray(v)) return v;
+  }
+  return [];
+}
+
+// Set the list, keep every local mirror of this table in step, tell the components.
+function setItems(s, next) {
+  s.items = next;
+  for (const k of s.keys) storage.set(k, next);
+  notify(s);
+}
+
+async function fetchAll(s, userId) {
+  return supabase.from(s.name).select('*').eq('user_id', userId).order('created_at', { ascending: true });
+}
+
+// Load, then keep live. `session` guards every await: if the last component
+// unmounted (or the store restarted) meanwhile, the stale run does nothing.
+async function start(s) {
+  const session = ++s.session;
+  s.items = mirrorOf(s); // show the local copy at once; the fetch below replaces it
+  notify(s);
+
+  const userId = await getUserId();
+  if (s.session !== session) return;
+  s.userId = userId;
+
+  // Not signed in yet: keep the local mirror on screen and wait.
+  // (The sign-in gate renders before the app, so this is just a safety net.)
+  if (!userId) { s.synced = false; notify(s); return; }
+
+  const { data, error } = await fetchAll(s, userId);
+  if (s.session !== session) return;
+  // A failed fetch must never blank the list or its local mirror.
+  if (error) console.warn(`[useCollection/${s.name}] fetch error:`, error.message);
+  else setItems(s, (data || []).map(rowToItem));
+  s.synced = true;
+  notify(s);
+
+  // The topic includes the session so a quick unmount/remount never reuses a channel
+  // that is still being removed (supabase.channel returns the existing one for a topic).
+  s.channel = supabase
+    .channel(`${s.name}:${userId}:${session}`)
+    .on('postgres_changes', { event: '*', schema: 'public', table: s.name, filter: `user_id=eq.${userId}` }, async () => {
+      const { data: fresh, error: freshError } = await fetchAll(s, userId);
+      if (s.session !== session) return;
+      if (freshError || !Array.isArray(fresh)) return;
+      setItems(s, fresh.map(rowToItem));
+    })
+    .subscribe();
+}
+
+// Navigating between screens unmounts the old one before the new one mounts, so
+// the count briefly hits zero. Wait a moment before tearing the store down so a
+// screen change does not refetch and reopen the channel every time.
+const STOP_GRACE_MS = 8000;
+
+function stop(s) {
+  s.running = false;
+  s.session++;
+  if (s.channel) { supabase.removeChannel(s.channel); s.channel = null; }
+}
+
+//  The hook
 export function useCollection(collectionName, storageKey) {
-  const [items,  setItems]  = useState(() => storage.get(storageKey, []));
-  const [synced, setSynced] = useState(false);
-  const userIdRef = useRef(null);
-  const subRef    = useRef(null);
-  // Latest items for update(): the render-time closure missed rows added since
-  // the last render, so an update right after an add silently did nothing.
-  const itemsRef  = useRef(items);
-  itemsRef.current = items;
-  const peerRef   = useRef(null);
-  const instanceRef = useRef(0);
-  if (!instanceRef.current) instanceRef.current = ++instanceCounter;
+  const s = storeFor(collectionName);
+  const firstUse = s.keys.size === 0;
+  s.keys.add(storageKey);
+  // Before the first load, show what this device last saved.
+  if (firstUse && s.items.length === 0) s.items = mirrorOf(s);
 
-  // Apply another instance's change to this one (idempotent).
+  const [, bump] = useReducer(n => n + 1, 0);
   useEffect(() => {
-    const peer = {
-      name: collectionName,
-      apply(op) {
-        const next = op.type === 'add'
-          ? (itemsRef.current.some(i => i.id === op.item.id) ? itemsRef.current : [...itemsRef.current, op.item])
-          : op.type === 'update'
-            ? itemsRef.current.map(i => (i.id === op.item.id ? op.item : i))
-            : itemsRef.current.filter(i => i.id !== op.id);
-        itemsRef.current = next;
-        setItems(next);
-        storage.set(storageKey, next);
-      },
-    };
-    peerRef.current = peer;
-    peers.add(peer);
-    return () => { peers.delete(peer); };
-  }, [collectionName, storageKey]);
-
-  const tellPeers = useCallback((op) => {
-    for (const p of peers) if (p !== peerRef.current && p.name === collectionName) p.apply(op);
-  }, [collectionName]);
-
-  //  Helpers 
-  function rowToItem(row) {
-    return { id: row.id, ...row.data };
-  }
-
-  function itemToRow(item, userId) {
-    const { id, ...data } = item;
-    return { id: id || undefined, user_id: userId, data };
-  }
-
-  //  Load + subscribe 
-  useEffect(() => {
-    let alive = true;
-
-    async function init() {
-      const userId = await getUserId();
-      if (!alive) return;
-      userIdRef.current = userId;
-
-      // Not signed in yet — keep the localStorage mirror on screen and wait.
-      // (The sign-in gate renders before the app, so this is just a safety net.)
-      if (!userId) { setSynced(false); return; }
-
-      // Initial fetch
-      const { data, error } = await supabase
-        .from(collectionName)
-        .select('*')
-        .eq('user_id', userId)
-        .order('created_at', { ascending: true });
-
-      if (!alive) return;
-
-      if (error) {
-        console.warn(`[useCollection/${collectionName}] fetch error:`, error.message);
-      } else {
-        const mapped = (data || []).map(rowToItem);
-        setItems(mapped);
-        storage.set(storageKey, mapped);
-      }
-      setSynced(true);
-
-      // Realtime subscription
-      subRef.current = supabase
-        .channel(`${collectionName}:${userId}:${instanceRef.current}`)
-        .on('postgres_changes', {
-          event:  '*',
-          schema: 'public',
-          table:  collectionName,
-          filter: `user_id=eq.${userId}`,
-        }, async () => {
-          // Re-fetch on any change
-          const { data: fresh, error: freshError } = await supabase
-            .from(collectionName)
-            .select('*')
-            .eq('user_id', userId)
-            .order('created_at', { ascending: true });
-          if (!alive) return;
-          // A failed refetch must not blank the list and its local mirror.
-          if (freshError || !Array.isArray(fresh)) return;
-          const mapped = fresh.map(rowToItem);
-          setItems(mapped);
-          storage.set(storageKey, mapped);
-        })
-        .subscribe();
-    }
-
-    init();
+    s.listeners.add(bump);
+    s.refs += 1;
+    if (s.stopTimer) { clearTimeout(s.stopTimer); s.stopTimer = null; }
+    if (!s.running) { s.running = true; start(s); }
     return () => {
-      alive = false;
-      if (subRef.current) supabase.removeChannel(subRef.current);
+      s.listeners.delete(bump);
+      s.refs -= 1;
+      if (s.refs === 0) s.stopTimer = setTimeout(() => { s.stopTimer = null; if (s.refs === 0) stop(s); }, STOP_GRACE_MS);
     };
-  }, [collectionName, storageKey]);
+  }, [s]);
 
-  //  CRUD 
+  //  CRUD (always against the latest list, so an update right after an add works)
   const add = useCallback(async (item) => {
-    const userId = userIdRef.current || await getUserId();
-    if (!userId) { reportDataError(collectionName, 'add', 'Not signed in — cannot save.'); return null; }
+    const userId = s.userId || await getUserId();
+    if (!userId) { reportDataError(s.name, 'add', 'Not signed in — cannot save.'); return null; }
     const { id: _skip, ...data } = item;
-    const { data: rows, error } = await supabase
-      .from(collectionName)
+    const { data: row, error } = await supabase
+      .from(s.name)
       .insert({ user_id: userId, data })
       .select()
       .single();
 
-    if (error) { reportDataError(collectionName, 'add', error.message); return null; }
-    const newItem = rowToItem(rows);
-    itemsRef.current = [...itemsRef.current, newItem];
-    setItems(prev => {
-      const next = [...prev, newItem];
-      storage.set(storageKey, next);
-      return next;
-    });
-    tellPeers({ type: 'add', item: newItem });
+    if (error) { reportDataError(s.name, 'add', error.message); return null; }
+    const newItem = rowToItem(row);
+    if (!s.items.some(i => i.id === newItem.id)) setItems(s, [...s.items, newItem]); // realtime may have got there first
     return newItem.id;
-  }, [collectionName, storageKey, tellPeers]);
+  }, [s]);
 
   const update = useCallback(async (id, patch) => {
-    // Merge patch into existing data
-    const existing = itemsRef.current.find(i => i.id === id);
+    const existing = s.items.find(i => i.id === id);
     if (!existing) return false;
     const { id: _skip, ...existingData } = existing;
     const merged = { ...existingData, ...patch };
 
-    const { error } = await supabase
-      .from(collectionName)
-      .update({ data: merged })
-      .eq('id', id);
-
-    if (error) { reportDataError(collectionName, 'update', error.message); return false; }
-    itemsRef.current = itemsRef.current.map(i => i.id === id ? { id, ...merged } : i);
-    setItems(prev => {
-      const next = prev.map(i => i.id === id ? { id, ...merged } : i);
-      storage.set(storageKey, next);
-      return next;
-    });
-    tellPeers({ type: 'update', item: { id, ...merged } });
+    const { error } = await supabase.from(s.name).update({ data: merged }).eq('id', id);
+    if (error) { reportDataError(s.name, 'update', error.message); return false; }
+    setItems(s, s.items.map(i => (i.id === id ? { id, ...merged } : i)));
     return true;
-  }, [collectionName, storageKey, tellPeers]);
+  }, [s]);
 
   const remove = useCallback(async (id) => {
-    const { error } = await supabase
-      .from(collectionName)
-      .delete()
-      .eq('id', id);
-
-    if (error) { reportDataError(collectionName, 'remove', error.message); return false; }
-    itemsRef.current = itemsRef.current.filter(i => i.id !== id);
-    setItems(prev => {
-      const next = prev.filter(i => i.id !== id);
-      storage.set(storageKey, next);
-      return next;
-    });
-    tellPeers({ type: 'remove', id });
+    const { error } = await supabase.from(s.name).delete().eq('id', id);
+    if (error) { reportDataError(s.name, 'remove', error.message); return false; }
+    setItems(s, s.items.filter(i => i.id !== id));
     return true;
-  }, [collectionName, storageKey, tellPeers]);
+  }, [s]);
 
-  return { items, add, update, remove, synced };
+  return { items: s.items, add, update, remove, synced: s.synced };
 }

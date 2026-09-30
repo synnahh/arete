@@ -34,7 +34,7 @@ export function useXP() {
         });
 
       // Realtime
-      sub = supabase.channel(`xp:${userId}`)
+      sub = supabase.channel(`xp:${userId}:${Math.random().toString(36).slice(2)}`)
         .on('postgres_changes', { event: '*', schema: 'public', table: 'user_meta', filter: `user_id=eq.${userId}` },
           async () => {
             const { data } = await supabase.from('user_meta').select('value').eq('user_id', userId).eq('key', 'xp').maybeSingle();

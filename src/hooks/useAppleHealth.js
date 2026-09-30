@@ -95,7 +95,7 @@ export function useAppleHealth() {
 
     fetchLatest();
 
-    channel = supabase.channel('health_sync_changes')
+    channel = supabase.channel(`health_sync_changes:${Math.random().toString(36).slice(2)}`) // unique per hook: a repeated topic returns the existing channel
       .on('postgres_changes', { event: '*', schema: 'public', table: 'health_sync' }, fetchLatest)
       .subscribe();
 
