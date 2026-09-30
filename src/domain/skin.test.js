@@ -134,3 +134,43 @@ describe('checkProduct', () => {
     expect(r.verdict).toBe('ok');
   });
 });
+
+describe('more ingredient clashes', () => {
+  const both = (a, b, when = 'pm') => routineWarnings([newStep(a, when), newStep(b, when)]);
+  const texts = (w) => w.map(x => x.text).join(' | ');
+
+  it('flags vitamin C together with a retinoid or an acid, as a tip', () => {
+    const w = both('Vitamin C serum', 'Retinol serum');
+    expect(w.find(x => /Vitamin C in the morning/.test(x.text)).level).toBe('tip');
+    expect(texts(both('Vitamin C serum', 'Glycolic acid toner'))).toMatch(/vitamin C and an exfoliating acid/);
+  });
+
+  it('does not flag vitamin C in the morning with a retinoid at night', () => {
+    const w = routineWarnings([newStep('Vitamin C serum', 'am'), newStep('Retinol serum', 'pm')]);
+    expect(texts(w)).not.toMatch(/Vitamin C in the morning/);
+  });
+
+  it('flags benzoyl peroxide with an acid, and copper peptides with strong actives', () => {
+    expect(texts(both('Benzoyl peroxide wash', 'Salicylic acid toner'))).toMatch(/drying and irritating/);
+    expect(texts(both('Copper peptide serum', 'Vitamin C serum'))).toMatch(/copper peptides work best away/);
+    expect(texts(both('GHK-Cu serum', 'Retinol serum'))).toMatch(/copper peptides/);
+  });
+
+  it('warns on a physical scrub over an active, and on two retinoids', () => {
+    const scrub = both('Sugar scrub', 'Retinol serum');
+    expect(scrub.find(x => /over-exfoliate/.test(x.text)).level).toBe('warn');
+    expect(both('Retinol serum', 'Adapalene gel').find(x => /two retinoids/.test(x.text)).level).toBe('warn');
+  });
+
+  it('stays quiet for harmless pairs and for steps that never share a day', () => {
+    expect(both('Gentle cleanser', 'Moisturiser').filter(x => !/No SPF/.test(x.text))).toEqual([]);
+    const apart = routineWarnings([{ ...newStep('Sugar scrub', 'pm'), days: [0] }, { ...newStep('Retinol serum', 'pm'), days: [3] }]);
+    expect(texts(apart)).not.toMatch(/over-exfoliate/);
+  });
+
+  it('recognises the new families by name and labels them', () => {
+    expect([...tagsFor('Copper peptide serum')]).toContain('copper');
+    expect([...tagsFor('Face scrub')]).toContain('scrub');
+    expect([...tagsFor('Dermaplaning')]).toContain('scrub');
+  });
+});

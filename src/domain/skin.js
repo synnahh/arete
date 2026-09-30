@@ -50,6 +50,8 @@ const TAGS = [
   ['vitc',         /\b(vitamin\s*c|ascorbic|l-ascorbic)\b/i],
   ['spf',          /\b(spf|sunscreen|sun\s*screen|sunblock)\b/i],
   ['niacinamide',  /\bniacinamide\b/i],
+  ['copper',       /\b(copper\s*(tri)?peptide|ghk-?cu)\b/i],
+  ['scrub',        /\b(scrub|exfoliating\s*(beads|polish|mitt)|microdermabrasion|dermaplan\w*)\b/i],
 ];
 
 export function tagsFor(name) {
@@ -85,6 +87,13 @@ export function routineWarnings(steps) {
       if (pair('retinoid', 'aha') || pair('retinoid', 'bha')) add('warn', `${label}: a retinoid with an exfoliating acid in the same routine is a common cause of irritation. Alternate nights instead.`);
       if (pair('retinoid', 'bpo')) add('warn', `${label}: benzoyl peroxide can break down tretinoin-type retinoids. Use them at different times.`);
       if (pair('vitc', 'bpo')) add('warn', `${label}: benzoyl peroxide can oxidise vitamin C. Keep them in separate routines.`);
+      const acid = (t) => t.has('aha') || t.has('bha');
+      if ((tags.has('retinoid') && other.tags.has('retinoid'))) add('warn', `${label}: two retinoids in the same routine adds irritation without adding benefit. Pick one.`);
+      if (pair('vitc', 'retinoid')) add('tip', `${label}: both are active and can sting together. Vitamin C in the morning and the retinoid at night is the usual split.`);
+      if ((tags.has('vitc') && acid(other.tags)) || (other.tags.has('vitc') && acid(tags))) add('tip', `${label}: vitamin C and an exfoliating acid together can sting. Use them at different times of day.`);
+      if ((tags.has('bpo') && acid(other.tags)) || (other.tags.has('bpo') && acid(tags))) add('tip', `${label}: benzoyl peroxide with an exfoliating acid is drying and irritating. Alternate them.`);
+      if ((tags.has('copper') && (other.tags.has('vitc') || acid(other.tags) || other.tags.has('retinoid'))) || (other.tags.has('copper') && (tags.has('vitc') || acid(tags) || tags.has('retinoid')))) add('tip', `${label}: copper peptides work best away from strong actives. Use them at a different time.`);
+      if ((tags.has('scrub') && (acid(other.tags) || other.tags.has('retinoid') || other.tags.has('bpo'))) || (other.tags.has('scrub') && (acid(tags) || tags.has('retinoid') || tags.has('bpo')))) add('warn', `${label}: a physical scrub on top of an active is a fast way to over-exfoliate. Drop the scrub or the active.`);
       if ((tags.has('aha') && other.tags.has('bha')) || (tags.has('bha') && other.tags.has('aha'))) add('tip', `${label}: two exfoliating acids together can over-exfoliate. Watch for stinging or tightness.`);
     }
   }
@@ -163,7 +172,7 @@ export function routineInsight(rows, steps, today, { days = 30 } = {}) {
 
 // ── Check a product before you buy or add it ────────────────────────────────
 
-export const TAG_LABELS = { retinoid: 'a retinoid', aha: 'an AHA', bha: 'a BHA', bpo: 'benzoyl peroxide', vitc: 'vitamin C', spf: 'sunscreen', niacinamide: 'niacinamide' };
+export const TAG_LABELS = { copper: 'a copper peptide', scrub: 'a physical scrub', retinoid: 'a retinoid', aha: 'an AHA', bha: 'a BHA', bpo: 'benzoyl peroxide', vitc: 'vitamin C', spf: 'sunscreen', niacinamide: 'niacinamide' };
 
 /**
  * What a product contains (from its name and ingredient text) and what it would
