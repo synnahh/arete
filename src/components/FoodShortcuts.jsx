@@ -37,8 +37,9 @@ export default function FoodShortcuts({ yesterday, onCopy, onQuickAdd }) {
 
   return (
     <div style={{ display: 'flex', flexDirection: 'column', gap: 10, marginBottom: 16 }}>
-      <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>
-        <button type="button" onClick={copy} disabled={!yesterday || busy} style={{ ...btn, opacity: yesterday ? 1 : 0.5 }}
+      {/* Even grid: four equal buttons (two per row on a phone), panels span the full width. */}
+      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(130px, 1fr))', gap: 8 }}>
+        <button type="button" onClick={copy} disabled={!yesterday || busy} style={{ ...btn, opacity: yesterday ? 1 : 0.5, ...(yesterday ? { gridColumn: '1 / -1' } : {}) }}
           aria-label={yesterday ? `Copy yesterday: ${yesterday.count} items, ${yesterday.kcal} kilocalories` : 'Copy yesterday (nothing logged yesterday)'}>
           {yesterday ? `Copy yesterday · ${yesterday.count} item${yesterday.count === 1 ? '' : 's'} · ${yesterday.kcal.toLocaleString()} kcal` : 'Copy yesterday'}
         </button>

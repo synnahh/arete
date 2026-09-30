@@ -89,8 +89,8 @@ function Constitution({ constitution, onSave }) {
   }
 
   return (
-    <div style={{ padding: '16px 16px 40px', display: 'flex', flexDirection: 'column', gap: 16 }}>
-      <div style={{ fontSize: 12, color: 'var(--text-muted)', lineHeight: 1.6 }}>
+    <div style={{ padding: '16px 16px 40px', display: 'flex', flexDirection: 'column', gap: 4 }}>
+      <div style={{ fontSize: 12.5, color: 'var(--text-muted)', lineHeight: 1.6, marginBottom: 10 }}>
         Your values and principles — fed to every AI advisor as context.
       </div>
       {[
@@ -590,9 +590,9 @@ export default function MobileMind() {
             <button key={s.id} onClick={() => setSection(s.id)} style={{
               flexShrink: 0, padding: '6px 14px', borderRadius: 20, border: 'none', cursor: 'pointer',
               fontSize: 11, fontWeight: 700, fontFamily: 'ui-monospace,monospace', letterSpacing: '0.06em',
-              background: section === s.id ? 'var(--accent)' : 'rgba(255,255,255,0.06)',
-              color: section === s.id ? '#fff' : 'rgba(255,255,255,0.4)',
-            }}>{s.emoji} {s.label.toUpperCase()}</button>
+              minHeight: 32, background: section === s.id ? 'var(--tab-accent, var(--accent))' : 'var(--hover-bg)',
+              color: section === s.id ? 'var(--on-tab-accent, #fff)' : 'var(--text-secondary)',
+            }}>{s.label.toUpperCase()}</button>
           ))}
         </div>
         <div style={{ height: '0.5px', background: 'rgba(255,255,255,0.06)' }} />

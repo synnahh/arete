@@ -1,4 +1,5 @@
 // ─── MobileShell.jsx — iOS PWA shell with bottom tab navigation ───────────────
+import { Icon } from '../components/icons.jsx';
 import { useState, useEffect, useRef, useCallback } from 'react';
 import { useAI }              from '../ai/useAI.js';
 import { usePeakState }       from '../hooks/usePeakState.js';
@@ -365,11 +366,7 @@ export default function MobileShell({ settings, onSettingsChange }) {
             WebkitTapHighlightColor: 'transparent',
           }}
         >
-          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" aria-hidden="true">
-            <circle cx="12" cy="12" r="3" stroke="currentColor" strokeWidth="1.6" />
-            <path d="M12 2v2M12 20v2M4.22 4.22l1.42 1.42M18.36 18.36l1.42 1.42M2 12h2M20 12h2M4.22 19.78l1.42-1.42M18.36 5.64l1.42-1.42"
-              stroke="currentColor" strokeWidth="1.6" strokeLinecap="round"/>
-          </svg>
+          <Icon name="settings" size={20} />
         </button>
       </div>
 

@@ -83,7 +83,8 @@ function SubScreen({ title, onBack, children }) {
 
   // Rendered as a group section (MobileShell) rather than a pushed sub-screen:
   // no back header, no swipe-back.
-  if (!onBack) return <div>{children}</div>;
+  // The screen padding used to come from the More grid, which is gone.
+  if (!onBack) return <div style={{ padding: 16 }}>{children}</div>;
 
   return (
     <div ref={ref} style={{ willChange: 'transform, opacity' }}
@@ -207,7 +208,7 @@ export function PlaceholderScreen({ title, onBack }) {
     <SubScreen title={title} onBack={onBack}>
       <MCard style={{ padding: '24px 18px' }}>
         <div style={{ fontSize: 13, color: 'var(--text-muted)' }}>
-          {title} is available on your desktop. Data syncs automatically via Firebase.
+          {title} is on the desktop app for now. Anything you add there shows up here.
         </div>
       </MCard>
     </SubScreen>

@@ -87,7 +87,7 @@ export default function MealAI({ onLog }) {
       <button type="button" aria-pressed={phase === 'describing'} onClick={() => setPhase(p => (p === 'describing' ? 'idle' : 'describing'))} disabled={working} style={btn(false)}>Describe</button>
 
       {phase === 'describing' && (
-        <div style={{ flexBasis: '100%', display: 'flex', flexDirection: 'column', gap: 8, padding: 12, borderRadius: 12, background: 'var(--bg-panel)', border: '0.5px solid var(--card-border)' }}>
+        <div style={{ flexBasis: '100%', gridColumn: '1 / -1', display: 'flex', flexDirection: 'column', gap: 8, padding: 12, borderRadius: 12, background: 'var(--bg-panel)', border: '0.5px solid var(--card-border)' }}>
           <textarea aria-label="What did you eat?" rows={2} maxLength={MAX_TEXT} value={text} onChange={e => { setText(e.target.value); setSpoken(false); }}
             placeholder="e.g. two eggs on toast and a flat white" style={{ ...field, height: 'auto', padding: 10, resize: 'vertical' }} />
           <div style={{ display: 'flex', gap: 8 }}>
@@ -97,10 +97,10 @@ export default function MealAI({ onLog }) {
         </div>
       )}
 
-      {message && phase !== 'review' && <div role="alert" style={{ flexBasis: '100%', fontSize: 12.5, color: '#e25d7a' }}>{message}</div>}
+      {message && phase !== 'review' && <div role="alert" style={{ flexBasis: '100%', gridColumn: '1 / -1', fontSize: 12.5, color: '#e25d7a' }}>{message}</div>}
 
       {phase === 'review' && draft && (
-        <div style={{ flexBasis: '100%', display: 'flex', flexDirection: 'column', gap: 8, padding: 12, borderRadius: 12, background: 'var(--bg-panel)', border: '0.5px solid var(--card-border)' }}>
+        <div style={{ flexBasis: '100%', gridColumn: '1 / -1', display: 'flex', flexDirection: 'column', gap: 8, padding: 12, borderRadius: 12, background: 'var(--bg-panel)', border: '0.5px solid var(--card-border)' }}>
           <div style={{ fontSize: 12.5, color: 'var(--text-secondary)' }}>
             AI estimate from your {draft.source === 'photo' ? 'photo' : draft.source === 'voice' ? 'voice note' : 'description'}, <strong style={{ color: CONF[draft.confidence] }}>{draft.confidence} confidence</strong>. Check the numbers before you log.
           </div>

@@ -207,7 +207,7 @@ function DailyBriefCard({ ai }) {
           style={{ fontSize: 11, color: 'var(--accent)', background: 'none', border: 'none',
             cursor: loading ? 'default' : 'pointer', opacity: loading ? 0.5 : 1, padding: 0,
             WebkitTapHighlightColor: 'transparent' }}>
-          {loading ? 'Thinking…' : '🔄 Refresh'}
+          {loading ? 'Thinking…' : 'Refresh'}
         </button>
       </div>
       {loading ? (
@@ -226,21 +226,6 @@ function DailyBriefCard({ ai }) {
 }
 
 // ── Spotify card ───────────────────────────────────────────────────────────────
-function SpotifyCard() {
-  return (
-    <MCard style={{ flexDirection: 'row', display: 'flex', alignItems: 'center', gap: 12 }}>
-      <div style={{ width: 40, height: 40, borderRadius: 8, flexShrink: 0,
-        background: 'linear-gradient(135deg, #1db954, #0a7a33)',
-        display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 18 }}>"</div>
-      <div>
-        <MLabel style={{ marginBottom: 3 }}>Now Playing</MLabel>
-        <div style={{ fontSize: 13, color: 'var(--text-secondary)' }}>Spotify not connected</div>
-        <div style={{ fontSize: 11, color: 'var(--text-muted)' }}>Settings → Integrations</div>
-      </div>
-    </MCard>
-  );
-}
-
 // ── Today's Workout card ───────────────────────────────────────────────────────
 const DAY_KEYS = ['sun','mon','tue','wed','thu','fri','sat'];
 const SPLIT_COLOURS = { push:'#e25d7a', pull:'#4a9eff', legs:'#f4a642', rest:'rgba(255,255,255,0.2)', custom:'#9b5de5' };
@@ -432,15 +417,13 @@ function TasksPanel({ onTabChange, tasks, toggle, addTask: addTaskToStore }) {
 // ── Productivity widget (full, matching desktop) ───────────────────────────────
 const TAG_COLOURS = ['var(--accent)','#f59e0b','#10b981','#6366f1','#ec4899','#14b8a6','#f97316','#8b5cf6'];
 
-function DonutChart({ segments, size = 88, thickness = 14 }) {
+function DonutChart({ segments, size = 64, thickness = 9 }) {
   const r = (size - thickness) / 2, cx = size/2, cy = size/2, circ = 2*Math.PI*r;
   const total = segments.reduce((s,seg) => s + seg.value, 0);
 
   if (total === 0) return (
     <svg width={size} height={size}>
       <circle cx={cx} cy={cy} r={r} fill="none" stroke="var(--hover-bg)" strokeWidth={thickness} />
-      <text x={cx} y={cy+1} textAnchor="middle" dominantBaseline="middle"
-        style={{ fontSize: 11, fill: 'var(--text-muted)', fontFamily: 'inherit' }}>No data</text>
     </svg>
   );
 
@@ -494,25 +477,24 @@ function ProductivityWidget({ onTabChange, tasks }) {
         <button onClick={() => onTabChange?.('tasks')}
           style={{ fontSize: 11, color: 'var(--accent)', background: 'none', border: 'none',
             cursor: 'pointer', padding: 0, WebkitTapHighlightColor: 'transparent' }}>
-          View tasks  
+          View tasks →
         </button>
       </div>
 
       <div style={{ display: 'flex', gap: 12 }}>
         {/* Tasks donut */}
-        <div style={{ flex: 1, display: 'flex', alignItems: 'center', gap: 12, minWidth: 0 }}>
+        <div style={{ flex: 1, display: 'flex', alignItems: 'center', gap: 10, minWidth: 0 }}>
           <div style={{ position: 'relative', flexShrink: 0 }}>
             <DonutChart segments={taskSegments} />
             <div style={{ position: 'absolute', inset: 0, display: 'flex', flexDirection: 'column',
               alignItems: 'center', justifyContent: 'center', pointerEvents: 'none' }}>
-              <div style={{ fontSize: 16, fontWeight: 300, color: 'var(--text-primary)', lineHeight: 1 }}>{doneTasks}/{totalTasks}</div>
-              <div style={{ fontSize: 10.5, color: 'var(--text-muted)', letterSpacing: '0.06em', marginTop: 2 }}>TASKS</div>
+              <div className="val-num" style={{ fontSize: 13, color: 'var(--text-primary)', lineHeight: 1 }}>{doneTasks}/{totalTasks}</div>
             </div>
           </div>
           <div style={{ flex: 1, minWidth: 0 }}>
-            <div style={{ fontSize: 11, fontWeight: 600, color: 'var(--text-primary)', marginBottom: 4 }}>By Category</div>
+            <div style={{ fontSize: 11, fontWeight: 600, color: 'var(--text-primary)', marginBottom: 2 }}>Tasks</div>
             {taskSegments.length === 0
-              ? <div style={{ fontSize: 11, color: 'var(--text-muted)' }}>No tasks yet</div>
+              ? <div style={{ fontSize: 11.5, color: 'var(--text-muted)' }}>None yet</div>
               : taskSegments.slice(0,4).map(s => (
                 <div key={s.label} style={{ display: 'flex', alignItems: 'center', gap: 6, marginBottom: 3 }}>
                   <div style={{ width: 7, height: 7, borderRadius: 2, background: s.color, flexShrink: 0 }} />
@@ -528,21 +510,20 @@ function ProductivityWidget({ onTabChange, tasks }) {
         <div style={{ width: '0.5px', background: 'var(--card-border)', alignSelf: 'stretch' }} />
 
         {/* Focus donut */}
-        <div style={{ flex: 1, display: 'flex', alignItems: 'center', gap: 12, minWidth: 0 }}>
+        <div style={{ flex: 1, display: 'flex', alignItems: 'center', gap: 10, minWidth: 0 }}>
           <div style={{ position: 'relative', flexShrink: 0 }}>
             <DonutChart segments={focusSegments} />
             <div style={{ position: 'absolute', inset: 0, display: 'flex', flexDirection: 'column',
               alignItems: 'center', justifyContent: 'center', pointerEvents: 'none' }}>
-              <div style={{ fontSize: 15, fontWeight: 300, color: 'var(--text-primary)', lineHeight: 1 }}>
+              <div className="val-num" style={{ fontSize: 13, color: 'var(--text-primary)', lineHeight: 1 }}>
                 {focusH > 0 ? `${focusH}h${focusM}m` : `${focusM}m`}
               </div>
-              <div style={{ fontSize: 10.5, color: 'var(--text-muted)', letterSpacing: '0.06em', marginTop: 2 }}>FOCUS</div>
             </div>
           </div>
           <div style={{ flex: 1, minWidth: 0 }}>
-            <div style={{ fontSize: 11, fontWeight: 600, color: 'var(--text-primary)', marginBottom: 4 }}>Focus Today</div>
+            <div style={{ fontSize: 11, fontWeight: 600, color: 'var(--text-primary)', marginBottom: 4 }}>Focus</div>
             {focusSegments.length === 0
-              ? <div style={{ fontSize: 11, color: 'var(--text-muted)' }}>No sessions yet</div>
+              ? <div style={{ fontSize: 11.5, color: 'var(--text-muted)' }}>None yet</div>
               : focusSegments.slice(0,4).map(s => (
                 <div key={s.label} style={{ display: 'flex', alignItems: 'center', gap: 6, marginBottom: 3 }}>
                   <div style={{ width: 7, height: 7, borderRadius: 2, background: s.color, flexShrink: 0 }} />
@@ -590,8 +571,6 @@ export default function MobileDashboard({ settings, ai, peakState, onTabChange }
       {/* ── Daily Brief ── */}
       <DailyBriefCard ai={ai} />
 
-      {/* ── Spotify ── */}
-      <SpotifyCard />
 
       {/* ── Today Workout ── */}
       <TodayWorkoutCard onTabChange={onTabChange} />

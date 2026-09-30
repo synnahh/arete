@@ -14,6 +14,8 @@ export default function SectionBar({ group, screens, active, onPick, compact = f
         padding: compact ? '10px 16px 4px' : '14px 24px 6px',
         overflowX: 'auto', whiteSpace: 'nowrap', flexShrink: 0,
         scrollbarWidth: 'none', WebkitOverflowScrolling: 'touch',
+        // On the phone the row scrolls sideways: fade the right edge so a cut-off chip reads as "more".
+        ...(compact ? { maskImage: 'linear-gradient(90deg, #000 calc(100% - 28px), transparent)', WebkitMaskImage: 'linear-gradient(90deg, #000 calc(100% - 28px), transparent)' } : {}),
       }}
     >
       {!compact && (
