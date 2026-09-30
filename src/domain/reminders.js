@@ -19,6 +19,14 @@ export function coachSlots(cfg = {}) {
   ];
 }
 
+// How long after launch before the first check-in may be built: a couple of seconds once the
+// data has synced, or a longer wait when it has not (offline, or a slow connection).
+export const SYNCED_WAIT_MS = 2000;
+export const UNSYNCED_WAIT_MS = 45000;
+
+/** Milliseconds still to wait before nudging (0 = go ahead). */
+export const waitBeforeNudge = ({ elapsedMs, synced }) => Math.max(0, (synced ? SYNCED_WAIT_MS : UNSYNCED_WAIT_MS) - Math.max(0, elapsedMs || 0));
+
 /**
  * { slot, title, body, tab } for the reminder due now, or null.
  * `fired` is the list of slot ids already sent today.

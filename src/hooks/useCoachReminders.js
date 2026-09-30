@@ -1,22 +1,33 @@
 // useCoachReminders — the coach's morning and evening check-in: once per slot per
 // day, the top of "Next moves" as a toast and (where allowed) a system
-// notification. Rules: domain/reminders.js. Runs wherever it is mounted (both
-// shells) and waits a few seconds after launch so the first message is not
-// built from data that is still loading.
+// notification. Rules: domain/reminders.js. Mounted once, in App (the phone
+// shell is a child of it), and waits until the data has synced (or 45 s offline) so the first
+// message is not built from a stale local copy.
 import { useEffect, useRef } from 'react';
 import { storage } from '../utils/storage.js';
 import { toLocalDateKey } from '../utils/localDate.js';
 import { useNextMoves } from './useNextMoves.js';
-import { dueCoachReminder } from '../domain/reminders.js';
+import { useCollection } from '../supabase/useCollection.js';
+import { STORAGE_KEYS } from '../utils/storage.js';
+import { dueCoachReminder, waitBeforeNudge } from '../domain/reminders.js';
 import { showLocalNotification } from '../utils/pushNotifications.js';
 
 const FLAG_KEY = 'valerie_notif_flags';   // shared with useNotifications
-const WARMUP_MS = 15000;
 
 const flagFor = (slot, day) => `coach-${slot}_${day}`;
 
 export function useCoachReminders(settings) {
   const moves = useNextMoves();
+  // The tables the moves are built from. Until they have synced, a check-in could describe a stale
+  // local copy ("nothing logged yet" for a day that has entries).
+  const synced = [
+    useCollection('nutrition_logs', STORAGE_KEYS.MACROS).synced,
+    useCollection('water_logs', STORAGE_KEYS.WATER).synced,
+    useCollection('workout_logs', STORAGE_KEYS.WORKOUT_LOGS).synced,
+    useCollection('habits', STORAGE_KEYS.HABITS).synced,
+    useCollection('essentials', STORAGE_KEYS.ESSENTIALS).synced,
+    useCollection('body_metrics', STORAGE_KEYS.BODY).synced,
+  ].every(Boolean);
   const startedAt = useRef(Date.now());
   const settingsRef = useRef(settings);
   settingsRef.current = settings;
@@ -26,7 +37,7 @@ export function useCoachReminders(settings) {
     if (settingsRef.current?.notifications?.enabled === false) return undefined;
 
     const run = () => {
-      if (Date.now() - startedAt.current < WARMUP_MS) return;
+      if (waitBeforeNudge({ elapsedMs: Date.now() - startedAt.current, synced }) > 0) return;
       const now = new Date();
       const day = toLocalDateKey(now);
       const flags = storage.get(FLAG_KEY, {}) || {};
@@ -42,7 +53,9 @@ export function useCoachReminders(settings) {
     };
 
     run();
-    const t = setTimeout(run, WARMUP_MS + 500);
+    const wait = waitBeforeNudge({ elapsedMs: Date.now() - startedAt.current, synced });
+    if (wait <= 0) return undefined;
+    const t = setTimeout(run, wait + 250);
     return () => clearTimeout(t);
-  }, [moves]);
+  }, [moves, synced]);
 }

@@ -36,3 +36,24 @@ describe('dueCoachReminder', () => {
     expect(dueCoachReminder({ hour: 8, moves: [moves[0]] }).body).toBe('Readiness is 80.');
   });
 });
+
+import { waitBeforeNudge, SYNCED_WAIT_MS, UNSYNCED_WAIT_MS } from './reminders.js';
+
+describe('waitBeforeNudge', () => {
+  it('waits briefly once synced and longer when it has not', () => {
+    expect(waitBeforeNudge({ elapsedMs: 0, synced: true })).toBe(SYNCED_WAIT_MS);
+    expect(waitBeforeNudge({ elapsedMs: 0, synced: false })).toBe(UNSYNCED_WAIT_MS);
+  });
+
+  it('counts time already elapsed and never goes negative', () => {
+    expect(waitBeforeNudge({ elapsedMs: 1500, synced: true })).toBe(500);
+    expect(waitBeforeNudge({ elapsedMs: 60000, synced: false })).toBe(0);
+    expect(waitBeforeNudge({ elapsedMs: -5, synced: true })).toBe(SYNCED_WAIT_MS);
+    expect(waitBeforeNudge({ synced: true })).toBe(SYNCED_WAIT_MS);
+  });
+
+  it('lets a sync that lands late release a nudge sooner than the offline wait', () => {
+    expect(waitBeforeNudge({ elapsedMs: 8000, synced: true })).toBe(0);
+    expect(waitBeforeNudge({ elapsedMs: 8000, synced: false })).toBeGreaterThan(0);
+  });
+});
