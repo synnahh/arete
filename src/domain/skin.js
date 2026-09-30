@@ -5,6 +5,8 @@
 // A step: { id, name, when: 'am' | 'pm' | 'both', days: [0..6], supplyId | null }
 // `days` are weekdays the step runs (0 = Sunday), so "retinol Mon/Wed/Fri" works.
 
+import { dayIndex as dayIdx } from '../utils/dayIndex.js';
+
 export const ALL_DAYS = [0, 1, 2, 3, 4, 5, 6];
 export const WHEN_LABEL = { am: 'Morning', pm: 'Night', both: 'Morning + night' };
 
@@ -100,12 +102,6 @@ export function routineWarnings(steps) {
 export const RATING_LABELS = { 1: 'Rough', 2: 'Meh', 3: 'Okay', 4: 'Good', 5: 'Great' };
 
 const DAY_MS = 86400000;
-const dayIdx = (key) => {
-  const m = /^(\d{4})-(\d{2})-(\d{2})$/.exec(String(key));
-  if (!m) return null;
-  const t = Date.UTC(+m[1], +m[2] - 1, +m[3]);
-  return new Date(t).getUTCDate() === +m[3] ? t / DAY_MS : null;
-};
 const validRating = (v) => (Number.isInteger(Number(v)) && Number(v) >= 1 && Number(v) <= 5 ? Number(v) : null);
 const mean = (xs) => xs.reduce((s, x) => s + x, 0) / xs.length;
 

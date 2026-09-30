@@ -9,16 +9,11 @@
 // month kept its old streak. Now a streak is the run of consecutive days ending
 // today (or yesterday, so it isn't shown as broken before you've had the day).
 
+import { dayIndex } from '../utils/dayIndex.js';
+
 const DAY = 86400000;
-const KEY_RE = /^\d{4}-\d{2}-\d{2}$/;
 const HISTORY_CAP = 180;
 
-const dayIndex = (key) => {
-  if (!KEY_RE.test(String(key))) return null;
-  const [y, m, d] = key.split('-').map(Number);
-  const t = Date.UTC(y, m - 1, d);
-  return new Date(t).getUTCDate() === d ? t / DAY : null;
-};
 const keyOf = (idx) => new Date(idx * DAY).toISOString().slice(0, 10);
 
 /**

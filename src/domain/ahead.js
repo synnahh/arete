@@ -12,20 +12,14 @@
 // applyUsage() adds derived, never-saved fields: usageDaysLeft, usageDaysPerPack,
 // stockLeft, stockUnit.
 
+import { dayIndex } from '../utils/dayIndex.js';
+
 export const DEFAULT_LEAD_DAYS = 3;
 export const DEFAULT_BUFFER_DAYS = 2;
 const ALPHA = 0.3; // EWMA weight on each new observed cycle
 
 const DAY = 86400000;
-const DATE_KEY_RE = /^\d{4}-\d{2}-\d{2}$/;
 const keyOf = (idx) => Number.isFinite(idx) ? new Date(idx * DAY).toISOString().slice(0, 10) : null;
-const dayIndex = (key) => {
-  if (!DATE_KEY_RE.test(String(key))) return null;
-  const [y, m, d] = String(key).split('-').map(Number);
-  const idx = Date.UTC(y, m - 1, d) / DAY;
-  return keyOf(idx) === key ? idx : null;
-};
-
 /** Days one pack lasts on the planned schedule, or null. */
 export function scheduledDaysPerPack(item) {
   const qty = Number(item.packQty), dose = Number(item.dosePerUse), uses = Number(item.usesPerDay);

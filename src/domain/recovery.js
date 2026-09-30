@@ -10,20 +10,13 @@
 // on a low-readiness day (see applyReadiness in progression.js).
 
 import { setsOf, volume } from './training.js';
+import { dayIndex } from '../utils/dayIndex.js';
 
 export const DEFAULT_SLEEP_NEED_H = 8;
 export const DEBT_WINDOW_DAYS = 14;
 const MIN_NIGHTS_FOR_DEBT = 4;
 const MAX_REPAY_PER_NIGHT_H = 1; // an extra hour of sleep repays at most an hour
 
-const DAY = 86400000;
-const KEY_RE = /^\d{4}-\d{2}-\d{2}$/;
-const dayIndex = (key) => {
-  if (!KEY_RE.test(String(key))) return null;
-  const [y, m, d] = key.split('-').map(Number);
-  const t = Date.UTC(y, m - 1, d);
-  return new Date(t).getUTCDate() === d ? t / DAY : null;
-};
 const clamp01 = (x) => Math.max(0, Math.min(1, x));
 const hoursOf = (row) => (Number(row?.duration) > 0 ? Number(row.duration) / 60 : null);
 

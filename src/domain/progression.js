@@ -11,15 +11,7 @@
 // Suggestions only: nothing is written, and the lifter can always override.
 
 import { e1rm, setsOf } from './training.js';
-
-const DAY = 86400000;
-const KEY_RE = /^\d{4}-\d{2}-\d{2}$/;
-const dayIndex = (key) => {
-  if (!KEY_RE.test(String(key))) return null;
-  const [y, m, d] = key.split('-').map(Number);
-  const t = Date.UTC(y, m - 1, d);
-  return new Date(t).getUTCDate() === d ? t / DAY : null;
-};
+import { dayIndex } from '../utils/dayIndex.js';
 
 export const PLATEAU_MIN_SESSIONS = 4; // sessions since the best before we call it a stall
 export const PLATEAU_MIN_DAYS = 14;

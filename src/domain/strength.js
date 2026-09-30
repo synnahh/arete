@@ -7,6 +7,7 @@
 // they ignore sex, age, height and training history, and each source differs.
 
 import { liftHistory } from './progression.js';
+import { dayIndex } from '../utils/dayIndex.js';
 
 // bodyweight multiples for: beginner, novice, intermediate, advanced, elite
 export const LIFTS = {
@@ -17,15 +18,6 @@ export const LIFTS = {
   row:      { label: 'Barbell row',    levels: [0.50, 0.75, 1.00, 1.40, 1.75], match: /\b(barbell row|bent.?over row)\b/i,        not: /\b(db|dumbbell|machine|cable|t.?bar|seal)\b/i },
 };
 export const LEVEL_NAMES = ['Untrained', 'Beginner', 'Novice', 'Intermediate', 'Advanced', 'Elite'];
-
-const DAY = 86400000;
-const KEY_RE = /^\d{4}-\d{2}-\d{2}$/;
-const dayIndex = (key) => {
-  if (!KEY_RE.test(String(key))) return null;
-  const [y, m, d] = key.split('-').map(Number);
-  const t = Date.UTC(y, m - 1, d);
-  return new Date(t).getUTCDate() === d ? t / DAY : null;
-};
 
 /** Which main lift an exercise name is, or null. */
 export function liftKey(name) {
