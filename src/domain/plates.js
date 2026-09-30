@@ -44,3 +44,20 @@ export function warmupSets(workWeight, { bar = DEFAULT_BAR_KG, step = 2.5 } = {}
   // Drop steps that collapse onto the previous one or reach the working weight.
   return ramp.filter((s, i) => s.weight < w && (i === 0 || s.weight > ramp[i - 1].weight));
 }
+
+/**
+ * Plates typed as "25, 20, 15, 10, 5, 2.5, 1.25" (commas, spaces or semicolons)
+ * into a clean list: positive numbers up to 50 kg, no duplicates, biggest
+ * first, at most 12. Null when nothing usable was typed.
+ */
+export function parsePlates(text) {
+  const nums = String(text ?? '').split(/[\s,;]+/).map(Number).filter(n => Number.isFinite(n) && n > 0 && n <= 50);
+  const list = [...new Set(nums.map(n => Math.round(n * 100) / 100))].sort((a, b) => b - a).slice(0, 12);
+  return list.length ? list : null;
+}
+
+/** Bar weight from a setting: 5-30 kg, else the default. */
+export function barFrom(value) {
+  const n = Number(value);
+  return n >= 5 && n <= 30 ? n : DEFAULT_BAR_KG;
+}

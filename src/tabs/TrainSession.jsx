@@ -9,8 +9,11 @@ import {
   bests, detectPR, plannedRows, previousSets, restSeconds, setsOf, todaysLog, topSetOf, volume,
 } from '../domain/training.js';
 import { plateaus, applyReadiness, liftHistory } from '../domain/progression.js';
-import { isBarbell, platesFor, warmupSets, DEFAULT_BAR_KG } from '../domain/plates.js';
+import { isBarbell, platesFor, warmupSets, parsePlates, barFrom, DEFAULT_PLATES_KG } from '../domain/plates.js';
+import { updateSettings } from '../utils/settingsStore.js';
+import { storage, STORAGE_KEYS } from '../utils/storage.js';
 import LiftChart from '../components/LiftChart.jsx';
+import StrengthCard from '../components/StrengthCard.jsx';
 import { useRecovery } from '../hooks/useRecovery.js';
 
 const today = () => toLocalDateKey(new Date());
@@ -89,14 +92,52 @@ function RestTimer({ onDone }) {
   );
 }
 
+// Bar weight and plate set, saved in settings (barKg, platesKg) so they follow you.
+const readEquipment = () => {
+  const s = storage.get(STORAGE_KEYS.SETTINGS, {}) || {};
+  return { bar: barFrom(s.barKg), plates: Array.isArray(s.platesKg) && s.platesKg.length ? s.platesKg : DEFAULT_PLATES_KG };
+};
+function useEquipment() {
+  const [eq, setEq] = useState(readEquipment);
+  useEffect(() => {
+    const on = () => setEq(readEquipment());
+    window.addEventListener('valerie:settings-changed', on);
+    return () => window.removeEventListener('valerie:settings-changed', on);
+  }, []);
+  return eq;
+}
+
+function EquipmentSettings({ eq }) {
+  const [text, setText] = useState(eq.plates.join(', '));
+  const save = () => { const p = parsePlates(text); if (p) updateSettings({ platesKg: p }); else setText(eq.plates.join(', ')); };
+  return (
+    <details style={{ fontSize: 13, color: 'var(--text-secondary)' }}>
+      <summary style={{ cursor: 'pointer', minHeight: 32, display: 'flex', alignItems: 'center' }}>Bar {eq.bar} kg · plates {eq.plates.join(' ')}</summary>
+      <div style={{ display: 'flex', gap: 10, flexWrap: 'wrap', alignItems: 'flex-end', paddingTop: 8 }}>
+        <label style={{ display: 'flex', flexDirection: 'column', gap: 4 }}>
+          <span style={label}>Bar (kg)</span>
+          <select value={eq.bar} onChange={e => updateSettings({ barKg: Number(e.target.value) })} style={{ ...numInput, width: 96, textAlign: 'left' }}>
+            {[10, 15, 20, 25].map(b => <option key={b} value={b}>{b} kg</option>)}
+          </select>
+        </label>
+        <label style={{ display: 'flex', flexDirection: 'column', gap: 4, flex: 1, minWidth: 200 }}>
+          <span style={label}>Plates you own (kg, per side)</span>
+          <input value={text} onChange={e => setText(e.target.value)} onBlur={save} onKeyDown={e => { if (e.key === 'Enter') save(); }}
+            aria-label="Plates you own in kilograms" style={{ ...numInput, textAlign: 'left' }} />
+        </label>
+      </div>
+    </details>
+  );
+}
+
 //  One exercise card
-function ExerciseCard({ ex, prog, rows, onChange, onTick, onAddSet, onRemoveSet, prs, compact, history }) {
+function ExerciseCard({ ex, prog, rows, onChange, onTick, onAddSet, onRemoveSet, prs, compact, history, eq }) {
   const doneSets = rows.filter(r => r.done);
   const [showChart, setShowChart] = useState(false);
   const barbell = !ex.bodyweight && isBarbell(ex.name);
   const workKg = Number(rows[0]?.weight) || prog.nextWeight;
-  const plates = barbell ? platesFor(workKg) : null;
-  const warmups = barbell ? warmupSets(workKg) : [];
+  const plates = barbell ? platesFor(workKg, { bar: eq.bar, plates: eq.plates }) : null;
+  const warmups = barbell ? warmupSets(workKg, { bar: eq.bar }) : [];
   return (
     <section aria-label={ex.name} style={{
       display: 'flex', flexDirection: 'column', gap: 10, padding: compact ? 14 : 16, borderRadius: 16,
@@ -121,7 +162,7 @@ function ExerciseCard({ ex, prog, rows, onChange, onTick, onAddSet, onRemoveSet,
 
       {barbell && (plates || warmups.length > 0) && (
         <div className="val-num" style={{ fontSize: 12, lineHeight: 1.6, color: 'var(--text-secondary)' }}>
-          {plates && workKg > DEFAULT_BAR_KG && (
+          {plates && workKg > eq.bar && (
             <div>Per side for {plates.total} kg: {plates.perSide.length ? plates.perSide.join(' + ') : 'bar only'}{plates.short > 0 ? ` (${plates.short} kg short)` : ''}</div>
           )}
           {warmups.length > 0 && <div>Warm-up: {warmups.map(w => `${w.weight}×${w.reps}`).join(' · ')}</div>}
@@ -214,6 +255,7 @@ export default function TrainSession({
   const onRestDone = useCallback(() => toast('Rest done — next set'), []);
 
   const recovery = useRecovery();
+  const equipment = useEquipment();
 
   const todays = useMemo(() => {
     const base = exercises.filter(e => (e.gym === gym || e.gym === 'both') && e.day === day);
@@ -346,12 +388,16 @@ export default function TrainSession({
           </div>
         </div>
 
+        {todays.some(e => !e.bodyweight && isBarbell(e.name)) && <EquipmentSettings key={equipment.plates.join(',')} eq={equipment} />}
+
         {recovery.status === 'ok' && (
           <div role="status" style={{ display: 'flex', alignItems: 'center', gap: 10, fontSize: 13, lineHeight: 1.45, color: 'var(--text-secondary)' }}>
             <span className="val-num" style={{ fontSize: 15, fontWeight: 600, color: recovery.band === 'push' ? '#4caf7d' : recovery.band === 'go-easy' ? '#e25d7a' : '#e8a13a' }}>{recovery.score}</span>
             <span><strong style={{ color: 'var(--text-primary)' }}>{recovery.label}.</strong> {recovery.advice}</span>
           </div>
         )}
+
+        <StrengthCard logs={workoutLogs} />
 
         {stalled.length > 0 && (
           <div role="status" style={{ padding: '10px 14px', borderRadius: 14, border: '0.5px solid #e8a13a', background: 'color-mix(in srgb, #e8a13a 8%, transparent)', fontSize: 13, lineHeight: 1.5, color: 'var(--text-primary)' }}>
@@ -371,7 +417,7 @@ export default function TrainSession({
             onChange={(i, patch) => setRows(ex.id, rs => rs.map((r, j) => j === i ? { ...r, ...patch } : r))}
             onTick={(i) => tick(ex, i)}
             onAddSet={() => setRows(ex.id, rs => [...rs, { ...(rs[rs.length - 1] ?? { weight: 0, reps: ex.repsMin }), prev: null, done: false, justDone: false }])}
-            onRemoveSet={() => setRows(ex.id, rs => rs.slice(0, -1))} history={liftHistory(workoutLogs, ex.name)} />
+            onRemoveSet={() => setRows(ex.id, rs => rs.slice(0, -1))} history={liftHistory(workoutLogs, ex.name)} eq={equipment} />
         ))}
 
         {others.length > 0 && (

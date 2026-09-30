@@ -31,7 +31,7 @@ MyFitnessPal's paid tiers add meal scan, barcode scan, voice logging, per-day-of
 | Different macro goals for training vs rest days | **Have** (2026-09-30, Goal HQ: calories move in carbs only, weekly total holds, rest days keep at least half the carbs). Not arbitrary per-weekday goals: the schedule decides | — |
 | Voice logging ("two eggs and toast") | Partial — the orb has speech, but it logs calories only, no foods/quantities | P2 |
 | Photo meal scan (AI estimates macros) | Missing; needs the `ai-chat` gateway deployed first | P2 |
-| Fasting timer | Missing | P3 |
+| Fasting timer | **Have** (2026-09-30: 14/16/18/20 h presets, ring, 30-day stats; synced through settings) | — |
 | Saved and recent meals remember ingredients (so they use up the pantry) | **Have** (2026-09-30; plan meals also log in one tap with "Log now") | — |
 
 ## 2. Strong / Liftoff (and Stronger) — training
@@ -46,10 +46,10 @@ Strong is the clean set logger. Liftoff wraps logging in a game: XP, ranks per e
 | **Next-session suggestion** ("add 2.5 kg", "repeat", "deload") from your own history | **Have** (2026-09-30, `domain/progression.js`: judged on all working sets, no drop after one bad day, layoff restart) | — |
 | Plateau / stall detection on a lift | **Have** (no new best in 4+ sessions over 2+ weeks → STALLED chip, banner, deload suggestion, assistant context) | — |
 | Per-exercise progress chart (e1RM over time) | **Have** (2026-09-30, History button on each Train card) | — |
-| Warm-up ramp and plate calculator | **Have** (2026-09-30, barbell lifts only, standard 20 kg bar and plates; not yet configurable) | — |
+| Warm-up ramp and plate calculator | **Have** (2026-09-30, barbell lifts only; bar weight and plate set are settings) | — |
 | Supersets, RPE per set | Missing | P2 |
 | Muscle recovery map (what is fresh / hot) | Partial — a body model exists in `Workout.jsx`, not fed by training volume | P2 |
-| Strength Score / per-lift rank vs global standards | Missing (needs a standards table; bodyweight-relative) | P3 |
+| Strength Score / per-lift level vs standards | **Have** (2026-09-30, Train: bodyweight-relative, main barbell lifts, weakest-lift hint; rough adult-male ratios, not sex/age adjusted) | — |
 | Feed, friends, leaderboards | Missing — **recommend skipping**: single-user app | Skip |
 
 ## 3. Skin Bliss / Skinlab — looksmaxxing skin

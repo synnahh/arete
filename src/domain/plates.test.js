@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest';
-import { isBarbell, platesFor, warmupSets } from './plates.js';
+import { isBarbell, platesFor, warmupSets, parsePlates, barFrom } from './plates.js';
 
 describe('isBarbell', () => {
   it('recognises barbell lifts and rejects dumbbells, machines and bodyweight', () => {
@@ -38,5 +38,23 @@ describe('warmupSets', () => {
     expect(warmupSets(30)).toEqual([]);
     expect(warmupSets(0)).toEqual([]);
     expect(warmupSets('x')).toEqual([]);
+  });
+});
+
+describe('parsePlates / barFrom', () => {
+  it('cleans typed plates: sorted, unique, sane', () => {
+    expect(parsePlates('25, 20 ,15;10 5 2.5 1.25 25')).toEqual([25, 20, 15, 10, 5, 2.5, 1.25]);
+    expect(parsePlates('1.25,  5, 5, abc, -3, 0, 900')).toEqual([5, 1.25]);
+    expect(parsePlates('')).toBeNull();
+    expect(parsePlates('none')).toBeNull();
+    expect(parsePlates(undefined)).toBeNull();
+    expect(parsePlates(Array.from({ length: 20 }, (_, i) => i + 1).join(','))).toHaveLength(12);
+  });
+  it('accepts a bar of 5-30 kg and falls back to 20', () => {
+    expect(barFrom(15)).toBe(15);
+    expect(barFrom('25')).toBe(25);
+    expect(barFrom(2)).toBe(20);
+    expect(barFrom(undefined)).toBe(20);
+    expect(barFrom('x')).toBe(20);
   });
 });

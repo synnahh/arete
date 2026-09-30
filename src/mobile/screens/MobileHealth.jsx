@@ -12,6 +12,7 @@ import WeightChart from '../../components/WeightChart.jsx';
 import ProgressPhotos from '../../components/ProgressPhotos.jsx';
 import ReadinessCard from '../../components/ReadinessCard.jsx';
 import SleepLogger from '../../components/SleepLogger.jsx';
+import FastingCard from '../../components/FastingCard.jsx';
 import GoalEta from '../../components/GoalEta.jsx';
 import { withTodaysTargets } from '../../utils/todaysTargets.js';
 import MicroCoachCard from '../../components/MicroCoachCard.jsx';
@@ -610,6 +611,7 @@ function NutritionTab({ settings, today }) {
           color="#4caf7d" barValue={totFat} barMax={fatGoal} barColor="#4caf7d" />
       </div>
 
+      <FastingCard />
       <FoodShortcuts
         yesterday={yesterdayMeals.length ? { count: yesterdayMeals.length, kcal: Math.round(yesterdayMeals.reduce((s, m) => s + (Number(m.calories) || 0), 0)) } : null}
         onCopy={() => appendEntries(yesterdayMeals, `Copied ${yesterdayMeals.length} item${yesterdayMeals.length === 1 ? '' : 's'} from yesterday`)}

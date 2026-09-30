@@ -20,6 +20,7 @@ import { weeklyMicros, microCoach } from '../domain/micros.js';
 import ProgressPhotos from '../components/ProgressPhotos.jsx';
 import ReadinessCard from '../components/ReadinessCard.jsx';
 import SleepLogger from '../components/SleepLogger.jsx';
+import FastingCard from '../components/FastingCard.jsx';
 import GoalEta from '../components/GoalEta.jsx';
 import HabitHeatmap from '../components/HabitHeatmap.jsx';
 import { withTodaysTargets } from '../utils/todaysTargets.js';
@@ -843,6 +844,8 @@ function Nutrition({ nutritionLogs, addNutritionLog, updateNutritionLog, setting
           </div>
         ))}
       </div>
+
+      <FastingCard />
 
       <FoodShortcuts
         yesterday={yesterdayMeals.length ? { count: yesterdayMeals.length, kcal: Math.round(yesterdayMeals.reduce((s, m) => s + (Number(m.calories) || 0), 0)) } : null}
