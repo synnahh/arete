@@ -17,7 +17,7 @@
 //   habits: { done, total } | null,
 //   weight: { daysSinceWeighIn, hasGoal } | null,
 //   sleep: { debtHours, status, bedtime } | null,
-//   skin: { pmDone, pmTotal } | null,
+//   skin: { amDone, amTotal, pmDone, pmTotal } | null,
 //   fast: { done, elapsedH, targetHours } | null,
 // }
 
@@ -84,6 +84,9 @@ export function nextMoves(snap = {}) {
   }
 
   const k = snap.skin;
+  if (k && k.amTotal > 0 && hour >= 7 && hour < 12 && k.amDone < k.amTotal) {
+    add('skin-am', 47, 'Morning skincare not done', `${k.amDone} of ${k.amTotal} steps ticked. Sunscreen is the one that matters most.`, 'lm');
+  }
   if (k && k.pmTotal > 0 && hour >= 20 && k.pmDone < k.pmTotal) {
     add('skin-pm', 46, 'Night skincare not done', `${k.pmDone} of ${k.pmTotal} steps ticked.`, 'lm');
   }

@@ -59,6 +59,7 @@ Skin Bliss scans products (barcode, search, shelf photo) for ingredient clashes,
 | Feature | Arete | Priority |
 |---|---|---|
 | AM/PM checklist, weekday scheduling | Have | — |
+| Routine reminders (morning until noon, night from 8 pm) | **Have** (2026-09-30, Home > Next moves; logic and tests done, not yet seen on screen) | — |
 | Ingredient clash warnings | Partial — a few families only (`domain/skin.js`) | P2 |
 | Routine linked to Supplies so run-out is forecast | Have (beyond Skin Bliss) | — |
 | Progress photos with before/after slider | **Have** for the body (front/side/back) and the face (Look, 2026-09-30) | — |

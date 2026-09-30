@@ -3,6 +3,8 @@
 // rules (protein pace, evening habits) move on without a refresh.
 import { useEffect, useMemo, useState } from 'react';
 import { useCollection } from '../supabase/useCollection.js';
+import { useDocument } from '../supabase/useDocument.js';
+import { completion } from '../domain/skin.js';
 import { storage, STORAGE_KEYS } from '../utils/storage.js';
 import { toLocalDateKey } from '../utils/localDate.js';
 import { useRecovery } from './useRecovery.js';
@@ -24,6 +26,8 @@ export function useNextMoves() {
   const { items: body = [] } = useCollection('body_metrics', STORAGE_KEYS.BODY);
   const { items: habits = [] } = useCollection('habits', STORAGE_KEYS.HABITS);
   const { items: supplies = [] } = useCollection('essentials', STORAGE_KEYS.ESSENTIALS);
+  const { items: lmDaily = [] } = useCollection('lm_daily', 'valerie_lm_daily');
+  const lmProfile = useDocument('lm_profile', 'valerie_lm_profile', {}).data;
   const recovery = useRecovery();
 
   const [tick, setTick] = useState(0);
@@ -48,6 +52,10 @@ export function useNextMoves() {
     const scheduled = !!(activeDay && activeDay.splitType && activeDay.splitType !== 'rest');
 
     const live = applyUsage(supplies, nutrition, today);
+    const skinSteps = Array.isArray(lmProfile?.skinSteps) ? lmProfile.skinSteps : [];
+    const skinTicks = lmDaily.find(d => d.date === today)?.skin ?? {};
+    const am = completion(skinSteps, skinTicks, 'am', now.getDay());
+    const pm = completion(skinSteps, skinTicks, 'pm', now.getDay());
     const lastWeigh = body.map(b => b.date).filter(d => dayIndex(d) != null).sort().pop();
 
     return nextMoves({
@@ -68,9 +76,9 @@ export function useNextMoves() {
       habits: habits.length ? todayProgress(habits, today) : null,
       weight: { hasGoal: !!settings.coachGoal, daysSinceWeighIn: lastWeigh ? dayIndex(today) - dayIndex(lastWeigh) : null },
       sleep: recovery.debt && recovery.debt.status !== 'insufficient' ? { status: recovery.debt.status, debtHours: recovery.debt.debtHours, bedtime: sleepWindow().bed } : null,
-      skin: null,
+      skin: am.total || pm.total ? { amDone: am.done, amTotal: am.total, pmDone: pm.done, pmTotal: pm.total } : null,
       fast: settings.fast ? fastProgress(settings.fast, now.getTime()) : null,
     });
   // tick re-runs the clock-dependent rules once a minute
-  }, [nutrition, water, workouts, body, habits, supplies, recovery, settings, tick]);
+  }, [nutrition, water, workouts, body, habits, supplies, lmDaily, lmProfile, recovery, settings, tick]);
 }

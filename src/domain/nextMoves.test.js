@@ -71,6 +71,14 @@ describe('nextMoves', () => {
     expect(nextMoves({ hour: 21, ...snap })[0].title).toBe('3 habits left today');
   });
 
+  it('nudges the morning routine only in the morning, and only while steps are left', () => {
+    const skin = { amDone: 1, amTotal: 3, pmDone: 0, pmTotal: 0 };
+    expect(ids({ hour: 6, skin })).toEqual([]);
+    expect(ids({ hour: 9, skin })).toEqual(['skin-am']);
+    expect(ids({ hour: 13, skin })).toEqual([]);
+    expect(ids({ hour: 9, skin: { ...skin, amDone: 3 } })).toEqual([]);
+  });
+
   it('celebrates a finished fast and flags expired products', () => {
     expect(ids({ hour: 12, fast: { done: true, elapsedH: 17.4, targetHours: 16 } })).toContain('fast-done');
     const m = nextMoves({ hour: 12, supplies: { due: [], expiring: [{ name: 'Serum', daysLeft: -3 }, { name: 'SPF', daysLeft: 9 }] } });
