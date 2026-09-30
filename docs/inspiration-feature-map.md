@@ -60,7 +60,7 @@ Skin Bliss scans products (barcode, search, shelf photo) for ingredient clashes,
 |---|---|---|
 | AM/PM checklist, weekday scheduling | Have | — |
 | Routine reminders (morning until noon, night from 8 pm) | **Have** (2026-09-30, Home > Next moves; logic and tests done, not yet seen on screen) | — |
-| Ingredient clash warnings | Partial — a few families only (`domain/skin.js`) | P2 |
+| Ingredient clash warnings | **Have** (2026-09-30: retinoids, AHA/BHA, benzoyl peroxide, vitamin C, copper peptides, physical scrubs, two retinoids; matched by product name or pasted ingredients) | — |
 | Routine linked to Supplies so run-out is forecast | Have (beyond Skin Bliss) | — |
 | Progress photos with before/after slider | **Have** for the body (front/side/back) and the face (Look, 2026-09-30) | — |
 | Daily skin rating (1–5), weekly trend, and routine-vs-rating comparison | **Have** (2026-09-30, Look; no notes field) | — |
@@ -81,7 +81,7 @@ RISE centres on a daily sleep-debt score. Sleep Cycle adds a smart wake window a
 | **Readiness score** (sleep + recent training load) | **Have** (Recover screen desktop + phone, a line in Train, assistant context; low readiness holds a weight instead of adding one). No soreness input yet | — |
 | Smart wake window / alarm | Missing; a PWA can't reliably alarm, so **suggest a bedtime instead of an alarm** | P3 |
 | Water goal from weight, +training day, pace advice, one-tap log | Have | — |
-| Drink types (coffee/tea count differently), weather adjustment | Missing | P3 |
+| Drink types (coffee/tea count differently), weather adjustment | **Decided to skip for now**: coffee, tea and energy drinks are already logged as caffeine in Health, so also counting them as water would double-count; weather needs a location feed. Revisit if you want it | Skip |
 | Weight trend, weekly rate, pace vs goal | Have | — |
 | "You reach your goal weight around <date> at this rate" | **Have** (2026-09-30, optional goal weight in Goal HQ; shown on Body and Goal HQ) | — |
 | Apple Health sync | Missing, **not possible from a PWA or Tauri desktop**; skip | Skip |

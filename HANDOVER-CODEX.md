@@ -280,3 +280,7 @@ Removed: `mobile/screens/MobileWorkout.jsx` and the unused More grid in `MobileM
 - Finished sets in Train have a "How hard?" row (6-10, tap again to clear). Stored as `rpe` on each entry of `workout_logs.sets` (optional; older logs have none). `validRpe` in `domain/progression.js` is the one validator.
 - `suggestNext`: when every working set hit the top of the range but the average effort was 9.5+, it HOLDs and says to repeat the weight; at 7 or under it still adds weight and notes it felt easy. Effort counts only when at least half the working sets were rated.
 - Verified in a browser with a stubbed Supabase (set logged, rating saved, cleared, new set does not inherit it) and 5 new tests. To test writes in a browser: `await import("/src/supabase/supabase.js")`, then replace `supabase.auth.getSession` and `supabase.from` with an in-memory chain before tapping.
+
+### Clash families and what was skipped (2026-09-30)
+- `domain/skin.js` now also warns on: vitamin C with a retinoid or an acid (tip), benzoyl peroxide with an acid (tip), copper peptides with vitamin C / acids / retinoids (tip), a physical scrub with an active (warn), two retinoids in one routine (warn). New tags `copper` and `scrub`. Tier routines still produce no warnings (tested).
+- Deliberately not built: supersets (would change how a session is structured; needs a decision), drink types and weather adjustment for water (see the feature map for why).
