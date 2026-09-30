@@ -34,8 +34,8 @@ function SectionLabel({ children }) {
   return (
     <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: 14 }}>
       <div style={{ width: 18, height: 1, background: 'rgba(255,255,255,0.25)', flexShrink: 0 }} />
-      <span style={{ fontSize: 10, fontWeight: 700, letterSpacing: '0.18em', textTransform: 'uppercase',
-        color: 'rgba(255,255,255,0.35)', fontFamily: 'ui-monospace,monospace', whiteSpace: 'nowrap' }}>
+      <span style={{ fontSize: 11, fontWeight: 700, letterSpacing: '0.18em', textTransform: 'uppercase',
+        color: 'var(--text-muted)', fontFamily: 'ui-monospace,monospace', whiteSpace: 'nowrap' }}>
         {children}
       </span>
       <div style={{ flex: 1, height: 1, background: 'linear-gradient(90deg,rgba(255,255,255,0.1),transparent)' }} />
@@ -59,7 +59,7 @@ const BTN = {
 const BTN_GHOST = {
   padding: '7px 14px', borderRadius: 9, border: '0.5px solid rgba(255,255,255,0.1)',
   cursor: 'pointer', background: 'transparent',
-  color: 'rgba(255,255,255,0.5)', fontSize: 13,
+  color: 'var(--text-secondary)', fontSize: 13,
 };
 
 // ─── Finnhub quote fetcher ────────────────────────────────────────────────────
@@ -125,8 +125,8 @@ function AllocationDonut({ holdings, size = 100, thickness = 16 }) {
         {segments.map((s, i) => (
           <div key={i} style={{ display: 'flex', alignItems: 'center', gap: 7 }}>
             <div style={{ width: 5, height: 5, borderRadius: '50%', background: s.colour, flexShrink: 0 }} />
-            <span style={{ fontSize: 11, color: 'rgba(255,255,255,0.6)', fontWeight: 600 }}>{s.label}</span>
-            <span style={{ fontSize: 10.5, color: 'rgba(255,255,255,0.3)', fontFamily: 'ui-monospace,monospace' }}>{s.pct}%</span>
+            <span style={{ fontSize: 11, color: 'var(--text-secondary)', fontWeight: 600 }}>{s.label}</span>
+            <span style={{ fontSize: 10.5, color: 'var(--text-muted)', fontFamily: 'ui-monospace,monospace' }}>{s.pct}%</span>
           </div>
         ))}
       </div>
@@ -155,8 +155,8 @@ function Overview({ enriched, fmt, currency }) {
 
       {/* Hero card */}
       <GlassCard>
-        <div style={{ fontSize: 9.5, fontWeight: 700, letterSpacing: '0.18em', textTransform: 'uppercase',
-          color: 'rgba(255,255,255,0.35)', fontFamily: 'ui-monospace,monospace', marginBottom: 8 }}>
+        <div style={{ fontSize: 10.5, fontWeight: 700, letterSpacing: '0.18em', textTransform: 'uppercase',
+          color: 'var(--text-muted)', fontFamily: 'ui-monospace,monospace', marginBottom: 8 }}>
           TOTAL PORTFOLIO VALUE
         </div>
         <div style={{ fontSize: 44, fontWeight: 600, letterSpacing: '-0.025em', lineHeight: 1,
@@ -165,21 +165,21 @@ function Overview({ enriched, fmt, currency }) {
         </div>
         <div style={{ display: 'flex', gap: 18, flexWrap: 'wrap' }}>
           <div>
-            <div style={{ fontSize: 10, color: 'rgba(255,255,255,0.3)', letterSpacing: '0.08em', fontFamily: 'ui-monospace,monospace', marginBottom: 3 }}>TOTAL RETURN</div>
+            <div style={{ fontSize: 11, color: 'var(--text-muted)', letterSpacing: '0.08em', fontFamily: 'ui-monospace,monospace', marginBottom: 3 }}>TOTAL RETURN</div>
             <div style={{ fontSize: 20, fontWeight: 600, color: plColour, fontVariantNumeric: 'tabular-nums' }}>
               {totalPL >= 0 ? '+' : ''}{fmt(Math.abs(totalPL))}
               <span style={{ fontSize: 12, marginLeft: 6, opacity: 0.75 }}>({totalPLPct >= 0 ? '+' : ''}{totalPLPct.toFixed(2)}%)</span>
             </div>
           </div>
           <div>
-            <div style={{ fontSize: 10, color: 'rgba(255,255,255,0.3)', letterSpacing: '0.08em', fontFamily: 'ui-monospace,monospace', marginBottom: 3 }}>TODAY</div>
+            <div style={{ fontSize: 11, color: 'var(--text-muted)', letterSpacing: '0.08em', fontFamily: 'ui-monospace,monospace', marginBottom: 3 }}>TODAY</div>
             <div style={{ fontSize: 20, fontWeight: 600, color: dayColour, fontVariantNumeric: 'tabular-nums' }}>
               {dayPL >= 0 ? '+' : ''}{fmt(Math.abs(dayPL))}
             </div>
           </div>
           <div>
-            <div style={{ fontSize: 10, color: 'rgba(255,255,255,0.3)', letterSpacing: '0.08em', fontFamily: 'ui-monospace,monospace', marginBottom: 3 }}>COST BASIS</div>
-            <div style={{ fontSize: 20, fontWeight: 300, color: 'rgba(255,255,255,0.6)', fontVariantNumeric: 'tabular-nums' }}>
+            <div style={{ fontSize: 11, color: 'var(--text-muted)', letterSpacing: '0.08em', fontFamily: 'ui-monospace,monospace', marginBottom: 3 }}>COST BASIS</div>
+            <div style={{ fontSize: 20, fontWeight: 300, color: 'var(--text-secondary)', fontVariantNumeric: 'tabular-nums' }}>
               {fmt(totalCost)}
             </div>
           </div>
@@ -194,7 +194,7 @@ function Overview({ enriched, fmt, currency }) {
       {/* Positions mini-list */}
       {enriched.length === 0 ? (
         <GlassCard>
-          <div style={{ textAlign: 'center', padding: '40px 0', fontSize: 13, color: 'rgba(255,255,255,0.25)' }}>
+          <div style={{ textAlign: 'center', padding: '40px 0', fontSize: 13, color: 'var(--text-muted)' }}>
             No holdings yet — add positions in the Holdings tab.
           </div>
         </GlassCard>
@@ -213,13 +213,13 @@ function Overview({ enriched, fmt, currency }) {
               }}>
                 <div style={{ width: 36, height: 36, borderRadius: 10, background: PALETTE[i % PALETTE.length] + '22',
                   display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
-                  <span style={{ fontSize: 10, fontWeight: 800, color: PALETTE[i % PALETTE.length], letterSpacing: '-0.02em' }}>
+                  <span style={{ fontSize: 11, fontWeight: 800, color: PALETTE[i % PALETTE.length], letterSpacing: '-0.02em' }}>
                     {h.symbol?.slice(0, 4)}
                   </span>
                 </div>
                 <div style={{ flex: 1, minWidth: 0 }}>
                   <div style={{ fontSize: 13, fontWeight: 500, color: 'rgba(255,255,255,0.85)' }}>{h.symbol}</div>
-                  <div style={{ fontSize: 10.5, color: 'rgba(255,255,255,0.3)', fontFamily: 'ui-monospace,monospace' }}>
+                  <div style={{ fontSize: 10.5, color: 'var(--text-muted)', fontFamily: 'ui-monospace,monospace' }}>
                     {h.shares} shares @ {fmt(h.avgCost)} avg
                   </div>
                 </div>
@@ -267,7 +267,7 @@ function Holdings({ holdings, enriched, onAdd, onRemove, onUpdate, fmt, loading 
 
       {/* Header */}
       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-        <div style={{ fontSize: 13, color: 'rgba(255,255,255,0.5)', fontFamily: 'ui-monospace,monospace' }}>
+        <div style={{ fontSize: 13, color: 'var(--text-secondary)', fontFamily: 'ui-monospace,monospace' }}>
           {holdings.length} position{holdings.length !== 1 ? 's' : ''} · prices refresh every 60s
         </div>
         <button onClick={() => setShowForm(v => !v)} style={BTN}>
@@ -281,7 +281,7 @@ function Holdings({ holdings, enriched, onAdd, onRemove, onUpdate, fmt, loading 
           <SectionLabel>New position</SectionLabel>
           <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 12, marginBottom: 12 }}>
             <div>
-              <div style={{ fontSize: 10, color: 'rgba(255,255,255,0.3)', marginBottom: 4, letterSpacing: '0.06em' }}>TICKER</div>
+              <div style={{ fontSize: 11, color: 'var(--text-muted)', marginBottom: 4, letterSpacing: '0.06em' }}>TICKER</div>
               <input
                 value={form.symbol}
                 onChange={e => setForm(p => ({ ...p, symbol: e.target.value.toUpperCase() }))}
@@ -290,7 +290,7 @@ function Holdings({ holdings, enriched, onAdd, onRemove, onUpdate, fmt, loading 
               />
             </div>
             <div>
-              <div style={{ fontSize: 10, color: 'rgba(255,255,255,0.3)', marginBottom: 4, letterSpacing: '0.06em' }}>SHARES</div>
+              <div style={{ fontSize: 11, color: 'var(--text-muted)', marginBottom: 4, letterSpacing: '0.06em' }}>SHARES</div>
               <input type="number" min="0" step="any"
                 value={form.shares}
                 onChange={e => setForm(p => ({ ...p, shares: e.target.value }))}
@@ -299,7 +299,7 @@ function Holdings({ holdings, enriched, onAdd, onRemove, onUpdate, fmt, loading 
               />
             </div>
             <div>
-              <div style={{ fontSize: 10, color: 'rgba(255,255,255,0.3)', marginBottom: 4, letterSpacing: '0.06em' }}>AVG BUY PRICE</div>
+              <div style={{ fontSize: 11, color: 'var(--text-muted)', marginBottom: 4, letterSpacing: '0.06em' }}>AVG BUY PRICE</div>
               <input type="number" min="0" step="any"
                 value={form.avgCost}
                 onChange={e => setForm(p => ({ ...p, avgCost: e.target.value }))}
@@ -308,7 +308,7 @@ function Holdings({ holdings, enriched, onAdd, onRemove, onUpdate, fmt, loading 
               />
             </div>
             <div>
-              <div style={{ fontSize: 10, color: 'rgba(255,255,255,0.3)', marginBottom: 4, letterSpacing: '0.06em' }}>BUY DATE</div>
+              <div style={{ fontSize: 11, color: 'var(--text-muted)', marginBottom: 4, letterSpacing: '0.06em' }}>BUY DATE</div>
               <input type="date"
                 value={form.buyDate}
                 onChange={e => setForm(p => ({ ...p, buyDate: e.target.value }))}
@@ -317,7 +317,7 @@ function Holdings({ holdings, enriched, onAdd, onRemove, onUpdate, fmt, loading 
             </div>
           </div>
           <div style={{ marginBottom: 12 }}>
-            <div style={{ fontSize: 10, color: 'rgba(255,255,255,0.3)', marginBottom: 4, letterSpacing: '0.06em' }}>NOTE (optional)</div>
+            <div style={{ fontSize: 11, color: 'var(--text-muted)', marginBottom: 4, letterSpacing: '0.06em' }}>NOTE (optional)</div>
             <input value={form.note} onChange={e => setForm(p => ({ ...p, note: e.target.value }))}
               placeholder="e.g. Long-term hold, dividend play..." style={INPUT} />
           </div>
@@ -331,7 +331,7 @@ function Holdings({ holdings, enriched, onAdd, onRemove, onUpdate, fmt, loading 
       {/* Holdings list */}
       {holdings.length === 0 && !showForm ? (
         <GlassCard>
-          <div style={{ textAlign: 'center', padding: '48px 0', color: 'rgba(255,255,255,0.25)', fontSize: 13 }}>
+          <div style={{ textAlign: 'center', padding: '48px 0', color: 'var(--text-muted)', fontSize: 13 }}>
             No positions yet. Add your first holding above.
           </div>
         </GlassCard>
@@ -359,39 +359,39 @@ function Holdings({ holdings, enriched, onAdd, onRemove, onUpdate, fmt, loading 
                   <div style={{ flex: 1, minWidth: 0 }}>
                     <div style={{ display: 'flex', alignItems: 'baseline', gap: 10 }}>
                       <span style={{ fontSize: 15, fontWeight: 600, color: 'rgba(255,255,255,0.9)' }}>{h.symbol}</span>
-                      <span style={{ fontSize: 11, color: 'rgba(255,255,255,0.3)', fontFamily: 'ui-monospace,monospace' }}>
+                      <span style={{ fontSize: 11, color: 'var(--text-muted)', fontFamily: 'ui-monospace,monospace' }}>
                         {h.shares} shares
                       </span>
                     </div>
-                    <div style={{ fontSize: 11, color: 'rgba(255,255,255,0.35)', marginTop: 2, fontFamily: 'ui-monospace,monospace' }}>
+                    <div style={{ fontSize: 11, color: 'var(--text-muted)', marginTop: 2, fontFamily: 'ui-monospace,monospace' }}>
                       avg cost {fmt(h.avgCost)} · bought {h.buyDate || '—'}
                     </div>
                     {h.note && (
-                      <div style={{ fontSize: 11, color: 'rgba(255,255,255,0.25)', marginTop: 3, fontStyle: 'italic' }}>{h.note}</div>
+                      <div style={{ fontSize: 11, color: 'var(--text-muted)', marginTop: 3, fontStyle: 'italic' }}>{h.note}</div>
                     )}
                   </div>
 
                   {/* Price + P&L */}
                   <div style={{ textAlign: 'right', flexShrink: 0 }}>
                     {isLoading ? (
-                      <div style={{ fontSize: 12, color: 'rgba(255,255,255,0.25)' }}>Loading...</div>
+                      <div style={{ fontSize: 12, color: 'var(--text-muted)' }}>Loading...</div>
                     ) : e.currentPrice ? (
                       <>
                         <div style={{ fontSize: 16, fontWeight: 600, color: 'rgba(255,255,255,0.9)', fontVariantNumeric: 'tabular-nums' }}>
                           {fmt(e.currentPrice)}
-                          <span style={{ fontSize: 10, color: e.dayChangePct >= 0 ? '#6BE3A4' : '#FF6B6B', marginLeft: 6 }}>
+                          <span style={{ fontSize: 11, color: e.dayChangePct >= 0 ? '#6BE3A4' : '#FF6B6B', marginLeft: 6 }}>
                             {e.dayChangePct >= 0 ? '+' : ''}{(e.dayChangePct || 0).toFixed(2)}%
                           </span>
                         </div>
                         <div style={{ fontSize: 12, fontWeight: 700, color: colour, fontVariantNumeric: 'tabular-nums' }}>
                           {pl >= 0 ? '+' : ''}{fmt(Math.abs(pl))} ({plPct >= 0 ? '+' : ''}{plPct.toFixed(2)}%)
                         </div>
-                        <div style={{ fontSize: 10, color: 'rgba(255,255,255,0.3)', fontFamily: 'ui-monospace,monospace' }}>
+                        <div style={{ fontSize: 11, color: 'var(--text-muted)', fontFamily: 'ui-monospace,monospace' }}>
                           {fmt(e.currentValue)} total
                         </div>
                       </>
                     ) : (
-                      <div style={{ fontSize: 11, color: 'rgba(255,255,255,0.25)' }}>No price (add Finnhub key)</div>
+                      <div style={{ fontSize: 11, color: 'var(--text-muted)' }}>No price (add Finnhub key)</div>
                     )}
                   </div>
 
@@ -480,10 +480,10 @@ function AIAdvisor({ enriched, fmt, settings, ai }) {
 
       {/* Context banner */}
       <GlassCard style={{ marginBottom: 12, padding: '12px 16px' }}>
-        <div style={{ fontSize: 10, fontWeight: 700, letterSpacing: '0.12em', color: 'rgba(255,255,255,0.3)', fontFamily: 'ui-monospace,monospace', marginBottom: 6 }}>
+        <div style={{ fontSize: 11, fontWeight: 700, letterSpacing: '0.12em', color: 'var(--text-muted)', fontFamily: 'ui-monospace,monospace', marginBottom: 6 }}>
           PORTFOLIO CONTEXT LOADED — {enriched.length} POSITIONS
         </div>
-        <div style={{ fontSize: 11, color: 'rgba(255,255,255,0.45)', lineHeight: 1.6 }}>
+        <div style={{ fontSize: 11, color: 'var(--text-muted)', lineHeight: 1.6 }}>
           VALERIE has access to your full portfolio including positions, P&L, and pricing. Ask anything about your investments.
         </div>
       </GlassCard>
@@ -494,7 +494,7 @@ function AIAdvisor({ enriched, fmt, settings, ai }) {
           {STARTERS.map((s, i) => (
             <button key={i} onClick={() => send(s)} style={{
               padding: '6px 12px', borderRadius: 20, border: '0.5px solid rgba(255,255,255,0.1)',
-              background: 'rgba(255,255,255,0.04)', color: 'rgba(255,255,255,0.55)',
+              background: 'rgba(255,255,255,0.04)', color: 'var(--text-secondary)',
               fontSize: 11, cursor: 'pointer', textAlign: 'left', lineHeight: 1.4,
             }}>
               {s}
@@ -512,8 +512,8 @@ function AIAdvisor({ enriched, fmt, settings, ai }) {
           }}>
             <div style={{
               maxWidth: '78%', padding: '10px 14px', borderRadius: m.role === 'user' ? '14px 14px 4px 14px' : '14px 14px 14px 4px',
-              background: m.role === 'user' ? 'var(--accent)22' : 'rgba(255,255,255,0.04)',
-              border: `0.5px solid ${m.role === 'user' ? 'var(--accent)44' : 'rgba(255,255,255,0.08)'}`,
+              background: m.role === 'user' ? 'color-mix(in srgb, var(--accent) 13%, transparent)' : 'rgba(255,255,255,0.04)',
+              border: `0.5px solid ${m.role === 'user' ? 'color-mix(in srgb, var(--accent) 27%, transparent)' : 'rgba(255,255,255,0.08)'}`,
               fontSize: 13, color: 'rgba(255,255,255,0.85)', lineHeight: 1.65,
               whiteSpace: 'pre-wrap',
             }}>
@@ -631,7 +631,7 @@ export default function Portfolio({ settings = {}, ai }) {
             Portfolio
           </div>
           {quotesLoading && (
-            <div style={{ fontSize: 10, color: 'rgba(255,255,255,0.3)', fontFamily: 'ui-monospace,monospace', letterSpacing: '0.06em' }}>
+            <div style={{ fontSize: 11, color: 'var(--text-muted)', fontFamily: 'ui-monospace,monospace', letterSpacing: '0.06em' }}>
               REFRESHING PRICES...
             </div>
           )}
@@ -649,7 +649,7 @@ export default function Portfolio({ settings = {}, ai }) {
             <button key={t.id} onClick={() => setSection(t.id)} style={{
               padding: '7px 18px 9px', border: 'none', cursor: 'pointer', background: 'transparent',
               color: section === t.id ? 'rgba(255,255,255,0.9)' : 'rgba(255,255,255,0.3)',
-              fontSize: 10, fontWeight: 700, letterSpacing: '0.1em',
+              fontSize: 11, fontWeight: 700, letterSpacing: '0.1em',
               fontFamily: 'ui-monospace,monospace',
               borderBottom: section === t.id ? '1.5px solid var(--accent)' : '1.5px solid transparent',
               marginBottom: -0.5, transition: 'all 0.15s ease',

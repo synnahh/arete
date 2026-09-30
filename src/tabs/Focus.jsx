@@ -1,4 +1,5 @@
 // ─── VALERIE — Focus Tab ──────────────────────────────────────────────────────
+import { Icon as LineIcon } from '../components/icons.jsx';
 import { useState, useEffect, useRef, useCallback } from 'react';
 import { useCollection } from '../supabase/useCollection.js';
 import { STORAGE_KEYS }  from '../utils/storage.js';
@@ -376,31 +377,31 @@ export default function Focus({ settings }) {
 
       {/* Controls */}
       <div style={{ display: 'flex', gap: 12, alignItems: 'center', marginTop: 8 }}>
-        <button onClick={handleReset} style={{
-          width: 40, height: 40, borderRadius: '50%', border: 'none', cursor: 'pointer',
-          background: 'rgba(255,255,255,0.07)', color: 'var(--text-secondary)', fontSize: 16,
-        }} title="Reset"> </button>
+        <button onClick={handleReset} aria-label="Reset" style={{
+          width: 44, height: 44, borderRadius: '50%', border: 'none', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', 
+          background: 'var(--hover-bg)', color: 'var(--text-secondary)',
+        }} title="Reset"><LineIcon name="reset" size={18} /></button>
 
         {finished ? (
           <button onClick={handleReset} style={{
             width: 60, height: 60, borderRadius: '50%', border: 'none', cursor: 'pointer',
-            background: '#4caf7d', color: '#fff', fontSize: 22,
-}}>↺</button>
+            background: '#4caf7d', color: '#fff', display: 'flex', alignItems: 'center', justifyContent: 'center', 
+          }} aria-label="Start again"><LineIcon name="reset" size={24} /></button>
         ) : (
           <button onClick={running ? handlePause : handleStart} style={{
             width: 60, height: 60, borderRadius: '50%', border: 'none', cursor: 'pointer',
-            background: 'var(--accent)', color: '#fff', fontSize: running ? 18 : 20,
-            boxShadow: running ? '0 0 20px var(--accent)44' : 'none',
+            background: 'var(--accent)', color: '#fff', display: 'flex', alignItems: 'center', justifyContent: 'center', 
+            boxShadow: running ? '0 0 20px color-mix(in srgb, var(--accent) 27%, transparent)' : 'none',
             transition: 'box-shadow 0.3s ease',
           }}>
-            {running ? '⏸' : '▶'}
+            <span style={{ marginLeft: running ? 0 : 3, display: 'flex' }}><LineIcon name={running ? 'pause' : 'play'} size={24} /></span>
           </button>
         )}
 
         <button onClick={handleSkip} style={{
-          width: 40, height: 40, borderRadius: '50%', border: 'none', cursor: 'pointer',
-          background: 'rgba(255,255,255,0.07)', color: 'var(--text-secondary)', fontSize: 14,
-        }} title="Skip to end">⏭</button>
+          width: 44, height: 44, borderRadius: '50%', border: 'none', cursor: 'pointer',
+          background: 'var(--hover-bg)', color: 'var(--text-secondary)', display: 'flex', alignItems: 'center', justifyContent: 'center', 
+        }} aria-label="Skip to end" title="Skip to end"><LineIcon name="skip" size={18} /></button>
       </div>
 
       {/* Completion message */}

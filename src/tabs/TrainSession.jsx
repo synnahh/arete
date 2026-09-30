@@ -151,7 +151,7 @@ function ExerciseCard({ ex, prog, rows, onChange, onTick, onRate, onAddSet, onRe
         TARGET {ex.bodyweight ? 'BW' : `${prog.nextWeight} kg`} × {ex.repsMin}–{ex.repsMax} ·{' '}
         <span style={{ color: ACTION_COLOUR[prog.action] ?? 'var(--text-secondary)', fontWeight: 600 }}>{prog.action}</span>
         {prog.plateau?.status && prog.plateau.status !== 'none' && (
-          <span style={{ marginLeft: 8, padding: '1px 8px', borderRadius: 999, fontSize: 10, fontWeight: 700, letterSpacing: '0.08em', color: '#e8a13a', border: '0.5px solid #e8a13a' }}>
+          <span style={{ marginLeft: 8, padding: '1px 8px', borderRadius: 999, fontSize: 11, fontWeight: 700, letterSpacing: '0.08em', color: '#e8a13a', border: '0.5px solid #e8a13a' }}>
             {prog.plateau.status === 'regressing' ? 'SLIDING' : 'STALLED'} {prog.plateau.sessions}
           </span>
         )}
@@ -170,7 +170,7 @@ function ExerciseCard({ ex, prog, rows, onChange, onTick, onRate, onAddSet, onRe
       )}
 
       <div role="table" aria-label={`${ex.name} sets`} style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
-        <div role="row" style={{ display: 'grid', gridTemplateColumns: '28px minmax(0,1fr) 76px 64px 40px', gap: 8, alignItems: 'center', ...label, fontSize: 9.5 }}>
+        <div role="row" style={{ display: 'grid', gridTemplateColumns: '28px minmax(0,1fr) 76px 64px 40px', gap: 8, alignItems: 'center', ...label, fontSize: 10.5 }}>
           <span role="columnheader">Set</span><span role="columnheader">Previous</span>
           <span role="columnheader" style={{ textAlign: 'center' }}>kg</span><span role="columnheader" style={{ textAlign: 'center' }}>Reps</span>
           <span role="columnheader" aria-label="Done" />
@@ -187,7 +187,7 @@ function ExerciseCard({ ex, prog, rows, onChange, onTick, onRate, onAddSet, onRe
               <span className="val-num" style={{ fontSize: 14, color: r.done ? 'var(--tab-accent)' : 'var(--text-secondary)' }}>{i + 1}</span>
               <span className="val-num" style={{ fontSize: 13, color: 'var(--text-secondary)', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
                 {r.prev ? `${ex.bodyweight ? 'BW' : r.prev.weight} × ${r.prev.reps}` : '—'}
-                {pr && <span className="val-pop" style={{ marginLeft: 6, padding: '1px 6px', borderRadius: 999, fontSize: 10, fontWeight: 700, letterSpacing: '0.08em', background: 'var(--tab-accent)', color: 'var(--on-tab-accent)' }}>PR</span>}
+                {pr && <span className="val-pop" style={{ marginLeft: 6, padding: '1px 6px', borderRadius: 999, fontSize: 11, fontWeight: 700, letterSpacing: '0.08em', background: 'var(--tab-accent)', color: 'var(--on-tab-accent)' }}>PR</span>}
               </span>
               <input aria-label={`Set ${i + 1} weight`} inputMode="decimal" disabled={ex.bodyweight || r.done} value={ex.bodyweight ? 'BW' : r.weight}
                 onFocus={e => e.target.select()} onChange={e => onChange(i, { weight: e.target.value })} style={{ ...numInput, opacity: r.done ? 0.75 : 1 }} />
@@ -205,13 +205,13 @@ function ExerciseCard({ ex, prog, rows, onChange, onTick, onRate, onAddSet, onRe
               </button>
             </div>
             {r.done && (
-              <div role="group" aria-label={`Set ${i + 1} effort`} style={{ display: 'flex', alignItems: 'center', gap: 6, padding: '0 6px 6px 36px', flexWrap: 'wrap' }}>
-                <span style={{ fontSize: 11.5, color: 'var(--text-secondary)' }} title="Rate of perceived exertion: 10 means nothing left in the tank">How hard?</span>
+              <div role="group" aria-label={`Set ${i + 1} effort`} style={{ display: 'flex', alignItems: 'center', gap: 4, padding: '0 6px 4px 36px', margin: '-2px 0 2px', flexWrap: 'wrap' }}>
+                <span style={{ fontSize: 11.5, color: 'var(--text-muted)', marginRight: 4 }} title="Rate of perceived exertion: 10 means nothing left in the tank">How hard?</span>
                 {[6, 7, 8, 9, 10].map(v => {
                   const on = validRpe(r.rpe) === v;
                   return (
                     <button key={v} type="button" aria-pressed={on} aria-label={`RPE ${v}`} onClick={() => onRate(i, v)} style={{
-                      minWidth: 36, height: 32, borderRadius: 999, cursor: 'pointer', fontFamily: 'inherit', fontSize: 13, WebkitTapHighlightColor: 'transparent',
+                      minWidth: 32, height: 28, borderRadius: 999, cursor: 'pointer', fontFamily: 'inherit', fontSize: 12.5, WebkitTapHighlightColor: 'transparent',
                       border: `0.5px solid ${on ? 'var(--tab-accent)' : 'var(--card-border)'}`, fontWeight: on ? 700 : 500,
                       background: on ? 'var(--tab-accent)' : 'transparent', color: on ? 'var(--on-tab-accent)' : 'var(--text-secondary)',
                     }}>{v}</button>

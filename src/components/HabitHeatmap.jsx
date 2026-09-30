@@ -27,16 +27,17 @@ export default function HabitHeatmap({ habits, weeks = 12 }) {
   return (
     <section aria-label="Habit history" style={{ padding: 14, borderRadius: 14, background: 'var(--bg-panel)', border: '0.5px solid var(--card-border)', display: 'flex', flexDirection: 'column', gap: 10 }}>
       <div style={label}>Last {weeks} weeks</div>
-      <div role="img" aria-label={summary} style={{ display: 'flex', gap: 4 }}>
-        <div aria-hidden="true" style={{ display: 'grid', gridTemplateRows: 'repeat(7, 1fr)', gap: 3, fontSize: 9.5, color: 'var(--text-secondary)', paddingTop: 0 }}>
-          {DAY_LETTERS.map((d, i) => <span key={i} style={{ height: 'clamp(11px, 3.4vw, 16px)', display: 'flex', alignItems: 'center' }}>{i % 2 === 0 ? d : ''}</span>)}
+      <div role="img" aria-label={summary} style={{ display: 'flex', gap: 4, '--cell': 'clamp(11px, 3.4vw, 16px)' }}>
+        <div aria-hidden="true" style={{ display: 'grid', gridTemplateRows: 'repeat(7, 1fr)', gap: 3, fontSize: 10.5, color: 'var(--text-secondary)', paddingTop: 0 }}>
+          {DAY_LETTERS.map((d, i) => <span key={i} style={{ height: 'var(--cell)', display: 'flex', alignItems: 'center' }}>{i % 2 === 0 ? d : ''}</span>)}
         </div>
-        <div style={{ flex: 1, display: 'grid', gridTemplateColumns: `repeat(${map.weeks.length}, 1fr)`, gap: 3 }}>
+        {/* Square cells at a fixed size: stretching the columns across a wide card turned them into bars. */}
+        <div style={{ display: 'grid', gridTemplateColumns: `repeat(${map.weeks.length}, var(--cell))`, gap: 3 }}>
           {map.weeks.map((col, w) => (
             <div key={w} style={{ display: 'grid', gridTemplateRows: 'repeat(7, 1fr)', gap: 3 }}>
               {col.map(c => (
                 <span key={c.date} title={c.level == null ? fmt(c.date) : `${fmt(c.date)}: ${c.done} of ${c.total}`} style={{
-                  height: 'clamp(11px, 3.4vw, 16px)', borderRadius: 3,
+                  width: 'var(--cell)', height: 'var(--cell)', borderRadius: 3,
                   background: c.level == null ? 'transparent' : FILL[c.level],
                   border: c.level == null ? (c.future ? 'none' : '0.5px dashed var(--card-border)') : 'none',
                 }} />

@@ -1,10 +1,13 @@
 //  WeightChart  daily weigh-ins as dots and the smoothed trend as a line.
 //  Plain SVG on the theme's variables (accent follows the tab colour).
 import { useMemo } from 'react';
+import { useWidth } from '../hooks/useWidth.js';
 
-const W = 640, H = 200, PAD = { l: 38, r: 12, t: 12, b: 24 };
+const H = 200, PAD = { l: 38, r: 12, t: 12, b: 24 };
 
 export default function WeightChart({ series, days = 60 }) {
+  // Drawn at its real width, so labels stay 11px on any window size.
+  const [box, W] = useWidth(640);
   const pts = useMemo(() => series.slice(-days), [series, days]);
   const geo = useMemo(() => {
     if (pts.length < 2) return null;
@@ -17,13 +20,14 @@ export default function WeightChart({ series, days = 60 }) {
     const y = (v) => PAD.t + (1 - (v - lo) / (hi - lo)) * (H - PAD.t - PAD.b);
     const ticks = [lo, (lo + hi) / 2, hi].map(v => ({ v, y: y(v) }));
     return { x, y, ticks, line: pts.map((p, i) => `${i ? 'L' : 'M'}${x(p.date).toFixed(1)},${y(p.trend).toFixed(1)}`).join(' ') };
-  }, [pts]);
+  }, [pts, W]);
 
-  if (!geo) return null;
+  if (!geo) return <div ref={box} />;
   const last = pts[pts.length - 1];
 
   return (
-    <svg viewBox={`0 0 ${W} ${H}`} role="img" style={{ width: '100%', height: 'auto', display: 'block' }}
+    <div ref={box} style={{ width: '100%' }}>
+    <svg width={W} height={H} viewBox={`0 0 ${W} ${H}`} role="img" style={{ display: 'block' }}
       aria-label={`Weight over ${pts.length} weigh-ins. Latest ${last.weight} kilograms, trend ${last.trend} kilograms.`}>
       {geo.ticks.map(t => (
         <g key={t.v}>
@@ -37,5 +41,6 @@ export default function WeightChart({ series, days = 60 }) {
       <text x={PAD.l} y={H - 6} fontSize="11" fill="var(--text-secondary)" style={{ fontFamily: 'var(--font-mono)' }}>{pts[0].date.slice(5)}</text>
       <text x={W - PAD.r} y={H - 6} textAnchor="end" fontSize="11" fill="var(--text-secondary)" style={{ fontFamily: 'var(--font-mono)' }}>{last.date.slice(5)}</text>
     </svg>
+    </div>
   );
 }

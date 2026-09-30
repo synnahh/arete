@@ -41,7 +41,7 @@ export default function MuscleRecovery({ compact = false }) {
         {sum.rest.length ? <>Give {list(sum.rest)} another day. </> : 'Everything is ready. '}
         {split && split.freshShare > 0 ? <>Best fit today: <strong style={{ textTransform: 'capitalize' }}>{split.day}</strong>.</> : null}
       </div>
-      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(150px, 1fr))', gap: 8 }}>
+      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(168px, 1fr))', gap: 8 }}>
         {MUSCLE_IDS.map(id => {
           const r = map[id];
           const st = STATUS[r.status];
@@ -58,7 +58,7 @@ export default function MuscleRecovery({ compact = false }) {
               <div aria-hidden="true" style={{ height: 4, borderRadius: 999, background: 'var(--card-border)', overflow: 'hidden' }}>
                 <span style={{ display: 'block', height: '100%', width: `${pct}%`, background: r.volume === 'on-target' ? '#4caf7d' : r.volume === 'high' ? '#e8a13a' : 'var(--text-secondary)' }} />
               </div>
-              <div className="val-num" style={{ fontSize: 11.5, color: 'var(--text-secondary)' }}>{r.sets7d} sets this week{r.volume === 'low' ? ' (low)' : r.volume === 'high' ? ' (high)' : ''}</div>
+              <div className="val-num" style={{ fontSize: 11, color: 'var(--text-secondary)', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{r.sets7d} sets this week{r.volume === 'low' ? ' · low' : r.volume === 'high' ? ' · high' : ''}</div>
             </div>
           );
         })}

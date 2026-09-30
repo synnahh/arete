@@ -1,6 +1,7 @@
 // Places Tab — Alone Time / Places to Go
 // Save, tag, and rediscover places for solo time
 
+import { Icon as LineIcon } from '../components/icons.jsx';
 import { useState, useMemo } from 'react';
 import { useCollection } from '../supabase/useCollection.js';
 import { STORAGE_KEYS }  from '../utils/storage.js';
@@ -46,11 +47,11 @@ function PlaceCard({ place, onEdit, onRemove, onToggleVisited }) {
         <div style={{ flex: 1, minWidth: 0 }}>
           <div style={{ fontSize: 13, fontWeight: 500, color: 'var(--text-primary)', marginBottom: 2 }}>
             {place.name}
-            {place.visited && <span style={{ marginLeft: 6, fontSize: 10, color: '#4caf7d', fontWeight: 400 }}>✓ visited</span>}
+            {place.visited && <span style={{ marginLeft: 6, fontSize: 11, color: '#4caf7d', fontWeight: 400 }}>✓ visited</span>}
           </div>
           <div style={{ display: 'flex', gap: 6, flexWrap: 'wrap' }}>
-            <span style={{ fontSize: 10, color: type.color, background: `${type.color}15`, padding: '2px 7px', borderRadius: 20 }}>{type.label}</span>
-            {place.mood && <span style={{ fontSize: 10, color: 'var(--text-muted)', background: 'rgba(255,255,255,0.05)', padding: '2px 7px', borderRadius: 20 }}>{place.mood}</span>}
+            <span style={{ fontSize: 11, color: type.color, background: `${type.color}15`, padding: '2px 7px', borderRadius: 20 }}>{type.label}</span>
+            {place.mood && <span style={{ fontSize: 11, color: 'var(--text-muted)', background: 'rgba(255,255,255,0.05)', padding: '2px 7px', borderRadius: 20 }}>{place.mood}</span>}
           </div>
         </div>
         <div style={{ display: 'flex', gap: 4 }}>
@@ -71,7 +72,7 @@ function PlaceCard({ place, onEdit, onRemove, onToggleVisited }) {
           <a
             href={`https://maps.google.com/?q=${encodeURIComponent(place.address)}`}
             target="_blank" rel="noopener noreferrer"
-            style={{ fontSize: 10, color: 'var(--accent)', textDecoration: 'none', marginLeft: 'auto', flexShrink: 0 }}
+            style={{ fontSize: 11, color: 'var(--accent)', textDecoration: 'none', marginLeft: 'auto', flexShrink: 0 }}
           >
             Maps ↗
           </a>
@@ -246,7 +247,7 @@ export default function Places() {
         {/* Places list */}
         {filtered.length === 0 && !showForm && !editing && (
           <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', flex: 1, gap: 12, opacity: 0.4 }}>
-            <span style={{ fontSize: 32 }}>📍</span>
+            <span style={{ display: 'flex', justifyContent: 'center', color: 'var(--text-muted)' }}><LineIcon name="places" size={30} strokeWidth={1.5} /></span>
             <div style={{ fontSize: 13, color: 'var(--text-muted)', textAlign: 'center' }}>
               {items.length === 0 ? 'Add your first place to explore.' : 'No places match your filters.'}
             </div>
@@ -255,7 +256,7 @@ export default function Places() {
 
         {unvisited.length > 0 && (
           <div>
-            <div style={{ fontSize: 10, fontWeight: 700, color: 'var(--text-muted)', letterSpacing: '0.1em', marginBottom: 10 }}>
+            <div style={{ fontSize: 11, fontWeight: 700, color: 'var(--text-muted)', letterSpacing: '0.1em', marginBottom: 10 }}>
               TO EXPLORE · {unvisited.length}
             </div>
             <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
@@ -266,7 +267,7 @@ export default function Places() {
 
         {visited.length > 0 && (
           <div>
-            <div style={{ fontSize: 10, fontWeight: 700, color: 'var(--text-muted)', letterSpacing: '0.1em', marginBottom: 10 }}>
+            <div style={{ fontSize: 11, fontWeight: 700, color: 'var(--text-muted)', letterSpacing: '0.1em', marginBottom: 10 }}>
               VISITED · {visited.length}
             </div>
             <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>

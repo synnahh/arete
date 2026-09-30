@@ -69,12 +69,12 @@ export default function SignIn({ onSignedIn }) {
         <div>
           <div style={{
             fontSize: 11, fontWeight: 700, letterSpacing: '0.28em', textTransform: 'uppercase',
-            color: 'rgba(255,255,255,0.25)', fontFamily: 'ui-monospace, monospace', marginBottom: 10,
+            color: 'var(--text-muted)', fontFamily: 'ui-monospace, monospace', marginBottom: 10,
           }}>ARETE</div>
           <div style={{ fontSize: 18, fontWeight: 300, color: 'rgba(255,255,255,0.85)' }}>
             Connect this device
           </div>
-          <div style={{ fontSize: 12, color: 'rgba(255,255,255,0.35)', marginTop: 8, lineHeight: 1.6 }}>
+          <div style={{ fontSize: 12, color: 'var(--text-muted)', marginTop: 8, lineHeight: 1.6 }}>
             One time only — this device stays signed in afterwards so your data
             syncs everywhere.
           </div>

@@ -84,7 +84,7 @@ function MCard({ children, style = {} }) {
 
 function MLabel({ children }) {
   return (
-    <div style={{ fontSize: 10, fontWeight: 700, letterSpacing: '0.1em',
+    <div style={{ fontSize: 11, fontWeight: 700, letterSpacing: '0.1em',
       textTransform: 'uppercase', color: 'var(--text-muted)', marginBottom: 10 }}>
       {children}
     </div>
@@ -120,7 +120,7 @@ function Donut({ segments, size = 96, thickness = 13, centerLabel, centerSub }) 
         <div style={{ position: 'absolute', inset: 0, display: 'flex', flexDirection: 'column',
           alignItems: 'center', justifyContent: 'center', pointerEvents: 'none' }}>
           <div style={{ fontSize: 14, fontWeight: 300, color: 'var(--text-primary)', lineHeight: 1 }}>{centerLabel}</div>
-          {centerSub && <div style={{ fontSize: 9, color: 'var(--text-muted)', marginTop: 2 }}>{centerSub}</div>}
+          {centerSub && <div style={{ fontSize: 10.5, color: 'var(--text-muted)', marginTop: 2 }}>{centerSub}</div>}
         </div>
       )}
     </div>
@@ -167,7 +167,7 @@ function OverviewTab({ transactions, subscriptions, purchases, settings }) {
           { label: 'Left',   value: fmt(balance),  color: balance >= 0 ? '#4caf7d' : '#e05555' },
         ].map(({ label, value, color }) => (
           <MCard key={label} style={{ padding: '14px 12px', textAlign: 'center' }}>
-            <div style={{ fontSize: 9, color: 'var(--text-muted)', letterSpacing: '0.08em',
+            <div style={{ fontSize: 10.5, color: 'var(--text-muted)', letterSpacing: '0.08em',
               textTransform: 'uppercase', marginBottom: 6 }}>{label}</div>
             <div style={{ fontSize: 15, fontWeight: 600, color }}>{value}</div>
           </MCard>
@@ -572,7 +572,7 @@ function SubscriptionsTab({ subscriptions, settings, onAdd }) {
               </div>
               <div style={{ textAlign: 'right', flexShrink: 0 }}>
                 <div style={{ fontSize: 14, color: 'var(--text-primary)' }}>{fmt(sub.amount)}</div>
-                <div style={{ fontSize: 10, color: 'var(--text-muted)' }}>{fmt(mo)}/mo</div>
+                <div style={{ fontSize: 11, color: 'var(--text-muted)' }}>{fmt(mo)}/mo</div>
               </div>
             </div>
           );

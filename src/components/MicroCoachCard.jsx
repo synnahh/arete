@@ -5,7 +5,7 @@ export default function MicroCoachCard({ advice, style = {} }) {
   const ok = advice.status === 'ok';
   return (
     <div role="status" style={{ display: 'flex', flexDirection: 'column', gap: 8, ...style }}>
-      <div style={{ fontSize: 10, color: 'var(--text-muted)', letterSpacing: '0.07em' }}>MICRO COACH · LAST 7 DAYS</div>
+      <div style={{ fontSize: 11, color: 'var(--text-muted)', letterSpacing: '0.07em' }}>MICRO COACH · LAST 7 DAYS</div>
       {advice.status === 'low-coverage' && (
         <div style={{ fontSize: 12.5, lineHeight: 1.5, color: 'var(--text-secondary)' }}>
           Only {advice.coverage}% of the meals you logged carry micronutrient data ({advice.dataDays} day{advice.dataDays === 1 ? '' : 's'}), so gaps can't be judged yet. Search or scan foods, or tick supplements that list what they provide.

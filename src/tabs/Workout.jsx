@@ -2,6 +2,7 @@
 // Sub-sections: Overload Coach · Exercises · Split Planner
 // All data via Firebase — workout_logs collection + meta docs for library/program
 
+import { Icon } from '../components/icons.jsx';
 import { useState, useEffect, useMemo, useCallback } from 'react';
 import { useCollection } from '../supabase/useCollection.js';
 import { useDocument }   from '../supabase/useDocument.js';
@@ -37,7 +38,7 @@ const btnGhost = {
   fontSize: 12, transition: 'all 0.15s ease',
 };
 const lblSx = {
-  display: 'block', fontSize: 10, color: 'var(--text-muted)',
+  display: 'block', fontSize: 11, color: 'var(--text-muted)',
   letterSpacing: '0.06em', marginBottom: 4,
 };
 
@@ -59,7 +60,7 @@ function GlassLabel({ children }) {
   return (
     <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: 14 }}>
       <div style={{ width: 18, height: 1, background: 'rgba(255,255,255,0.25)', flexShrink: 0 }} />
-      <span style={{ fontSize: 10, fontWeight: 700, letterSpacing: '0.18em', textTransform: 'uppercase', color: 'rgba(255,255,255,0.35)', fontFamily: 'ui-monospace,monospace', whiteSpace: 'nowrap' }}>{children}</span>
+      <span style={{ fontSize: 11, fontWeight: 700, letterSpacing: '0.18em', textTransform: 'uppercase', color: 'var(--text-muted)', fontFamily: 'ui-monospace,monospace', whiteSpace: 'nowrap' }}>{children}</span>
       <div style={{ flex: 1, height: 1, background: 'linear-gradient(90deg,rgba(255,255,255,0.1),transparent)' }} />
     </div>
   );
@@ -72,7 +73,8 @@ function Section({ title, children, action }) {
         {action}
       </div>
       <div style={{ flex: 1, overflowY: 'auto', padding: '20px 24px' }}>
-        {children}
+        {/* Capped so cards and bars do not stretch across very wide windows. */}
+        <div style={{ maxWidth: 1040 }}>{children}</div>
       </div>
     </div>
   );
@@ -143,7 +145,7 @@ function Stepper({ value, onChange, min = 0, step = 1, label }) {
 function ToggleGroup({ label, options, value, onChange }) {
   return (
     <div style={{ display: 'flex', gap: 8, alignItems: 'center', flex: 1 }}>
-      {label && <span style={{ fontSize: 10, fontWeight: 700, letterSpacing: '0.1em', color: 'var(--text-muted)', minWidth: 36, textTransform: 'uppercase' }}>{label}</span>}
+      {label && <span style={{ fontSize: 11, fontWeight: 700, letterSpacing: '0.1em', color: 'var(--text-muted)', minWidth: 36, textTransform: 'uppercase' }}>{label}</span>}
       <div style={{ display: 'flex', flex: 1, borderRadius: 8, overflow: 'hidden', border: '0.5px solid var(--card-border)' }}>
         {options.map(o => (
           <button key={o.value} onClick={() => onChange(o.value)} style={{
@@ -283,7 +285,7 @@ function OverloadCoach({ workoutLogs, addWorkoutLog, exercises, saveExercises, s
             <ToggleGroup label="GYM" options={[{value:'home',label:'Home Gym'},{value:'commercial',label:'Commercial Gym'}]} value={gym} onChange={setGym} />
             {editingSplits ? (
               <div style={{ display: 'flex', gap: 8, alignItems: 'center' }}>
-                <span style={{ fontSize: 10, fontWeight: 700, letterSpacing: '0.1em', color: 'var(--text-muted)', minWidth: 36, textTransform: 'uppercase' }}>DAY</span>
+                <span style={{ fontSize: 11, fontWeight: 700, letterSpacing: '0.1em', color: 'var(--text-muted)', minWidth: 36, textTransform: 'uppercase' }}>DAY</span>
                 {['push','pull','legs'].map(k => (
                   <input key={k} value={draftNames[k]} onChange={e => setDraftNames(p => ({ ...p, [k]: e.target.value }))}
                     style={{ ...inputSx, flex: 1, padding: '6px 8px', fontSize: 12, textAlign: 'center' }}
@@ -357,16 +359,16 @@ title="Rename splits">✎</button>
 
             <GlassCard style={{ background: 'rgba(30,50,30,0.55)', border: '0.5px solid rgba(76,175,125,0.2)' }}>
               <GlassLabel>Next Session</GlassLabel>
-              <div style={{ fontSize: 10, letterSpacing: '0.1em', color: 'rgba(255,255,255,0.35)', marginBottom: 6, textTransform: 'uppercase' }}>{selected.name}</div>
+              <div style={{ fontSize: 11, letterSpacing: '0.1em', color: 'var(--text-muted)', marginBottom: 6, textTransform: 'uppercase' }}>{selected.name}</div>
               <div style={{ fontSize: 26, fontWeight: 700, color: 'var(--text-primary)', marginBottom: 8 }}>
                 {selected.bodyweight ? 'Bodyweight' : `${prog.nextWeight}kg`} × {selected.repsMin} reps
               </div>
               <span style={{
-                display: 'inline-block', padding: '2px 9px', borderRadius: 12, fontSize: 10, fontWeight: 700,
+                display: 'inline-block', padding: '2px 9px', borderRadius: 12, fontSize: 11, fontWeight: 700,
                 background: `${actionColour[prog.action]}22`, color: actionColour[prog.action],
                 border: `0.5px solid ${actionColour[prog.action]}55`, letterSpacing: '0.08em', marginBottom: 10,
               }}>{prog.action}</span>
-              <div style={{ fontSize: 12, color: 'rgba(255,255,255,0.45)', lineHeight: 1.5 }}>{prog.hint}</div>
+              <div style={{ fontSize: 12, color: 'var(--text-muted)', lineHeight: 1.5 }}>{prog.hint}</div>
             </GlassCard>
           </>
         )}
@@ -526,7 +528,7 @@ function SplitPlanner({ programs, addProgram, updateProgram, removeProgram, exer
               {programs.map(p => (
                 <div key={p.id} style={{ display: 'flex', alignItems: 'center', gap: 10, padding: '8px 10px', borderRadius: 8, background: p.isActive ? 'rgba(255,255,255,0.06)' : 'transparent', border: `0.5px solid ${p.isActive ? 'var(--accent)' : 'var(--card-border)'}` }}>
                   <div style={{ flex: 1, fontSize: 13, fontWeight: p.isActive ? 600 : 400, color: p.isActive ? 'var(--accent)' : 'var(--text-secondary)' }}>{p.name}</div>
-                  {p.isActive && <span style={{ fontSize: 10, color: 'var(--accent)', letterSpacing: '0.08em' }}>ACTIVE</span>}
+                  {p.isActive && <span style={{ fontSize: 11, color: 'var(--accent)', letterSpacing: '0.08em' }}>ACTIVE</span>}
                   {!p.isActive && <button onClick={() => setActiveProgram(p.id)} style={{ ...btnGhost, padding: '3px 10px', fontSize: 11 }}>Set active</button>}
                   <button onClick={() => removeProgram(p.id)} style={{ ...btnGhost, padding: '3px 8px', fontSize: 11, color: '#e25d7a', borderColor: 'rgba(226,93,122,0.3)' }}>🗑</button>
                 </div>
@@ -587,14 +589,14 @@ function SplitPlanner({ programs, addProgram, updateProgram, removeProgram, exer
                     background: isToday ? `${colour}15` : 'var(--card-fill)',
                     cursor: 'pointer', transition: 'all 0.15s', minWidth: 0,
                   }} onClick={() => setEditingDay(isEditing ? null : dk)}>
-                    <div style={{ fontSize: 9, fontWeight: 700, letterSpacing: '0.1em', color: isToday ? colour : 'var(--text-muted)', textTransform: 'uppercase', marginBottom: 6, textAlign: 'center' }}>
+                    <div style={{ fontSize: 10.5, fontWeight: 700, letterSpacing: '0.1em', color: isToday ? colour : 'var(--text-muted)', textTransform: 'uppercase', marginBottom: 6, textAlign: 'center' }}>
                       {DAY_LABELS[dk]}{isToday ? ' ·' : ''}
                     </div>
                     <div style={{ fontSize: 11, fontWeight: 600, color: colour, textAlign: 'center', lineHeight: 1.3 }}>
                       {dayData.label || dayData.splitType}
                     </div>
                     {isToday && (
-                      <div style={{ fontSize: 9, color: colour, textAlign: 'center', marginTop: 4, opacity: 0.7 }}>Today</div>
+                      <div style={{ fontSize: 10.5, color: colour, textAlign: 'center', marginTop: 4, opacity: 0.7 }}>Today</div>
                     )}
                   </div>
                 );
@@ -824,12 +826,12 @@ function MuscleRanking({ workoutLogs, settings }) {
             }}>
               <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'baseline', marginBottom: 6 }}>
                 <span style={{ fontSize: 12, fontWeight: 500, color: 'var(--text-primary)' }}>{m.label}</span>
-                <span style={{ fontSize: 10, color: rank.color, fontWeight: 600 }}>{rank.label}</span>
+                <span style={{ fontSize: 11, color: rank.color, fontWeight: 600 }}>{rank.label}</span>
               </div>
               <div style={{ height: 3, background: 'rgba(255,255,255,0.06)', borderRadius: 2, overflow: 'hidden' }}>
                 <div style={{ height: '100%', width: `${pct}%`, background: rank.color, borderRadius: 2, transition: 'width 0.6s ease' }} />
               </div>
-              <div style={{ fontSize: 10, color: 'var(--text-muted)', marginTop: 4 }}>{sessions} session{sessions !== 1 ? 's' : ''} logged</div>
+              <div style={{ fontSize: 11, color: 'var(--text-muted)', marginTop: 4 }}>{sessions} session{sessions !== 1 ? 's' : ''} logged</div>
             </div>
           );
         })}
@@ -848,15 +850,15 @@ function MuscleRanking({ workoutLogs, settings }) {
                 const h = Math.max(8, ((d.w - min) / range) * 50 + 10);
                 return (
                   <div key={i} style={{ flex: 1, display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 3 }}>
-                    <div style={{ fontSize: 8, color: 'var(--text-muted)' }}>{d.w}kg</div>
+                    <div style={{ fontSize: 10.5, color: 'var(--text-muted)' }}>{d.w}kg</div>
                     <div style={{ width: '100%', height: h, background: 'rgba(91,156,246,0.4)', borderRadius: '3px 3px 0 0', border: '0.5px solid rgba(91,156,246,0.6)' }} />
                   </div>
                 );
               })}
             </div>
             <div style={{ display: 'flex', justifyContent: 'space-between', marginTop: 6 }}>
-              <span style={{ fontSize: 9, color: 'var(--text-muted)' }}>{bodyWeight[0]?.date?.slice(5)}</span>
-              <span style={{ fontSize: 9, color: 'var(--text-muted)' }}>{bodyWeight[bodyWeight.length - 1]?.date?.slice(5)}</span>
+              <span style={{ fontSize: 10.5, color: 'var(--text-muted)' }}>{bodyWeight[0]?.date?.slice(5)}</span>
+              <span style={{ fontSize: 10.5, color: 'var(--text-muted)' }}>{bodyWeight[bodyWeight.length - 1]?.date?.slice(5)}</span>
             </div>
           </div>
         </div>
@@ -1080,12 +1082,12 @@ function WorkoutCalendar({ workoutLogs }) {
 // ROOT — Workout Tab
 // """""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
 const SUB_NAV = [
-  { id: 'session',  label: 'Session',        icon: '⏱️' },
-  { id: 'overload', label: 'Overload Coach', icon: '📈' },
-  { id: 'splits',   label: 'Split Planner',  icon: '📋' },
-  { id: 'exercises',label: 'Exercises',      icon: '🏋️' },
-  { id: 'muscles',  label: 'Muscle Ranking', icon: '💪' },
-  { id: 'calendar', label: 'Calendar',       icon: '📅' },
+  { id: 'session',  label: 'Session',        icon: 'focus' },
+  { id: 'overload', label: 'Overload Coach', icon: 'trending' },
+  { id: 'splits',   label: 'Split Planner',  icon: 'plan' },
+  { id: 'exercises',label: 'Exercises',      icon: 'workout' },
+  { id: 'muscles',  label: 'Muscle Ranking', icon: 'activity' },
+  { id: 'calendar', label: 'Calendar',       icon: 'calendar' },
 ];
 
 // Muscles a lift trains (drives Muscle Ranking and Look).
@@ -1135,18 +1137,18 @@ export default function WorkoutTab({ settings }) {
   return (
     <div style={{ display: 'flex', height: '100%', overflow: 'hidden' }}>
       {/* Left sub-nav */}
-      <div style={{ width: 150, flexShrink: 0, borderRight: '0.5px solid var(--sidebar-divider)', display: 'flex', flexDirection: 'column', padding: '16px 0', gap: 2, overflowY: 'auto' }}>
+      <div style={{ width: 176, flexShrink: 0, borderRight: '0.5px solid var(--sidebar-divider)', display: 'flex', flexDirection: 'column', padding: '16px 0', gap: 2, overflowY: 'auto' }}>
         {SUB_NAV.map(s => (
           <button key={s.id} onClick={() => setSub(s.id)} style={{
-            display: 'flex', alignItems: 'center', gap: 8,
-            padding: '8px 16px', border: 'none', cursor: 'pointer',
+            display: 'flex', alignItems: 'center', gap: 10, minHeight: 36, whiteSpace: 'nowrap',
+            padding: '8px 16px', border: 'none', cursor: 'pointer', fontFamily: 'inherit',
             borderLeft: `2px solid ${sub === s.id ? 'var(--tab-accent)' : 'transparent'}`,
             color: sub === s.id ? 'var(--tab-accent)' : 'var(--text-secondary)',
             fontSize: 13, fontWeight: sub === s.id ? 500 : 400,
             transition: 'all 0.15s ease', textAlign: 'left',
             background: sub === s.id ? 'var(--active-bg)' : 'transparent',
           }}>
-            <span style={{ fontSize: 15, opacity: 0.8 }}>{s.icon}</span>
+            <Icon name={s.icon} size={17} />
             {s.label}
           </button>
         ))}

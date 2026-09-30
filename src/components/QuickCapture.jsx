@@ -143,7 +143,7 @@ export default function QuickCapture({ ai }) {
         }}>
           <span style={{ color: 'var(--accent)', fontSize: 14 }}>✦</span>
           QUICK CAPTURE
-          <span style={{ marginLeft: 'auto', opacity: 0.5, fontSize: 9.5 }}>Esc to close</span>
+          <span style={{ marginLeft: 'auto', opacity: 0.5, fontSize: 10.5 }}>Esc to close</span>
         </div>
 
         {/* Input row */}
@@ -210,7 +210,7 @@ export default function QuickCapture({ ai }) {
 
         {/* Engine hint */}
         {ai && (
-          <div style={{ fontSize: 9.5, color: 'var(--text-muted)', display: 'flex', gap: 12 }}>
+          <div style={{ fontSize: 10.5, color: 'var(--text-muted)', display: 'flex', gap: 12 }}>
             <span style={{ color: ai.claudeOnline ? '#4caf7d' : 'var(--text-muted)' }}>
                Claude {ai.claudeOnline ? 'ready' : 'offline'}
             </span>

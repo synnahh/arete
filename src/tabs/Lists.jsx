@@ -176,7 +176,7 @@ function DetailPanel({ item, onUpdate, onDelete, onClose }) {
       <div style={{ display: 'flex', gap: 5 }}>
         {STATUSES.map(s => (
           <button key={s.id} onClick={() => onUpdate(item.id, { status: s.id })} style={{
-            flex: 1, padding: '5px 0', borderRadius: 7, border: 'none', cursor: 'pointer', fontSize: 10,
+            flex: 1, padding: '5px 0', borderRadius: 7, border: 'none', cursor: 'pointer', fontSize: 11,
             background: item.status === s.id ? s.colour + '33' : 'rgba(255,255,255,0.05)',
             color: item.status === s.id ? s.colour : 'var(--text-secondary)',
           }}>{s.label}</button>
@@ -186,7 +186,7 @@ function DetailPanel({ item, onUpdate, onDelete, onClose }) {
       {/* Rating (shown when Done) */}
       {item.status === 'done' && (
         <div>
-          <div style={{ fontSize: 10, color: 'var(--text-muted)', marginBottom: 4 }}>RATING</div>
+          <div style={{ fontSize: 11, color: 'var(--text-muted)', marginBottom: 4 }}>RATING</div>
           <StarRating value={item.rating || 0}
             onChange={r => onUpdate(item.id, { rating: r })} />
         </div>
@@ -194,7 +194,7 @@ function DetailPanel({ item, onUpdate, onDelete, onClose }) {
 
       {/* Notes */}
       <div>
-        <div style={{ fontSize: 10, color: 'var(--text-muted)', marginBottom: 4 }}>NOTES</div>
+        <div style={{ fontSize: 11, color: 'var(--text-muted)', marginBottom: 4 }}>NOTES</div>
         {item.notes ? (
           <div style={{ fontSize: 12, color: 'var(--text-secondary)', lineHeight: 1.5 }}>{item.notes}</div>
         ) : (
@@ -233,7 +233,7 @@ function ItemCard({ item, onClick }) {
       cursor: 'pointer', transition: 'border-color 0.15s',
       display: 'flex', flexDirection: 'column', gap: 6,
     }}
-    onMouseEnter={e => e.currentTarget.style.borderColor = 'var(--accent)44'}
+    onMouseEnter={e => e.currentTarget.style.borderColor = 'color-mix(in srgb, var(--accent) 27%, transparent)'}
     onMouseLeave={e => e.currentTarget.style.borderColor = 'var(--card-border)'}
     >
       <div style={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', gap: 8 }}>
@@ -241,7 +241,7 @@ function ItemCard({ item, onClick }) {
           {item.title}
         </div>
         <div style={{
-          fontSize: 9, fontWeight: 600, color: status.colour,
+          fontSize: 10.5, fontWeight: 600, color: status.colour,
           background: status.colour + '18', padding: '2px 7px',
           borderRadius: 20, flexShrink: 0, letterSpacing: '0.03em',
         }}>
@@ -310,7 +310,7 @@ export default function Lists() {
               </div>
               {counts[c.id] > 0 && (
                 <span style={{
-                  fontSize: 10, background: 'rgba(255,255,255,0.1)',
+                  fontSize: 11, background: 'rgba(255,255,255,0.1)',
                   padding: '1px 6px', borderRadius: 20, color: 'var(--text-muted)',
                 }}>
                   {counts[c.id]}

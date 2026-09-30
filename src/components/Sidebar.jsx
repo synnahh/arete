@@ -145,9 +145,9 @@ function StatusIndicator({ claudeOnline, ollamaOnline, internetOnline, lastPinge
         background: online ? '#4caf7d' : '#666',
         boxShadow: online ? '0 0 4px rgba(76,175,125,0.6)' : 'none',
       }} />
-      <span style={{ fontSize: 10, color: 'var(--text-secondary)', minWidth: 46 }}>{label}</span>
+      <span style={{ fontSize: 11, color: 'var(--text-secondary)', minWidth: 46 }}>{label}</span>
       <span style={{
-        fontSize: 9.5, color: online ? 'var(--text-secondary)' : 'var(--text-muted)',
+        fontSize: 10.5, color: online ? 'var(--text-secondary)' : 'var(--text-muted)',
         opacity: 0.75,
       }}>
         {detail ?? (online ? 'online' : 'offline')}
@@ -202,7 +202,7 @@ function StatusIndicator({ claudeOnline, ollamaOnline, internetOnline, lastPinge
           boxShadow: '0 8px 32px rgba(0,0,0,0.5)',
           minWidth: 168,
         }}>
-          <span style={{ fontSize: 9.5, color: 'var(--text-muted)', letterSpacing: '0.06em', marginBottom: 2 }}>
+          <span style={{ fontSize: 10.5, color: 'var(--text-muted)', letterSpacing: '0.06em', marginBottom: 2 }}>
             CONNECTION STATUS
           </span>
           <Row label="Internet"  online={internetOnline} />
@@ -210,7 +210,7 @@ function StatusIndicator({ claudeOnline, ollamaOnline, internetOnline, lastPinge
           <Row label="Ollama"    online={ollamaOnline}   detail={ollamaOnline ? 'llama3 local' : 'not running'} />
           <Row label="Firebase"  online={firebaseSynced ?? false} detail={firebaseSynced ? 'synced' : internetOnline ? 'connecting…' : 'offline'} />
           <div style={{ height: '0.5px', background: 'var(--sidebar-divider)', margin: '2px 0' }} />
-          <span style={{ fontSize: 9, color: 'var(--text-muted)' }}>
+          <span style={{ fontSize: 10.5, color: 'var(--text-muted)' }}>
             Last checked: {pingAgo}
           </span>
         </div>
@@ -355,11 +355,11 @@ function PeakStateDot({ peakState }) {
           <div style={{ display: 'flex', flexDirection: 'column', gap: 5, marginBottom: 10 }}>
             {Object.values(factors).map(f => (
               <div key={f.label} style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
-                <div style={{ flex: 1, fontSize: 10, color: 'var(--text-muted)', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{f.label}</div>
+                <div style={{ flex: 1, fontSize: 11, color: 'var(--text-muted)', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{f.label}</div>
                 <div style={{ width: 60, height: 4, borderRadius: 2, background: 'rgba(255,255,255,0.07)', overflow: 'hidden', flexShrink: 0 }}>
                   <div style={{ width: `${f.pct}%`, height: '100%', background: color, borderRadius: 2, transition: 'width 0.4s' }} />
                 </div>
-                <div style={{ fontSize: 10, color: 'var(--text-secondary)', minWidth: 28, textAlign: 'right', fontVariantNumeric: 'tabular-nums' }}>{f.pts}/{f.max}</div>
+                <div style={{ fontSize: 11, color: 'var(--text-secondary)', minWidth: 28, textAlign: 'right', fontVariantNumeric: 'tabular-nums' }}>{f.pts}/{f.max}</div>
               </div>
             ))}
           </div>

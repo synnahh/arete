@@ -50,7 +50,7 @@ export default function Step6Theme({ data, update, next, back }) {
                   border: `1px solid ${t.preview.accent}60`,
                 }} />
                 {active && (
-                  <span style={{ fontSize: 10, color: t.preview.accent, opacity: 0.9 }}>✓</span>
+                  <span style={{ fontSize: 11, color: t.preview.accent, opacity: 0.9 }}>✓</span>
                 )}
               </div>
               <div>

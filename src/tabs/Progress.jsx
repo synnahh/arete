@@ -14,7 +14,7 @@ function GlassLabel({ children }) {
   return (
     <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: 14 }}>
       <div style={{ width: 18, height: 1, background: 'rgba(255,255,255,0.25)', flexShrink: 0 }} />
-      <span style={{ fontSize: 10, fontWeight: 700, letterSpacing: '0.18em', textTransform: 'uppercase', color: 'rgba(255,255,255,0.35)', fontFamily: 'ui-monospace,monospace', whiteSpace: 'nowrap' }}>{children}</span>
+      <span style={{ fontSize: 11, fontWeight: 700, letterSpacing: '0.18em', textTransform: 'uppercase', color: 'var(--text-muted)', fontFamily: 'ui-monospace,monospace', whiteSpace: 'nowrap' }}>{children}</span>
       <div style={{ flex: 1, height: 1, background: 'linear-gradient(90deg,rgba(255,255,255,0.1),transparent)' }} />
     </div>
   );
@@ -189,7 +189,7 @@ function TierTrack({ currentTier, currentSubRank }) {
             <div style={{ opacity: reached ? 1 : 0.2, transition: 'opacity 0.3s' }}>
               <Badge tier={t} subRank={active ? currentSubRank : t < currentTier ? 3 : 1} size={36} />
             </div>
-            <span style={{ fontSize: 8, color: active ? cfg.color : 'var(--text-muted)', letterSpacing: '0.04em' }}>
+            <span style={{ fontSize: 10.5, color: active ? cfg.color : 'var(--text-muted)', letterSpacing: '0.04em' }}>
               {cfg.name.toUpperCase()}
             </span>
           </div>
@@ -306,7 +306,7 @@ function Overview({ xp, rank, habits, moodLogs, onLogMood, focusSessions }) {
               height={5}
             />
             {nextTier && (
-              <div style={{ fontSize: 10, color: 'var(--text-muted)', marginTop: 4 }}>
+              <div style={{ fontSize: 11, color: 'var(--text-muted)', marginTop: 4 }}>
                 {xpToNext.toLocaleString()} XP to {nextTier.name}
               </div>
             )}
@@ -328,7 +328,7 @@ function Overview({ xp, rank, habits, moodLogs, onLogMood, focusSessions }) {
           }}>
             <div style={{ fontSize: 20, marginBottom: 4 }}>{icon}</div>
             <div style={{ fontSize: 20, fontWeight: 300, color: 'var(--text-primary)' }}>{val}</div>
-            <div style={{ fontSize: 10, color: 'var(--text-muted)' }}>{label}</div>
+            <div style={{ fontSize: 11, color: 'var(--text-muted)' }}>{label}</div>
           </div>
         ))}
       </div>
@@ -373,8 +373,8 @@ function MomentumCard({ streaks }) {
           {overall.current > 0 && <span className="val-pop" style={{ fontSize: 28 }}>🔥</span>}
           <AnimatedNumber value={overall.current} duration={600} format={n => Math.round(n)} />
         </div>
-        <div style={{ fontSize: 10, color: 'var(--text-muted)', marginTop: 6, letterSpacing: '0.06em' }}>DAY STREAK</div>
-        <div style={{ fontSize: 9.5, color: 'var(--text-muted)', marginTop: 2, opacity: 0.7 }}>best {overall.best}</div>
+        <div style={{ fontSize: 11, color: 'var(--text-muted)', marginTop: 6, letterSpacing: '0.06em' }}>DAY STREAK</div>
+        <div style={{ fontSize: 10.5, color: 'var(--text-muted)', marginTop: 2, opacity: 0.7 }}>best {overall.best}</div>
       </div>
       {/* Per-domain */}
       <div style={{ flex: 1, display: 'grid', gridTemplateColumns: 'repeat(2,1fr)', gap: 8 }}>
@@ -438,7 +438,7 @@ function Streaks({ habits, streaks }) {
               <div style={{ fontSize: 22, fontWeight: 300, color: streak > 0 ? '#f4a642' : 'var(--text-muted)' }}>
   {streak > 0 ? '🔥' : ''}{streak}
               </div>
-              <div style={{ fontSize: 10, color: 'var(--text-muted)' }}>day streak</div>
+              <div style={{ fontSize: 11, color: 'var(--text-muted)' }}>day streak</div>
             </div>
           </div>
         );
@@ -612,7 +612,7 @@ function Stats({ focusSessions, habits }) {
     }}>
       <div style={{ fontSize: 22, fontWeight: 300, color: 'var(--text-primary)' }}>{value}</div>
       <div style={{ fontSize: 11, color: 'var(--text-muted)', marginTop: 4 }}>{label}</div>
-      {sub && <div style={{ fontSize: 10, color: 'var(--text-muted)', marginTop: 2 }}>{sub}</div>}
+      {sub && <div style={{ fontSize: 11, color: 'var(--text-muted)', marginTop: 2 }}>{sub}</div>}
     </div>
   );
 
@@ -643,7 +643,7 @@ function Stats({ focusSessions, habits }) {
                   background: 'var(--accent)', borderRadius: '3px 3px 0 0', opacity: 0.75,
                   transition: 'height 0.4s ease',
                 }} />
-                <span style={{ fontSize: 9, color: 'var(--text-muted)' }}>{d.label}</span>
+                <span style={{ fontSize: 10.5, color: 'var(--text-muted)' }}>{d.label}</span>
               </div>
             );
           })}

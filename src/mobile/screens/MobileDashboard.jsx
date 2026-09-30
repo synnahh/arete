@@ -30,7 +30,7 @@ function MCard({ children, style = {}, onClick }) {
 
 function MLabel({ children, style = {} }) {
   return (
-    <div style={{ fontSize: 9.5, fontWeight: 700, letterSpacing: '0.1em',
+    <div style={{ fontSize: 10.5, fontWeight: 700, letterSpacing: '0.1em',
       textTransform: 'uppercase', color: 'var(--text-muted)', marginBottom: 10, ...style }}>
       {children}
     </div>
@@ -54,7 +54,7 @@ function LiveClock() {
         {pad(now.getMinutes())}
         <span style={{ fontSize: 14, opacity: 0.4, marginLeft: 2 }}>{pad(now.getSeconds())}</span>
       </div>
-      <div style={{ fontSize: 10, color: 'var(--text-muted)', marginTop: 2 }}>
+      <div style={{ fontSize: 11, color: 'var(--text-muted)', marginTop: 2 }}>
         {now.toLocaleDateString('en-AU', { weekday: 'short', day: 'numeric', month: 'short' })}
       </div>
     </div>
@@ -164,7 +164,7 @@ function StatStrip({ tasks }) {
               <div style={{ fontSize: 26, fontWeight: 200, color: 'var(--text-primary)' }}>{wx.temp}°</div>
             </div>
             <div style={{ fontSize: 11, color: 'var(--text-secondary)', marginTop: 2 }}>{WMO_DESC[wx.code] ?? ''}</div>
-            <div style={{ fontSize: 10, color: 'var(--text-muted)' }}>x {wx.wind} km/h</div>
+            <div style={{ fontSize: 11, color: 'var(--text-muted)' }}>x {wx.wind} km/h</div>
           </>
         )}
       </div>
@@ -270,7 +270,7 @@ function TodayWorkoutCard({ onTabChange }) {
       WebkitTapHighlightColor: 'transparent',
     }}>
       <div>
-        <div style={{ fontSize: 9, fontWeight: 700, letterSpacing: '0.1em', textTransform: 'uppercase',
+        <div style={{ fontSize: 10.5, fontWeight: 700, letterSpacing: '0.1em', textTransform: 'uppercase',
           color: isRest ? 'rgba(255,255,255,0.3)' : colour, marginBottom: 4 }}>Today's Workout</div>
         <div style={{ fontSize: 14, fontWeight: 600, color: 'var(--text-primary)' }}>
           {isRest ? 'Rest Day' : `${label} — ${exCount} exercise${exCount !== 1 ? 's' : ''}`}
@@ -310,7 +310,7 @@ function PeakStateCard({ peakState, onTabChange }) {
           <div style={{ position: 'absolute', inset: 0, display: 'flex',
             flexDirection: 'column', alignItems: 'center', justifyContent: 'center' }}>
             <div style={{ fontSize: 22, fontWeight: 300, color: color || 'var(--text-primary)', lineHeight: 1 }}>{score ?? 0}</div>
-            <div style={{ fontSize: 8, color: 'var(--text-muted)', letterSpacing: '0.06em' }}>/100</div>
+            <div style={{ fontSize: 10.5, color: 'var(--text-muted)', letterSpacing: '0.06em' }}>/100</div>
           </div>
         </div>
 
@@ -321,12 +321,12 @@ function PeakStateCard({ peakState, onTabChange }) {
             const barCol = barPct > 66 ? '#4caf7d' : barPct > 33 ? '#f59e0b' : 'rgba(255,255,255,0.15)';
             return (
               <div key={key} style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-                <span style={{ fontSize: 10, color: 'var(--text-muted)', width: 90, flexShrink: 0 }}>{f.label}</span>
+                <span style={{ fontSize: 11, color: 'var(--text-muted)', width: 90, flexShrink: 0 }}>{f.label}</span>
                 <div style={{ flex: 1, height: 3, background: 'rgba(255,255,255,0.06)', borderRadius: 2 }}>
                   <div style={{ width: `${barPct}%`, height: '100%', background: barCol,
                     borderRadius: 2, transition: 'width 0.5s ease' }} />
                 </div>
-                <span style={{ fontSize: 10, color: 'var(--text-muted)', width: 16, textAlign: 'right' }}>{f.pts}</span>
+                <span style={{ fontSize: 11, color: 'var(--text-muted)', width: 16, textAlign: 'right' }}>{f.pts}</span>
               </div>
             );
           })}
@@ -390,7 +390,7 @@ function TasksPanel({ onTabChange, tasks, toggle, addTask: addTaskToStore }) {
               <div style={{ width: 18, height: 18, borderRadius: 5, flexShrink: 0,
                 border: `1.5px solid ${pCol}`, background: t.done ? pCol : 'transparent',
                 display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-{t.done && <span style={{ fontSize: 9, color: "#fff" }}>✓</span>}
+{t.done && <span style={{ fontSize: 10.5, color: "#fff" }}>✓</span>}
               </div>
               {t.priority === 'high' && <span style={{ fontSize: 12, color: '#e55', flexShrink: 0 }}>a</span>}
               <span style={{ flex: 1, fontSize: 13, color: 'var(--text-secondary)',
@@ -440,7 +440,7 @@ function DonutChart({ segments, size = 88, thickness = 14 }) {
     <svg width={size} height={size}>
       <circle cx={cx} cy={cy} r={r} fill="none" stroke="var(--hover-bg)" strokeWidth={thickness} />
       <text x={cx} y={cy+1} textAnchor="middle" dominantBaseline="middle"
-        style={{ fontSize: 10, fill: 'var(--text-muted)', fontFamily: 'inherit' }}>No data</text>
+        style={{ fontSize: 11, fill: 'var(--text-muted)', fontFamily: 'inherit' }}>No data</text>
     </svg>
   );
 
@@ -506,7 +506,7 @@ function ProductivityWidget({ onTabChange, tasks }) {
             <div style={{ position: 'absolute', inset: 0, display: 'flex', flexDirection: 'column',
               alignItems: 'center', justifyContent: 'center', pointerEvents: 'none' }}>
               <div style={{ fontSize: 16, fontWeight: 300, color: 'var(--text-primary)', lineHeight: 1 }}>{doneTasks}/{totalTasks}</div>
-              <div style={{ fontSize: 8, color: 'var(--text-muted)', letterSpacing: '0.06em', marginTop: 2 }}>TASKS</div>
+              <div style={{ fontSize: 10.5, color: 'var(--text-muted)', letterSpacing: '0.06em', marginTop: 2 }}>TASKS</div>
             </div>
           </div>
           <div style={{ flex: 1, minWidth: 0 }}>
@@ -516,9 +516,9 @@ function ProductivityWidget({ onTabChange, tasks }) {
               : taskSegments.slice(0,4).map(s => (
                 <div key={s.label} style={{ display: 'flex', alignItems: 'center', gap: 6, marginBottom: 3 }}>
                   <div style={{ width: 7, height: 7, borderRadius: 2, background: s.color, flexShrink: 0 }} />
-                  <span style={{ fontSize: 10, color: 'var(--text-secondary)',
+                  <span style={{ fontSize: 11, color: 'var(--text-secondary)',
                     overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', flex: 1 }}>{s.label}</span>
-                  <span style={{ fontSize: 10, color: 'var(--text-muted)', flexShrink: 0 }}>{tagMap[s.label]?.done??0}/{s.value}</span>
+                  <span style={{ fontSize: 11, color: 'var(--text-muted)', flexShrink: 0 }}>{tagMap[s.label]?.done??0}/{s.value}</span>
                 </div>
               ))
             }
@@ -536,7 +536,7 @@ function ProductivityWidget({ onTabChange, tasks }) {
               <div style={{ fontSize: 15, fontWeight: 300, color: 'var(--text-primary)', lineHeight: 1 }}>
                 {focusH > 0 ? `${focusH}h${focusM}m` : `${focusM}m`}
               </div>
-              <div style={{ fontSize: 8, color: 'var(--text-muted)', letterSpacing: '0.06em', marginTop: 2 }}>FOCUS</div>
+              <div style={{ fontSize: 10.5, color: 'var(--text-muted)', letterSpacing: '0.06em', marginTop: 2 }}>FOCUS</div>
             </div>
           </div>
           <div style={{ flex: 1, minWidth: 0 }}>
@@ -546,9 +546,9 @@ function ProductivityWidget({ onTabChange, tasks }) {
               : focusSegments.slice(0,4).map(s => (
                 <div key={s.label} style={{ display: 'flex', alignItems: 'center', gap: 6, marginBottom: 3 }}>
                   <div style={{ width: 7, height: 7, borderRadius: 2, background: s.color, flexShrink: 0 }} />
-                  <span style={{ fontSize: 10, color: 'var(--text-secondary)',
+                  <span style={{ fontSize: 11, color: 'var(--text-secondary)',
                     overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', flex: 1 }}>{s.label}</span>
-                  <span style={{ fontSize: 10, color: 'var(--text-muted)', flexShrink: 0 }}>{s.value}m</span>
+                  <span style={{ fontSize: 11, color: 'var(--text-muted)', flexShrink: 0 }}>{s.value}m</span>
                 </div>
               ))
             }

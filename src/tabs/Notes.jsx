@@ -1,6 +1,7 @@
 // ─── Notes Tab ────────────────────────────────────────────────────────────────
 // Masonry grid · pinned row at top · slide-in panel editor · Firebase synced
 
+import { Icon as LineIcon } from '../components/icons.jsx';
 import { useState, useMemo, useCallback, useRef, useEffect } from 'react';
 import { useCollection } from '../supabase/useCollection.js';
 import { STORAGE_KEYS }  from '../utils/storage.js';
@@ -177,7 +178,7 @@ function NoteEditor({ note, onSave, onClose, onDelete }) {
         <div style={{ flex: 1 }} />
 
         {/* Auto-save indicator */}
-        <span style={{ fontSize: 9.5, color: 'var(--text-muted)' }}>auto-saving</span>
+        <span style={{ fontSize: 10.5, color: 'var(--text-muted)' }}>auto-saving</span>
 
         {note?.id && (
           <button onClick={() => onDelete(note.id)} style={{ ...tinyBtnStyle, color: 'var(--text-muted)' }} title="Delete">
@@ -301,7 +302,7 @@ export default function Notes({ ai }) {
         }}>
           <h2 style={{ fontSize: 15, fontWeight: 500, color: 'var(--text-primary)', margin: 0 }}>
             Notes
-            {synced && <span style={{ fontSize: 9.5, color: 'var(--text-muted)', marginLeft: 8, fontWeight: 400 }}> synced</span>}
+            {synced && <span style={{ fontSize: 10.5, color: 'var(--text-muted)', marginLeft: 8, fontWeight: 400 }}> synced</span>}
           </h2>
           {/* Search */}
           <input
@@ -341,7 +342,7 @@ export default function Notes({ ai }) {
               display: 'flex', flexDirection: 'column', alignItems: 'center',
               justifyContent: 'center', height: '100%', gap: 10, opacity: 0.4,
             }}>
-              <span style={{ fontSize: 28 }}>📝</span>
+              <span style={{ display: 'flex', justifyContent: 'center', color: 'var(--text-muted)' }}><LineIcon name="notes" size={26} strokeWidth={1.5} /></span>
               <p style={{ fontSize: 13, color: 'var(--text-muted)', textAlign: 'center' }}>
                 No notes yet. Click <strong style={{ color: 'var(--accent)' }}>+ New</strong> to start.
               </p>
@@ -352,7 +353,7 @@ export default function Notes({ ai }) {
               {pinned.length > 0 && (
                 <div style={{ marginBottom: 20 }}>
                   <div style={{
-                    fontSize: 9.5, color: 'var(--text-muted)', letterSpacing: '0.08em',
+                    fontSize: 10.5, color: 'var(--text-muted)', letterSpacing: '0.08em',
                     marginBottom: 10, display: 'flex', alignItems: 'center', gap: 6,
                   }}>
                     <span style={{ color: 'var(--accent)', fontSize: 11 }}>&</span> PINNED

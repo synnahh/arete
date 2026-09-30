@@ -354,7 +354,7 @@ export default function VaIerieOrb({
           {/* Status lines */}
           <div style={{ position: 'absolute', top: 30, left: 14 }}>
             {hud.lines.map((l, i) => (
-              <div key={i} style={{ fontSize: 7, letterSpacing: '0.14em', textTransform: 'uppercase', color: `rgb(${themeObj.ac.join(',')})`, opacity: 0.6, lineHeight: 1.9 }}>{l}</div>
+              <div key={i} style={{ fontSize: 10.5, letterSpacing: '0.14em', textTransform: 'uppercase', color: `rgb(${themeObj.ac.join(',')})`, opacity: 0.6, lineHeight: 1.9 }}>{l}</div>
             ))}
           </div>
 
@@ -363,7 +363,7 @@ export default function VaIerieOrb({
             <div style={{ position: 'absolute', top: 30, right: 14, textAlign: 'right' }}>
               {hud.right.map((r, i) => (
                 <div key={i} style={{ display: 'flex', alignItems: 'center', gap: 5, marginTop: 2 }}>
-                  <span style={{ fontSize: 7, letterSpacing: '0.1em', color: `rgb(${themeObj.ac.join(',')})`, opacity: 0.55, minWidth: 52, textAlign: 'right', textTransform: 'uppercase' }}>{r.l}</span>
+                  <span style={{ fontSize: 10.5, letterSpacing: '0.1em', color: `rgb(${themeObj.ac.join(',')})`, opacity: 0.55, minWidth: 52, textAlign: 'right', textTransform: 'uppercase' }}>{r.l}</span>
                   <div style={{ width: 44, height: 2, background: 'rgba(255,255,255,0.08)' }}>
                     <div style={{ width: `${r.v}%`, height: '100%', background: `rgb(${themeObj.ac.join(',')})` }} />
                   </div>
@@ -375,7 +375,7 @@ export default function VaIerieOrb({
           {/* CPU (thinking only) */}
           {hud.cpu && (
             <div style={{ position: 'absolute', bottom: 36, right: 14, textAlign: 'right' }}>
-              <div style={{ fontSize: 7, letterSpacing: '0.12em', color: `rgb(${themeObj.ac.join(',')})`, opacity: 0.5, textTransform: 'uppercase' }}>CPU LOAD</div>
+              <div style={{ fontSize: 10.5, letterSpacing: '0.12em', color: `rgb(${themeObj.ac.join(',')})`, opacity: 0.5, textTransform: 'uppercase' }}>CPU LOAD</div>
               <div style={{ fontSize: 18, fontWeight: 700, color: `rgb(${themeObj.ac.join(',')})`, letterSpacing: '0.05em' }}>{hud.cpu}%</div>
             </div>
           )}
@@ -385,7 +385,7 @@ export default function VaIerieOrb({
       {/* Waveform bar */}
       {showWave && (
         <div style={{ position: 'absolute', bottom: 10, left: 14 }}>
-          <div style={{ fontSize: 7, letterSpacing: '0.14em', color: `rgb(${themeObj.ac.join(',')})`, opacity: 0.4, textTransform: 'uppercase', marginBottom: 3 }}>AUDIO LEVEL</div>
+          <div style={{ fontSize: 10.5, letterSpacing: '0.14em', color: `rgb(${themeObj.ac.join(',')})`, opacity: 0.4, textTransform: 'uppercase', marginBottom: 3 }}>AUDIO LEVEL</div>
           <canvas ref={waveRef} height={28} />
         </div>
       )}

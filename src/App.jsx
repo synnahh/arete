@@ -1,4 +1,5 @@
 import { useState, useEffect, useCallback, useRef, Component } from 'react';
+import { Icon as LineIcon } from './components/icons.jsx';
 import { platformInvoke, isMobile } from './utils/platform.js';
 import { handleSpotifyCallback }    from './utils/spotify.js';
 import { storage, STORAGE_KEYS }    from './utils/storage.js';
@@ -97,9 +98,9 @@ class RootErrorBoundary extends Component {
           display: 'flex', flexDirection: 'column',
           alignItems: 'center', justifyContent: 'center', gap: 20,
         }}>
-          <div style={{ fontSize: 32 }}>⚠️</div>
+          <div style={{ display: 'flex', justifyContent: 'center', color: 'var(--text-muted)' }}><LineIcon name="alert" size={30} strokeWidth={1.5} /></div>
           <div style={{ fontSize: 16, fontWeight: 600, color: '#fff' }}>Arete hit an error</div>
-          <div style={{ fontSize: 12, color: 'rgba(255,255,255,0.4)', maxWidth: 360, textAlign: 'center', lineHeight: 1.7 }}>
+          <div style={{ fontSize: 12, color: 'var(--text-muted)', maxWidth: 360, textAlign: 'center', lineHeight: 1.7 }}>
             {String(this.state.error?.message || this.state.error)}
           </div>
           <button
@@ -132,7 +133,7 @@ class TabErrorBoundary extends Component {
           alignItems: 'center', justifyContent: 'center', gap: 16,
           color: 'var(--text-secondary)', padding: 40,
         }}>
-          <div style={{ fontSize: 28 }}>⚠️</div>
+          <div style={{ display: 'flex', justifyContent: 'center', color: 'var(--text-muted)' }}><LineIcon name="alert" size={26} strokeWidth={1.5} /></div>
           <div style={{ fontSize: 14, fontWeight: 600, color: 'var(--text-primary)' }}>
             Something crashed in this tab.
           </div>
@@ -449,7 +450,8 @@ export default function App() {
       />
 
       {/* Proactive nudges + whole-life Weekly Review + unified Today view */}
-      <NudgeStack onTabChange={goTo} />
+      {/* Home already lists these as Next moves; elsewhere they float bottom right. */}
+      {activeTab !== 'dashboard' && <NudgeStack onTabChange={goTo} />}
       <WeeklyReview />
       <TodayView onTabChange={goTo} />
 

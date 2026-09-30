@@ -45,9 +45,9 @@ const TA = { ...INPUT, resize: 'none', lineHeight: 1.6, minHeight: 70 };
 const BTN = { width: '100%', padding: '13px', borderRadius: 12, border: 'none',
   cursor: 'pointer', background: 'var(--accent)', color: '#fff', fontSize: 14, fontWeight: 600 };
 const BTN_GHOST = { padding: '9px 16px', borderRadius: 10, cursor: 'pointer',
-  border: '0.5px solid rgba(255,255,255,0.12)', background: 'transparent', color: 'rgba(255,255,255,0.5)', fontSize: 13 };
+  border: '0.5px solid rgba(255,255,255,0.12)', background: 'transparent', color: 'var(--text-secondary)', fontSize: 13 };
 
-const LABEL = { fontSize: 10, fontWeight: 700, letterSpacing: '0.08em', color: 'rgba(255,255,255,0.3)',
+const LABEL = { fontSize: 11, fontWeight: 700, letterSpacing: '0.08em', color: 'var(--text-muted)',
   fontFamily: 'ui-monospace,monospace', marginBottom: 6, textTransform: 'uppercase' };
 const MUTE = 'rgba(255,255,255,0.3)';
 const today = () => toLocalDateKey(new Date());
@@ -76,7 +76,7 @@ function Ring({ pct, label, sub, size = 96, colour = 'var(--accent)' }) {
       <div style={{ position: 'absolute', inset: 0, display: 'flex', flexDirection: 'column',
         alignItems: 'center', justifyContent: 'center' }}>
         <span style={{ fontSize: size*0.22, fontWeight: 300, color: 'var(--text-primary)', lineHeight: 1 }}>{label}</span>
-        {sub && <span style={{ fontSize: 9, color: MUTE, marginTop: 2, letterSpacing: '0.06em' }}>{sub}</span>}
+        {sub && <span style={{ fontSize: 10.5, color: MUTE, marginTop: 2, letterSpacing: '0.06em' }}>{sub}</span>}
       </div>
     </div>
   );
@@ -86,7 +86,7 @@ function Ring({ pct, label, sub, size = 96, colour = 'var(--accent)' }) {
 function ScoreRow({ label, value, onChange, colour = 'var(--accent)' }) {
   return (
     <div style={{ display: 'flex', alignItems: 'center', gap: 12, padding: '4px 0' }}>
-      <span style={{ fontSize: 13, color: 'rgba(255,255,255,0.6)', width: 120, flexShrink: 0 }}>{label}</span>
+      <span style={{ fontSize: 13, color: 'var(--text-secondary)', width: 120, flexShrink: 0 }}>{label}</span>
       <input type="range" min="0" max="10" value={value ?? 0}
         onChange={e => onChange(Number(e.target.value))} style={{ flex: 1, accentColor: colour }} />
       <span style={{ fontSize: 13, fontFamily: 'ui-monospace,monospace', color: colour, width: 34, textAlign: 'right', fontWeight: 700 }}>{value ?? 0}</span>
@@ -203,7 +203,7 @@ function Dashboard({ profile, save, metrics, health }) {
               <button key={p} onClick={() => togglePriority(p)} style={{
                 padding: '6px 11px', borderRadius: 20, cursor: 'pointer', fontSize: 11.5,
                 border: `0.5px solid ${on ? 'var(--accent)' : 'rgba(255,255,255,0.1)'}`,
-                background: on ? 'var(--accent)22' : 'transparent', color: on ? 'var(--accent)' : 'rgba(255,255,255,0.4)' }}>{p}</button>
+                background: on ? 'color-mix(in srgb, var(--accent) 13%, transparent)' : 'transparent', color: on ? 'var(--accent)' : 'rgba(255,255,255,0.4)' }}>{p}</button>
             );
           })}
         </div>
@@ -217,7 +217,7 @@ function Dashboard({ profile, save, metrics, health }) {
             return (
               <div key={cat}>
                 <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: 12, marginBottom: 2 }}>
-                  <span style={{ color: 'rgba(255,255,255,0.6)' }}>{cat}</span>
+                  <span style={{ color: 'var(--text-secondary)' }}>{cat}</span>
                   <span style={{ fontFamily: 'ui-monospace,monospace', color: cur >= goal && cur > 0 ? '#6BE3A4' : 'var(--accent)' }}>{cur}/10 → {goal}</span>
                 </div>
                 <div style={{ display: 'flex', gap: 8 }}>
@@ -264,7 +264,7 @@ function DailyTracker({ daily }) {
         <Ring pct={pct} label={`${pct}%`} sub="TODAY" size={92} />
         <div style={{ textAlign: 'center' }}>
           <div style={{ fontSize: 26, fontWeight: 300, color: '#f4a642' }}>{streak}🔥</div>
-          <div style={{ fontSize: 9, color: MUTE, letterSpacing: '0.06em' }}>DAY STREAK</div>
+          <div style={{ fontSize: 10.5, color: MUTE, letterSpacing: '0.06em' }}>DAY STREAK</div>
         </div>
       </MCard>
       {DAILY_GROUPS.map(g => (
@@ -307,10 +307,10 @@ function Physique({ profile, save, metrics, strength, health, workouts }) {
     <div style={{ padding: '16px 16px 40px', display: 'flex', flexDirection: 'column', gap: 14 }}>
       {health?.latestWeight != null && (
         <MCard style={{ padding: '12px 14px', borderLeft: '3px solid #6BE3A4' }}>
-          <div style={{ fontSize: 12, color: 'rgba(255,255,255,0.7)' }}>
+          <div style={{ fontSize: 12, color: 'var(--text-secondary)' }}>
             <span style={{ color: '#6BE3A4', fontWeight: 600 }}>From Health:</span> {health.latestWeight}kg{health.latestBodyFat != null ? ` · ${health.latestBodyFat}% bf` : ''}{health.latestMuscle != null ? ` · ${health.latestMuscle}kg muscle` : ''}
           </div>
-          <div style={{ fontSize: 10, color: MUTE, marginTop: 3 }}>Auto-synced — log circumferences below.</div>
+          <div style={{ fontSize: 11, color: MUTE, marginTop: 3 }}>Auto-synced — log circumferences below.</div>
         </MCard>
       )}
       <MCard style={{ padding: '14px 16px' }}>
@@ -318,7 +318,7 @@ function Physique({ profile, save, metrics, strength, health, workouts }) {
         <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 10 }}>
           {BODY_FIELDS.map(([k, lab]) => (
             <div key={k}>
-              <div style={{ fontSize: 9, color: MUTE, marginBottom: 3 }}>{lab.toUpperCase()}</div>
+              <div style={{ fontSize: 10.5, color: MUTE, marginBottom: 3 }}>{lab.toUpperCase()}</div>
               <input type="number" step="0.1" value={bForm[k] ?? ''} placeholder={ph(k)}
                 onChange={e => setBForm(p => ({ ...p, [k]: e.target.value }))} style={INPUT} />
             </div>
@@ -330,14 +330,14 @@ function Physique({ profile, save, metrics, strength, health, workouts }) {
       <MCard style={{ padding: '14px 16px' }}>
         <div style={{ ...LABEL, display: 'flex', justifyContent: 'space-between' }}><span>Strength</span>{Object.keys(lifts).length ? <span style={{ color: '#6BE3A4' }}>● from Workout</span> : null}</div>
         {Object.keys(lifts).length > 0 && (
-          <div style={{ fontSize: 11, color: 'rgba(255,255,255,0.55)', marginBottom: 10, lineHeight: 1.5 }}>
+          <div style={{ fontSize: 11, color: 'var(--text-secondary)', marginBottom: 10, lineHeight: 1.5 }}>
             {STRENGTH_FIELDS.filter(([k]) => lifts[k]).map(([k, lab]) => `${lab} ${lifts[k].weight ? lifts[k].weight + 'kg' : 'BW'}×${lifts[k].reps ?? '?'}`).join(' · ')}
           </div>
         )}
         <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 10 }}>
           {STRENGTH_FIELDS.map(([k, lab]) => (
             <div key={k}>
-              <div style={{ fontSize: 9, color: MUTE, marginBottom: 3 }}>{lab.toUpperCase()}</div>
+              <div style={{ fontSize: 10.5, color: MUTE, marginBottom: 3 }}>{lab.toUpperCase()}</div>
               <input type="number" value={sForm[k] ?? ''} onChange={e => setSForm(p => ({ ...p, [k]: e.target.value }))} style={INPUT} />
             </div>
           ))}
@@ -372,7 +372,7 @@ function Foundation({ profile, save, sleep, nutrition, health }) {
               ['Protein', health.todayProtein != null ? health.todayProtein + 'g' : '—'],
               ['Calories', health.todayCalories != null ? health.todayCalories : '—']].map(([l,v]) => (
               <div key={l} style={{ padding: '8px 10px', borderRadius: 9, background: 'rgba(255,255,255,0.03)' }}>
-                <div style={{ fontSize: 9, color: MUTE, marginBottom: 3 }}>{l.toUpperCase()}</div>
+                <div style={{ fontSize: 10.5, color: MUTE, marginBottom: 3 }}>{l.toUpperCase()}</div>
                 <div style={{ fontSize: 17, fontWeight: 300, color: 'rgba(255,255,255,0.9)' }}>{v}</div>
               </div>
             ))}
@@ -382,10 +382,10 @@ function Foundation({ profile, save, sleep, nutrition, health }) {
       <MCard style={{ padding: '14px 16px' }}>
         <div style={{ ...LABEL, display: 'flex', justifyContent: 'space-between' }}><span>Sleep</span><span>7-day avg {avg}h</span></div>
         <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 10 }}>
-          <div><div style={{ fontSize: 9, color: MUTE, marginBottom: 3 }}>BEDTIME</div><input type="time" value={s.bedtime} onChange={e=>setS(p=>({...p,bedtime:e.target.value}))} style={INPUT} /></div>
-          <div><div style={{ fontSize: 9, color: MUTE, marginBottom: 3 }}>WAKE</div><input type="time" value={s.wake} onChange={e=>setS(p=>({...p,wake:e.target.value}))} style={INPUT} /></div>
-          <div><div style={{ fontSize: 9, color: MUTE, marginBottom: 3 }}>DURATION (H)</div><input type="number" step="0.1" value={s.duration} onChange={e=>setS(p=>({...p,duration:e.target.value}))} style={INPUT} /></div>
-          <div><div style={{ fontSize: 9, color: MUTE, marginBottom: 3 }}>QUALITY</div><input type="number" value={s.quality} onChange={e=>setS(p=>({...p,quality:e.target.value}))} style={INPUT} /></div>
+          <div><div style={{ fontSize: 10.5, color: MUTE, marginBottom: 3 }}>BEDTIME</div><input type="time" value={s.bedtime} onChange={e=>setS(p=>({...p,bedtime:e.target.value}))} style={INPUT} /></div>
+          <div><div style={{ fontSize: 10.5, color: MUTE, marginBottom: 3 }}>WAKE</div><input type="time" value={s.wake} onChange={e=>setS(p=>({...p,wake:e.target.value}))} style={INPUT} /></div>
+          <div><div style={{ fontSize: 10.5, color: MUTE, marginBottom: 3 }}>DURATION (H)</div><input type="number" step="0.1" value={s.duration} onChange={e=>setS(p=>({...p,duration:e.target.value}))} style={INPUT} /></div>
+          <div><div style={{ fontSize: 10.5, color: MUTE, marginBottom: 3 }}>QUALITY</div><input type="number" value={s.quality} onChange={e=>setS(p=>({...p,quality:e.target.value}))} style={INPUT} /></div>
         </div>
         <button style={{ ...BTN, marginTop: 12 }} onClick={() => { haptics.success(); sleep.add({ ...s, date: today() }); setS({ bedtime:'', wake:'', duration:'', quality:7 }); }}>Log sleep</button>
       </MCard>
@@ -393,7 +393,7 @@ function Foundation({ profile, save, sleep, nutrition, health }) {
       <MCard style={{ padding: '14px 16px' }}>
         <div style={LABEL}>Hydration</div>
         <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
-          <span style={{ fontSize: 13, color: 'rgba(255,255,255,0.6)' }}>Daily goal</span>
+          <span style={{ fontSize: 13, color: 'var(--text-secondary)' }}>Daily goal</span>
           <input type="number" step="0.25" value={profile?.waterGoal || 3} onChange={e => save({ ...profile, waterGoal: Number(e.target.value) })} style={{ ...INPUT, width: 90 }} />
           <span style={{ fontSize: 13, color: MUTE }}>L / day</span>
         </div>
@@ -403,7 +403,7 @@ function Foundation({ profile, save, sleep, nutrition, health }) {
         <div style={LABEL}>Nutrition</div>
         <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: 10 }}>
           {[['calories','Cals'],['protein','Protein'],['carbs','Carbs'],['fat','Fat'],['fiber','Fiber'],['water','Water L']].map(([k,lab]) => (
-            <div key={k}><div style={{ fontSize: 9, color: MUTE, marginBottom: 3 }}>{lab.toUpperCase()}</div>
+            <div key={k}><div style={{ fontSize: 10.5, color: MUTE, marginBottom: 3 }}>{lab.toUpperCase()}</div>
               <input type="number" value={n[k]} onChange={e=>setN(p=>({...p,[k]:e.target.value}))} style={INPUT} /></div>
           ))}
         </div>
@@ -447,7 +447,7 @@ function HairMaxxing({ profile, save, haircuts, products }) {
         <div style={LABEL}>Hair Profile</div>
         <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 10 }}>
           {HF.map(([k,lab]) => (
-            <div key={k}><div style={{ fontSize: 9, color: MUTE, marginBottom: 3 }}>{lab.toUpperCase()}</div>
+            <div key={k}><div style={{ fontSize: 10.5, color: MUTE, marginBottom: 3 }}>{lab.toUpperCase()}</div>
               <input value={hair[k] || ''} onChange={e => save({ ...profile, hair: { ...hair, [k]: e.target.value } })} style={INPUT} /></div>
           ))}
         </div>
@@ -481,9 +481,9 @@ function SimpleList({ items, onRemove, render }) {
     <div style={{ display: 'flex', flexDirection: 'column', gap: 6, marginTop: 12 }}>
       {items.map((it, i) => (
         <div key={it.id || i} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center',
-          padding: '9px 12px', borderRadius: 9, background: 'rgba(255,255,255,0.03)', fontSize: 13, color: 'rgba(255,255,255,0.7)' }}>
+          padding: '9px 12px', borderRadius: 9, background: 'rgba(255,255,255,0.03)', fontSize: 13, color: 'var(--text-secondary)' }}>
           <span>{render(it)}</span>
-          <button onClick={() => { haptics.tap(); onRemove(it.id); }} style={{ background: 'none', border: 'none', cursor: 'pointer', color: 'rgba(255,255,255,0.25)', fontSize: 18 }}>×</button>
+          <button onClick={() => { haptics.tap(); onRemove(it.id); }} style={{ background: 'none', border: 'none', cursor: 'pointer', color: 'var(--text-muted)', fontSize: 18 }}>×</button>
         </div>
       ))}
     </div>
@@ -676,7 +676,7 @@ function PhotoVault({ photos }) {
       {list.length === 0 ? <Empty>No {cat.toLowerCase()} photos yet.</Empty> : compare ? (
         <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 10 }}>
           {[list[0], list[list.length-1]].map((p,i) => (
-            <div key={i}><div style={{ fontSize: 9, color: MUTE, marginBottom: 4, textAlign: 'center' }}>{i===0?'BEFORE':'NOW'} · {p.date}</div>
+            <div key={i}><div style={{ fontSize: 10.5, color: MUTE, marginBottom: 4, textAlign: 'center' }}>{i===0?'BEFORE':'NOW'} · {p.date}</div>
               <img src={p.image} alt="" style={{ width: '100%', borderRadius: 12, aspectRatio: '3/4', objectFit: 'cover' }} /></div>
           ))}
         </div>
@@ -685,7 +685,7 @@ function PhotoVault({ photos }) {
           {list.map((p,i) => (
             <div key={p.id||i} style={{ position: 'relative' }}>
               <img src={p.image} alt="" style={{ width: '100%', borderRadius: 12, aspectRatio: '3/4', objectFit: 'cover' }} />
-              <div style={{ position: 'absolute', bottom: 6, left: 8, fontSize: 10, color: '#fff', textShadow: '0 1px 4px #000', fontFamily: 'ui-monospace,monospace' }}>{p.date}</div>
+              <div style={{ position: 'absolute', bottom: 6, left: 8, fontSize: 11, color: '#fff', textShadow: '0 1px 4px #000', fontFamily: 'ui-monospace,monospace' }}>{p.date}</div>
               <button onClick={() => { haptics.tap(); photos.remove(p.id); }} style={{ position: 'absolute', top: 6, right: 8, background: 'rgba(0,0,0,0.5)', border: 'none', borderRadius: '50%', width: 24, height: 24, color: '#fff', cursor: 'pointer' }}>×</button>
             </div>
           ))}
@@ -715,7 +715,7 @@ function Baseline({ profile, save }) {
         <div style={{ fontSize: 15, fontWeight: 500, color: 'rgba(255,255,255,0.9)', marginBottom: 12 }}>{open}</div>
         {[['assessment','Current assessment'],['strengths','Strengths'],['weaknesses','Weaknesses'],['plan','Improvement plan'],['notes','Notes']].map(([k,lab]) => (
           <div key={k} style={{ marginBottom: 10 }}>
-            <div style={{ fontSize: 9, color: MUTE, marginBottom: 4 }}>{lab.toUpperCase()}</div>
+            <div style={{ fontSize: 10.5, color: MUTE, marginBottom: 4 }}>{lab.toUpperCase()}</div>
             <textarea value={cur[k] || ''} onChange={e => setField(k, e.target.value)} placeholder={`${lab}...`} style={{ ...TA, minHeight: 50 }} />
           </div>
         ))}
@@ -761,13 +761,13 @@ function LabCard({ exp, onUpdate, onRemove }) {
   return (
     <MCard style={{ borderLeft: `3px solid ${col}`, padding: '13px 15px' }}>
       <div style={{ display: 'flex', alignItems: 'center', gap: 7, marginBottom: 4 }}>
-        <span style={{ fontSize: 9, fontWeight: 700, color: col, letterSpacing: '0.1em', background: col+'20', padding: '2px 7px', borderRadius: 20 }}>{active ? 'ACTIVE' : 'COMPLETE'}</span>
-        <span style={{ fontSize: 10, color: MUTE, fontFamily: 'ui-monospace,monospace' }}>{exp.startDate}</span>
+        <span style={{ fontSize: 10.5, fontWeight: 700, color: col, letterSpacing: '0.1em', background: col+'20', padding: '2px 7px', borderRadius: 20 }}>{active ? 'ACTIVE' : 'COMPLETE'}</span>
+        <span style={{ fontSize: 11, color: MUTE, fontFamily: 'ui-monospace,monospace' }}>{exp.startDate}</span>
         <button onClick={() => { haptics.tap(); onRemove(exp.id); }} style={{ marginLeft: 'auto', background: 'none', border: 'none', color: 'rgba(255,255,255,0.2)', fontSize: 17, cursor: 'pointer' }}>×</button>
       </div>
       <div style={{ fontSize: 14, fontWeight: 600, color: 'rgba(255,255,255,0.9)' }}>{exp.goal}</div>
-      {exp.hypothesis && <div style={{ fontSize: 12, color: 'rgba(255,255,255,0.5)', marginTop: 4 }}>{exp.hypothesis}</div>}
-      {exp.results && <div style={{ fontSize: 12, color: 'rgba(255,255,255,0.6)', marginTop: 4 }}><b>Results:</b> {exp.results}</div>}
+      {exp.hypothesis && <div style={{ fontSize: 12, color: 'var(--text-secondary)', marginTop: 4 }}>{exp.hypothesis}</div>}
+      {exp.results && <div style={{ fontSize: 12, color: 'var(--text-secondary)', marginTop: 4 }}><b>Results:</b> {exp.results}</div>}
       {exp.verdict && <div style={{ fontSize: 12, color: '#6BE3A4', marginTop: 4 }}><b>Verdict:</b> {exp.verdict}</div>}
       {active && (edit ? (
         <div style={{ marginTop: 10, display: 'flex', flexDirection: 'column', gap: 8 }}>
@@ -829,7 +829,7 @@ function Analytics({ data }) {
           ['Skin checks', data.skin.length, '#f4a642'], ['Experiments', data.experiments.length, '#4a9eff']].map(([l,v,c]) => (
           <MCard key={l} style={{ padding: '14px 16px', textAlign: 'center' }}>
             <div style={{ fontSize: 24, fontWeight: 300, color: c }}>{v}</div>
-            <div style={{ fontSize: 9, color: MUTE, letterSpacing: '0.06em' }}>{l.toUpperCase()}</div>
+            <div style={{ fontSize: 10.5, color: MUTE, letterSpacing: '0.06em' }}>{l.toUpperCase()}</div>
           </MCard>
         ))}
       </div>
@@ -837,7 +837,7 @@ function Analytics({ data }) {
         <div style={LABEL}>Habit Completion (30 days)</div>
         {habitRates.some(h=>h.value>0) ? habitRates.map(h => (
           <div key={h.label} style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: 7 }}>
-            <span style={{ fontSize: 12, color: 'rgba(255,255,255,0.6)', width: 110, flexShrink: 0 }}>{h.label}</span>
+            <span style={{ fontSize: 12, color: 'var(--text-secondary)', width: 110, flexShrink: 0 }}>{h.label}</span>
             <div style={{ flex: 1, height: 5, borderRadius: 3, background: 'rgba(255,255,255,0.06)' }}>
               <div style={{ height: '100%', width: `${h.value}%`, borderRadius: 3, background: h.value>=70?'#6BE3A4':h.value>=40?'#f4a642':'#e55a5a' }} />
             </div>
@@ -882,7 +882,7 @@ function Coach({ data }) {
         <div style={{ display: 'flex', flexWrap: 'wrap', gap: 7 }}>
           {STARTERS.map(s => (
             <button key={s} onClick={() => send(s)} style={{ padding: '7px 12px', borderRadius: 20, fontSize: 12,
-              border: '0.5px solid rgba(255,255,255,0.1)', background: 'rgba(255,255,255,0.04)', color: 'rgba(255,255,255,0.5)', cursor: 'pointer' }}>{s}</button>
+              border: '0.5px solid rgba(255,255,255,0.1)', background: 'rgba(255,255,255,0.04)', color: 'var(--text-secondary)', cursor: 'pointer' }}>{s}</button>
           ))}
         </div>
       )}
@@ -890,8 +890,8 @@ function Coach({ data }) {
         <div key={i} style={{ display: 'flex', justifyContent: m.role === 'user' ? 'flex-end' : 'flex-start' }}>
           <div style={{ maxWidth: '88%', padding: '10px 14px', fontSize: 14, lineHeight: 1.6, color: 'rgba(255,255,255,0.85)', whiteSpace: 'pre-wrap',
             borderRadius: m.role === 'user' ? '18px 18px 4px 18px' : '4px 18px 18px 18px',
-            background: m.role === 'user' ? 'var(--accent)22' : 'rgba(255,255,255,0.05)',
-            border: `0.5px solid ${m.role === 'user' ? 'var(--accent)44' : 'rgba(255,255,255,0.08)'}` }}>{m.content}</div>
+            background: m.role === 'user' ? 'color-mix(in srgb, var(--accent) 13%, transparent)' : 'rgba(255,255,255,0.05)',
+            border: `0.5px solid ${m.role === 'user' ? 'color-mix(in srgb, var(--accent) 27%, transparent)' : 'rgba(255,255,255,0.08)'}` }}>{m.content}</div>
         </div>
       ))}
       {loading && <Spinner />}

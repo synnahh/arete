@@ -3,6 +3,7 @@
 // Each step has a time, label, and optional duration/notes.
 // Reminders can be set per-routine with day selection.
 
+import { Icon as LineIcon } from '../components/icons.jsx';
 import { useState, useEffect } from 'react';
 import { useCollection }       from '../supabase/useCollection.js';
 import { getUserIdSync }        from '../supabase/supabase.js';
@@ -37,9 +38,9 @@ function StepRow({ step, index, onChange, onRemove, onMove, total }) {
     }}>
       <div style={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
         <button disabled={index === 0} onClick={() => onMove(index, -1)}
-          style={{ background: 'none', border: 'none', cursor: index === 0 ? 'default' : 'pointer', color: 'var(--text-muted)', fontSize: 10, opacity: index === 0 ? 0.3 : 0.7, lineHeight: 1 }}></button>
+          style={{ background: 'none', border: 'none', cursor: index === 0 ? 'default' : 'pointer', color: 'var(--text-muted)', fontSize: 11, opacity: index === 0 ? 0.3 : 0.7, lineHeight: 1 }}></button>
         <button disabled={index === total - 1} onClick={() => onMove(index, 1)}
-          style={{ background: 'none', border: 'none', cursor: index === total - 1 ? 'default' : 'pointer', color: 'var(--text-muted)', fontSize: 10, opacity: index === total - 1 ? 0.3 : 0.7, lineHeight: 1 }}></button>
+          style={{ background: 'none', border: 'none', cursor: index === total - 1 ? 'default' : 'pointer', color: 'var(--text-muted)', fontSize: 11, opacity: index === total - 1 ? 0.3 : 0.7, lineHeight: 1 }}></button>
       </div>
       <input type="time" value={step.time || ''} onChange={e => onChange(index, 'time', e.target.value)}
         style={{ ...INPUT, width: 90, flexShrink: 0 }} />
@@ -68,7 +69,7 @@ function RoutineCard({ routine, onEdit, onDelete }) {
           <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
             <span style={{ fontSize: 16, fontWeight: 400, color: 'var(--text-primary)' }}>{routine.name}</span>
             {isActiveToday && (
-              <span style={{ fontSize: 10, padding: '2px 8px', borderRadius: 20, background: 'var(--accent)22', color: 'var(--accent)', letterSpacing: '0.05em' }}>TODAY</span>
+              <span style={{ fontSize: 11, padding: '2px 8px', borderRadius: 20, background: 'color-mix(in srgb, var(--accent) 13%, transparent)', color: 'var(--accent)', letterSpacing: '0.05em' }}>TODAY</span>
             )}
           </div>
           {routine.reminder?.enabled && (
@@ -143,7 +144,7 @@ function RoutineForm({ initial, onSave, onCancel }) {
       </div>
 
       {/* Steps */}
-      <div style={{ fontSize: 10, color: 'var(--text-muted)', letterSpacing: '0.08em', marginBottom: 10 }}>STEPS</div>
+      <div style={{ fontSize: 11, color: 'var(--text-muted)', letterSpacing: '0.08em', marginBottom: 10 }}>STEPS</div>
       {steps.map((step, i) => (
         <StepRow key={i} step={step} index={i} total={steps.length} onChange={changeStep} onRemove={removeStep} onMove={moveStep} />
       ))}
@@ -235,7 +236,7 @@ export default function Routines({ settings }) {
 
         {routines.items.length === 0 && !editing && (
           <div style={{ textAlign: 'center', padding: '80px 0', color: 'var(--text-muted)' }}>
-            <div style={{ fontSize: 36, marginBottom: 14 }}>🔄</div>
+            <div style={{ marginBottom: 14, display: 'flex', justifyContent: 'center', color: 'var(--text-muted)' }}><LineIcon name="routines" size={30} strokeWidth={1.5} /></div>
             <div style={{ fontSize: 14, marginBottom: 6 }}>No routines yet</div>
             <div style={{ fontSize: 12 }}>Build your first routine and VALERIE will include it in your daily brief.</div>
           </div>

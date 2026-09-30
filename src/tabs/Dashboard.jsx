@@ -50,7 +50,7 @@ function Card({ children, style = {}, className = '' }) {
 function Label({ text, color }) {
   return (
     <span style={{
-      fontSize: 9.5,
+      fontSize: 10.5,
       fontWeight: 600,
       letterSpacing: '0.05em',
       padding: '2px 7px',
@@ -226,8 +226,8 @@ function ReflectionCard() {
   const quote = QUOTES[new Date().getDate() % QUOTES.length];
   const verse = VERSES[new Date().getDate() % VERSES.length];
   return (
-    <Card style={{ flex: 1, minWidth: 0 }}>
-      <div style={{ fontSize: 9.5, color: 'var(--text-muted)', letterSpacing: '0.08em' }}>TODAY'S REFLECTION</div>
+    <Card style={{ minWidth: 0 }}>
+      <div style={{ fontSize: 10.5, color: 'var(--text-muted)', letterSpacing: '0.08em' }}>TODAY'S REFLECTION</div>
       <p style={{ fontSize: 13, color: 'var(--text-secondary)', lineHeight: 1.6, fontStyle: 'italic', margin: 0 }}>
         “{quote.text}”
       </p>
@@ -263,10 +263,10 @@ function TasksPanel({ onTabChange, tasks, toggle, addTask: addTaskToStore }) {
 
   return (
     <div style={{
-      flex: '1.2 1 0', minWidth: 0, display: 'flex', flexDirection: 'column', gap: 0,
+      minWidth: 0, display: 'flex', flexDirection: 'column', gap: 0,
       background: 'var(--bg-panel)', borderRadius: 12,
       border: '0.5px solid var(--card-border)',
-      overflow: 'hidden', minHeight: 380,
+      overflow: 'hidden',
     }}>
       {/* Header */}
       <div style={{
@@ -286,7 +286,7 @@ function TasksPanel({ onTabChange, tasks, toggle, addTask: addTaskToStore }) {
       </div>
 
       {/* Task list */}
-      <div style={{ overflowY: 'auto', padding: '8px 0', minHeight: 200, flex: 1 }}>
+      <div style={{ overflowY: 'auto', padding: '6px 0', maxHeight: 360, flex: 1 }}>
         {visible.length === 0 ? (
           <div style={{ padding: '20px 18px', fontSize: 13, color: 'var(--text-muted)' }}>
             All clear — you're on top of everything.
@@ -314,7 +314,7 @@ function TasksPanel({ onTabChange, tasks, toggle, addTask: addTaskToStore }) {
                 display: 'flex', alignItems: 'center', justifyContent: 'center',
                 transition: 'all 0.15s',
               }}>
-                {t.done && <span style={{ fontSize: 9, color: '#fff' }}>✓</span>}
+                {t.done && <span style={{ fontSize: 10.5, color: '#fff' }}>✓</span>}
               </div>
 
               {/* Text */}
@@ -416,7 +416,7 @@ function DailyBriefSection({ ai }) {
   return (
     <div style={{ padding: '14px 18px', display: 'flex', flexDirection: 'column', gap: 8 }}>
       <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
-        <div style={{ fontSize: 9.5, color: 'var(--text-muted)', letterSpacing: '0.08em' }}>DAILY BRIEF</div>
+        <div style={{ fontSize: 10.5, color: 'var(--text-muted)', letterSpacing: '0.08em' }}>DAILY BRIEF</div>
         <button
           onClick={() => { generated.current = false; generateBrief(); }}
           disabled={loading}
@@ -446,7 +446,7 @@ function PeakStateSection({ peakState, onTabChange }) {
   return (
     <div style={{ padding: '14px 18px', display: 'flex', flexDirection: 'column', gap: 12 }}>
       <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
-        <div style={{ fontSize: 9.5, color: 'var(--text-muted)', letterSpacing: '0.08em' }}>PEAK STATE</div>
+        <div style={{ fontSize: 10.5, color: 'var(--text-muted)', letterSpacing: '0.08em' }}>PEAK STATE</div>
         <button onClick={() => onTabChange?.('health')}
           style={{ fontSize: 10.5, color: 'var(--accent)', background: 'none', border: 'none', cursor: 'pointer', padding: 0 }}>
           Health →
@@ -472,7 +472,7 @@ function PeakStateSection({ peakState, onTabChange }) {
         <div style={{ flex: 1, display: 'flex', flexDirection: 'column', gap: 4 }}>
           {Object.values(factors).slice(0, 3).map(f => (
             <div key={f.label} style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
-              <div style={{ fontSize: 9, color: 'var(--text-muted)', width: 88, flexShrink: 0, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{f.label}</div>
+              <div style={{ fontSize: 10.5, color: 'var(--text-muted)', width: 88, flexShrink: 0, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{f.label}</div>
               <div style={{ flex: 1, height: 3, borderRadius: 2, background: 'rgba(255,255,255,0.06)' }}>
                 <div style={{ width: `${f.pct}%`, height: '100%', background: f.pct >= 80 ? '#4caf7d' : f.pct >= 50 ? '#f4a642' : '#e25d7a', borderRadius: 2, transition: 'width 0.6s' }} />
               </div>
@@ -513,7 +513,7 @@ function WorkoutSection({ onTabChange }) {
       style={{ padding: '12px 18px', display: 'flex', alignItems: 'center', justifyContent: 'space-between', cursor: 'pointer' }}
     >
       <div>
-        <div style={{ fontSize: 9, fontWeight: 700, letterSpacing: '0.1em', color: isRest ? 'var(--text-muted)' : colour, textTransform: 'uppercase', marginBottom: 3 }}>Today's Workout</div>
+        <div style={{ fontSize: 10.5, fontWeight: 700, letterSpacing: '0.1em', color: isRest ? 'var(--text-muted)' : colour, textTransform: 'uppercase', marginBottom: 3 }}>Today's Workout</div>
         <div style={{ fontSize: 13, fontWeight: 600, color: 'var(--text-primary)' }}>
           {isRest ? 'Rest Day' : `${label} Day — ${exCount} exercise${exCount !== 1 ? 's' : ''}`}
         </div>
@@ -571,7 +571,7 @@ function SpotifySection({ onTabChange }) {
   if (!connected) {
     return (
       <div style={{ padding: '12px 18px', display: 'flex', alignItems: 'center', gap: 10 }}>
-        <div style={{ fontSize: 9.5, color: 'var(--text-muted)', letterSpacing: '0.08em', flex: 1 }}>
+        <div style={{ fontSize: 10.5, color: 'var(--text-muted)', letterSpacing: '0.08em', flex: 1 }}>
           NOW PLAYING
           <div style={{ fontSize: 11.5, color: 'var(--text-secondary)', letterSpacing: 'normal', marginTop: 3 }}>Spotify not connected</div>
         </div>
@@ -588,7 +588,7 @@ function SpotifySection({ onTabChange }) {
         {track ? (
           <>
             <div style={{ fontSize: 12, fontWeight: 500, color: 'var(--text-primary)', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{track.name}</div>
-            <div style={{ fontSize: 10, color: 'var(--text-muted)', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{track.artist}</div>
+            <div style={{ fontSize: 11, color: 'var(--text-muted)', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{track.artist}</div>
           </>
         ) : (
           <div style={{ fontSize: 11.5, color: 'var(--text-muted)' }}>Nothing playing</div>
@@ -608,11 +608,11 @@ function TodayPanel({ ai, peakState, onTabChange }) {
     <DailyBriefSection key="brief" ai={ai} />,
     peakState ? <PeakStateSection key="peak" peakState={peakState} onTabChange={onTabChange} /> : null,
     <WorkoutSection key="workout" onTabChange={onTabChange} />,
-    <SpotifySection key="spotify" onTabChange={onTabChange} />,
+    isSpotifyConnected() ? <SpotifySection key="spotify" onTabChange={onTabChange} /> : null,
   ].filter(Boolean);
 
   return (
-    <div className="glass-card" style={{ borderRadius: 12, display: 'flex', flexDirection: 'column', overflow: 'hidden', flex: '1 1 0', minWidth: 0, minHeight: 380 }}>
+    <div className="glass-card" style={{ borderRadius: 12, display: 'flex', flexDirection: 'column', overflow: 'hidden', minWidth: 0 }}>
       {sections.map((section, i) => (
         <div key={section.key} style={{ display: 'flex', flexDirection: 'column' }}>
           {i > 0 && <SectionDivider />}
@@ -641,10 +641,6 @@ function DonutChart({ segments, size = 110, thickness = 18, emptyColor = 'var(--
     return (
       <svg width={size} height={size}>
         <circle cx={cx} cy={cy} r={r} fill="none" stroke={emptyColor} strokeWidth={thickness} />
-        <text x={cx} y={cy + 1} textAnchor="middle" dominantBaseline="middle"
-          style={{ fontSize: 11, fill: 'var(--text-muted)', fontFamily: 'inherit' }}>
-          No data
-        </text>
       </svg>
     );
   }
@@ -719,9 +715,9 @@ function ProductivityWidget({ onTabChange, tasks }) {
   const focusM = totalFocusMin % 60;
 
   return (
-    <div className="glass-card" style={{ borderRadius: 12, padding: '16px 20px', flex: 1, minWidth: 0 }}>
+    <div className="glass-card" style={{ borderRadius: 12, padding: '16px 20px', minWidth: 0 }}>
       <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 14 }}>
-        <div style={{ fontSize: 9.5, color: 'var(--text-muted)', letterSpacing: '0.08em' }}>PRODUCTIVITY</div>
+        <div style={{ fontSize: 10.5, color: 'var(--text-muted)', letterSpacing: '0.08em' }}>PRODUCTIVITY</div>
         <button
           onClick={() => onTabChange?.('tasks')}
           style={{ fontSize: 10.5, color: 'var(--accent)', background: 'none', border: 'none', cursor: 'pointer', padding: 0 }}
@@ -740,7 +736,6 @@ function ProductivityWidget({ onTabChange, tasks }) {
               <div style={{ fontSize: 14, fontWeight: 300, color: 'var(--text-primary)', lineHeight: 1 }}>
                 {doneTasks}/{totalTasks}
               </div>
-              <div style={{ fontSize: 7.5, color: 'var(--text-muted)', letterSpacing: '0.04em', marginTop: 2 }}>TASKS</div>
             </div>
           </div>
 
@@ -756,7 +751,7 @@ function ProductivityWidget({ onTabChange, tasks }) {
                   fontSize: 10.5, color: 'var(--text-secondary)',
                   overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', flex: 1,
                 }}>{s.label}</span>
-                <span style={{ fontSize: 9.5, color: 'var(--text-muted)', flexShrink: 0 }}>
+                <span style={{ fontSize: 10.5, color: 'var(--text-muted)', flexShrink: 0 }}>
                   {tagMap[s.label]?.done ?? 0}/{s.value}
                 </span>
               </div>
@@ -777,7 +772,6 @@ function ProductivityWidget({ onTabChange, tasks }) {
               <div style={{ fontSize: 13, fontWeight: 300, color: 'var(--text-primary)', lineHeight: 1 }}>
                 {focusH > 0 ? `${focusH}h ${focusM}m` : `${focusM}m`}
               </div>
-              <div style={{ fontSize: 7.5, color: 'var(--text-muted)', letterSpacing: '0.04em', marginTop: 2 }}>FOCUS</div>
             </div>
           </div>
 
@@ -785,7 +779,7 @@ function ProductivityWidget({ onTabChange, tasks }) {
             <div style={{ fontSize: 10.5, fontWeight: 600, color: 'var(--text-primary)', marginBottom: 2 }}>
               Focus Today
               {todaySessions.length > 0 && (
-                <span style={{ fontSize: 9.5, fontWeight: 400, color: 'var(--text-muted)', marginLeft: 6 }}>
+                <span style={{ fontSize: 10.5, fontWeight: 400, color: 'var(--text-muted)', marginLeft: 6 }}>
                   {todaySessions.length} session{todaySessions.length !== 1 ? 's' : ''}
                 </span>
               )}
@@ -805,7 +799,7 @@ function ProductivityWidget({ onTabChange, tasks }) {
                   fontSize: 10.5, color: 'var(--text-secondary)',
                   overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', flex: 1,
                 }}>{s.label}</span>
-                <span style={{ fontSize: 9.5, color: 'var(--text-muted)', flexShrink: 0 }}>
+                <span style={{ fontSize: 10.5, color: 'var(--text-muted)', flexShrink: 0 }}>
                   {s.value}m
                 </span>
               </div>
@@ -821,60 +815,44 @@ function ProductivityWidget({ onTabChange, tasks }) {
 export default function Dashboard({ settings, onTabChange, ai, density = 'standard', peakState }) {
   const { tasks, toggle, addTask } = useTasks();
 
-  const userName = storage.get(STORAGE_KEYS.USER, {})?.name
-    ?? storage.get(STORAGE_KEYS.SETTINGS, {})?.userName
-    ?? 'there';
+  const userName = storage.get(STORAGE_KEYS.USER, {})?.name || settings?.userName || storage.get(STORAGE_KEYS.SETTINGS, {})?.userName || '';
 
   const pad  = density === 'compact' ? '14px 18px' : density === 'spacious' ? '32px 36px' : '22px 28px';
   const gap  = density === 'compact' ? 10 : density === 'spacious' ? 24 : 14;
 
   return (
-    // Page now scrolls — primary content (tasks + today panel) sits in the
-    // first screen; secondary content (reflection/productivity/day ring)
-    // is reachable below the fold instead of being crammed above it.
-    <div style={{ height: '100%', padding: pad, display: 'flex', flexDirection: 'column', gap: gap * 1.4, boxSizing: 'border-box', overflowY: 'auto' }}>
+    // Scrolls as one page; content is centred and capped so cards do not stretch on wide screens.
+    <div style={{ height: '100%', overflowY: 'auto', boxSizing: 'border-box' }}>
+    <div style={{ padding: pad, display: 'flex', flexDirection: 'column', gap: gap * 1.4, boxSizing: 'border-box', maxWidth: 1240, margin: '0 auto', '--home-gap': `${gap}px` }}>
 
       {/* Greeting banner */}
       <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexShrink: 0 }}>
         <div style={{ display: 'flex', alignItems: 'baseline', gap: 10 }}>
           <h1 style={{ fontSize: 22, fontWeight: 300, color: 'var(--text-primary)', letterSpacing: '0.03em', margin: 0 }}>
-            {getGreeting()}, <span style={{ color: 'var(--accent)' }}>{userName}</span>.
+            {getGreeting()}{userName ? <>, <span style={{ color: 'var(--accent)' }}>{userName}</span></> : null}.
           </h1>
         </div>
         <InlineClock />
       </div>
 
-      {/* Goal ring — today's score against the Coach goal */}
-      <GoalRing settings={settings} onTabChange={onTabChange} />
-
-      {/* What to do next, in order, with the reason */}
-      <NextMoves onTabChange={onTabChange} />
-      <OverallCard />
-
-      {/* At-a-glance strip — replaces the old 4 heavy stat cards */}
-      <div style={{ flexShrink: 0 }}>
-        <GlanceStrip tasks={tasks} />
-      </div>
-
-      {/* Primary: Tasks + unified Today panel */}
-      <div style={{ display: 'flex', gap, flexShrink: 0, alignItems: 'stretch' }}>
-        <TasksPanel onTabChange={onTabChange} tasks={tasks} toggle={toggle} addTask={addTask} />
-        <TodayPanel ai={ai} peakState={peakState} onTabChange={onTabChange} />
-      </div>
-
-      {/* Secondary — below the fold, reachable by scroll */}
-      <div style={{ display: 'flex', flexDirection: 'column', gap, flexShrink: 0 }}>
-        <div style={{ fontSize: 10, color: 'var(--text-muted)', letterSpacing: '0.1em', textTransform: 'uppercase', opacity: 0.6 }}>
-          More today
-        </div>
-        <div style={{ display: 'flex', gap, flexWrap: 'wrap' }}>
+      <div className="home-grid">
+        <div className="home-col">
+          {/* Goal ring — today's score against the Coach goal */}
+          <GoalRing settings={settings} onTabChange={onTabChange} />
+          {/* What to do next, in order, with the reason */}
+          <NextMoves onTabChange={onTabChange} />
+          <GlanceStrip tasks={tasks} />
+          <TasksPanel onTabChange={onTabChange} tasks={tasks} toggle={toggle} addTask={addTask} />
           <ReflectionCard />
-          <ProductivityWidget onTabChange={onTabChange} tasks={tasks} />
         </div>
-        <Card>
-          <DayRing />
-        </Card>
+        <div className="home-col">
+          <OverallCard />
+          <TodayPanel ai={ai} peakState={peakState} onTabChange={onTabChange} />
+          <ProductivityWidget onTabChange={onTabChange} tasks={tasks} />
+          <Card><DayRing /></Card>
+        </div>
       </div>
+    </div>
     </div>
   );
 }

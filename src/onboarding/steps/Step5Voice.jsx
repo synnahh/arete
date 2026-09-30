@@ -1,4 +1,5 @@
 import { useState, useEffect } from 'react';
+import { Icon as LineIcon } from '../../components/icons.jsx';
 import { PrimaryButton } from './Step1Welcome.jsx';
 import { BackButton } from './Step2Name.jsx';
 
@@ -38,7 +39,7 @@ export default function Step5Voice({ data, update, next, back }) {
       <BackButton onClick={back} />
 
       <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
-        <div style={{ fontSize: 28, opacity: 0.4 }}>🎙️</div>
+        <div style={{ display: 'flex', justifyContent: 'center', color: 'var(--text-muted)' }}><LineIcon name="mic" size={26} strokeWidth={1.5} /></div>
         <h2 style={{ fontSize: 28, fontWeight: 300, color: 'var(--text-primary)', letterSpacing: '0.04em' }}>
           Choose my voice
         </h2>
@@ -121,7 +122,7 @@ function VoiceSection({ title, badge, children }) {
       <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
         <span style={{ fontSize: 13, fontWeight: 500, color: 'var(--text-primary)' }}>{title}</span>
         <span style={{
-          fontSize: 10, color: 'var(--accent)', opacity: 0.7,
+          fontSize: 11, color: 'var(--accent)', opacity: 0.7,
           border: '0.5px solid var(--accent)', borderRadius: 4, padding: '2px 6px',
         }}>{badge}</span>
       </div>

@@ -1,6 +1,7 @@
 //  Calendar Tab
 // Sub-tabs: Agenda · Day Planner (AI time-blocking)
 
+import { Icon as LineIcon } from '../components/icons.jsx';
 import { useState, useEffect, useCallback, useMemo, useRef } from 'react';
 import { useCollection } from '../supabase/useCollection.js';
 import { STORAGE_KEYS, storage } from '../utils/storage.js';
@@ -189,7 +190,7 @@ function EventCard({ event, onEdit, onDelete }) {
           </span>
           {isGoogle && (
             <span style={{
-              fontSize: 9, padding: '1px 6px', borderRadius: 10,
+              fontSize: 10.5, padding: '1px 6px', borderRadius: 10,
               background: 'rgba(66,133,244,0.12)', color: '#4285f4',
               border: '0.5px solid rgba(66,133,244,0.3)', flexShrink: 0,
             }}>
@@ -198,7 +199,7 @@ function EventCard({ event, onEdit, onDelete }) {
           )}
           {isTask && (
             <span style={{
-              fontSize: 9, padding: '1px 6px', borderRadius: 10,
+              fontSize: 10.5, padding: '1px 6px', borderRadius: 10,
               background: colour + '1f', color: colour,
               border: `0.5px solid ${colour}55`, flexShrink: 0,
             }}>
@@ -267,7 +268,7 @@ function EventPanel({ event, onSave, onClose }) {
   return (
     <div style={{ display: 'flex', flexDirection: 'column', height: '100%', padding: '16px 16px', gap: 12 }}>
       <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
-        <span style={{ fontSize: 10, color: 'var(--text-muted)', letterSpacing: '0.07em' }}>
+        <span style={{ fontSize: 11, color: 'var(--text-muted)', letterSpacing: '0.07em' }}>
           {isEdit ? 'EDIT EVENT' : 'NEW EVENT'}
         </span>
         <button onClick={onClose} style={{ ...tinyBtnStyle, fontSize: 16 }}>×</button>
@@ -325,7 +326,7 @@ function EventPanel({ event, onSave, onClose }) {
   );
 }
 
-const lblStyle = { display: 'block', fontSize: 10, color: 'var(--text-muted)', letterSpacing: '0.06em', marginBottom: 4 };
+const lblStyle = { display: 'block', fontSize: 11, color: 'var(--text-muted)', letterSpacing: '0.06em', marginBottom: 4 };
 const ghostBtnStyle   = { padding: '7px 0', borderRadius: 7, border: '0.5px solid var(--card-border)', background: 'transparent', color: 'var(--text-secondary)', cursor: 'pointer', fontSize: 12 };
 const primaryBtnStyle = { padding: '7px 0', borderRadius: 7, border: '0.5px solid var(--card-border)', background: 'var(--active-bg)', color: 'var(--accent)', cursor: 'pointer', fontSize: 12, fontWeight: 500 };
 
@@ -442,7 +443,7 @@ function DayPlannerBlock({ block, style }) {
           {formatTime12(block.start)}
         </span>
         <span style={{ fontSize: 13, fontWeight: 500, color: 'var(--text-primary)' }}>{block.title}</span>
-        <span style={{ fontSize: 10, color: 'var(--text-muted)', marginLeft: 'auto' }}>
+        <span style={{ fontSize: 11, color: 'var(--text-muted)', marginLeft: 'auto' }}>
           {duration > 0 ? `${duration}m` : ''}
         </span>
       </div>
@@ -588,7 +589,7 @@ function DayPlanner({ ai, allEvents, settings, peakState, onAddEvents }) {
 
         {blocks.length === 0 && !loading && !error && (
           <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', height: '70%', gap: 12, opacity: 0.45 }}>
-            <div style={{ fontSize: 32 }}>🗓</div>
+            <div style={{ display: 'flex', justifyContent: 'center', color: 'var(--text-muted)' }}><LineIcon name="calendar" size={30} strokeWidth={1.5} /></div>
             <div style={{ fontSize: 13, color: 'var(--text-muted)', textAlign: 'center', lineHeight: 1.6 }}>
               VALERIE will build a time-blocked schedule<br />based on your tasks, events, and routines.
             </div>
@@ -606,7 +607,7 @@ function DayPlanner({ ai, allEvents, settings, peakState, onAddEvents }) {
           periodBlocks.length === 0 ? null : (
             <div key={period} style={{ marginBottom: 20 }}>
               <div style={{
-                fontSize: 10, fontWeight: 700, letterSpacing: '0.1em',
+                fontSize: 11, fontWeight: 700, letterSpacing: '0.1em',
                 color: 'var(--text-muted)', textTransform: 'uppercase',
                 marginBottom: 8, display: 'flex', alignItems: 'center', gap: 8,
               }}>
@@ -624,7 +625,7 @@ function DayPlanner({ ai, allEvents, settings, peakState, onAddEvents }) {
             {Object.entries(BLOCK_COLOURS).map(([type, colour]) => (
               <div key={type} style={{ display: 'flex', alignItems: 'center', gap: 5 }}>
                 <div style={{ width: 8, height: 8, borderRadius: 2, background: colour }} />
-                <span style={{ fontSize: 10, color: 'var(--text-muted)', textTransform: 'capitalize' }}>{type}</span>
+                <span style={{ fontSize: 11, color: 'var(--text-muted)', textTransform: 'capitalize' }}>{type}</span>
               </div>
             ))}
           </div>
@@ -838,7 +839,7 @@ export default function Calendar({ ai, settings, peakState }) {
         }}>
           <h2 style={{ fontSize: 15, fontWeight: 500, color: 'var(--text-primary)', margin: 0 }}>
             Calendar
-            {synced && <span style={{ fontSize: 9.5, color: 'var(--text-muted)', marginLeft: 8, fontWeight: 400 }}> synced</span>}
+            {synced && <span style={{ fontSize: 10.5, color: 'var(--text-muted)', marginLeft: 8, fontWeight: 400 }}> synced</span>}
           </h2>
 
           {/* Filters */}
@@ -919,7 +920,7 @@ export default function Calendar({ ai, settings, peakState }) {
               display: 'flex', flexDirection: 'column', alignItems: 'center',
               justifyContent: 'center', height: '100%', gap: 10, opacity: 0.4,
             }}>
-              <span style={{ fontSize: 28 }}>📅</span>
+              <span style={{ display: 'flex', justifyContent: 'center', color: 'var(--text-muted)' }}><LineIcon name="calendar" size={26} strokeWidth={1.5} /></span>
               <p style={{ fontSize: 13, color: 'var(--text-muted)', textAlign: 'center' }}>
                 {filter === 'today' ? 'Nothing scheduled today.' : 'No events to show.'}
               </p>

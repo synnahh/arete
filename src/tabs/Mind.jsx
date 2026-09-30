@@ -33,8 +33,8 @@ function SectionLabel({ children }) {
   return (
     <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: 14 }}>
       <div style={{ width: 18, height: 1, background: 'rgba(255,255,255,0.25)', flexShrink: 0 }} />
-      <span style={{ fontSize: 10, fontWeight: 700, letterSpacing: '0.18em', textTransform: 'uppercase',
-        color: 'rgba(255,255,255,0.35)', fontFamily: 'ui-monospace,monospace' }}>
+      <span style={{ fontSize: 11, fontWeight: 700, letterSpacing: '0.18em', textTransform: 'uppercase',
+        color: 'var(--text-muted)', fontFamily: 'ui-monospace,monospace' }}>
         {children}
       </span>
       <div style={{ flex: 1, height: 1, background: 'linear-gradient(90deg,rgba(255,255,255,0.1),transparent)' }} />
@@ -63,7 +63,7 @@ const BTN = {
 const BTN_GHOST = {
   padding: '7px 14px', borderRadius: 9, cursor: 'pointer',
   border: '0.5px solid rgba(255,255,255,0.1)',
-  background: 'transparent', color: 'rgba(255,255,255,0.5)', fontSize: 13,
+  background: 'transparent', color: 'var(--text-secondary)', fontSize: 13,
 };
 
 function Spinner() {
@@ -155,7 +155,7 @@ function AIChat({ systemPrompt, placeholder, contextNote, starterPrompts = [] })
   return (
     <div style={{ display: 'flex', flexDirection: 'column', height: '100%', minHeight: 0 }}>
       {contextNote && (
-        <div style={{ fontSize: 10.5, color: 'rgba(255,255,255,0.3)', marginBottom: 10,
+        <div style={{ fontSize: 10.5, color: 'var(--text-muted)', marginBottom: 10,
           padding: '6px 12px', borderRadius: 8, background: 'rgba(255,255,255,0.03)',
           border: '0.5px solid rgba(255,255,255,0.06)', lineHeight: 1.5 }}>
           {contextNote}
@@ -167,7 +167,7 @@ function AIChat({ systemPrompt, placeholder, contextNote, starterPrompts = [] })
             <button key={i} onClick={() => send(s)} style={{
               padding: '5px 11px', borderRadius: 20, cursor: 'pointer', fontSize: 11,
               border: '0.5px solid rgba(255,255,255,0.1)', background: 'rgba(255,255,255,0.04)',
-              color: 'rgba(255,255,255,0.5)', textAlign: 'left', lineHeight: 1.4,
+              color: 'var(--text-secondary)', textAlign: 'left', lineHeight: 1.4,
             }}>{s}</button>
           ))}
         </div>
@@ -180,8 +180,8 @@ function AIChat({ systemPrompt, placeholder, contextNote, starterPrompts = [] })
               maxWidth: '82%', padding: '10px 14px', fontSize: 13, lineHeight: 1.7,
               color: 'rgba(255,255,255,0.85)', whiteSpace: 'pre-wrap',
               borderRadius: m.role === 'user' ? '14px 14px 4px 14px' : '4px 14px 14px 14px',
-              background: m.role === 'user' ? 'var(--accent)22' : 'rgba(255,255,255,0.04)',
-              border: `0.5px solid ${m.role === 'user' ? 'var(--accent)44' : 'rgba(255,255,255,0.08)'}`,
+              background: m.role === 'user' ? 'color-mix(in srgb, var(--accent) 13%, transparent)' : 'rgba(255,255,255,0.04)',
+              border: `0.5px solid ${m.role === 'user' ? 'color-mix(in srgb, var(--accent) 27%, transparent)' : 'rgba(255,255,255,0.08)'}`,
             }}>{m.content}</div>
           </div>
         ))}
@@ -241,12 +241,12 @@ function Constitution({ constitution, onSave }) {
           <div style={{ fontSize: 15, fontWeight: 500, color: 'rgba(255,255,255,0.9)', marginBottom: 4 }}>
             Personal Constitution
           </div>
-          <div style={{ fontSize: 12, color: 'rgba(255,255,255,0.35)', lineHeight: 1.6, maxWidth: 480 }}>
+          <div style={{ fontSize: 12, color: 'var(--text-muted)', lineHeight: 1.6, maxWidth: 480 }}>
             Your values, principles, and non-negotiables. This is fed to every AI interaction as context — VALERIE knows who you are before it advises you.
           </div>
         </div>
         {constitution?.lastUpdated && (
-          <div style={{ fontSize: 10, color: 'rgba(255,255,255,0.2)', fontFamily: 'ui-monospace,monospace', flexShrink: 0, marginLeft: 16 }}>
+          <div style={{ fontSize: 11, color: 'rgba(255,255,255,0.2)', fontFamily: 'ui-monospace,monospace', flexShrink: 0, marginLeft: 16 }}>
             Last updated {new Date(constitution.lastUpdated).toLocaleDateString('en-GB', { day: 'numeric', month: 'short' })}
           </div>
         )}
@@ -254,7 +254,7 @@ function Constitution({ constitution, onSave }) {
 
       {isEmpty && (
         <GlassCard style={{ background: 'rgba(167,139,250,0.05)', border: '0.5px solid rgba(167,139,250,0.2)' }}>
-          <div style={{ fontSize: 12, color: 'rgba(255,255,255,0.4)', lineHeight: 1.7 }}>
+          <div style={{ fontSize: 12, color: 'var(--text-muted)', lineHeight: 1.7 }}>
             <strong style={{ color: 'rgba(167,139,250,0.9)', display: 'block', marginBottom: 6 }}>Start here.</strong>
             Your constitution is the most important thing in this app. It tells VALERIE what you stand for before it gives you any advice. Every AI advisor reads it. The Contradiction Detector checks against it. Spend 15 minutes on this — it compounds.
           </div>
@@ -263,7 +263,7 @@ function Constitution({ constitution, onSave }) {
 
       {fields.map(f => (
         <div key={f.label}>
-          <div style={{ fontSize: 10, fontWeight: 700, letterSpacing: '0.1em', color: 'rgba(255,255,255,0.3)',
+          <div style={{ fontSize: 11, fontWeight: 700, letterSpacing: '0.1em', color: 'var(--text-muted)',
             fontFamily: 'ui-monospace,monospace', marginBottom: 4, textTransform: 'uppercase' }}>
             {f.label}
           </div>
@@ -339,7 +339,7 @@ function BoardOfAdvisors({ constitution }) {
           </div>
           <div>
             <div style={{ fontSize: 14, fontWeight: 600, color: 'rgba(255,255,255,0.9)' }}>{adv.name}</div>
-            <div style={{ fontSize: 10.5, color: 'rgba(255,255,255,0.3)' }}>Private session</div>
+            <div style={{ fontSize: 10.5, color: 'var(--text-muted)' }}>Private session</div>
           </div>
         </div>
         <AIChat
@@ -359,7 +359,7 @@ function BoardOfAdvisors({ constitution }) {
             &larr; Back
           </button>
           <div style={{ fontSize: 14, fontWeight: 600, color: 'rgba(255,255,255,0.9)' }}>Board Meeting</div>
-          <div style={{ fontSize: 11, color: 'rgba(255,255,255,0.3)' }}>All 6 advisors respond simultaneously</div>
+          <div style={{ fontSize: 11, color: 'var(--text-muted)' }}>All 6 advisors respond simultaneously</div>
         </div>
 
         <div style={{ display: 'flex', gap: 8, marginBottom: 20, flexShrink: 0 }}>
@@ -379,7 +379,7 @@ function BoardOfAdvisors({ constitution }) {
         </div>
 
         {boardLoading && (
-          <div style={{ display: 'flex', gap: 8, alignItems: 'center', fontSize: 12, color: 'rgba(255,255,255,0.4)', marginBottom: 16 }}>
+          <div style={{ display: 'flex', gap: 8, alignItems: 'center', fontSize: 12, color: 'var(--text-muted)', marginBottom: 16 }}>
             <Spinner />
             Polling all 6 advisors simultaneously...
           </div>
@@ -394,13 +394,13 @@ function BoardOfAdvisors({ constitution }) {
                   <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 10 }}>
                     <div style={{ width: 24, height: 24, borderRadius: 7, background: adv.colour + '22',
                       display: 'flex', alignItems: 'center', justifyContent: 'center',
-                      fontWeight: 800, fontSize: 10, color: adv.colour }}>
+                      fontWeight: 800, fontSize: 11, color: adv.colour }}>
                       {adv.emoji}
                     </div>
                     <span style={{ fontSize: 12, fontWeight: 700, color: adv.colour }}>{adv.name}</span>
                   </div>
                   {result ? (
-                    <div style={{ fontSize: 12.5, color: 'rgba(255,255,255,0.75)', lineHeight: 1.7, whiteSpace: 'pre-wrap' }}>
+                    <div style={{ fontSize: 12.5, color: 'var(--text-secondary)', lineHeight: 1.7, whiteSpace: 'pre-wrap' }}>
                       {result.text}
                     </div>
                   ) : (
@@ -418,7 +418,7 @@ function BoardOfAdvisors({ constitution }) {
               <button key={i} onClick={() => { setBoardInput(s); setBoardQuery(s); runBoardMeeting(s); }} style={{
                 padding: '6px 12px', borderRadius: 20, cursor: 'pointer', fontSize: 11,
                 border: '0.5px solid rgba(255,255,255,0.1)', background: 'rgba(255,255,255,0.04)',
-                color: 'rgba(255,255,255,0.5)',
+                color: 'var(--text-secondary)',
               }}>{s}</button>
             ))}
           </div>
@@ -433,7 +433,7 @@ function BoardOfAdvisors({ constitution }) {
       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
         <div>
           <div style={{ fontSize: 15, fontWeight: 500, color: 'rgba(255,255,255,0.9)', marginBottom: 4 }}>Board of Advisors</div>
-          <div style={{ fontSize: 12, color: 'rgba(255,255,255,0.35)' }}>Six perspectives. One question.</div>
+          <div style={{ fontSize: 12, color: 'var(--text-muted)' }}>Six perspectives. One question.</div>
         </div>
         <button onClick={() => setMode('board')} style={{
           padding: '8px 16px', borderRadius: 9, cursor: 'pointer', fontSize: 12, fontWeight: 600,
@@ -471,7 +471,7 @@ function BoardOfAdvisors({ constitution }) {
               </div>
               <div style={{ fontSize: 13, fontWeight: 600, color: adv.colour }}>{adv.name}</div>
             </div>
-            <div style={{ fontSize: 11, color: 'rgba(255,255,255,0.35)', lineHeight: 1.55 }}>
+            <div style={{ fontSize: 11, color: 'var(--text-muted)', lineHeight: 1.55 }}>
               {ADVISOR_DESC[adv.id]}
             </div>
           </GlassCard>
@@ -547,7 +547,7 @@ function LifeLedger({ fmt }) {
       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
         <div>
           <div style={{ fontSize: 15, fontWeight: 500, color: 'rgba(255,255,255,0.9)' }}>Life Ledger</div>
-          <div style={{ fontSize: 11.5, color: 'rgba(255,255,255,0.3)', marginTop: 2 }}>Decisions · Failures · Wisdom</div>
+          <div style={{ fontSize: 11.5, color: 'var(--text-muted)', marginTop: 2 }}>Decisions · Failures · Wisdom</div>
         </div>
         <button onClick={() => setShowForm(v => !v)} style={BTN}>+ Add entry</button>
       </div>
@@ -557,13 +557,13 @@ function LifeLedger({ fmt }) {
         {['all', 'decisions', 'failures', 'wisdom'].map(v => (
           <button key={v} onClick={() => setView(v)} style={{
             padding: '4px 12px', borderRadius: 20, border: 'none', cursor: 'pointer',
-            fontFamily: 'ui-monospace,monospace', fontSize: 10, fontWeight: 700, letterSpacing: '0.06em',
+            fontFamily: 'ui-monospace,monospace', fontSize: 11, fontWeight: 700, letterSpacing: '0.06em',
             background: view === v ? 'var(--accent)' : 'rgba(255,255,255,0.06)',
             color: view === v ? '#fff' : 'rgba(255,255,255,0.4)',
           }}>{v.toUpperCase()}</button>
         ))}
         <div style={{ flex: 1 }} />
-        <div style={{ fontSize: 10.5, color: 'rgba(255,255,255,0.25)', fontFamily: 'ui-monospace,monospace', alignSelf: 'center' }}>
+        <div style={{ fontSize: 10.5, color: 'var(--text-muted)', fontFamily: 'ui-monospace,monospace', alignSelf: 'center' }}>
           {decisions.items.length}D · {failures.items.length}F · {wisdom.items.length}W
         </div>
       </div>
@@ -598,7 +598,7 @@ function LifeLedger({ fmt }) {
       {/* Entries */}
       {filtered.length === 0 ? (
         <GlassCard>
-          <div style={{ textAlign: 'center', padding: '40px 0', fontSize: 12, color: 'rgba(255,255,255,0.25)' }}>
+          <div style={{ textAlign: 'center', padding: '40px 0', fontSize: 12, color: 'var(--text-muted)' }}>
             No entries yet. Start logging your decisions, failures, and wisdom.
           </div>
         </GlassCard>
@@ -619,11 +619,11 @@ function DecisionForm({ form, setForm }) {
       <textarea placeholder="Reasoning — why did you make this call?" value={form.reasoning || ''} onChange={e => f('reasoning', e.target.value)} style={TEXTAREA} />
       <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 10 }}>
         <div>
-          <div style={{ fontSize: 10, color: 'rgba(255,255,255,0.3)', marginBottom: 4, letterSpacing: '0.06em' }}>CONFIDENCE (1-10)</div>
+          <div style={{ fontSize: 11, color: 'var(--text-muted)', marginBottom: 4, letterSpacing: '0.06em' }}>CONFIDENCE (1-10)</div>
           <input type="number" min="1" max="10" placeholder="7" value={form.confidence || ''} onChange={e => f('confidence', e.target.value)} style={INPUT} />
         </div>
         <div>
-          <div style={{ fontSize: 10, color: 'rgba(255,255,255,0.3)', marginBottom: 4, letterSpacing: '0.06em' }}>REVIEW DATE</div>
+          <div style={{ fontSize: 11, color: 'var(--text-muted)', marginBottom: 4, letterSpacing: '0.06em' }}>REVIEW DATE</div>
           <input type="date" value={form.reviewDate || ''} onChange={e => f('reviewDate', e.target.value)} style={INPUT} />
         </div>
       </div>
@@ -650,7 +650,7 @@ function WisdomForm({ form, setForm }) {
       <input placeholder="The insight or lesson" value={form.title || ''} onChange={e => f('title', e.target.value)} style={INPUT} />
       <textarea placeholder="Context — what led to this insight?" value={form.context || ''} onChange={e => f('context', e.target.value)} style={TEXTAREA} />
       <div>
-        <div style={{ fontSize: 10, color: 'rgba(255,255,255,0.3)', marginBottom: 4, letterSpacing: '0.06em' }}>CONFIDENCE IN THIS WISDOM (1-10)</div>
+        <div style={{ fontSize: 11, color: 'var(--text-muted)', marginBottom: 4, letterSpacing: '0.06em' }}>CONFIDENCE IN THIS WISDOM (1-10)</div>
         <input type="number" min="1" max="10" placeholder="8" value={form.confidence || ''} onChange={e => f('confidence', e.target.value)} style={{ ...INPUT }} />
       </div>
     </div>
@@ -673,11 +673,11 @@ function LedgerEntry({ entry }) {
         <div style={{ flex: 1, minWidth: 0 }}>
           <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 4 }}>
             <Tag label={typeLabel} colour={colour} />
-            <span style={{ fontSize: 10.5, color: 'rgba(255,255,255,0.25)', fontFamily: 'ui-monospace,monospace' }}>
+            <span style={{ fontSize: 10.5, color: 'var(--text-muted)', fontFamily: 'ui-monospace,monospace' }}>
               {entry.date}
             </span>
             {conf && (
-              <span style={{ fontSize: 10.5, color: 'rgba(255,255,255,0.3)', fontFamily: 'ui-monospace,monospace' }}>
+              <span style={{ fontSize: 10.5, color: 'var(--text-muted)', fontFamily: 'ui-monospace,monospace' }}>
                 {conf}/10 confidence
               </span>
             )}
@@ -688,13 +688,13 @@ function LedgerEntry({ entry }) {
               {[['Reasoning', entry.reasoning], ['Expected outcome', entry.expectedOutcome], ['Actual outcome', entry.actualOutcome], ['What happened', entry.what], ['Lesson', entry.lesson], ['Context', entry.context]].map(([label, val]) =>
                 val ? (
                   <div key={label}>
-                    <div style={{ fontSize: 10, color: 'rgba(255,255,255,0.3)', letterSpacing: '0.06em', fontFamily: 'ui-monospace,monospace', marginBottom: 3 }}>{label.toUpperCase()}</div>
-                    <div style={{ fontSize: 12.5, color: 'rgba(255,255,255,0.6)', lineHeight: 1.65 }}>{val}</div>
+                    <div style={{ fontSize: 11, color: 'var(--text-muted)', letterSpacing: '0.06em', fontFamily: 'ui-monospace,monospace', marginBottom: 3 }}>{label.toUpperCase()}</div>
+                    <div style={{ fontSize: 12.5, color: 'var(--text-secondary)', lineHeight: 1.65 }}>{val}</div>
                   </div>
                 ) : null
               )}
               {entry._type === 'decision' && !entry.actualOutcome && (
-                <div style={{ fontSize: 11, color: 'rgba(255,255,255,0.25)', fontStyle: 'italic' }}>Actual outcome not recorded yet.</div>
+                <div style={{ fontSize: 11, color: 'var(--text-muted)', fontStyle: 'italic' }}>Actual outcome not recorded yet.</div>
               )}
             </div>
           )}
@@ -728,7 +728,7 @@ function Beliefs() {
       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
         <div>
           <div style={{ fontSize: 15, fontWeight: 500, color: 'rgba(255,255,255,0.9)' }}>Belief Tracker</div>
-          <div style={{ fontSize: 11.5, color: 'rgba(255,255,255,0.3)', marginTop: 2 }}>Track how your beliefs evolve over time. Confidence is scored 1–10.</div>
+          <div style={{ fontSize: 11.5, color: 'var(--text-muted)', marginTop: 2 }}>Track how your beliefs evolve over time. Confidence is scored 1–10.</div>
         </div>
         <button onClick={() => setShowForm(v => !v)} style={BTN}>+ Add belief</button>
       </div>
@@ -740,11 +740,11 @@ function Beliefs() {
             <textarea placeholder="Context — what formed this belief?" value={form.context} onChange={e => setForm(p => ({ ...p, context: e.target.value }))} style={TEXTAREA} />
             <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 10 }}>
               <div>
-                <div style={{ fontSize: 10, color: 'rgba(255,255,255,0.3)', marginBottom: 4, letterSpacing: '0.06em' }}>CONFIDENCE (1-10)</div>
+                <div style={{ fontSize: 11, color: 'var(--text-muted)', marginBottom: 4, letterSpacing: '0.06em' }}>CONFIDENCE (1-10)</div>
                 <input type="number" min="1" max="10" value={form.confidence} onChange={e => setForm(p => ({ ...p, confidence: e.target.value }))} style={INPUT} />
               </div>
               <div>
-                <div style={{ fontSize: 10, color: 'rgba(255,255,255,0.3)', marginBottom: 4, letterSpacing: '0.06em' }}>TAGS</div>
+                <div style={{ fontSize: 11, color: 'var(--text-muted)', marginBottom: 4, letterSpacing: '0.06em' }}>TAGS</div>
                 <input placeholder="career, health, people..." value={form.tags} onChange={e => setForm(p => ({ ...p, tags: e.target.value }))} style={INPUT} />
               </div>
             </div>
@@ -758,7 +758,7 @@ function Beliefs() {
 
       {sorted.length === 0 && !showForm ? (
         <GlassCard>
-          <div style={{ textAlign: 'center', padding: '40px 0', fontSize: 12, color: 'rgba(255,255,255,0.25)' }}>
+          <div style={{ textAlign: 'center', padding: '40px 0', fontSize: 12, color: 'var(--text-muted)' }}>
             No beliefs logged yet. Start with your most firmly held ones.
           </div>
         </GlassCard>
@@ -775,13 +775,13 @@ function Beliefs() {
                       <span style={{ fontSize: 11, fontFamily: 'ui-monospace,monospace', color: confColour, fontWeight: 700 }}>
                         {conf}/10
                       </span>
-                      <span style={{ fontSize: 10.5, color: 'rgba(255,255,255,0.25)', fontFamily: 'ui-monospace,monospace' }}>{b.date}</span>
+                      <span style={{ fontSize: 10.5, color: 'var(--text-muted)', fontFamily: 'ui-monospace,monospace' }}>{b.date}</span>
                       {b.tags && b.tags.split(',').map(t => t.trim()).filter(Boolean).map(t => (
                         <Tag key={t} label={t} colour="rgba(255,255,255,0.35)" />
                       ))}
                     </div>
                     <div style={{ fontSize: 13.5, fontWeight: 500, color: 'rgba(255,255,255,0.88)', marginBottom: b.context ? 6 : 0 }}>{b.title}</div>
-                    {b.context && <div style={{ fontSize: 12, color: 'rgba(255,255,255,0.4)', lineHeight: 1.65 }}>{b.context}</div>}
+                    {b.context && <div style={{ fontSize: 12, color: 'var(--text-muted)', lineHeight: 1.65 }}>{b.context}</div>}
                     {/* Confidence bar */}
                     <div style={{ marginTop: 10, height: 2, borderRadius: 2, background: 'rgba(255,255,255,0.07)' }}>
                       <div style={{ height: '100%', width: `${(conf / 10) * 100}%`, background: confColour, borderRadius: 2, transition: 'width 0.4s' }} />
@@ -843,7 +843,7 @@ function MemoryVault() {
       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
         <div>
           <div style={{ fontSize: 15, fontWeight: 500, color: 'rgba(255,255,255,0.9)' }}>Memory Vault</div>
-          <div style={{ fontSize: 11.5, color: 'rgba(255,255,255,0.3)', marginTop: 2 }}>
+          <div style={{ fontSize: 11.5, color: 'var(--text-muted)', marginTop: 2 }}>
             Everything worth keeping. Notes, ideas, insights, lessons, quotes, projects.
           </div>
         </div>
@@ -861,14 +861,14 @@ function MemoryVault() {
       </div>
       <div style={{ display: 'flex', gap: 6, flexWrap: 'wrap' }}>
         <button onClick={() => setFilter('all')} style={{
-          padding: '3px 10px', borderRadius: 20, border: 'none', cursor: 'pointer', fontSize: 10, fontWeight: 700,
+          padding: '3px 10px', borderRadius: 20, border: 'none', cursor: 'pointer', fontSize: 11, fontWeight: 700,
           fontFamily: 'ui-monospace,monospace', letterSpacing: '0.06em',
           background: filter === 'all' ? 'var(--accent)' : 'rgba(255,255,255,0.06)',
           color: filter === 'all' ? '#fff' : 'rgba(255,255,255,0.4)',
         }}>ALL</button>
         {VAULT_TYPES.map(t => (
           <button key={t.id} onClick={() => setFilter(t.id)} style={{
-            padding: '3px 10px', borderRadius: 20, border: 'none', cursor: 'pointer', fontSize: 10, fontWeight: 700,
+            padding: '3px 10px', borderRadius: 20, border: 'none', cursor: 'pointer', fontSize: 11, fontWeight: 700,
             fontFamily: 'ui-monospace,monospace', letterSpacing: '0.06em',
             background: filter === t.id ? t.colour + '33' : 'rgba(255,255,255,0.06)',
             color: filter === t.id ? t.colour : 'rgba(255,255,255,0.4)',
@@ -876,7 +876,7 @@ function MemoryVault() {
           }}>{t.label.toUpperCase()}</button>
         ))}
         <div style={{ flex: 1 }} />
-        <span style={{ fontSize: 10.5, color: 'rgba(255,255,255,0.25)', fontFamily: 'ui-monospace,monospace', alignSelf: 'center' }}>
+        <span style={{ fontSize: 10.5, color: 'var(--text-muted)', fontFamily: 'ui-monospace,monospace', alignSelf: 'center' }}>
           {filtered.length} / {memories.items.length}
         </span>
       </div>
@@ -889,7 +889,7 @@ function MemoryVault() {
             <textarea placeholder="Content — the full thought, idea, or insight..." value={form.content} onChange={e => setForm(p => ({ ...p, content: e.target.value }))} style={{ ...TEXTAREA, minHeight: 100 }} />
             <div style={{ display: 'flex', gap: 8 }}>
               <div style={{ flex: 1 }}>
-                <div style={{ fontSize: 10, color: 'rgba(255,255,255,0.3)', marginBottom: 4, letterSpacing: '0.06em' }}>TYPE</div>
+                <div style={{ fontSize: 11, color: 'var(--text-muted)', marginBottom: 4, letterSpacing: '0.06em' }}>TYPE</div>
                 <div style={{ display: 'flex', gap: 5, flexWrap: 'wrap' }}>
                   {VAULT_TYPES.map(t => (
                     <button key={t.id} onClick={() => setForm(p => ({ ...p, type: t.id }))} style={{
@@ -902,7 +902,7 @@ function MemoryVault() {
                 </div>
               </div>
               <div style={{ flex: '0 0 180px' }}>
-                <div style={{ fontSize: 10, color: 'rgba(255,255,255,0.3)', marginBottom: 4, letterSpacing: '0.06em' }}>TAGS</div>
+                <div style={{ fontSize: 11, color: 'var(--text-muted)', marginBottom: 4, letterSpacing: '0.06em' }}>TAGS</div>
                 <input placeholder="growth, finance..." value={form.tags} onChange={e => setForm(p => ({ ...p, tags: e.target.value }))} style={INPUT} />
               </div>
             </div>
@@ -917,7 +917,7 @@ function MemoryVault() {
       {/* Entries */}
       {filtered.length === 0 ? (
         <GlassCard>
-          <div style={{ textAlign: 'center', padding: '40px 0', fontSize: 12, color: 'rgba(255,255,255,0.25)' }}>
+          <div style={{ textAlign: 'center', padding: '40px 0', fontSize: 12, color: 'var(--text-muted)' }}>
             {search ? `No results for "${search}"` : 'Vault is empty. Add your first memory.'}
           </div>
         </GlassCard>
@@ -929,11 +929,11 @@ function MemoryVault() {
               <GlassCard key={m.id || i} style={{ padding: '14px 16px' }}>
                 <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 6 }}>
                   <Tag label={t.label.toUpperCase()} colour={t.colour} />
-                  <span style={{ fontSize: 10, color: 'rgba(255,255,255,0.2)', fontFamily: 'ui-monospace,monospace' }}>{m.date}</span>
+                  <span style={{ fontSize: 11, color: 'rgba(255,255,255,0.2)', fontFamily: 'ui-monospace,monospace' }}>{m.date}</span>
                 </div>
                 <div style={{ fontSize: 13, fontWeight: 600, color: 'rgba(255,255,255,0.88)', marginBottom: 5, lineHeight: 1.4 }}>{m.title}</div>
                 {m.content && (
-                  <div style={{ fontSize: 11.5, color: 'rgba(255,255,255,0.45)', lineHeight: 1.65,
+                  <div style={{ fontSize: 11.5, color: 'var(--text-muted)', lineHeight: 1.65,
                     display: '-webkit-box', WebkitLineClamp: 3, WebkitBoxOrient: 'vertical', overflow: 'hidden' }}>
                     {m.content}
                   </div>
@@ -941,7 +941,7 @@ function MemoryVault() {
                 {m.tags && (
                   <div style={{ marginTop: 8, display: 'flex', gap: 4, flexWrap: 'wrap' }}>
                     {m.tags.split(',').map(t2 => t2.trim()).filter(Boolean).map(tag => (
-                      <span key={tag} style={{ fontSize: 9.5, color: 'rgba(255,255,255,0.25)', background: 'rgba(255,255,255,0.05)',
+                      <span key={tag} style={{ fontSize: 10.5, color: 'var(--text-muted)', background: 'rgba(255,255,255,0.05)',
                         padding: '1px 6px', borderRadius: 20, cursor: 'pointer' }}
                         onClick={() => setSearch(tag)}>
                         #{tag}
@@ -1057,7 +1057,7 @@ Format each law clearly: "Law: [statement]" followed by the explanation. Be spec
     <div style={{ display: 'flex', flexDirection: 'column', height: '100%', padding: '20px 24px 32px', overflowY: 'auto' }}>
       <div style={{ marginBottom: 20 }}>
         <div style={{ fontSize: 15, fontWeight: 500, color: 'rgba(255,255,255,0.9)', marginBottom: 4 }}>Insights</div>
-        <div style={{ fontSize: 12, color: 'rgba(255,255,255,0.35)' }}>AI-powered analysis of who you are vs how you're operating.</div>
+        <div style={{ fontSize: 12, color: 'var(--text-muted)' }}>AI-powered analysis of who you are vs how you're operating.</div>
       </div>
 
       {!constitution?.values && (
@@ -1082,7 +1082,7 @@ Format each law clearly: "Law: [statement]" followed by the explanation. Be spec
                   <div style={{ fontSize: 13, fontWeight: 700, color: ins.colour }}>{ins.title}</div>
                   <Tag label={ins.subtitle} colour={ins.colour} />
                 </div>
-                <div style={{ fontSize: 12, color: 'rgba(255,255,255,0.45)', lineHeight: 1.6 }}>{ins.description}</div>
+                <div style={{ fontSize: 12, color: 'var(--text-muted)', lineHeight: 1.6 }}>{ins.description}</div>
               </div>
               <button style={{ ...BTN, padding: '7px 16px', fontSize: 12, flexShrink: 0, background: ins.colour + '22', color: ins.colour, border: `0.5px solid ${ins.colour}44` }}>
                 {loading && activeInsight === ins.id ? 'Analysing...' : 'Run'}
@@ -1104,7 +1104,7 @@ Format each law clearly: "Law: [statement]" followed by the explanation. Be spec
           {loading ? (
             <div style={{ display: 'flex', alignItems: 'center', gap: 12, padding: '8px 0' }}>
               <Spinner />
-              <span style={{ fontSize: 12, color: 'rgba(255,255,255,0.4)' }}>Claude is analysing...</span>
+              <span style={{ fontSize: 12, color: 'var(--text-muted)' }}>Claude is analysing...</span>
             </div>
           ) : (
             <div style={{ fontSize: 13, color: 'rgba(255,255,255,0.8)', lineHeight: 1.75, whiteSpace: 'pre-wrap' }}>
@@ -1154,7 +1154,7 @@ export default function Mind({ settings = {} }) {
           <div style={{ fontSize: 20, fontWeight: 300, color: 'rgba(255,255,255,0.9)', letterSpacing: '-0.01em' }}>
             Mind
           </div>
-          <div style={{ fontSize: 11, color: 'rgba(255,255,255,0.25)', fontFamily: 'ui-monospace,monospace', letterSpacing: '0.06em' }}>
+          <div style={{ fontSize: 11, color: 'var(--text-muted)', fontFamily: 'ui-monospace,monospace', letterSpacing: '0.06em' }}>
             PERSONAL OPERATING SYSTEM
           </div>
         </div>
@@ -1163,7 +1163,7 @@ export default function Mind({ settings = {} }) {
             <button key={t.id} onClick={() => setSection(t.id)} style={{
               padding: '7px 16px 9px', border: 'none', cursor: 'pointer', background: 'transparent',
               color: section === t.id ? 'rgba(255,255,255,0.9)' : 'rgba(255,255,255,0.3)',
-              fontSize: 10, fontWeight: 700, letterSpacing: '0.1em', fontFamily: 'ui-monospace,monospace',
+              fontSize: 11, fontWeight: 700, letterSpacing: '0.1em', fontFamily: 'ui-monospace,monospace',
               borderBottom: section === t.id ? '1.5px solid var(--accent)' : '1.5px solid transparent',
               marginBottom: -0.5, transition: 'all 0.15s ease',
             }}>
@@ -1175,13 +1175,18 @@ export default function Mind({ settings = {} }) {
 
       {/* Content */}
       <div ref={scrollRef} style={{ flex: 1, overflowY: section === 'advisors' ? 'hidden' : 'auto' }}>
-        {section === 'constitution' && <Constitution constitution={constitution} onSave={saveConstitution} />}
-        {section === 'advisors'     && <BoardOfAdvisors constitution={constitution} />}
-        {section === 'ledger'       && <LifeLedger />}
-        {section === 'beliefs'      && <Beliefs />}
-        {section === 'vault'        && <MemoryVault />}
-        {section === 'insights'     && <Insights constitution={constitution} settings={settings} />}
-        {section === 'breathe'      && <div style={{ padding: '20px 24px' }}><BreathingTool /></div>}
+        {section === 'advisors' && <BoardOfAdvisors constitution={constitution} />}
+        {/* Reading and writing screens: capped at a comfortable line length instead of the full window. */}
+        {section !== 'advisors' && (
+          <div style={{ maxWidth: 880 }}>
+            {section === 'constitution' && <Constitution constitution={constitution} onSave={saveConstitution} />}
+            {section === 'ledger'       && <LifeLedger />}
+            {section === 'beliefs'      && <Beliefs />}
+            {section === 'vault'        && <MemoryVault />}
+            {section === 'insights'     && <Insights constitution={constitution} settings={settings} />}
+            {section === 'breathe'      && <div style={{ padding: '20px 24px' }}><BreathingTool /></div>}
+          </div>
+        )}
       </div>
 
       <style>{`

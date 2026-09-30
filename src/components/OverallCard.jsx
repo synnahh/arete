@@ -35,7 +35,7 @@ export default function OverallCard({ compact = false }) {
       <div style={{ display: 'flex', alignItems: 'center', gap: 14 }}>
         <div style={{ width: 78, height: 78, borderRadius: 18, flexShrink: 0, display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', border: `1.5px solid ${colour}`, background: `color-mix(in srgb, ${colour} 12%, transparent)` }}>
           <span className="val-num" style={{ fontSize: 32, fontWeight: 700, lineHeight: 1, color: colour }}>{o.ovr}</span>
-          <span style={{ fontSize: 10, letterSpacing: '0.12em', textTransform: 'uppercase', color: colour }}>{o.tier.label}</span>
+          <span style={{ fontSize: 11, letterSpacing: '0.12em', textTransform: 'uppercase', color: colour }}>{o.tier.label}</span>
         </div>
         <div style={{ minWidth: 0 }}>
           <div style={label}>Overall</div>

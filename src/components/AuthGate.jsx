@@ -98,7 +98,7 @@ export default function AuthGate() {
           <div>
             <div style={{
               fontSize: 11, fontWeight: 700, letterSpacing: '0.28em',
-              textTransform: 'uppercase', color: 'rgba(255,255,255,0.25)',
+              textTransform: 'uppercase', color: 'var(--text-muted)',
               fontFamily: 'ui-monospace, monospace', marginBottom: 10,
             }}>
               VALERIE
@@ -169,7 +169,7 @@ export default function AuthGate() {
                 </svg>
               )}
             </div>
-            <span style={{ fontSize: 12, color: 'rgba(255,255,255,0.4)' }}>Remember me</span>
+            <span style={{ fontSize: 12, color: 'var(--text-muted)' }}>Remember me</span>
           </label>
 
           <button
@@ -198,7 +198,7 @@ export default function AuthGate() {
         </form>
 
         {/* Toggle mode */}
-        <div style={{ fontSize: 12, color: 'rgba(255,255,255,0.25)' }}>
+        <div style={{ fontSize: 12, color: 'var(--text-muted)' }}>
           {mode === 'login' ? "Don't have an account? " : 'Already have an account? '}
           <button
             onClick={() => { setMode(m => m === 'login' ? 'signup' : 'login'); setError(''); setInfo(''); }}

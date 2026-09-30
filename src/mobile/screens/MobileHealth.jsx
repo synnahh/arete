@@ -38,7 +38,7 @@ function SectionLabel({ children }) {
   return (
     <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: 10 }}>
       <div style={{ width: 14, height: 1, background: 'rgba(255,255,255,0.2)', flexShrink: 0 }} />
-      <span style={{ fontSize: 9, fontWeight: 700, letterSpacing: '0.16em',
+      <span style={{ fontSize: 10.5, fontWeight: 700, letterSpacing: '0.16em',
         textTransform: 'uppercase', color: 'var(--text-muted)', whiteSpace: 'nowrap' }}>
         {children}
       </span>
@@ -79,7 +79,7 @@ function SleepRing({ pct, size = 76, thickness = 7 }) {
       <div style={{ position: 'absolute', inset: 0, display: 'flex',
         flexDirection: 'column', alignItems: 'center', justifyContent: 'center' }}>
         <div style={{ fontSize: 15, fontWeight: 600, color, lineHeight: 1 }}>{pct}%</div>
-        <div style={{ fontSize: 8, color: 'var(--text-muted)', marginTop: 1 }}>QTY</div>
+        <div style={{ fontSize: 10.5, color: 'var(--text-muted)', marginTop: 1 }}>QTY</div>
       </div>
     </div>
   );
@@ -109,7 +109,7 @@ function SleepStageBar({ sleep }) {
         {stages.filter(s => s.hours > 0).map(s => (
           <div key={s.key} style={{ display: 'flex', alignItems: 'center', gap: 4 }}>
             <div style={{ width: 6, height: 6, borderRadius: '50%', background: s.color }} />
-            <span style={{ fontSize: 9, color: 'var(--text-muted)' }}>
+            <span style={{ fontSize: 10.5, color: 'var(--text-muted)' }}>
               {s.label}: {s.hours >= 1 ? `${Math.floor(s.hours)}h${Math.round((s.hours%1)*60)}m` : `${Math.round(s.hours*60)}m`}
             </span>
           </div>
@@ -124,13 +124,13 @@ function VitalCard({ label, value, unit, sub, color = 'var(--text-primary)', bar
   return (
     <div style={{ background: 'var(--bg-panel)', border: '0.5px solid var(--card-border)',
       borderRadius: 12, padding: '12px 14px' }}>
-      <div style={{ fontSize: 9, fontWeight: 700, letterSpacing: '0.1em',
+      <div style={{ fontSize: 10.5, fontWeight: 700, letterSpacing: '0.1em',
         textTransform: 'uppercase', color: 'var(--text-muted)', marginBottom: 6 }}>{label}</div>
       <div style={{ display: 'flex', alignItems: 'baseline', gap: 3 }}>
         <span style={{ fontSize: 22, fontWeight: 200, color, lineHeight: 1 }}>{value}</span>
         {unit && <span style={{ fontSize: 11, color: 'var(--text-muted)' }}>{unit}</span>}
       </div>
-      {sub && <div style={{ fontSize: 10, color: 'var(--text-muted)', marginTop: 3 }}>{sub}</div>}
+      {sub && <div style={{ fontSize: 11, color: 'var(--text-muted)', marginTop: 3 }}>{sub}</div>}
       {barMax !== undefined && (
         <ProgressBar value={barValue || 0} max={barMax} color={barColor || color} />
       )}
@@ -309,7 +309,7 @@ function OverviewTab({ settings, today }) {
                     {m.name}
                   </span>
                 </div>
-                <div style={{ display: 'flex', gap: 10, flexShrink: 0, fontSize: 10, color: 'var(--text-muted)' }}>
+                <div style={{ display: 'flex', gap: 10, flexShrink: 0, fontSize: 11, color: 'var(--text-muted)' }}>
                   <span style={{ color: '#f59e0b' }}>{m.calories}kcal</span>
                   {m.protein > 0 && <span style={{ color: '#e879a0' }}>{m.protein}p</span>}
                   {m.carbs  > 0 && <span style={{ color: '#a78bfa' }}>{m.carbs}c</span>}
@@ -632,7 +632,7 @@ function NutritionTab({ settings, today }) {
           <div style={{ padding: '16px 18px', fontSize: 13, color: 'var(--text-muted)' }}>Nothing logged today</div>
         ) : groupBySection(meals).map(sec => (
           <div key={sec.id}>
-            <div style={{ display: 'flex', justifyContent: 'space-between', padding: '9px 16px 4px', fontSize: 10, letterSpacing: '0.07em', textTransform: 'uppercase', color: 'var(--text-muted)' }}>
+            <div style={{ display: 'flex', justifyContent: 'space-between', padding: '9px 16px 4px', fontSize: 11, letterSpacing: '0.07em', textTransform: 'uppercase', color: 'var(--text-muted)' }}>
               <span>{sec.label}</span><span>{sec.kcal} kcal</span>
             </div>
             {sec.meals.map((m, i) => (
@@ -642,7 +642,7 @@ function NutritionTab({ settings, today }) {
                 borderBottom: '0.5px solid var(--card-border)',
               }}>
                 <div style={{ minWidth: 0 }}>
-                  {m.time && <div style={{ fontSize: 10, color: 'var(--text-muted)', marginBottom: 2 }}>{m.time}</div>}
+                  {m.time && <div style={{ fontSize: 11, color: 'var(--text-muted)', marginBottom: 2 }}>{m.time}</div>}
                   <div style={{ fontSize: 13, color: 'var(--text-primary)',
                     overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
                     {m.name}
@@ -790,7 +790,7 @@ function BodyTab({ today, settings }) {
         <MCard style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
           {[['weight', 'Weight', 'kg'], ['bodyFat', 'Body Fat', '%'], ['muscle', 'Muscle', '%']].map(([k, label, unit]) => (
             <div key={k}>
-              <div style={{ fontSize: 10, color: 'var(--text-muted)', marginBottom: 4 }}>{label} ({unit})</div>
+              <div style={{ fontSize: 11, color: 'var(--text-muted)', marginBottom: 4 }}>{label} ({unit})</div>
               <input type="number" value={form[k]} onChange={e => setForm(p => ({ ...p, [k]: e.target.value }))}
                 placeholder={k === 'weight' ? 'e.g. 80' : k === 'bodyFat' ? 'e.g. 15' : 'e.g. 40'} style={{
                 width: '100%', padding: '9px 12px', borderRadius: 10, border: '0.5px solid var(--card-border)',
@@ -824,11 +824,11 @@ function BodyTab({ today, settings }) {
             <MCard style={{ padding: 16, display: 'flex', flexDirection: 'column', gap: 10 }}>
               <div style={{ display: 'flex', gap: 22, alignItems: 'flex-end', flexWrap: 'wrap' }}>
                 <div>
-                  <div style={{ fontSize: 9.5, color: 'var(--text-muted)', letterSpacing: '0.1em', marginBottom: 4 }}>TREND WEIGHT</div>
+                  <div style={{ fontSize: 10.5, color: 'var(--text-muted)', letterSpacing: '0.1em', marginBottom: 4 }}>TREND WEIGHT</div>
                   <div className="val-num" style={{ fontSize: 30, fontWeight: 500, color: 'var(--tab-accent)', lineHeight: 1 }}>{coach.trend}<span style={{ fontSize: 12, color: 'var(--text-secondary)', marginLeft: 3 }}>kg</span></div>
                 </div>
                 <div>
-                  <div style={{ fontSize: 9.5, color: 'var(--text-muted)', letterSpacing: '0.1em', marginBottom: 4 }}>RATE</div>
+                  <div style={{ fontSize: 10.5, color: 'var(--text-muted)', letterSpacing: '0.1em', marginBottom: 4 }}>RATE</div>
                   <div className="val-num" style={{ fontSize: 20, color: 'var(--text-primary)', lineHeight: 1.1 }}>{coach.rate == null ? '—' : (coach.rate > 0 ? '+' : '') + coach.rate}<span style={{ fontSize: 11, color: 'var(--text-secondary)', marginLeft: 3 }}>kg/week</span></div>
                 </div>
               </div>

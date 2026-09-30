@@ -1,6 +1,7 @@
 //  Health Tab 
 // 8 sub-sections: Overview · Habits · Nutrition · Water · Body · Supplements · Sleep · Stimulant
 
+import { Icon as LineIcon } from '../components/icons.jsx';
 import { useState, useEffect, useCallback, useMemo, useRef } from 'react';
 import { useCollection }                  from '../supabase/useCollection.js';
 import { useDocument }                    from '../supabase/useDocument.js';
@@ -69,7 +70,7 @@ function GlassLabel({ children }) {
   return (
     <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: 14 }}>
       <div style={{ width: 18, height: 1, background: 'rgba(255,255,255,0.25)', flexShrink: 0 }} />
-      <span style={{ fontSize: 10, fontWeight: 700, letterSpacing: '0.18em', textTransform: 'uppercase', color: 'rgba(255,255,255,0.35)', fontFamily: 'ui-monospace,monospace', whiteSpace: 'nowrap' }}>{children}</span>
+      <span style={{ fontSize: 11, fontWeight: 700, letterSpacing: '0.18em', textTransform: 'uppercase', color: 'var(--text-muted)', fontFamily: 'ui-monospace,monospace', whiteSpace: 'nowrap' }}>{children}</span>
       <div style={{ flex: 1, height: 1, background: 'linear-gradient(90deg,rgba(255,255,255,0.1),transparent)' }} />
     </div>
   );
@@ -96,7 +97,7 @@ const cardSx = {
   borderRadius: 12, padding: '14px 16px',
 };
 const lblSx = {
-  display: 'block', fontSize: 10, color: 'var(--text-muted)',
+  display: 'block', fontSize: 11, color: 'var(--text-muted)',
   letterSpacing: '0.06em', marginBottom: 4,
 };
 
@@ -112,7 +113,8 @@ function Section({ title, children, action }) {
         {action}
       </div>
       <div style={{ flex: 1, overflowY: 'auto', padding: '20px 24px' }}>
-        {children}
+        {/* Capped so cards and bars do not stretch across very wide windows. */}
+        <div style={{ maxWidth: 1040 }}>{children}</div>
       </div>
     </div>
   );
@@ -127,7 +129,7 @@ function StatCard({ label, value, unit, colour = 'var(--accent)', ring, children
           colour={colour} label={ring.label} sublabel={ring.sublabel} labelSize={14} />
       )}
       <div style={{ flex: 1 }}>
-        <div style={{ fontSize: 10, color: 'var(--text-muted)', letterSpacing: '0.06em', marginBottom: 4 }}>{label}</div>
+        <div style={{ fontSize: 11, color: 'var(--text-muted)', letterSpacing: '0.06em', marginBottom: 4 }}>{label}</div>
         {value !== undefined && (
           <div style={{ fontSize: 22, fontWeight: 300, color: 'var(--text-primary)', lineHeight: 1 }}>
             {value}<span style={{ fontSize: 11, color: 'var(--text-muted)', marginLeft: 3 }}>{unit}</span>
@@ -214,9 +216,9 @@ function Overview({ habits, waterLogs, nutritionLogs, sleepData, settings, suppl
       <div onClick={onClick} style={{flex:'1 1 0',minWidth:0,padding:'20px 18px',background:'rgba(255,255,255,0.03)',borderRadius:14,border:'0.5px solid rgba(255,255,255,0.07)',cursor:'pointer',transition:'background 0.15s'}}
         onMouseEnter={e=>e.currentTarget.style.background='rgba(255,255,255,0.06)'}
         onMouseLeave={e=>e.currentTarget.style.background='rgba(255,255,255,0.03)'}>
-        <div style={{fontSize:9,fontWeight:700,letterSpacing:'0.16em',textTransform:'uppercase',color:'rgba(255,255,255,0.28)',fontFamily:'ui-monospace,monospace',marginBottom:10}}>{label}</div>
+        <div style={{fontSize:10.5,fontWeight:700,letterSpacing:'0.16em',textTransform:'uppercase',color:'var(--text-muted)',fontFamily:'ui-monospace,monospace',marginBottom:10}}>{label}</div>
         <div style={{fontSize:32,fontWeight:300,color:colour,lineHeight:1,fontVariantNumeric:'tabular-nums',marginBottom:5}}>{display}</div>
-        <div style={{fontSize:10.5,color:'rgba(255,255,255,0.25)',marginBottom:10}}>of {goalDisplay}</div>
+        <div style={{fontSize:10.5,color:'var(--text-muted)',marginBottom:10}}>of {goalDisplay}</div>
         <div style={{height:5,borderRadius:3,background:'rgba(255,255,255,0.08)',overflow:'hidden'}}>
           <div style={{height:'100%',width:`${pct}%`,background:colour,borderRadius:3,transition:'width 0.5s ease'}}/>
         </div>
@@ -228,9 +230,9 @@ function Overview({ habits, waterLogs, nutritionLogs, sleepData, settings, suppl
     <div onClick={nav} style={{flex:'1 1 0',minWidth:0,padding:'14px 16px',cursor:nav?'pointer':'default',background:'rgba(255,255,255,0.03)',borderRadius:12,border:`0.5px solid ${warn?'rgba(229,90,90,0.4)':'rgba(255,255,255,0.07)'}`,transition:'background 0.15s'}}
       onMouseEnter={e=>nav&&(e.currentTarget.style.background='rgba(255,255,255,0.06)')}
       onMouseLeave={e=>nav&&(e.currentTarget.style.background='rgba(255,255,255,0.03)')}>
-      <div style={{fontSize:9,fontWeight:700,letterSpacing:'0.16em',textTransform:'uppercase',color:'rgba(255,255,255,0.28)',fontFamily:'ui-monospace,monospace',marginBottom:7}}>{label}</div>
+      <div style={{fontSize:10.5,fontWeight:700,letterSpacing:'0.16em',textTransform:'uppercase',color:'var(--text-muted)',fontFamily:'ui-monospace,monospace',marginBottom:7}}>{label}</div>
       <div style={{fontSize:20,fontWeight:600,color:warn?'#e55a5a':colour,lineHeight:1,fontVariantNumeric:'tabular-nums'}}>{value}</div>
-      {sub&&<div style={{fontSize:10,color:'rgba(255,255,255,0.28)',marginTop:4,fontFamily:'ui-monospace,monospace'}}>{sub}</div>}
+      {sub&&<div style={{fontSize:11,color:'var(--text-muted)',marginTop:4,fontFamily:'ui-monospace,monospace'}}>{sub}</div>}
     </div>
   );
 
@@ -302,13 +304,13 @@ function Overview({ habits, waterLogs, nutritionLogs, sleepData, settings, suppl
                   </svg>
                   <div style={{position:'absolute',inset:0,display:'flex',flexDirection:'column',alignItems:'center',justifyContent:'center',pointerEvents:'none'}}>
                     <div style={{fontSize:20,fontWeight:700,color:effColour(lastSleep.efficiency??0),lineHeight:1}}>{lastSleep.efficiency??'—'}%</div>
-                    <div style={{fontSize:8,color:'rgba(255,255,255,0.3)',letterSpacing:'0.08em',marginTop:3}}>EFF</div>
+                    <div style={{fontSize:10.5,color:'var(--text-muted)',letterSpacing:'0.08em',marginTop:3}}>EFF</div>
                   </div>
                 </div>
                 <div style={{flex:1,minWidth:0}}>
                   <div style={{display:'flex',alignItems:'baseline',gap:12,marginBottom:4}}>
                     <span style={{fontSize:38,fontWeight:200,color:'rgba(255,255,255,0.92)',lineHeight:1}}>{sleepH}h <span style={{fontSize:26}}>{sleepM}m</span></span>
-                    <span style={{fontSize:12,color:'rgba(255,255,255,0.35)',fontFamily:'ui-monospace,monospace'}}>{lastSleep.bedTime??'—'} → {lastSleep.wakeTime??'—'}</span>
+                    <span style={{fontSize:12,color:'var(--text-muted)',fontFamily:'ui-monospace,monospace'}}>{lastSleep.bedTime??'—'} → {lastSleep.wakeTime??'—'}</span>
                   </div>
                   {lastSleep.stages ? (
                     <>
@@ -322,23 +324,23 @@ function Overview({ habits, waterLogs, nutritionLogs, sleepData, settings, suppl
                         {[{l:'Deep',c:'#4a9eff',v:lastSleep.stages.deep},{l:'REM',c:'#9b5de5',v:lastSleep.stages.rem},{l:'Core',c:'#4caf7d',v:lastSleep.stages.core},{l:'Awake',c:'rgba(255,255,255,0.25)',v:lastSleep.stages.awake}].map(s=>(
                           <div key={s.l} style={{display:'flex',alignItems:'center',gap:5}}>
                             <div style={{width:6,height:6,borderRadius:'50%',background:s.c,flexShrink:0}}/>
-                            <span style={{fontSize:10,color:'rgba(255,255,255,0.35)',fontFamily:'ui-monospace,monospace'}}>{s.l}: {Math.floor((s.v??0)/60)}h{String((s.v??0)%60).padStart(2,'0')}m</span>
+                            <span style={{fontSize:11,color:'var(--text-muted)',fontFamily:'ui-monospace,monospace'}}>{s.l}: {Math.floor((s.v??0)/60)}h{String((s.v??0)%60).padStart(2,'0')}m</span>
                           </div>
                         ))}
                       </div>
                     </>
                   ) : (
-                    <div style={{fontSize:12,color:'rgba(255,255,255,0.25)',marginTop:8}}>No stage data</div>
+                    <div style={{fontSize:12,color:'var(--text-muted)',marginTop:8}}>No stage data</div>
                   )}
                 </div>
               </div>
             ) : (
               <div style={{display:'flex',alignItems:'center',gap:18,padding:'8px 0'}}>
                 <div style={{width:110,height:110,borderRadius:'50%',border:'0.5px solid rgba(255,255,255,0.08)',display:'flex',alignItems:'center',justifyContent:'center',flexShrink:0}}>
-                  <span style={{fontSize:28,opacity:0.15}}>{'💤'}</span>
+                  <span style={{ display: 'flex', justifyContent: 'center', color: 'var(--text-muted)' }}><LineIcon name="moon" size={26} strokeWidth={1.5} /></span>
                 </div>
                 <div>
-                  <div style={{fontSize:15,color:'rgba(255,255,255,0.3)',marginBottom:6}}>No sleep logged yet</div>
+                  <div style={{fontSize:15,color:'var(--text-muted)',marginBottom:6}}>No sleep logged yet</div>
                   <div style={{fontSize:12,color:'rgba(255,255,255,0.18)'}}>Log via Sleep tab or sync Apple Health on iOS →</div>
                 </div>
               </div>
@@ -364,19 +366,19 @@ function Overview({ habits, waterLogs, nutritionLogs, sleepData, settings, suppl
           <Stat label="Supplements" value={`${todaySupps.done}/${todaySupps.total}`}   sub={todaySupps.done===todaySupps.total&&todaySupps.total>0?'✓ all taken':'remaining'} colour="#9b5de5" nav={()=>onNav('supplements')} />
           <Stat label="Workout"     value={workedOutToday?'Done ✓':'Not yet'} colour={workedOutToday?'#4caf7d':'rgba(255,255,255,0.35)'} sub={workedOutToday?'logged today':'no session'} nav={()=>onTabChange?.('workout')} />
           <div style={{flex:'1 1 0',minWidth:0,padding:'14px 16px',background:'rgba(255,255,255,0.03)',borderRadius:12,border:`0.5px solid ${todayStims.caffeine>caffLimit*0.9?'rgba(244,166,66,0.4)':'rgba(255,255,255,0.07)'}`}}>
-            <div style={{fontSize:9,fontWeight:700,letterSpacing:'0.16em',textTransform:'uppercase',color:'rgba(255,255,255,0.28)',fontFamily:'ui-monospace,monospace',marginBottom:7}}>Caffeine</div>
+            <div style={{fontSize:10.5,fontWeight:700,letterSpacing:'0.16em',textTransform:'uppercase',color:'var(--text-muted)',fontFamily:'ui-monospace,monospace',marginBottom:7}}>Caffeine</div>
             <div style={{display:'flex',alignItems:'baseline',gap:4}}>
               <span style={{fontSize:20,fontWeight:600,color:todayStims.caffeine>caffLimit*0.9?'#f4a642':'rgba(255,255,255,0.85)',fontVariantNumeric:'tabular-nums'}}>{useDemo?180:todayStims.caffeine}</span>
-              <span style={{fontSize:10.5,color:'rgba(255,255,255,0.3)'}}>/{caffLimit}mg</span>
+              <span style={{fontSize:10.5,color:'var(--text-muted)'}}>/{caffLimit}mg</span>
             </div>
             <Bar value={useDemo?180:todayStims.caffeine} max={caffLimit} colour={todayStims.caffeine>caffLimit*0.9?'#f4a642':'#4a9eff'}/>
           </div>
           {(todayStims.nicotine>0)&&(
             <div style={{flex:'1 1 0',minWidth:0,padding:'14px 16px',background:'rgba(255,255,255,0.03)',borderRadius:12,border:'0.5px solid rgba(255,255,255,0.07)'}}>
-              <div style={{fontSize:9,fontWeight:700,letterSpacing:'0.16em',textTransform:'uppercase',color:'rgba(255,255,255,0.28)',fontFamily:'ui-monospace,monospace',marginBottom:7}}>Nicotine</div>
+              <div style={{fontSize:10.5,fontWeight:700,letterSpacing:'0.16em',textTransform:'uppercase',color:'var(--text-muted)',fontFamily:'ui-monospace,monospace',marginBottom:7}}>Nicotine</div>
               <div style={{display:'flex',alignItems:'baseline',gap:4}}>
                 <span style={{fontSize:20,fontWeight:600,color:'#f4a642',fontVariantNumeric:'tabular-nums'}}>{todayStims.nicotine}</span>
-                <span style={{fontSize:10.5,color:'rgba(255,255,255,0.3)'}}>/{nicLimit}mg</span>
+                <span style={{fontSize:10.5,color:'var(--text-muted)'}}>/{nicLimit}mg</span>
               </div>
               <Bar value={todayStims.nicotine} max={nicLimit} colour="#f4a642"/>
             </div>
@@ -391,24 +393,24 @@ function Overview({ habits, waterLogs, nutritionLogs, sleepData, settings, suppl
               <div onClick={()=>onNav('body')} style={{flex:1,padding:'20px 18px',background:'rgba(255,255,255,0.03)',borderRadius:14,border:'0.5px solid rgba(255,255,255,0.07)',cursor:'pointer'}}
                 onMouseEnter={e=>e.currentTarget.style.background='rgba(255,255,255,0.06)'}
                 onMouseLeave={e=>e.currentTarget.style.background='rgba(255,255,255,0.03)'}>
-                <div style={{fontSize:9,fontWeight:700,letterSpacing:'0.16em',textTransform:'uppercase',color:'rgba(255,255,255,0.28)',fontFamily:'ui-monospace,monospace',marginBottom:10}}>Weight</div>
-                <div style={{fontSize:34,fontWeight:200,color:'rgba(255,255,255,0.9)',lineHeight:1}}>{latestBody.weight}<span style={{fontSize:15,color:'rgba(255,255,255,0.3)',marginLeft:4}}>kg</span></div>
-                {latestBody.date&&<div style={{fontSize:10.5,color:'rgba(255,255,255,0.25)',marginTop:6,fontFamily:'ui-monospace,monospace'}}>{latestBody.date===today?'logged today':latestBody.date?.slice(5)??'—'}</div>}
+                <div style={{fontSize:10.5,fontWeight:700,letterSpacing:'0.16em',textTransform:'uppercase',color:'var(--text-muted)',fontFamily:'ui-monospace,monospace',marginBottom:10}}>Weight</div>
+                <div style={{fontSize:34,fontWeight:200,color:'rgba(255,255,255,0.9)',lineHeight:1}}>{latestBody.weight}<span style={{fontSize:15,color:'var(--text-muted)',marginLeft:4}}>kg</span></div>
+                {latestBody.date&&<div style={{fontSize:10.5,color:'var(--text-muted)',marginTop:6,fontFamily:'ui-monospace,monospace'}}>{latestBody.date===today?'logged today':latestBody.date?.slice(5)??'—'}</div>}
               </div>
               {latestBody.bodyFat!=null&&(
                 <div onClick={()=>onNav('body')} style={{flex:1,padding:'20px 18px',background:'rgba(255,255,255,0.03)',borderRadius:14,border:'0.5px solid rgba(255,255,255,0.07)',cursor:'pointer'}}
                   onMouseEnter={e=>e.currentTarget.style.background='rgba(255,255,255,0.06)'}
                   onMouseLeave={e=>e.currentTarget.style.background='rgba(255,255,255,0.03)'}>
-                  <div style={{fontSize:9,fontWeight:700,letterSpacing:'0.16em',textTransform:'uppercase',color:'rgba(255,255,255,0.28)',fontFamily:'ui-monospace,monospace',marginBottom:10}}>Body Fat</div>
-                  <div style={{fontSize:34,fontWeight:200,color:'#f4a642',lineHeight:1}}>{latestBody.bodyFat}<span style={{fontSize:15,color:'rgba(255,255,255,0.3)',marginLeft:3}}>%</span></div>
+                  <div style={{fontSize:10.5,fontWeight:700,letterSpacing:'0.16em',textTransform:'uppercase',color:'var(--text-muted)',fontFamily:'ui-monospace,monospace',marginBottom:10}}>Body Fat</div>
+                  <div style={{fontSize:34,fontWeight:200,color:'#f4a642',lineHeight:1}}>{latestBody.bodyFat}<span style={{fontSize:15,color:'var(--text-muted)',marginLeft:3}}>%</span></div>
                 </div>
               )}
               {latestBody.muscle!=null&&(
                 <div onClick={()=>onNav('body')} style={{flex:1,padding:'20px 18px',background:'rgba(255,255,255,0.03)',borderRadius:14,border:'0.5px solid rgba(255,255,255,0.07)',cursor:'pointer'}}
                   onMouseEnter={e=>e.currentTarget.style.background='rgba(255,255,255,0.06)'}
                   onMouseLeave={e=>e.currentTarget.style.background='rgba(255,255,255,0.03)'}>
-                  <div style={{fontSize:9,fontWeight:700,letterSpacing:'0.16em',textTransform:'uppercase',color:'rgba(255,255,255,0.28)',fontFamily:'ui-monospace,monospace',marginBottom:10}}>Muscle</div>
-                  <div style={{fontSize:34,fontWeight:200,color:'#4caf7d',lineHeight:1}}>{latestBody.muscle}<span style={{fontSize:15,color:'rgba(255,255,255,0.3)',marginLeft:4}}>kg</span></div>
+                  <div style={{fontSize:10.5,fontWeight:700,letterSpacing:'0.16em',textTransform:'uppercase',color:'var(--text-muted)',fontFamily:'ui-monospace,monospace',marginBottom:10}}>Muscle</div>
+                  <div style={{fontSize:34,fontWeight:200,color:'#4caf7d',lineHeight:1}}>{latestBody.muscle}<span style={{fontSize:15,color:'var(--text-muted)',marginLeft:4}}>kg</span></div>
                 </div>
               )}
               <div style={{flex:2}}/>
@@ -424,8 +426,8 @@ function Overview({ habits, waterLogs, nutritionLogs, sleepData, settings, suppl
               <div style={{display:'flex',flexDirection:'column',gap:0}}>
                 {todayMeals.map((m,i)=>(
                   <div key={m.id||i} style={{display:'flex',alignItems:'center',gap:14,padding:'11px 0',borderBottom:i<todayMeals.length-1?'0.5px solid rgba(255,255,255,0.05)':'none'}}>
-                    <span style={{fontSize:10.5,color:'rgba(255,255,255,0.25)',fontFamily:'ui-monospace,monospace',minWidth:40}}>{m.time??'—'}</span>
-                    <span style={{flex:1,fontSize:13,color:'rgba(255,255,255,0.75)',overflow:'hidden',textOverflow:'ellipsis',whiteSpace:'nowrap'}}>{m.name}</span>
+                    <span style={{fontSize:10.5,color:'var(--text-muted)',fontFamily:'ui-monospace,monospace',minWidth:40}}>{m.time??'—'}</span>
+                    <span style={{flex:1,fontSize:13,color:'var(--text-secondary)',overflow:'hidden',textOverflow:'ellipsis',whiteSpace:'nowrap'}}>{m.name}</span>
                     <div style={{display:'flex',gap:12,flexShrink:0}}>
                       {[{v:m.calories,u:'kcal',c:'#f4a642'},{v:m.protein,u:'p',c:'#4a9eff'},{v:m.carbs,u:'c',c:'#4caf7d'},{v:m.fat,u:'f',c:'#9b5de5'}].map(({v,u,c})=>(
                         <span key={u} style={{fontSize:11,color:c,fontFamily:'ui-monospace,monospace'}}>{v}<span style={{opacity:0.45}}>{u}</span></span>
@@ -436,7 +438,7 @@ function Overview({ habits, waterLogs, nutritionLogs, sleepData, settings, suppl
               </div>
             ) : (
               <div style={{display:'flex',alignItems:'center',justifyContent:'space-between',padding:'4px 0'}}>
-                <span style={{fontSize:13,color:'rgba(255,255,255,0.25)'}}>No meals logged today</span>
+                <span style={{fontSize:13,color:'var(--text-muted)'}}>No meals logged today</span>
                 <button onClick={()=>onNav('nutrition')} style={{...btnGhost,fontSize:11,padding:'5px 12px'}}>+ Log food</button>
               </div>
             )}
@@ -513,7 +515,7 @@ function Habits({ habits, addHabit, updateHabit, removeHabit }) {
       {/* Habit list */}
       {habits.length === 0 && !adding ? (
         <div style={{ textAlign: 'center', padding: 40, opacity: 0.4 }}>
-          <div style={{ fontSize: 28 }}>💧</div>
+          <div style={{ display: 'flex', justifyContent: 'center', color: 'var(--text-muted)' }}><LineIcon name="water" size={26} strokeWidth={1.5} /></div>
           <p style={{ fontSize: 13, color: 'var(--text-muted)', marginTop: 8 }}>No habits yet. Add one to start tracking.</p>
         </div>
       ) : (
@@ -533,7 +535,7 @@ function Habits({ habits, addHabit, updateHabit, removeHabit }) {
                     {h.name}
                   </div>
                   <div style={{ fontSize: 11, color: 'var(--text-muted)', marginTop: 2 }}>
-                    =% {currentStreak(h, today)} day streak
+                    {currentStreak(h, today)} day streak
                   </div>
                 </div>
                 <button onClick={() => toggle(h)} style={{
@@ -579,7 +581,7 @@ function MicronutrientPanel({ micros }) {
   return (
     <div style={{ ...cardSx, marginBottom: 16 }}>
       <div onClick={() => setOpen(o => !o)} style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', cursor: 'pointer' }}>
-        <div style={{ fontSize: 10, color: 'var(--text-muted)', letterSpacing: '0.07em' }}>MICRONUTRIENTS</div>
+        <div style={{ fontSize: 11, color: 'var(--text-muted)', letterSpacing: '0.07em' }}>MICRONUTRIENTS</div>
         <span style={{ fontSize: 10.5, color: 'var(--text-muted)' }}>
           {tracked > 0 ? `${tracked} tracked today` : 'no data yet'} {open ? '▾' : '▸'}
         </span>
@@ -596,7 +598,7 @@ function MicronutrientPanel({ micros }) {
             const rows = MICRONUTRIENTS.filter(m => m.group === g.id);
             return (
               <div key={g.id}>
-                <div style={{ fontSize: 9.5, fontWeight: 700, letterSpacing: '0.08em', color: g.colour, marginBottom: 8, opacity: 0.85 }}>
+                <div style={{ fontSize: 10.5, fontWeight: 700, letterSpacing: '0.08em', color: g.colour, marginBottom: 8, opacity: 0.85 }}>
                   {g.label.toUpperCase()}
                 </div>
                 <div style={{ display: 'flex', flexDirection: 'column', gap: 9 }}>
@@ -609,7 +611,7 @@ function MicronutrientPanel({ micros }) {
                       <div key={m.key}>
                         <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 3 }}>
                           <span style={{ fontSize: 11.5, color: amt === 0 ? 'var(--text-muted)' : 'var(--text-secondary)' }}>
-                            {m.label}{m.limit && <span style={{ fontSize: 9, color: 'var(--text-muted)', marginLeft: 4 }}>limit</span>}
+                            {m.label}{m.limit && <span style={{ fontSize: 10.5, color: 'var(--text-muted)', marginLeft: 4 }}>limit</span>}
                           </span>
                           <span style={{ fontSize: 10.5, color: over ? '#e55a5a' : 'var(--text-muted)' }}>
                             {fmt(amt, m.unit)} / {fmt(m.rda, m.unit)} · {Math.round(pct)}%
@@ -623,7 +625,7 @@ function MicronutrientPanel({ micros }) {
               </div>
             );
           })}
-          <div style={{ fontSize: 9.5, color: 'var(--text-muted)', opacity: 0.7, lineHeight: 1.5 }}>
+          <div style={{ fontSize: 10.5, color: 'var(--text-muted)', opacity: 0.7, lineHeight: 1.5 }}>
             RDAs are general adult reference values. Micros only appear when a logged food or supplement reports them.
           </div>
         </div>
@@ -832,7 +834,7 @@ function Nutrition({ nutritionLogs, addNutritionLog, updateNutritionLog, setting
     }>
       {/* Macro bars */}
       <div style={{ ...cardSx, marginBottom: 16, display: 'flex', flexDirection: 'column', gap: 12 }}>
-        <div style={{ fontSize: 10, color: 'var(--text-muted)', letterSpacing: '0.07em' }}>TODAY'S MACROS</div>
+        <div style={{ fontSize: 11, color: 'var(--text-muted)', letterSpacing: '0.07em' }}>TODAY'S MACROS</div>
         {MACROS.map(m => (
           <div key={m.key}>
             <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 4 }}>
@@ -855,7 +857,7 @@ function Nutrition({ nutritionLogs, addNutritionLog, updateNutritionLog, setting
       {/* Recent & frequent: one-tap re-log */}
       {frequent.length > 0 && (
         <div style={{ marginBottom: 16 }}>
-          <div style={{ fontSize: 10, color: 'var(--text-muted)', letterSpacing: '0.07em', marginBottom: 8 }}>RECENT &amp; FREQUENT</div>
+          <div style={{ fontSize: 11, color: 'var(--text-muted)', letterSpacing: '0.07em', marginBottom: 8 }}>RECENT &amp; FREQUENT</div>
           <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>
             {frequent.map(f => (
               <button key={f.name} type="button" onClick={() => quickLog(f)}
@@ -1026,13 +1028,13 @@ function Nutrition({ nutritionLogs, addNutritionLog, updateNutritionLog, setting
 
       {/* Meal log */}
       <div style={{ ...cardSx }}>
-        <div style={{ fontSize: 10, color: 'var(--text-muted)', letterSpacing: '0.07em', marginBottom: 10 }}>TODAY'S LOG</div>
+        <div style={{ fontSize: 11, color: 'var(--text-muted)', letterSpacing: '0.07em', marginBottom: 10 }}>TODAY'S LOG</div>
         {meals.length === 0 ? (
           <p style={{ fontSize: 12.5, color: 'var(--text-muted)', margin: 0 }}>Nothing logged yet today.</p>
         ) : (
           groupBySection(meals).map(sec => (
             <div key={sec.id} style={{ marginBottom: 10 }}>
-              <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: 10, letterSpacing: '0.07em', color: 'var(--text-muted)', textTransform: 'uppercase', padding: '4px 0' }}>
+              <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: 11, letterSpacing: '0.07em', color: 'var(--text-muted)', textTransform: 'uppercase', padding: '4px 0' }}>
                 <span>{sec.label}</span><span>{sec.kcal} kcal</span>
               </div>
               {sec.meals.map((m, i) => (
@@ -1048,7 +1050,7 @@ function Nutrition({ nutritionLogs, addNutritionLog, updateNutritionLog, setting
                   </div>
                   <div style={{ fontSize: 12, color: 'var(--text-secondary)', textAlign: 'right' }}>
                     <div>{m.calories} kcal</div>
-                    <div style={{ fontSize: 10, color: 'var(--text-muted)' }}>P{m.protein} C{m.carbs} F{m.fat}</div>
+                    <div style={{ fontSize: 11, color: 'var(--text-muted)' }}>P{m.protein} C{m.carbs} F{m.fat}</div>
                   </div>
                   <button type="button" onClick={() => removeMeal(m.id)} aria-label={`Remove ${m.name}`}
                     style={{ width: 32, height: 32, flexShrink: 0, background: 'none', border: 'none', color: 'var(--text-muted)', fontSize: 16, cursor: 'pointer' }}>×</button>
@@ -1198,13 +1200,13 @@ function Water({ waterLogs, addWaterLog, settings }) {
           <div style={{marginBottom:10}}>
             <label style={lblSx}>Average daily caffeine (mg)</label>
             <input type="number" value={profile.caffeineMg} onChange={e=>saveProfile({...profile,caffeineMg:+e.target.value})} style={inputSx}/>
-            <div style={{fontSize:10,color:'var(--text-muted)',marginTop:4}}>
+            <div style={{fontSize:11,color:'var(--text-muted)',marginTop:4}}>
               ☕ 1 coffee ≈ 95mg · espresso ≈ 75mg · energy drink ≈ 160mg. Above 200mg adds to daily water target.
             </div>
           </div>
           {/* Calculated goal */}
           <div style={{padding:'10px 14px',borderRadius:8,background:'rgba(74,158,255,0.08)',border:'0.5px solid rgba(74,158,255,0.2)',display:'flex',justifyContent:'space-between',alignItems:'center'}}>
-            <span style={{fontSize:12,color:'rgba(255,255,255,0.6)'}}>Calculated daily goal</span>
+            <span style={{fontSize:12,color:'var(--text-secondary)'}}>Calculated daily goal</span>
             <span style={{fontSize:16,fontWeight:600,color:'#4a9eff'}}>{goal>=1000?`${(goal/1000).toFixed(1)}L`:`${goal}ml`}</span>
           </div>
         </GlassCard>
@@ -1218,7 +1220,7 @@ function Water({ waterLogs, addWaterLog, settings }) {
           <div style={{position:'absolute',inset:0,borderRadius:'50%',background:`radial-gradient(circle,${colour}08 0%,transparent 70%)`,pointerEvents:'none'}}/>
         </div>
         <div style={{fontSize:14,color:colour,fontWeight:500}}>{Math.round(pct)}% complete</div>
-        {pct<100&&<div style={{fontSize:11.5,color:'rgba(255,255,255,0.35)'}}>{fmtWater(goal-total)} remaining</div>}
+        {pct<100&&<div style={{fontSize:11.5,color:'var(--text-muted)'}}>{fmtWater(goal-total)} remaining</div>}
         {trained&&<div style={{fontSize:11,color:'var(--text-secondary)'}}>Goal includes +500 ml for today's training</div>}
         {advice&&(
           <div role="status" style={{fontSize:13,marginTop:4,textAlign:'center',maxWidth:320,lineHeight:1.45,color:advice.status==='behind'?'#e8a13a':advice.status==='done'||advice.status==='ahead'?'#4caf7d':'var(--text-secondary)'}}>{advice.message}</div>
@@ -1383,9 +1385,9 @@ function Body({ bodyMetrics, addBodyMetric, settings }) {
             <div style={{display:'flex',gap:8,marginBottom:12}}>
               {[{label:'WEIGHT',value:latest.weight,unit:'kg'},{label:'BODY FAT',value:latest.bodyFat,unit:'%'},{label:'MUSCLE',value:latest.muscle,unit:'%'}].filter(m=>m.value).map(m=>(
                 <div key={m.label} style={{...cardSx,flex:1,textAlign:'center'}}>
-                  <div style={{fontSize:9,color:'var(--text-muted)',letterSpacing:'0.1em',marginBottom:4}}>{m.label}</div>
-                  <div style={{fontSize:22,fontWeight:300,color:'var(--text-primary)'}}>{m.value}<span style={{fontSize:10,color:'var(--text-muted)',marginLeft:2}}>{m.unit}</span></div>
-                  <div style={{fontSize:9.5,color:'var(--text-muted)',marginTop:2}}>{latest.date===todayStr()?'today':latest.date?.slice(5)}</div>
+                  <div style={{fontSize:10.5,color:'var(--text-muted)',letterSpacing:'0.1em',marginBottom:4}}>{m.label}</div>
+                  <div style={{fontSize:22,fontWeight:300,color:'var(--text-primary)'}}>{m.value}<span style={{fontSize:11,color:'var(--text-muted)',marginLeft:2}}>{m.unit}</span></div>
+                  <div style={{fontSize:10.5,color:'var(--text-muted)',marginTop:2}}>{latest.date===todayStr()?'today':latest.date?.slice(5)}</div>
                 </div>
               ))}
             </div>
@@ -1396,11 +1398,11 @@ function Body({ bodyMetrics, addBodyMetric, settings }) {
             <GlassCard>
               <div style={{display:'flex',gap:18,alignItems:'flex-end',flexWrap:'wrap',marginBottom:10}}>
                 <div>
-                  <div style={{fontSize:9,color:'var(--text-muted)',letterSpacing:'0.1em',marginBottom:4}}>TREND WEIGHT</div>
+                  <div style={{fontSize:10.5,color:'var(--text-muted)',letterSpacing:'0.1em',marginBottom:4}}>TREND WEIGHT</div>
                   <div className="val-num" style={{fontSize:28,fontWeight:500,color:'var(--tab-accent)',lineHeight:1}}>{coach.trend}<span style={{fontSize:12,color:'var(--text-secondary)',marginLeft:3}}>kg</span></div>
                 </div>
                 <div>
-                  <div style={{fontSize:9,color:'var(--text-muted)',letterSpacing:'0.1em',marginBottom:4}}>RATE</div>
+                  <div style={{fontSize:10.5,color:'var(--text-muted)',letterSpacing:'0.1em',marginBottom:4}}>RATE</div>
                   <div className="val-num" style={{fontSize:20,color:'var(--text-primary)',lineHeight:1.1}}>{coach.rate==null?'—':(coach.rate>0?'+':'')+coach.rate}<span style={{fontSize:11,color:'var(--text-secondary)',marginLeft:3}}>kg/week</span></div>
                 </div>
               </div>
@@ -1421,7 +1423,7 @@ function Body({ bodyMetrics, addBodyMetric, settings }) {
             </GlassCard>
           ):(
             <div style={{textAlign:'center',padding:32,opacity:0.35}}>
-              <div style={{fontSize:28}}>⚖</div>
+              <div style={{ display: 'flex', justifyContent: 'center', color: 'var(--text-muted)' }}><LineIcon name="scale" size={26} strokeWidth={1.5} /></div>
               <p style={{fontSize:12,color:'var(--text-muted)',marginTop:8}}>Log a few entries to see your trend.</p>
             </div>
           )}
@@ -1633,7 +1635,7 @@ function Supplements({ supplements, suppLogs, addSupplement, removeSupplement, a
                       </select>
                       <input type="number" min="0" value={val} onChange={e=>setMicroVal(key,e.target.value)} style={{...inputSx,flex:1}}/>
                       <span style={{fontSize:11,color:'var(--text-muted)',minWidth:22}}>{def?.unit}</span>
-                      <button onClick={()=>removeMicroRow(key)} style={{background:'none',border:'none',cursor:'pointer',color:'rgba(255,255,255,0.25)',padding:4,display:'flex'}}><TrashIcon/></button>
+                      <button onClick={()=>removeMicroRow(key)} style={{background:'none',border:'none',cursor:'pointer',color:'var(--text-muted)',padding:4,display:'flex'}}><TrashIcon/></button>
                     </div>
                   );
                 })}
@@ -1651,7 +1653,7 @@ function Supplements({ supplements, suppLogs, addSupplement, removeSupplement, a
       {/* ── Stack grouped by time ── */}
       {supplements.length===0&&!showForm?(
         <div style={{textAlign:'center',padding:40,opacity:0.4}}>
-          <div style={{fontSize:32}}>💊</div>
+          <div style={{ display: 'flex', justifyContent: 'center', color: 'var(--text-muted)' }}><LineIcon name="pill" size={30} strokeWidth={1.5} /></div>
           <p style={{fontSize:13,color:'var(--text-muted)',marginTop:8}}>No supplements in your stack yet.</p>
         </div>
       ):(
@@ -1708,7 +1710,7 @@ function Supplements({ supplements, suppLogs, addSupplement, removeSupplement, a
                         <div style={{fontSize:13,color:taken?'var(--text-muted)':'var(--text-primary)',textDecoration:taken?'line-through':'none',transition:'all 0.2s',display:'flex',alignItems:'center',gap:6}}>
                           {s.name}
                           {hasMicros(s.micros)&&(
-                            <span style={{fontSize:9,fontWeight:700,padding:'1px 6px',borderRadius:4,background:'rgba(74,158,255,0.14)',color:'#4a9eff',letterSpacing:'0.03em',flexShrink:0}}>
+                            <span style={{fontSize:10.5,fontWeight:700,padding:'1px 6px',borderRadius:4,background:'rgba(74,158,255,0.14)',color:'#4a9eff',letterSpacing:'0.03em',flexShrink:0}}>
                               {Object.keys(s.micros).filter(k=>MICRO_BY_KEY[k]&&s.micros[k]>0).length} nutrients
                             </span>
                           )}
@@ -1718,7 +1720,7 @@ function Supplements({ supplements, suppLogs, addSupplement, removeSupplement, a
 
                       {/* Running low badge — if quantity tracked */}
                       {s.runningLow&&(
-                        <span style={{fontSize:9.5,fontWeight:700,padding:'2px 7px',borderRadius:4,background:'rgba(244,166,66,0.15)',color:'#f4a642',letterSpacing:'0.04em',flexShrink:0}}>
+                        <span style={{fontSize:10.5,fontWeight:700,padding:'2px 7px',borderRadius:4,background:'rgba(244,166,66,0.15)',color:'#f4a642',letterSpacing:'0.04em',flexShrink:0}}>
                            Running low
                         </span>
                       )}
@@ -1836,7 +1838,7 @@ function Sleep({ sleepData, settings }) {
       {/* Stage breakdown */}
       {displayLatest?.stages && (
         <div style={{ ...cardSx, marginBottom: 16 }}>
-          <div style={{ fontSize: 10, color: 'var(--text-muted)', letterSpacing: '0.07em', marginBottom: 10 }}>SLEEP STAGES</div>
+          <div style={{ fontSize: 11, color: 'var(--text-muted)', letterSpacing: '0.07em', marginBottom: 10 }}>SLEEP STAGES</div>
           <StageBar height={16} stages={[
             { label:'Deep',  value: displayLatest.stages.deep  ?? 0, colour:'#4a9eff' },
             { label:'REM',   value: displayLatest.stages.rem   ?? 0, colour:'#9b5de5' },
@@ -1864,7 +1866,7 @@ function Sleep({ sleepData, settings }) {
       {/* 14-night trend */}
       {chartData.length > 0 && (
         <div style={{ ...cardSx }}>
-          <div style={{ fontSize: 10, color: 'var(--text-muted)', letterSpacing: '0.07em', marginBottom: 12 }}>
+          <div style={{ fontSize: 11, color: 'var(--text-muted)', letterSpacing: '0.07em', marginBottom: 12 }}>
             14-NIGHT TREND (hours)
           </div>
           <BarChart data={chartData} maxHeight={100} goalLine={8} />
@@ -1874,7 +1876,7 @@ function Sleep({ sleepData, settings }) {
       {/* Sleep Scheduler */}
       <div style={{ ...cardSx, marginTop: 16 }}>
         <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 14 }}>
-          <div style={{ fontSize: 10, color: 'var(--text-muted)', letterSpacing: '0.07em' }}>SLEEP SCHEDULER</div>
+          <div style={{ fontSize: 11, color: 'var(--text-muted)', letterSpacing: '0.07em' }}>SLEEP SCHEDULER</div>
           {schedule?.bedtime && (
             <span style={{ fontSize: 10.5, color: '#4a9eff', background: 'rgba(74,158,255,0.1)', borderRadius: 6, padding: '2px 8px' }}>
               {schedule.bedtime} → {schedule.wakeTime || '—'}
@@ -2007,10 +2009,10 @@ function Stimulant({ stimLogs, addStimLog, removeStimLog, settings }) {
       <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 14, marginBottom: 20 }}>
         {/* Caffeine */}
         <GlassCard style={{ marginBottom: 0 }}>
-          <div style={{ fontSize: 9, fontWeight: 700, letterSpacing: '0.16em', textTransform: 'uppercase', color: 'rgba(255,255,255,0.3)', marginBottom: 8 }}>Caffeine</div>
+          <div style={{ fontSize: 10.5, fontWeight: 700, letterSpacing: '0.16em', textTransform: 'uppercase', color: 'var(--text-muted)', marginBottom: 8 }}>Caffeine</div>
           <div style={{ display: 'flex', alignItems: 'baseline', gap: 6, marginBottom: 8 }}>
             <span style={{ fontSize: 48, fontWeight: 200, color: caffColour, lineHeight: 1, fontVariantNumeric: 'tabular-nums' }}>{caffTotal}</span>
-            <span style={{ fontSize: 14, color: 'rgba(255,255,255,0.3)' }}>/ {caffLimit}mg</span>
+            <span style={{ fontSize: 14, color: 'var(--text-muted)' }}>/ {caffLimit}mg</span>
           </div>
           <div style={{ height: 5, borderRadius: 3, background: 'rgba(255,255,255,0.07)', overflow: 'hidden' }}>
             <div style={{ height: '100%', width: `${Math.min((caffTotal/caffLimit)*100,100)}%`, background: caffColour, borderRadius: 3, transition: 'width 0.5s' }}/>
@@ -2020,10 +2022,10 @@ function Stimulant({ stimLogs, addStimLog, removeStimLog, settings }) {
 
         {/* Nicotine */}
         <GlassCard style={{ marginBottom: 0 }}>
-          <div style={{ fontSize: 9, fontWeight: 700, letterSpacing: '0.16em', textTransform: 'uppercase', color: 'rgba(255,255,255,0.3)', marginBottom: 8 }}>Nicotine</div>
+          <div style={{ fontSize: 10.5, fontWeight: 700, letterSpacing: '0.16em', textTransform: 'uppercase', color: 'var(--text-muted)', marginBottom: 8 }}>Nicotine</div>
           <div style={{ display: 'flex', alignItems: 'baseline', gap: 6, marginBottom: 8 }}>
             <span style={{ fontSize: 48, fontWeight: 200, color: nicTotal > nicLimit * 0.8 ? '#e55a5a' : '#f4a642', lineHeight: 1, fontVariantNumeric: 'tabular-nums' }}>{nicTotal}</span>
-            <span style={{ fontSize: 14, color: 'rgba(255,255,255,0.3)' }}>/ {nicLimit}mg</span>
+            <span style={{ fontSize: 14, color: 'var(--text-muted)' }}>/ {nicLimit}mg</span>
           </div>
           <div style={{ height: 5, borderRadius: 3, background: 'rgba(255,255,255,0.07)', overflow: 'hidden' }}>
             <div style={{ height: '100%', width: `${Math.min((nicTotal/nicLimit)*100,100)}%`, background: nicTotal > nicLimit * 0.8 ? '#e55a5a' : '#f4a642', borderRadius: 3, transition: 'width 0.5s' }}/>
@@ -2061,7 +2063,7 @@ function Stimulant({ stimLogs, addStimLog, removeStimLog, settings }) {
               <text key={l} x={(i/4)*caffLineW} y={caffLineH+15} fontSize="9" fill="rgba(255,255,255,0.25)" textAnchor="middle" fontFamily="ui-monospace,monospace">{l}</text>
             ))}
           </svg>
-          <div style={{ fontSize: 10, color: 'rgba(244,166,66,0.5)', marginTop: 2 }}>— dashed = daily limit ({caffLimit}mg)</div>
+          <div style={{ fontSize: 11, color: 'rgba(244,166,66,0.5)', marginTop: 2 }}>— dashed = daily limit ({caffLimit}mg)</div>
         </GlassCard>
       )}
 
@@ -2077,7 +2079,7 @@ function Stimulant({ stimLogs, addStimLog, removeStimLog, settings }) {
             }}
             onMouseEnter={e => { if (!manageMode) e.currentTarget.style.borderColor='var(--accent)'; }}
             onMouseLeave={e => e.currentTarget.style.borderColor='var(--card-border)'}>
-              {p.name} <span style={{ opacity:0.6, fontSize:10 }}>{p.amount}{p.unit}</span>
+              {p.name} <span style={{ opacity:0.6, fontSize:11 }}>{p.amount}{p.unit}</span>
             </button>
             {manageMode && (
               <button
@@ -2141,9 +2143,9 @@ function Stimulant({ stimLogs, addStimLog, removeStimLog, settings }) {
       {/* Today's log */}
       <div style={{ ...cardSx }}>
         <div style={{ display:'flex', justifyContent:'space-between', alignItems:'center', marginBottom:8 }}>
-          <div style={{ fontSize:10, color:'var(--text-muted)', letterSpacing:'0.07em' }}>TODAY</div>
+          <div style={{ fontSize:11, color:'var(--text-muted)', letterSpacing:'0.07em' }}>TODAY</div>
           {todayLogs.length > 0 && (
-            <span style={{ fontSize:10, color:'var(--text-muted)' }}>Tap × to remove an entry</span>
+            <span style={{ fontSize:11, color:'var(--text-muted)' }}>Tap × to remove an entry</span>
           )}
         </div>
         {todayLogs.length === 0 ? (
@@ -2364,7 +2366,7 @@ function MealPlanner({ settings, savedMeals = [], addSavedMeal, bodyMetrics = []
                   { l: 'Fat',     val: fatGoal,      set: setFatGoal,     c: '#9b5de5' },
                 ].map(({ l, val, set, c }) => (
                   <div key={l} style={{ padding: '6px 10px', borderRadius: 8, background: `${c}14`, border: `0.5px solid ${c}40`, display: 'flex', flexDirection: 'column', gap: 3 }}>
-                    <div style={{ fontSize: 9, color: c, fontWeight: 700, letterSpacing: '0.08em' }}>{l}</div>
+                    <div style={{ fontSize: 10.5, color: c, fontWeight: 700, letterSpacing: '0.08em' }}>{l}</div>
                     <input
                       type="number"
                       value={val}
@@ -2403,7 +2405,7 @@ function MealPlanner({ settings, savedMeals = [], addSavedMeal, bodyMetrics = []
               onBlur={e => e.target.style.borderColor = 'var(--input-border)'} />
           </div>
           {latestBody?.weight && (
-            <div style={{ fontSize: 11, color: 'rgba(255,255,255,0.3)', marginBottom: 12 }}>
+            <div style={{ fontSize: 11, color: 'var(--text-muted)', marginBottom: 12 }}>
               Using body weight: <span style={{ color: 'var(--accent)' }}>{latestBody.weight}kg</span>
               {supplements.length > 0 && <> · Supplements: <span style={{ color: 'var(--accent)' }}>{supplements.slice(0,3).map(s=>s.name).join(', ')}{supplements.length > 3 ? ` +${supplements.length-3}` : ''}</span></>}
             </div>
@@ -2469,16 +2471,16 @@ function MealPlanner({ settings, savedMeals = [], addSavedMeal, bodyMetrics = []
                     <div style={{ display: 'flex', gap: 10, flexWrap: 'wrap' }}>
                       {[['Calories', day.totals?.calories, calorieGoal, '#f4a642', ''], ['Protein', day.totals?.protein, proteinGoal, '#4a9eff', 'g'], ['Carbs', day.totals?.carbs, carbGoal, '#4caf7d', 'g'], ['Fat', day.totals?.fat, fatGoal, '#9b5de5', 'g']].map(([l, v, t, c, u]) => (
                         <div key={l} style={{ flex: 1, padding: '12px 14px', borderRadius: 10, background: 'rgba(255,255,255,0.03)', border: `0.5px solid ${totalColour(v, t)}30` }}>
-                          <div style={{ fontSize: 9, fontWeight: 700, letterSpacing: '0.1em', color: 'rgba(255,255,255,0.3)', marginBottom: 6 }}>{l.toUpperCase()}</div>
+                          <div style={{ fontSize: 10.5, fontWeight: 700, letterSpacing: '0.1em', color: 'var(--text-muted)', marginBottom: 6 }}>{l.toUpperCase()}</div>
                           <div style={{ fontSize: 22, fontWeight: 600, color: totalColour(v, t), lineHeight: 1 }}>{v}{u}</div>
-                          <div style={{ fontSize: 9.5, color: 'rgba(255,255,255,0.25)', marginTop: 3 }}>target {t}{u}</div>
+                          <div style={{ fontSize: 10.5, color: 'var(--text-muted)', marginTop: 3 }}>target {t}{u}</div>
                         </div>
                       ))}
                       {day.totals?.cost != null && (
                         <div style={{ flex: 1, padding: '12px 14px', borderRadius: 10, background: 'rgba(244,166,66,0.05)', border: '0.5px solid rgba(244,166,66,0.2)' }}>
-                          <div style={{ fontSize: 9, fontWeight: 700, letterSpacing: '0.1em', color: 'rgba(255,255,255,0.3)', marginBottom: 6 }}>FOOD COST</div>
+                          <div style={{ fontSize: 10.5, fontWeight: 700, letterSpacing: '0.1em', color: 'var(--text-muted)', marginBottom: 6 }}>FOOD COST</div>
                           <div style={{ fontSize: 22, fontWeight: 600, color: '#f4a642', lineHeight: 1 }}>{currencySymbol}{day.totals.cost.toFixed(2)}</div>
-                          <div style={{ fontSize: 9.5, color: 'rgba(255,255,255,0.25)', marginTop: 3 }}>est. ingredients</div>
+                          <div style={{ fontSize: 10.5, color: 'var(--text-muted)', marginTop: 3 }}>est. ingredients</div>
                         </div>
                       )}
                     </div>
@@ -2499,19 +2501,19 @@ function MealPlanner({ settings, savedMeals = [], addSavedMeal, bodyMetrics = []
                             <div style={{ flex: 1, minWidth: 0 }}>
                               <div style={{ display: 'flex', alignItems: 'baseline', gap: 8, marginBottom: 4 }}>
                                 <div style={{ fontSize: 13.5, fontWeight: 600, color: 'rgba(255,255,255,0.9)' }}>{meal.name}</div>
-                                <span style={{ fontSize: 9.5, padding: '2px 7px', borderRadius: 99, background: `${typeColour}18`, color: typeColour, fontWeight: 700, letterSpacing: '0.06em', textTransform: 'uppercase' }}>{meal.type}</span>
+                                <span style={{ fontSize: 10.5, padding: '2px 7px', borderRadius: 99, background: `${typeColour}18`, color: typeColour, fontWeight: 700, letterSpacing: '0.06em', textTransform: 'uppercase' }}>{meal.type}</span>
                               </div>
-                              <div style={{ fontSize: 11.5, color: 'rgba(255,255,255,0.45)', lineHeight: 1.55, marginBottom: 10 }}>{meal.description}</div>
+                              <div style={{ fontSize: 11.5, color: 'var(--text-muted)', lineHeight: 1.55, marginBottom: 10 }}>{meal.description}</div>
                               <div style={{ display: 'flex', gap: 12, flexWrap: 'wrap', alignItems: 'baseline' }}>
                                 {[['Kcal', meal.calories, '#f4a642'], ['P', meal.protein, '#4a9eff'], ['C', meal.carbs, '#4caf7d'], ['F', meal.fat, '#9b5de5']].map(([l, v, c]) => (
                                   <div key={l} style={{ display: 'flex', alignItems: 'baseline', gap: 3 }}>
-                                    <span style={{ fontSize: 9, fontWeight: 700, color: 'rgba(255,255,255,0.25)', letterSpacing: '0.06em' }}>{l}</span>
+                                    <span style={{ fontSize: 10.5, fontWeight: 700, color: 'var(--text-muted)', letterSpacing: '0.06em' }}>{l}</span>
                                     <span style={{ fontSize: 13, fontWeight: 600, color: c, fontVariantNumeric: 'tabular-nums' }}>{v}{l!=='Kcal'?'g':''}</span>
                                   </div>
                                 ))}
                                 {meal.estimatedCost != null && (
                                   <div style={{ display: 'flex', alignItems: 'baseline', gap: 3, marginLeft: 'auto' }}>
-                                    <span style={{ fontSize: 9, fontWeight: 700, color: 'rgba(255,255,255,0.25)', letterSpacing: '0.06em' }}>COST</span>
+                                    <span style={{ fontSize: 10.5, fontWeight: 700, color: 'var(--text-muted)', letterSpacing: '0.06em' }}>COST</span>
                                     <span style={{ fontSize: 12, fontWeight: 600, color: '#f4a642', fontVariantNumeric: 'tabular-nums' }}>{currencySymbol}{meal.estimatedCost.toFixed(2)}</span>
                                   </div>
                                 )}
@@ -2619,12 +2621,12 @@ function PeakStateSection({ stimLogs, sleepData, peakState }) {
               <div style={{ fontSize: 56, fontWeight: 200, color: scoreColour, lineHeight: 1, fontVariantNumeric: 'tabular-nums' }}>
                 {score}
               </div>
-              <div style={{ fontSize: 10, fontWeight: 700, letterSpacing: '0.16em', color: 'rgba(255,255,255,0.3)', textTransform: 'uppercase', marginTop: 4 }}>
+              <div style={{ fontSize: 11, fontWeight: 700, letterSpacing: '0.16em', color: 'var(--text-muted)', textTransform: 'uppercase', marginTop: 4 }}>
                 {scoreLabel}
               </div>
             </div>
             <div style={{ flex: 1, minWidth: 0 }}>
-              <div style={{ fontSize: 13, color: 'rgba(255,255,255,0.6)', marginBottom: 10, lineHeight: 1.55 }}>
+              <div style={{ fontSize: 13, color: 'var(--text-secondary)', marginBottom: 10, lineHeight: 1.55 }}>
                 {peakState?.suggestion ?? ''}
               </div>
               <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>
@@ -2634,7 +2636,7 @@ function PeakStateSection({ stimLogs, sleepData, peakState }) {
                   { l: 'Peak State', v: peakState.score, c: scoreColour },
                 ].map(s => (
                   <div key={s.l} style={{ padding: '6px 12px', borderRadius: 8, background: `${s.c}14`, border: `0.5px solid ${s.c}30` }}>
-                    <div style={{ fontSize: 9, fontWeight: 700, letterSpacing: '0.1em', color: s.c, marginBottom: 3 }}>{s.l.toUpperCase()}</div>
+                    <div style={{ fontSize: 10.5, fontWeight: 700, letterSpacing: '0.1em', color: s.c, marginBottom: 3 }}>{s.l.toUpperCase()}</div>
                     <div style={{ fontSize: 18, fontWeight: 600, color: s.c }}>{s.v}</div>
                   </div>
                 ))}
@@ -2698,7 +2700,7 @@ function PeakStateSection({ stimLogs, sleepData, peakState }) {
               })}
             </svg>
             {todayStims.length > 0 && (
-              <div style={{ fontSize: 10, color: 'rgba(255,255,255,0.3)', marginTop: 4 }}>
+              <div style={{ fontSize: 11, color: 'var(--text-muted)', marginTop: 4 }}>
                  Orange dots = caffeine intake
               </div>
             )}
@@ -2715,8 +2717,8 @@ function PeakStateSection({ stimLogs, sleepData, peakState }) {
               return (
                 <div key={key}>
                   <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 4 }}>
-                    <span style={{ fontSize: 11.5, color: 'rgba(255,255,255,0.6)' }}>{factor?.label ?? key}</span>
-                    <span style={{ fontSize: 11, color: 'rgba(255,255,255,0.35)', fontVariantNumeric: 'tabular-nums' }}>{factor?.value}</span>
+                    <span style={{ fontSize: 11.5, color: 'var(--text-secondary)' }}>{factor?.label ?? key}</span>
+                    <span style={{ fontSize: 11, color: 'var(--text-muted)', fontVariantNumeric: 'tabular-nums' }}>{factor?.value}</span>
                     <span style={{ fontSize: 11, color: colour, fontVariantNumeric: 'tabular-nums', marginLeft: 8 }}>+{factor?.pts ?? 0}/{factor?.max ?? 0}</span>
                   </div>
                   <div style={{ height: 5, borderRadius: 3, background: 'rgba(255,255,255,0.07)', overflow: 'hidden' }}>
@@ -2734,16 +2736,16 @@ function PeakStateSection({ stimLogs, sleepData, peakState }) {
 }
 
 const SUB_SECTIONS = [
-  { id:'overview',    label:'Overview',    icon:'🏠' },
-  { id:'peakstate',   label:'Peak State',  icon:'⚡' },
-  { id:'habits',      label:'Habits',      icon:'✅' },
-  { id:'nutrition',   label:'Nutrition',   icon:'🥗' },
-  { id:'water',       label:'Water',       icon:'💧' },
-  { id:'body',        label:'Body',        icon:'📊' },
-  { id:'supplements', label:'Supplements', icon:'💊' },
-  { id:'sleep',       label:'Sleep',       icon:'🌙' },
-  { id:'stimulant',   label:'Stimulant',   icon:'☕' },
-  { id:'mealplan',    label:'Meal Plan',   icon:'🍽️' },
+  { id:'overview',    label:'Overview',    icon:'home' },
+  { id:'peakstate',   label:'Peak State',  icon:'bolt' },
+  { id:'habits',      label:'Habits',      icon:'checkCircle' },
+  { id:'nutrition',   label:'Nutrition',   icon:'utensils' },
+  { id:'water',       label:'Water',       icon:'water' },
+  { id:'body',        label:'Body',        icon:'scale' },
+  { id:'supplements', label:'Supplements', icon:'pill' },
+  { id:'sleep',       label:'Sleep',       icon:'moon' },
+  { id:'stimulant',   label:'Stimulant',   icon:'coffee' },
+  { id:'mealplan',    label:'Meal Plan',   icon:'mealplan' },
 ];
 
 // Coach screens (Fuel, Recover, Body, Habits, Goal HQ) each show a slice of
@@ -2804,22 +2806,22 @@ export default function Health({ settings, onTabChange, peakState, sections = nu
     <div style={{ display: 'flex', height: '100%', overflow: 'hidden' }}>
       {/* Left nav */}
       <div style={{
-        width: 150, flexShrink: 0,
+        width: 176, flexShrink: 0,
         borderRight: '0.5px solid var(--sidebar-divider)',
         display: 'flex', flexDirection: 'column',
         padding: '16px 0', gap: 2, overflowY: 'auto',
       }}>
         {shown.map(s => (
           <button key={s.id} onClick={() => setActive(s.id)} style={{
-            display: 'flex', alignItems: 'center', gap: 8,
-            padding: '8px 16px', border: 'none', cursor: 'pointer',
+            display: 'flex', alignItems: 'center', gap: 10, minHeight: 36, whiteSpace: 'nowrap',
+            padding: '8px 16px', border: 'none', cursor: 'pointer', fontFamily: 'inherit',
             borderLeft: `2px solid ${active === s.id ? 'var(--tab-accent)' : 'transparent'}`,
             color: active === s.id ? 'var(--tab-accent)' : 'var(--text-secondary)',
             fontSize: 13, fontWeight: active === s.id ? 500 : 400,
             transition: 'all 0.15s ease', textAlign: 'left',
             background: active === s.id ? 'var(--active-bg)' : 'transparent',
           }}>
-            <span style={{ fontSize: 15, opacity: 0.8 }}>{s.icon}</span>
+            <LineIcon name={s.icon} size={17} />
             {s.label}
           </button>
         ))}

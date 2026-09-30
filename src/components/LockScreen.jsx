@@ -200,7 +200,7 @@ export default function LockScreen({ onUnlock }) {
           <div style={{ fontSize: 11, fontWeight: 700, letterSpacing: '0.28em', color: 'rgba(255,255,255,0.2)', fontFamily: 'ui-monospace, monospace' }}>
             VALERIE
           </div>
-          <div style={{ fontSize: 18, fontWeight: 300, color: 'rgba(255,255,255,0.75)', letterSpacing: '-0.01em' }}>
+          <div style={{ fontSize: 18, fontWeight: 300, color: 'var(--text-secondary)', letterSpacing: '-0.01em' }}>
             {mode === 'setup' ? 'Create your access code.' : 'Welcome back.'}
           </div>
         </div>
@@ -261,7 +261,7 @@ export default function LockScreen({ onUnlock }) {
             style={{
               background: 'none', border: '0.5px solid rgba(255,255,255,0.08)',
               borderRadius: 12, padding: '12px 24px',
-              color: 'rgba(255,255,255,0.45)', fontSize: 13, cursor: 'pointer',
+              color: 'var(--text-muted)', fontSize: 13, cursor: 'pointer',
               display: 'flex', alignItems: 'center', gap: 8,
               transition: 'all 0.15s',
             }}

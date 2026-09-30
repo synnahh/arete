@@ -2,6 +2,7 @@
 // Sub-tabs: Discover (occasion search + AI outfit visualisation + optional Google Custom Search)
 //           My Board (saved items — Wishlist / Purchased / Pass)
 
+import { Icon as LineIcon } from '../components/icons.jsx';
 import { useState, useEffect } from 'react';
 import { useCollection }        from '../supabase/useCollection.js';
 import { STORAGE_KEYS, storage } from '../utils/storage.js';
@@ -221,7 +222,7 @@ function ResultCard({ result, onSave }) {
             gap: 6, color: 'var(--text-secondary)',
           }}>
             <span style={{ fontSize: 24, opacity: 0.2 }}>👗</span>
-            <span style={{ fontSize: 10, opacity: 0.5 }}>Generating…</span>
+            <span style={{ fontSize: 11, opacity: 0.5 }}>Generating…</span>
           </div>
         )}
 
@@ -234,7 +235,7 @@ function ResultCard({ result, onSave }) {
             gap: 6, color: 'var(--text-secondary)',
           }}>
             <span style={{ fontSize: 24, opacity: 0.2 }}>👗</span>
-            <span style={{ fontSize: 10, opacity: 0.5 }}>Unavailable</span>
+            <span style={{ fontSize: 11, opacity: 0.5 }}>Unavailable</span>
           </div>
         )}
       </div>
@@ -253,7 +254,7 @@ function ResultCard({ result, onSave }) {
             href={result.sourceUrl}
             target="_blank"
             rel="noreferrer"
-            style={{ fontSize: 10, color: 'var(--accent)', display: 'block', marginBottom: 6 }}
+            style={{ fontSize: 11, color: 'var(--accent)', display: 'block', marginBottom: 6 }}
           >
             View source  
           </a>
@@ -262,7 +263,7 @@ function ResultCard({ result, onSave }) {
           onClick={() => onSave(result)}
           style={{
             width: '100%', padding: '5px 0', borderRadius: 6,
-            border: '1px solid var(--accent)', background: 'var(--accent)1a',
+            border: '1px solid var(--accent)', background: 'color-mix(in srgb, var(--accent) 10%, transparent)',
             color: 'var(--accent)', fontSize: 11, cursor: 'pointer', fontWeight: 600,
           }}
         >
@@ -285,7 +286,7 @@ function BoardCard({ item, selected, onSelect, currSymbol = '$' }) {
       style={{
         background: 'var(--bg-secondary)', borderRadius: 10, overflow: 'hidden',
         border: `1px solid ${selected ? 'var(--accent)' : 'var(--border)'}`,
-        boxShadow: selected ? '0 0 0 2px var(--accent)33' : 'none',
+        boxShadow: selected ? '0 0 0 2px color-mix(in srgb, var(--accent) 20%, transparent)' : 'none',
         cursor: 'pointer', transition: 'border-color 0.15s, box-shadow 0.15s',
       }}
     >
@@ -314,7 +315,7 @@ function BoardCard({ item, selected, onSelect, currSymbol = '$' }) {
         <span style={{
           position: 'absolute', top: 8, right: 8,
           background: cfg.color + 'ee', color: '#fff',
-          fontSize: 9, fontWeight: 700, padding: '2px 7px',
+          fontSize: 10.5, fontWeight: 700, padding: '2px 7px',
           borderRadius: 20, textTransform: 'uppercase', letterSpacing: '0.04em',
         }}>
           {cfg.label}
@@ -448,7 +449,7 @@ function DetailPanel({ item, onUpdate, onRemove, onClose, currSymbol = '$' }) {
                 key={key}
                 onClick={() => set('status', key)}
                 style={{
-                  flex: 1, padding: '5px 0', borderRadius: 6, fontSize: 10,
+                  flex: 1, padding: '5px 0', borderRadius: 6, fontSize: 11,
                   border: `1px solid ${fields.status === key ? cfg.color : 'var(--border)'}`,
                   background: fields.status === key ? cfg.color + '22' : 'var(--bg-primary)',
                   color: fields.status === key ? cfg.color : 'var(--text-secondary)',
@@ -728,7 +729,7 @@ function AddManualModal({ onAdd, onClose, currSymbol = '$' }) {
               onClick={handleGenerate}
               style={{
                 padding: '7px 13px', borderRadius: 6,
-                border: '1px solid var(--accent)', background: 'var(--accent)22',
+                border: '1px solid var(--accent)', background: 'color-mix(in srgb, var(--accent) 13%, transparent)',
                 color: 'var(--accent)', fontSize: 12, cursor: 'pointer', whiteSpace: 'nowrap',
               }}
             >
@@ -862,7 +863,7 @@ function DiscoverView({ settings, onSaveResult, currSymbol = '$' }) {
         {!hasGoogle && (
           <div style={{
             display: 'flex', alignItems: 'flex-start', gap: 8,
-            background: 'var(--accent)0d', border: '1px solid var(--accent)33',
+            background: 'color-mix(in srgb, var(--accent) 5%, transparent)', border: '1px solid color-mix(in srgb, var(--accent) 20%, transparent)',
             borderRadius: 8, padding: '9px 12px', marginBottom: 14,
             fontSize: 12, color: 'var(--text-secondary)', lineHeight: 1.4,
           }}>
@@ -884,7 +885,7 @@ function DiscoverView({ settings, onSaveResult, currSymbol = '$' }) {
               style={{
                 padding: '5px 14px', borderRadius: 20, fontSize: 12,
                 border: `1px solid ${occasion === occ ? 'var(--accent)' : 'var(--border)'}`,
-                background: occasion === occ ? 'var(--accent)22' : 'var(--bg-secondary)',
+                background: occasion === occ ? 'color-mix(in srgb, var(--accent) 13%, transparent)' : 'var(--bg-secondary)',
                 color: occasion === occ ? 'var(--accent)' : 'var(--text-secondary)',
                 cursor: 'pointer', fontWeight: occasion === occ ? 700 : 400,
                 transition: 'all 0.15s',
@@ -960,7 +961,7 @@ function DiscoverView({ settings, onSaveResult, currSymbol = '$' }) {
             alignItems: 'center', justifyContent: 'center',
             color: 'var(--text-secondary)', gap: 10,
           }}>
-            <span style={{ fontSize: 52, opacity: 0.15 }}>✨</span>
+            <span style={{ display: 'flex', justifyContent: 'center', color: 'var(--text-muted)' }}><LineIcon name="sparkle" size={30} strokeWidth={1.5} /></span>
             <p style={{ margin: 0, fontSize: 14 }}>Pick an occasion or search to discover looks</p>
             <p style={{ margin: 0, fontSize: 12, opacity: 0.6 }}>
               {hasGoogle
@@ -1068,7 +1069,7 @@ function BoardView({ items, onAdd, onUpdate, onRemove, currSymbol = '$' }) {
             style={{
               width: '100%', padding: '9px 16px', textAlign: 'left',
               display: 'flex', justifyContent: 'space-between', alignItems: 'center',
-              background: boardCat === cat ? 'var(--accent)15' : 'none',
+              background: boardCat === cat ? 'color-mix(in srgb, var(--accent) 8%, transparent)' : 'none',
               border: 'none',
               borderLeft: `2px solid ${boardCat === cat ? 'var(--accent)' : 'transparent'}`,
               color: boardCat === cat ? 'var(--accent)' : 'var(--text-secondary)',
@@ -1078,7 +1079,7 @@ function BoardView({ items, onAdd, onUpdate, onRemove, currSymbol = '$' }) {
           >
             <span>{cat}</span>
             <span style={{
-              fontSize: 10, background: 'var(--bg-primary)',
+              fontSize: 11, background: 'var(--bg-primary)',
               color: 'var(--text-secondary)', padding: '1px 6px', borderRadius: 10,
             }}>
               {catCounts[cat]}
@@ -1136,7 +1137,7 @@ function BoardView({ items, onAdd, onUpdate, onRemove, currSymbol = '$' }) {
               justifyContent: 'center', minHeight: 300,
               color: 'var(--text-secondary)', gap: 10,
             }}>
-              <span style={{ fontSize: 40, opacity: 0.15 }}>🔍</span>
+              <span style={{ display: 'flex', justifyContent: 'center', color: 'var(--text-muted)' }}><LineIcon name="search" size={30} strokeWidth={1.5} /></span>
               <p style={{ margin: 0, fontSize: 13 }}>
                 {items.length === 0
                   ? 'Your board is empty — discover looks and save them here'
@@ -1147,7 +1148,7 @@ function BoardView({ items, onAdd, onUpdate, onRemove, currSymbol = '$' }) {
                   onClick={() => setAddOpen(true)}
                   style={{
                     padding: '7px 18px', borderRadius: 8, marginTop: 4,
-                    border: '1px solid var(--accent)', background: 'var(--accent)15',
+                    border: '1px solid var(--accent)', background: 'color-mix(in srgb, var(--accent) 8%, transparent)',
                     color: 'var(--accent)', fontSize: 12, cursor: 'pointer',
                   }}
                 >
@@ -1237,7 +1238,7 @@ export default function StyleTab({ settings }) {
               display: 'flex', alignItems: 'center', gap: 6,
               padding: '6px 14px', borderRadius: 8,
               border: 'none',
-              background: view === tab.key ? 'var(--accent)22' : 'none',
+              background: view === tab.key ? 'color-mix(in srgb, var(--accent) 13%, transparent)' : 'none',
               color: view === tab.key ? 'var(--accent)' : 'var(--text-secondary)',
               fontSize: 13, cursor: 'pointer',
               fontWeight: view === tab.key ? 600 : 400,
@@ -1246,7 +1247,7 @@ export default function StyleTab({ settings }) {
             {tab.label}
             {tab.count != null && tab.count > 0 && (
               <span style={{
-                fontSize: 10, background: 'var(--accent)22',
+                fontSize: 11, background: 'color-mix(in srgb, var(--accent) 13%, transparent)',
                 color: 'var(--accent)', padding: '1px 6px', borderRadius: 10,
               }}>
                 {tab.count}

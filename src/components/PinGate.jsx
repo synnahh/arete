@@ -52,7 +52,7 @@ export default function PinGate({ onUnlock }) {
   const Key = ({ children, onClick, faint }) => (
     <button
       onClick={onClick}
-      style={{ ...keySx, ...(faint ? { border: 'none', background: 'transparent', fontSize: 14, color: 'rgba(255,255,255,0.4)' } : {}) }}
+      style={{ ...keySx, ...(faint ? { border: 'none', background: 'transparent', fontSize: 14, color: 'var(--text-muted)' } : {}) }}
       onMouseDown={e => { e.currentTarget.style.background = faint ? 'transparent' : 'rgba(255,255,255,0.1)'; e.currentTarget.style.transform = 'scale(0.94)'; }}
       onMouseUp={e => { e.currentTarget.style.background = faint ? 'transparent' : 'rgba(255,255,255,0.04)'; e.currentTarget.style.transform = 'scale(1)'; }}
       onMouseLeave={e => { e.currentTarget.style.background = faint ? 'transparent' : 'rgba(255,255,255,0.04)'; e.currentTarget.style.transform = 'scale(1)'; }}
@@ -89,10 +89,10 @@ export default function PinGate({ onUnlock }) {
         <div style={{ textAlign: 'center' }}>
           <div style={{
             fontSize: 11, fontWeight: 700, letterSpacing: '0.28em',
-            textTransform: 'uppercase', color: 'rgba(255,255,255,0.25)',
+            textTransform: 'uppercase', color: 'var(--text-muted)',
             fontFamily: 'ui-monospace, monospace', marginBottom: 10,
           }}>ARETE</div>
-          <div style={{ fontSize: 15, fontWeight: 300, color: 'rgba(255,255,255,0.6)' }}>
+          <div style={{ fontSize: 15, fontWeight: 300, color: 'var(--text-secondary)' }}>
             Enter your PIN
           </div>
         </div>

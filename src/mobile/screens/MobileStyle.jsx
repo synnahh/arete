@@ -132,7 +132,7 @@ function Board({ items, sym, onAdd, onUpdate, onRemove }) {
               <button type="button" onClick={() => setSheet(it)} aria-label={`Edit ${it.title}`} style={{ padding: 0, border: 'none', background: 'none', cursor: 'pointer', textAlign: 'left', fontFamily: 'inherit', WebkitTapHighlightColor: 'transparent' }}>
                 <div style={{ position: 'relative', aspectRatio: '4 / 5', background: 'var(--hover-bg)' }}>
                   <Photo src={it.imageUrl} alt="" />
-                  <span style={{ position: 'absolute', top: 8, right: 8, background: `${cfg.color}ee`, color: '#fff', fontSize: 9.5, fontWeight: 700, padding: '2px 8px', borderRadius: 999, textTransform: 'uppercase', letterSpacing: '0.04em' }}>{cfg.label}</span>
+                  <span style={{ position: 'absolute', top: 8, right: 8, background: `${cfg.color}ee`, color: '#fff', fontSize: 10.5, fontWeight: 700, padding: '2px 8px', borderRadius: 999, textTransform: 'uppercase', letterSpacing: '0.04em' }}>{cfg.label}</span>
                 </div>
                 <div style={{ padding: '9px 11px 6px' }}>
                   <div style={{ fontSize: 13, fontWeight: 600, color: 'var(--text-primary)', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{it.title}</div>

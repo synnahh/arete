@@ -2,6 +2,7 @@
 // Full 11-section settings hub. Every change persists to localStorage instantly.
 // Split view: left nav (130px) + right scrollable content.
 
+import { Icon as LineIcon } from '../components/icons.jsx';
 import { DEFAULT_COACH_REMINDERS } from '../domain/reminders.js';
 import { useState, useEffect, useCallback, useRef, Component } from 'react';
 import { fetch }        from '@tauri-apps/plugin-http';
@@ -56,21 +57,21 @@ import { updateSettings } from '../utils/settingsStore.js';
 
 // ─── Sections ────────────────────────────────────────────────────────────────
 const SECTIONS = [
-  { id: 'identity',      label: 'Identity',         icon: '👤' },
-  { id: 'appearance',    label: 'Appearance',       icon: '🎨' },
-  { id: 'voice',         label: 'Voice',            icon: '🎙' },
-  { id: 'ai',            label: 'AI',               icon: '🧠' },
-  { id: 'units',         label: 'Units & Currency', icon: '💱' },
-  { id: 'progress',      label: 'Progress & Rank',  icon: '⭐' },
-  { id: 'notifications', label: 'Notifications',    icon: '🔔' },
-  { id: 'integrations',  label: 'Integrations',     icon: '🔌' },
-  { id: 'api_usage',     label: 'API Usage',        icon: '📊' },
-  { id: 'platforms',     label: 'Platforms',        icon: '🖥' },
-  { id: 'data',          label: 'Data',             icon: '💾' },
-  { id: 'daily_brief',   label: 'Daily Brief',      icon: '🌅' },
-  { id: 'sidebar',       label: 'Sidebar Order',    icon: '☰'  },
-  { id: 'security',      label: 'Security',         icon: '🔒' },
-  { id: 'account',       label: 'Account',          icon: '☁'  },
+  { id: 'identity',      label: 'Identity',         icon: 'user' },
+  { id: 'appearance',    label: 'Appearance',       icon: 'theme' },
+  { id: 'voice',         label: 'Voice',            icon: 'mic' },
+  { id: 'ai',            label: 'AI',               icon: 'cpu' },
+  { id: 'units',         label: 'Units & Currency', icon: 'globe' },
+  { id: 'progress',      label: 'Progress & Rank',  icon: 'progress' },
+  { id: 'notifications', label: 'Notifications',    icon: 'bell' },
+  { id: 'integrations',  label: 'Integrations',     icon: 'plug' },
+  { id: 'api_usage',     label: 'API Usage',        icon: 'chart' },
+  { id: 'platforms',     label: 'Platforms',        icon: 'monitor' },
+  { id: 'data',          label: 'Data',             icon: 'database' },
+  { id: 'daily_brief',   label: 'Daily Brief',      icon: 'today' },
+  { id: 'sidebar',       label: 'Sidebar Order',    icon: 'lists'  },
+  { id: 'security',      label: 'Security',         icon: 'lock' },
+  { id: 'account',       label: 'Account',          icon: 'cloud'  },
 ];
 
 // ─── Currency & Unit constants ────────────────────────────────────────────────
@@ -181,7 +182,7 @@ function PillGroup({ options, value, onChange }) {
           style={{
             padding: '6px 14px', borderRadius: 20, fontSize: 12, cursor: 'pointer',
             border: `0.5px solid ${value === opt.value ? 'var(--accent)' : 'var(--card-border)'}`,
-            background: value === opt.value ? 'var(--accent)22' : 'var(--hover-bg)',
+            background: value === opt.value ? 'color-mix(in srgb, var(--accent) 13%, transparent)' : 'var(--hover-bg)',
             color: value === opt.value ? 'var(--accent)' : 'var(--text-secondary)',
             fontWeight: value === opt.value ? 700 : 400,
             transition: 'all 0.15s',
@@ -369,7 +370,7 @@ export function AppearanceSection({ settings, onSave }) {
                 border: `1px solid ${theme === t.key ? 'var(--accent)' : 'var(--card-border)'}`,
                 background: t.preview.bg,
                 display: 'flex', flexDirection: 'column', gap: 6,
-                boxShadow: theme === t.key ? '0 0 0 2px var(--accent)55' : 'none',
+                boxShadow: theme === t.key ? '0 0 0 2px color-mix(in srgb, var(--accent) 33%, transparent)' : 'none',
                 transition: 'all 0.15s',
               }}
             >
@@ -381,7 +382,7 @@ export function AppearanceSection({ settings, onSave }) {
               <span style={{ fontSize: 11, fontWeight: 600, color: t.light ? '#1a1a2e' : '#fff', textAlign: 'left' }}>
                 {t.name}
               </span>
-              <span style={{ fontSize: 9.5, color: t.light ? 'rgba(0,0,0,0.5)' : 'rgba(255,255,255,0.45)', textAlign: 'left', lineHeight: 1.3 }}>
+              <span style={{ fontSize: 10.5, color: t.light ? 'rgba(0,0,0,0.5)' : 'rgba(255,255,255,0.45)', textAlign: 'left', lineHeight: 1.3 }}>
                 {t.description}
               </span>
             </button>
@@ -427,7 +428,7 @@ export function AppearanceSection({ settings, onSave }) {
                 display: 'flex', alignItems: 'center', justifyContent: 'space-between',
                 padding: '10px 14px', borderRadius: 8, cursor: 'pointer', textAlign: 'left',
                 border: `0.5px solid ${fontFamily === f.value ? 'var(--accent)' : 'var(--card-border)'}`,
-                background: fontFamily === f.value ? 'var(--accent)11' : 'var(--hover-bg)',
+                background: fontFamily === f.value ? 'color-mix(in srgb, var(--accent) 7%, transparent)' : 'var(--hover-bg)',
                 transition: 'all 0.15s',
               }}
             >
@@ -788,9 +789,9 @@ export function VoiceSection({ settings, onSave }) {
 
       {/* ─── ElevenLabs block ─────────────────────────────────────────────── */}
       <div style={{
-        border: `1px solid ${isEl11Active ? 'var(--accent)55' : 'var(--card-border)'}`,
+        border: `1px solid ${isEl11Active ? 'color-mix(in srgb, var(--accent) 33%, transparent)' : 'var(--card-border)'}`,
         borderRadius: 12, padding: '16px 18px', marginBottom: 20,
-        background: isEl11Active ? 'var(--accent)07' : 'var(--hover-bg)',
+        background: isEl11Active ? 'color-mix(in srgb, var(--accent) 3%, transparent)' : 'var(--hover-bg)',
       }}>
         <div style={{
           fontSize: 11, fontWeight: 700, letterSpacing: '0.06em', marginBottom: 14,
@@ -800,7 +801,7 @@ export function VoiceSection({ settings, onSave }) {
           ELEVENLABS
           {isEl11Active && (
             <span style={{
-              fontSize: 9, background: '#4caf7d22', color: '#4caf7d',
+              fontSize: 10.5, background: '#4caf7d22', color: '#4caf7d',
               padding: '2px 8px', borderRadius: 10, fontWeight: 700, letterSpacing: '0.04em',
             }}>ACTIVE</span>
           )}
@@ -872,7 +873,7 @@ export function VoiceSection({ settings, onSave }) {
           style={{
             padding: '7px 16px', borderRadius: 8,
             border: `0.5px solid ${isEl11Active ? 'var(--accent)' : 'var(--card-border)'}`,
-            background: isEl11Active ? 'var(--accent)15' : 'var(--hover-bg)',
+            background: isEl11Active ? 'color-mix(in srgb, var(--accent) 8%, transparent)' : 'var(--hover-bg)',
             color: isEl11Active ? 'var(--accent)' : 'var(--text-muted)',
             fontSize: 12,
             cursor: !el11Key || el11Playing ? 'not-allowed' : 'pointer',
@@ -909,9 +910,9 @@ export function VoiceSection({ settings, onSave }) {
         const isAzureActive = !!azureKey.trim();
         return (
           <div style={{
-            border: `1px solid ${isAzureActive ? 'var(--accent)55' : 'var(--card-border)'}`,
+            border: `1px solid ${isAzureActive ? 'color-mix(in srgb, var(--accent) 33%, transparent)' : 'var(--card-border)'}`,
             borderRadius: 12, padding: '16px 18px', marginBottom: 20,
-            background: isAzureActive ? 'var(--accent)07' : 'var(--hover-bg)',
+            background: isAzureActive ? 'color-mix(in srgb, var(--accent) 3%, transparent)' : 'var(--hover-bg)',
           }}>
             <div style={{
               fontSize: 11, fontWeight: 700, letterSpacing: '0.06em', marginBottom: 14,
@@ -919,10 +920,10 @@ export function VoiceSection({ settings, onSave }) {
               color: isAzureActive ? 'var(--accent)' : 'var(--text-muted)',
             }}>
               AZURE NEURAL VOICES
-              <span style={{ fontWeight: 400, fontSize: 10, color: 'var(--text-muted)' }}>(tier 2 fallback)</span>
+              <span style={{ fontWeight: 400, fontSize: 11, color: 'var(--text-muted)' }}>(tier 2 fallback)</span>
               {isAzureActive && (
                 <span style={{
-                  fontSize: 9, background: 'var(--accent)22', color: 'var(--accent)',
+                  fontSize: 10.5, background: 'color-mix(in srgb, var(--accent) 13%, transparent)', color: 'var(--accent)',
                   padding: '2px 8px', borderRadius: 10, fontWeight: 700,
                 }}>CONFIGURED</span>
               )}
@@ -1005,7 +1006,7 @@ export function VoiceSection({ settings, onSave }) {
               style={{
                 padding: '7px 16px', borderRadius: 8,
                 border: `0.5px solid ${isAzureActive ? 'var(--accent)' : 'var(--card-border)'}`,
-                background: isAzureActive ? 'var(--accent)15' : 'var(--hover-bg)',
+                background: isAzureActive ? 'color-mix(in srgb, var(--accent) 8%, transparent)' : 'var(--hover-bg)',
                 color: isAzureActive ? 'var(--accent)' : 'var(--text-muted)',
                 fontSize: 12, cursor: !azureKey.trim() || azurePlaying ? 'not-allowed' : 'pointer',
                 opacity: !azureKey.trim() || azurePlaying ? 0.5 : 1,
@@ -1091,7 +1092,7 @@ export function VoiceSection({ settings, onSave }) {
         {wakeWordEnabled && (
           <div style={{
             marginTop: 8, padding: '8px 12px', borderRadius: 8,
-            background: 'var(--accent)08', border: '0.5px solid var(--accent)33',
+            background: 'color-mix(in srgb, var(--accent) 3%, transparent)', border: '0.5px solid color-mix(in srgb, var(--accent) 20%, transparent)',
             fontSize: 11, color: 'var(--text-secondary)', lineHeight: 1.5,
           }}>
             Say <strong style={{ color: 'var(--accent)' }}>"Hey VAL"</strong> or{' '}
@@ -1258,13 +1259,13 @@ export function UnitsSection({ settings, onSave }) {
                 display: 'flex', alignItems: 'center', gap: 14,
                 padding: '12px 16px', borderRadius: 10, cursor: 'pointer',
                 border: `1px solid ${currency === c.code ? 'var(--accent)' : 'var(--card-border)'}`,
-                background: currency === c.code ? 'var(--accent)11' : 'var(--hover-bg)',
+                background: currency === c.code ? 'color-mix(in srgb, var(--accent) 7%, transparent)' : 'var(--hover-bg)',
                 transition: 'all 0.15s',
               }}
             >
               <div style={{
                 width: 36, height: 36, borderRadius: 8,
-                background: currency === c.code ? 'var(--accent)22' : 'var(--bg-panel)',
+                background: currency === c.code ? 'color-mix(in srgb, var(--accent) 13%, transparent)' : 'var(--bg-panel)',
                 display: 'flex', alignItems: 'center', justifyContent: 'center',
                 fontSize: 18, fontWeight: 700,
                 color: currency === c.code ? 'var(--accent)' : 'var(--text-secondary)',
@@ -1300,7 +1301,7 @@ export function UnitsSection({ settings, onSave }) {
               style={{
                 flex: 1, padding: '14px 16px', borderRadius: 10, cursor: 'pointer',
                 border: `1px solid ${units === opt.value ? 'var(--accent)' : 'var(--card-border)'}`,
-                background: units === opt.value ? 'var(--accent)11' : 'var(--hover-bg)',
+                background: units === opt.value ? 'color-mix(in srgb, var(--accent) 7%, transparent)' : 'var(--hover-bg)',
                 textAlign: 'left', transition: 'all 0.15s',
               }}
             >
@@ -1521,7 +1522,7 @@ export function NotificationsSection({ settings, onSave }) {
                         {/* Hour + calendar interval row */}
                         <div style={{ display: 'flex', gap: 10, alignItems: 'center' }}>
                           <div style={{ flex: 1 }}>
-                            <label style={{ display: 'block', fontSize: 10, color: 'var(--text-muted)', marginBottom: 4, letterSpacing: '0.06em' }}>SEND AT HOUR</label>
+                            <label style={{ display: 'block', fontSize: 11, color: 'var(--text-muted)', marginBottom: 4, letterSpacing: '0.06em' }}>SEND AT HOUR</label>
                             <select value={tab.hour} onChange={e => updateTab(key, { hour: +e.target.value })}
                               style={{ width: '100%', background: 'var(--input-bg)', border: '0.5px solid var(--input-border)', borderRadius: 7, padding: '6px 10px', fontSize: 12, color: 'var(--text-primary)', outline: 'none' }}>
                               {Array.from({ length: 17 }, (_, i) => i + 6).map(h => (
@@ -1531,7 +1532,7 @@ export function NotificationsSection({ settings, onSave }) {
                           </div>
                           {key === 'calendar' && (
                             <div style={{ flex: 1 }}>
-                              <label style={{ display: 'block', fontSize: 10, color: 'var(--text-muted)', marginBottom: 4, letterSpacing: '0.06em' }}>REMINDER (MIN BEFORE)</label>
+                              <label style={{ display: 'block', fontSize: 11, color: 'var(--text-muted)', marginBottom: 4, letterSpacing: '0.06em' }}>REMINDER (MIN BEFORE)</label>
                               <input type="number" min={5} max={120} value={tab.calMinutes ?? 30}
                                 onChange={e => updateTab(key, { calMinutes: +e.target.value })}
                                 style={{ width: '100%', background: 'var(--input-bg)', border: '0.5px solid var(--input-border)', borderRadius: 7, padding: '6px 10px', fontSize: 12, color: 'var(--text-primary)', outline: 'none' }} />
@@ -1541,7 +1542,7 @@ export function NotificationsSection({ settings, onSave }) {
 
                         {/* Message */}
                         <div>
-                          <label style={{ display: 'block', fontSize: 10, color: 'var(--text-muted)', marginBottom: 4, letterSpacing: '0.06em' }}>
+                          <label style={{ display: 'block', fontSize: 11, color: 'var(--text-muted)', marginBottom: 4, letterSpacing: '0.06em' }}>
                             MESSAGE &nbsp;<span style={{ opacity: 0.6, fontWeight: 400, textTransform: 'none', letterSpacing: 0 }}>{PLACEHOLDERS[key]}</span>
                           </label>
                           <textarea style={textareaSx} value={tab.message}
@@ -1626,7 +1627,7 @@ function SpotifyOAuth() {
   return (
     <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '14px 16px', borderRadius: 10, border: '0.5px solid var(--card-border)', background: 'var(--hover-bg)', marginBottom: 12 }}>
       <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
-        <span style={{ fontSize: 20 }}>🎵</span>
+        <span style={{ display: 'flex', justifyContent: 'center', color: 'var(--text-muted)' }}><LineIcon name="music" size={22} strokeWidth={1.5} /></span>
         <div>
           <div style={{ fontSize: 13, fontWeight: 600, color: 'var(--text-primary)' }}>Spotify</div>
           <div style={{ fontSize: 11, color: connected ? 'var(--accent)' : 'var(--text-muted)' }}>
@@ -1747,8 +1748,8 @@ export function IntegrationsSection({ settings, onSave }) {
               disabled={gmailLoading}
               style={{
                 padding: '7px 16px', borderRadius: 8, fontSize: 12, cursor: 'pointer',
-                border: gmailConnected ? '0.5px solid #e55a5a55' : '0.5px solid var(--accent)55',
-                background: gmailConnected ? 'rgba(229,90,90,0.1)' : 'var(--accent)11',
+                border: gmailConnected ? '0.5px solid #e55a5a55' : '0.5px solid color-mix(in srgb, var(--accent) 33%, transparent)',
+                background: gmailConnected ? 'rgba(229,90,90,0.1)' : 'color-mix(in srgb, var(--accent) 7%, transparent)',
                 color: gmailConnected ? '#e55a5a' : 'var(--accent)',
                 opacity: gmailLoading ? 0.6 : 1,
               }}
@@ -1761,7 +1762,7 @@ export function IntegrationsSection({ settings, onSave }) {
           {/* Email rules */}
           {gmailConnected && (
             <div>
-              <div style={{ fontSize: 10, fontWeight: 700, letterSpacing: '0.1em', color: 'rgba(255,255,255,0.3)', marginBottom: 8, fontFamily: 'ui-monospace,monospace' }}>
+              <div style={{ fontSize: 11, fontWeight: 700, letterSpacing: '0.1em', color: 'var(--text-muted)', marginBottom: 8, fontFamily: 'ui-monospace,monospace' }}>
                 DETECTION RULES — toggle to enable/disable
               </div>
               <div style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
@@ -1781,12 +1782,12 @@ export function IntegrationsSection({ settings, onSave }) {
                       <div style={{ fontSize: 12, fontWeight: 600, color: rule.enabled !== false ? 'rgba(255,255,255,0.8)' : 'rgba(255,255,255,0.3)' }}>
                         {rule.label}
                       </div>
-                      <div style={{ fontSize: 10, color: 'rgba(255,255,255,0.3)', fontFamily: 'ui-monospace,monospace' }}>
+                      <div style={{ fontSize: 11, color: 'var(--text-muted)', fontFamily: 'ui-monospace,monospace' }}>
                         keyword: "{rule.keyword}" &rarr; {rule.type} / {rule.category}
                       </div>
                     </div>
                     <button onClick={() => toggleRule(rule.id)} style={{
-                      padding: '3px 10px', borderRadius: 6, border: 'none', cursor: 'pointer', fontSize: 10,
+                      padding: '3px 10px', borderRadius: 6, border: 'none', cursor: 'pointer', fontSize: 11,
                       background: rule.enabled !== false ? 'rgba(107,227,164,0.15)' : 'rgba(255,255,255,0.06)',
                       color: rule.enabled !== false ? '#6BE3A4' : 'rgba(255,255,255,0.3)',
                     }}>
@@ -1795,7 +1796,7 @@ export function IntegrationsSection({ settings, onSave }) {
                   </div>
                 ))}
               </div>
-              <div style={{ fontSize: 10, color: 'rgba(255,255,255,0.2)', marginTop: 8, lineHeight: 1.5 }}>
+              <div style={{ fontSize: 11, color: 'rgba(255,255,255,0.2)', marginTop: 8, lineHeight: 1.5 }}>
                 Detected transactions appear in Finance &#8594; Overview as a review queue before being added.
               </div>
             </div>
@@ -1865,7 +1866,7 @@ export function IntegrationsSection({ settings, onSave }) {
           background: 'rgba(255,255,255,0.03)',
         }}>
           <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: 14 }}>
-            <span style={{ fontSize: 22 }}>🏥</span>
+            <span style={{ display: 'flex', justifyContent: 'center', color: 'var(--text-muted)' }}><LineIcon name="health" size={22} strokeWidth={1.5} /></span>
             <div>
               <div style={{ fontSize: 13, fontWeight: 600, color: 'var(--text-primary)' }}>Health Auto Export</div>
               <div style={{ fontSize: 11, color: 'var(--text-muted)' }}>Syncs Apple Health data to VALERIE automatically</div>
@@ -1884,16 +1885,16 @@ export function IntegrationsSection({ settings, onSave }) {
           <div style={{
             background: 'rgba(0,0,0,0.25)', borderRadius: 10, padding: '12px 14px',
             fontFamily: 'ui-monospace, monospace', fontSize: 11, lineHeight: 2,
-            color: 'rgba(255,255,255,0.7)', marginBottom: 14,
+            color: 'var(--text-secondary)', marginBottom: 14,
             border: '0.5px solid rgba(255,255,255,0.08)',
           }}>
-            <div style={{ color: 'rgba(255,255,255,0.35)', fontSize: 10, marginBottom: 6, letterSpacing: '0.1em' }}>WEBHOOK CONFIG</div>
-            <div><span style={{ color: 'rgba(255,255,255,0.35)' }}>URL: </span><span style={{ color: 'var(--accent)', userSelect: 'all' }}>https://healthsync-eglap5gvxa-uc.a.run.app</span></div>
-            <div><span style={{ color: 'rgba(255,255,255,0.35)' }}>Method: </span><span style={{ color: 'rgba(255,255,255,0.5)' }}>POST</span></div>
-            <div><span style={{ color: 'rgba(255,255,255,0.35)' }}>Format: </span><span style={{ color: 'rgba(255,255,255,0.5)' }}>JSON</span></div>
+            <div style={{ color: 'var(--text-muted)', fontSize: 11, marginBottom: 6, letterSpacing: '0.1em' }}>WEBHOOK CONFIG</div>
+            <div><span style={{ color: 'var(--text-muted)' }}>URL: </span><span style={{ color: 'var(--accent)', userSelect: 'all' }}>https://healthsync-eglap5gvxa-uc.a.run.app</span></div>
+            <div><span style={{ color: 'var(--text-muted)' }}>Method: </span><span style={{ color: 'var(--text-secondary)' }}>POST</span></div>
+            <div><span style={{ color: 'var(--text-muted)' }}>Format: </span><span style={{ color: 'var(--text-secondary)' }}>JSON</span></div>
           </div>
 
-          <div style={{ fontSize: 11, color: 'rgba(255,255,255,0.3)', lineHeight: 1.55 }}>
+          <div style={{ fontSize: 11, color: 'var(--text-muted)', lineHeight: 1.55 }}>
             Once syncing, Health Overview shows a live badge and auto-fills sleep, steps, heart rate, HRV, and weight from your iPhone and Apple Watch.
           </div>
         </div>
@@ -1945,7 +1946,7 @@ function ApiUsageSection({ settings }) {
           {/* Console link — primary action */}
           <div style={{
             padding: '18px 20px', borderRadius: 12,
-            background: 'var(--accent)08', border: '1px solid var(--accent)33',
+            background: 'color-mix(in srgb, var(--accent) 3%, transparent)', border: '1px solid color-mix(in srgb, var(--accent) 20%, transparent)',
           }}>
             <div style={{ fontSize: 14, fontWeight: 600, color: 'var(--text-primary)', marginBottom: 6 }}>
               Monitor your usage
@@ -1991,7 +1992,7 @@ function ApiUsageSection({ settings }) {
                 <span style={{ color: 'var(--text-primary)', fontWeight: 600 }}>{row.price}</span>
               </div>
             ))}
-            <div style={{ fontSize: 10, color: 'var(--text-muted)', marginTop: 8 }}>
+            <div style={{ fontSize: 11, color: 'var(--text-muted)', marginTop: 8 }}>
               Prices approximate. Check console.anthropic.com for exact billing.
             </div>
           </div>
@@ -2420,7 +2421,7 @@ function PlatformsSection({ settings, onSave }) {
                           style={{
                             padding: '3px 10px', borderRadius: 6, fontSize: 11, cursor: 'pointer',
                             border: `0.5px solid ${layout === opt.value ? 'var(--accent)' : 'var(--card-border)'}`,
-                            background: layout === opt.value ? 'var(--accent)22' : 'transparent',
+                            background: layout === opt.value ? 'color-mix(in srgb, var(--accent) 13%, transparent)' : 'transparent',
                             color: layout === opt.value ? 'var(--accent)' : 'var(--text-muted)',
                             transition: 'all 0.15s',
                           }}
@@ -2651,14 +2652,14 @@ function SidebarSection({ settings, onSave }) {
             style={{
               display: 'flex', alignItems: 'center', gap: 12,
               padding: '10px 14px', borderRadius: 10,
-              background: dragIdx === i ? 'var(--accent)15' : 'var(--bg-panel)',
+              background: dragIdx === i ? 'color-mix(in srgb, var(--accent) 8%, transparent)' : 'var(--bg-panel)',
               border: `0.5px solid ${dragIdx === i ? 'var(--accent)' : 'var(--card-border)'}`,
               cursor: 'grab', userSelect: 'none', transition: 'background 0.1s',
             }}
           >
             <span style={{ color: 'var(--text-muted)', fontSize: 12, cursor: 'grab' }}>⠿</span>
             <span style={{ fontSize: 13, color: 'var(--text-primary)' }}>{tabLabels[id] || id}</span>
-            <span style={{ fontSize: 10, color: 'var(--text-muted)', marginLeft: 'auto' }}>{i + 1}</span>
+            <span style={{ fontSize: 11, color: 'var(--text-muted)', marginLeft: 'auto' }}>{i + 1}</span>
           </div>
         ))}
       </div>
@@ -2730,7 +2731,7 @@ export function SecuritySection({ settings, onSave }) {
       {/* ── Access code ── */}
       <div style={{ marginBottom: 28, padding: '18px 20px', borderRadius: 12, border: '0.5px solid var(--card-border)', background: 'var(--hover-bg)' }}>
         <div style={{ fontSize: 13, fontWeight: 600, color: 'var(--text-primary)', marginBottom: 4 }}>
-          App Access Code {hasCode && <span style={{ fontSize: 10, color: '#4caf7d', marginLeft: 6, fontWeight: 400 }}>● Active</span>}
+          App Access Code {hasCode && <span style={{ fontSize: 11, color: '#4caf7d', marginLeft: 6, fontWeight: 400 }}>● Active</span>}
         </div>
         <div style={{ fontSize: 11, color: 'var(--text-muted)', marginBottom: 14, lineHeight: 1.55 }}>
           {hasCode
@@ -2930,7 +2931,7 @@ export default function SettingsTab({ settings: settingsProp }) {
 
       {/* ── Left nav ──────────────────────────────────────────────────────── */}
       <nav style={{
-        width: 160, flexShrink: 0,
+        width: 188, flexShrink: 0,
         borderRight: '0.5px solid var(--sidebar-divider)',
         overflowY: 'auto', padding: '16px 0',
         display: 'flex', flexDirection: 'column',
@@ -2940,9 +2941,9 @@ export default function SettingsTab({ settings: settingsProp }) {
             key={sec.id}
             onClick={() => setActiveSection(sec.id)}
             style={{
-              width: '100%', padding: '9px 16px',
-              display: 'flex', alignItems: 'center', gap: 8,
-              background: activeSection === sec.id ? 'var(--accent)15' : 'none',
+              width: '100%', padding: '8px 16px', minHeight: 36, whiteSpace: 'nowrap', fontFamily: 'inherit',
+              display: 'flex', alignItems: 'center', gap: 10,
+              background: activeSection === sec.id ? 'var(--active-bg)' : 'none',
               border: 'none',
               borderLeft: `2px solid ${activeSection === sec.id ? 'var(--accent)' : 'transparent'}`,
               color: activeSection === sec.id ? 'var(--accent)' : 'var(--text-secondary)',
@@ -2951,7 +2952,7 @@ export default function SettingsTab({ settings: settingsProp }) {
               transition: 'all 0.15s',
             }}
           >
-            <span style={{ fontSize: 14 }}>{sec.icon}</span>
+            <LineIcon name={sec.icon} size={16} />
             {sec.label}
           </button>
         ))}
@@ -2959,7 +2960,7 @@ export default function SettingsTab({ settings: settingsProp }) {
         {/*  Version label  */}
         <div style={{
           marginTop: 'auto', padding: '16px 16px 8px',
-          fontSize: 10, color: 'var(--text-muted)',
+          fontSize: 11, color: 'var(--text-muted)',
           letterSpacing: '0.08em', fontFamily: 'ui-monospace, monospace',
           opacity: 0.5,
         }}>
@@ -2969,7 +2970,8 @@ export default function SettingsTab({ settings: settingsProp }) {
 
       {/* ── Right content ─────────────────────────────────────────────────── */}
       <div style={{ flex: 1, overflowY: 'auto', padding: '28px 36px' }}>
-        {renderSection()}
+        {/* Forms read best at a set width rather than stretched across the window. */}
+        <div style={{ maxWidth: 760 }}>{renderSection()}</div>
       </div>
     </div>
   );

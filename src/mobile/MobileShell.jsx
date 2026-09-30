@@ -144,7 +144,7 @@ function CoachOrb({ active, orbState, shape = 'sphere', onTap, onHold }) {
           }} />
         )}
       </span>
-      <span style={{ fontSize: 10, fontWeight: active ? 600 : 400, letterSpacing: '0.02em' }}>Coach</span>
+      <span style={{ fontSize: 11, fontWeight: active ? 600 : 400, letterSpacing: '0.02em' }}>Coach</span>
     </button>
   );
 }
@@ -452,7 +452,7 @@ export default function MobileShell({ settings, onSettingsChange }) {
             >
               {tab.icon(active)}
               <span style={{
-                fontSize: 10, fontWeight: active ? 600 : 400,
+                fontSize: 11, fontWeight: active ? 600 : 400,
                 letterSpacing: '0.02em',
                 color: active ? 'var(--tab-accent)' : 'var(--text-muted)',
               }}>

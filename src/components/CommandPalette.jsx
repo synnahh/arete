@@ -267,7 +267,7 @@ export default function CommandPalette({ open, onClose, onTabChange, ai }) {
               </button>
             )}
             <kbd style={{
-              fontSize: 10, color: 'var(--text-muted)',
+              fontSize: 11, color: 'var(--text-muted)',
               background: 'var(--hover-bg)', border: '0.5px solid var(--card-border)',
               borderRadius: 4, padding: '2px 6px',
             }}>
@@ -313,7 +313,7 @@ export default function CommandPalette({ open, onClose, onTabChange, ai }) {
 
                   {/* Category badge */}
                   <span style={{
-                    fontSize: 9.5, fontWeight: 700, letterSpacing: '0.04em',
+                    fontSize: 10.5, fontWeight: 700, letterSpacing: '0.04em',
                     color: CAT_COLORS[item.category] || 'var(--text-muted)',
                     background: (CAT_COLORS[item.category] || '#555') + '18',
                     padding: '2px 7px', borderRadius: 10,
@@ -345,14 +345,14 @@ export default function CommandPalette({ open, onClose, onTabChange, ai }) {
             {[['', 'navigate'], ['', 'select'], ['esc', 'close']].map(([key, label]) => (
               <div key={key} style={{ display: 'flex', alignItems: 'center', gap: 5 }}>
                 <kbd style={{
-                  fontSize: 10, color: 'var(--text-muted)',
+                  fontSize: 11, color: 'var(--text-muted)',
                   background: 'var(--hover-bg)', border: '0.5px solid var(--card-border)',
                   borderRadius: 4, padding: '1px 5px',
                 }}>{key}</kbd>
-                <span style={{ fontSize: 10, color: 'var(--text-muted)' }}>{label}</span>
+                <span style={{ fontSize: 11, color: 'var(--text-muted)' }}>{label}</span>
               </div>
             ))}
-            <div style={{ marginLeft: 'auto', fontSize: 10, color: 'var(--text-muted)', opacity: 0.5 }}>
+            <div style={{ marginLeft: 'auto', fontSize: 11, color: 'var(--text-muted)', opacity: 0.5 }}>
               Ctrl+K to toggle
             </div>
           </div>

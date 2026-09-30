@@ -54,8 +54,8 @@ function SectionLabel({ children, right }) {
   return (
     <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: 14 }}>
       <div style={{ width: 18, height: 1, background: 'rgba(255,255,255,0.25)', flexShrink: 0 }} />
-      <span style={{ fontSize: 10, fontWeight: 700, letterSpacing: '0.18em', textTransform: 'uppercase',
-        color: 'rgba(255,255,255,0.35)', fontFamily: 'ui-monospace,monospace' }}>
+      <span style={{ fontSize: 11, fontWeight: 700, letterSpacing: '0.18em', textTransform: 'uppercase',
+        color: 'var(--text-muted)', fontFamily: 'ui-monospace,monospace' }}>
         {children}
       </span>
       <div style={{ flex: 1, height: 1, background: 'linear-gradient(90deg,rgba(255,255,255,0.1),transparent)' }} />
@@ -80,7 +80,7 @@ const BTN = {
 const BTN_GHOST = {
   padding: '7px 14px', borderRadius: 9, cursor: 'pointer',
   border: '0.5px solid rgba(255,255,255,0.1)',
-  background: 'transparent', color: 'rgba(255,255,255,0.5)', fontSize: 13,
+  background: 'transparent', color: 'var(--text-secondary)', fontSize: 13,
 };
 
 function Spinner() {
@@ -103,14 +103,14 @@ function Tag({ label, colour }) {
 }
 
 const MUTE = 'rgba(255,255,255,0.3)';
-const FIELD_LABEL = { fontSize: 10, fontWeight: 700, letterSpacing: '0.08em', color: MUTE,
+const FIELD_LABEL = { fontSize: 11, fontWeight: 700, letterSpacing: '0.08em', color: MUTE,
   fontFamily: 'ui-monospace,monospace', marginBottom: 4, textTransform: 'uppercase' };
 const today = () => toLocalDateKey(new Date());
 
 function EmptyState({ children }) {
   return (
     <GlassCard>
-      <div style={{ textAlign: 'center', padding: '40px 0', fontSize: 12, color: 'rgba(255,255,255,0.25)' }}>
+      <div style={{ textAlign: 'center', padding: '40px 0', fontSize: 12, color: 'var(--text-muted)' }}>
         {children}
       </div>
     </GlassCard>
@@ -132,7 +132,7 @@ function NumField({ label, value, onChange, placeholder, step }) {
 function ScoreRow({ label, value, onChange, colour = 'var(--accent)' }) {
   return (
     <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
-      <span style={{ fontSize: 12, color: 'rgba(255,255,255,0.6)', width: 130, flexShrink: 0 }}>{label}</span>
+      <span style={{ fontSize: 12, color: 'var(--text-secondary)', width: 130, flexShrink: 0 }}>{label}</span>
       <input type="range" min="0" max="10" value={value ?? 0}
         onChange={e => onChange(Number(e.target.value))}
         style={{ flex: 1, accentColor: colour }} />
@@ -237,7 +237,7 @@ function CoachChat({ data }) {
 
   return (
     <div style={{ display: 'flex', flexDirection: 'column', height: '100%', minHeight: 0, padding: '16px 24px 16px' }}>
-      <div style={{ fontSize: 10.5, color: 'rgba(255,255,255,0.3)', marginBottom: 10, padding: '7px 12px',
+      <div style={{ fontSize: 10.5, color: 'var(--text-muted)', marginBottom: 10, padding: '7px 12px',
         borderRadius: 8, background: 'rgba(255,255,255,0.03)', border: '0.5px solid rgba(255,255,255,0.06)', lineHeight: 1.5 }}>
         Your coach reads your live tracker data — phase, scorecard, measurements, sleep, daily consistency, skin & nutrition logs. The more you log, the sharper the advice.
       </div>
@@ -246,7 +246,7 @@ function CoachChat({ data }) {
           {STARTERS.map((s, i) => (
             <button key={i} onClick={() => send(s)} style={{ padding: '5px 11px', borderRadius: 20, cursor: 'pointer',
               fontSize: 11, border: '0.5px solid rgba(255,255,255,0.1)', background: 'rgba(255,255,255,0.04)',
-              color: 'rgba(255,255,255,0.5)', textAlign: 'left' }}>{s}</button>
+              color: 'var(--text-secondary)', textAlign: 'left' }}>{s}</button>
           ))}
         </div>
       )}
@@ -256,8 +256,8 @@ function CoachChat({ data }) {
             <div style={{ maxWidth: '82%', padding: '10px 14px', fontSize: 13, lineHeight: 1.7,
               color: 'rgba(255,255,255,0.85)', whiteSpace: 'pre-wrap',
               borderRadius: m.role === 'user' ? '14px 14px 4px 14px' : '4px 14px 14px 14px',
-              background: m.role === 'user' ? 'var(--accent)22' : 'rgba(255,255,255,0.04)',
-              border: `0.5px solid ${m.role === 'user' ? 'var(--accent)44' : 'rgba(255,255,255,0.08)'}` }}>{m.content}</div>
+              background: m.role === 'user' ? 'color-mix(in srgb, var(--accent) 13%, transparent)' : 'rgba(255,255,255,0.04)',
+              border: `0.5px solid ${m.role === 'user' ? 'color-mix(in srgb, var(--accent) 27%, transparent)' : 'rgba(255,255,255,0.08)'}` }}>{m.content}</div>
           </div>
         ))}
         {loading && <div style={{ padding: '4px 14px' }}><Spinner /></div>}
@@ -330,7 +330,7 @@ function Dashboard({ profile, saveProfile, metrics, daily, data, goTo, health })
           </div>
 
           <div style={{ marginTop: 20 }}>
-            <SectionLabel right={<span style={{ fontSize: 10, color: MUTE }}>{(profile?.priorities || []).length}/3</span>}>Top Priorities</SectionLabel>
+            <SectionLabel right={<span style={{ fontSize: 11, color: MUTE }}>{(profile?.priorities || []).length}/3</span>}>Top Priorities</SectionLabel>
             <div style={{ display: 'flex', flexWrap: 'wrap', gap: 6 }}>
               {PRIORITY_OPTIONS.map(p => {
                 const on = (profile?.priorities || []).includes(p);
@@ -338,7 +338,7 @@ function Dashboard({ profile, saveProfile, metrics, daily, data, goTo, health })
                   <button key={p} onClick={() => togglePriority(p)} style={{
                     padding: '6px 12px', borderRadius: 20, cursor: 'pointer', fontSize: 11.5,
                     border: `0.5px solid ${on ? 'var(--accent)' : 'rgba(255,255,255,0.1)'}`,
-                    background: on ? 'var(--accent)22' : 'transparent',
+                    background: on ? 'color-mix(in srgb, var(--accent) 13%, transparent)' : 'transparent',
                     color: on ? 'var(--accent)' : 'rgba(255,255,255,0.4)' }}>{p}</button>
                 );
               })}
@@ -352,11 +352,11 @@ function Dashboard({ profile, saveProfile, metrics, daily, data, goTo, health })
           <div style={{ display: 'flex', gap: 22 }}>
             <div style={{ textAlign: 'center' }}>
               <div style={{ fontSize: 19, fontWeight: 300, color: 'rgba(255,255,255,0.9)' }}>{avgDaily7}%</div>
-              <div style={{ fontSize: 9.5, color: MUTE, letterSpacing: '0.06em' }}>7-DAY CONSISTENCY</div>
+              <div style={{ fontSize: 10.5, color: MUTE, letterSpacing: '0.06em' }}>7-DAY CONSISTENCY</div>
             </div>
             <div style={{ textAlign: 'center' }}>
               <div style={{ fontSize: 19, fontWeight: 300, color: 'rgba(255,255,255,0.9)' }}>{lastMetric.weight || '—'}</div>
-              <div style={{ fontSize: 9.5, color: MUTE, letterSpacing: '0.06em' }}>LATEST WEIGHT</div>
+              <div style={{ fontSize: 10.5, color: MUTE, letterSpacing: '0.06em' }}>LATEST WEIGHT</div>
             </div>
           </div>
         </GlassCard>
@@ -372,17 +372,19 @@ function Dashboard({ profile, saveProfile, metrics, daily, data, goTo, health })
             return (
               <div key={cat}>
                 <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 4 }}>
-                  <span style={{ fontSize: 12, color: 'rgba(255,255,255,0.6)' }}>{cat}</span>
+                  <span style={{ fontSize: 12, color: 'var(--text-secondary)' }}>{cat}</span>
                   <span style={{ fontSize: 11, fontFamily: 'ui-monospace,monospace', color: reached ? '#6BE3A4' : 'var(--accent)' }}>
                     {cur}/10 <span style={{ color: MUTE }}>→ {goal}</span>
                   </span>
                 </div>
                 <ProgressBar value={cur} max={10} colour={reached ? '#6BE3A4' : 'var(--accent)'} />
-                <div style={{ display: 'flex', gap: 8, marginTop: 6 }}>
+                <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginTop: 6, fontSize: 11, color: 'var(--text-muted)' }}>
+                  <span style={{ width: 30 }}>Now</span>
                   <input type="range" min="0" max="10" value={cur} onChange={e => setScore(cat, 'current', Number(e.target.value))}
-                    style={{ flex: 1, accentColor: 'var(--accent)' }} title="Current" />
+                    style={{ flex: 1, minWidth: 0 }} aria-label={`${cat} now`} />
+                  <span style={{ width: 30, textAlign: 'right' }}>Goal</span>
                   <input type="range" min="0" max="10" value={goal} onChange={e => setScore(cat, 'goal', Number(e.target.value))}
-                    style={{ flex: 1, accentColor: 'rgba(255,255,255,0.3)' }} title="Goal" />
+                    style={{ flex: 1, minWidth: 0 }} aria-label={`${cat} goal`} />
                 </div>
               </div>
             );
@@ -404,7 +406,7 @@ function Dashboard({ profile, saveProfile, metrics, daily, data, goTo, health })
         <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: 12 }}>
           {METRIC_KEYS.map(k => (
             <div key={k} style={{ padding: '10px 12px', borderRadius: 10, background: 'rgba(255,255,255,0.03)' }}>
-              <div style={{ fontSize: 9.5, color: MUTE, letterSpacing: '0.05em', marginBottom: 3 }}>{METRIC_LABELS[k].toUpperCase()}</div>
+              <div style={{ fontSize: 10.5, color: MUTE, letterSpacing: '0.05em', marginBottom: 3 }}>{METRIC_LABELS[k].toUpperCase()}</div>
               <div style={{ fontSize: 18, fontWeight: 300, color: 'rgba(255,255,255,0.9)' }}>{lastMetric[k] || '—'}</div>
             </div>
           ))}
@@ -448,7 +450,7 @@ function Baseline({ profile, saveProfile }) {
           return (
             <button key={s} onClick={() => setOpen(s)} style={{
               textAlign: 'left', padding: '9px 12px', borderRadius: 9, cursor: 'pointer', border: 'none',
-              background: open === s ? 'var(--accent)22' : 'transparent', fontSize: 12.5,
+              background: open === s ? 'color-mix(in srgb, var(--accent) 13%, transparent)' : 'transparent', fontSize: 12.5,
               color: open === s ? 'var(--accent)' : 'rgba(255,255,255,0.5)',
               display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
               {s}{done && <span style={{ width: 6, height: 6, borderRadius: '50%', background: '#6BE3A4' }} />}
@@ -524,7 +526,7 @@ function Foundation({ profile, saveProfile, sleep, nutrition, health }) {
               ['Today calories', health.todayCalories != null ? health.todayCalories : '—'],
             ].map(([l, v]) => (
               <div key={l} style={{ padding: '8px 10px', borderRadius: 9, background: 'rgba(255,255,255,0.03)' }}>
-                <div style={{ fontSize: 9, color: MUTE, letterSpacing: '0.05em', marginBottom: 3 }}>{l.toUpperCase()}</div>
+                <div style={{ fontSize: 10.5, color: MUTE, letterSpacing: '0.05em', marginBottom: 3 }}>{l.toUpperCase()}</div>
                 <div style={{ fontSize: 18, fontWeight: 300, color: 'rgba(255,255,255,0.9)' }}>{v}</div>
               </div>
             ))}
@@ -553,7 +555,7 @@ function Foundation({ profile, saveProfile, sleep, nutrition, health }) {
       <GlassCard>
         <SectionLabel>Hydration</SectionLabel>
         <div style={{ display: 'flex', alignItems: 'center', gap: 14 }}>
-          <span style={{ fontSize: 12, color: 'rgba(255,255,255,0.6)' }}>Daily water goal</span>
+          <span style={{ fontSize: 12, color: 'var(--text-secondary)' }}>Daily water goal</span>
           <input type="number" step="0.25" value={waterGoal} onChange={e => saveProfile({ ...profile, waterGoal: Number(e.target.value) })}
             style={{ ...INPUT, width: 90 }} />
           <span style={{ fontSize: 12, color: MUTE }}>litres / day</span>
@@ -612,7 +614,7 @@ function Physique({ profile, saveProfile, metrics, strength, health, workouts })
     <div style={{ padding: '20px 24px 40px', display: 'flex', flexDirection: 'column', gap: 16 }}>
       {health?.latestWeight != null && (
         <GlassCard style={{ borderLeft: '3px solid #6BE3A4', padding: '12px 18px' }}>
-          <div style={{ fontSize: 12, color: 'rgba(255,255,255,0.7)' }}>
+          <div style={{ fontSize: 12, color: 'var(--text-secondary)' }}>
             <span style={{ color: '#6BE3A4', fontWeight: 600 }}>From Health:</span>{' '}
             {health.latestWeight}kg{health.latestBodyFat != null ? ` · ${health.latestBodyFat}% body fat` : ''}{health.latestMuscle != null ? ` · ${health.latestMuscle}kg muscle` : ''}
             {health.latestBodyDate ? <span style={{ color: MUTE }}> · {health.latestBodyDate}</span> : null}
@@ -635,10 +637,10 @@ function Physique({ profile, saveProfile, metrics, strength, health, workouts })
               const t = trend(k);
               return (
                 <div key={k} style={{ padding: '8px 10px', borderRadius: 9, background: 'rgba(255,255,255,0.03)' }}>
-                  <div style={{ fontSize: 9, color: MUTE, letterSpacing: '0.05em' }}>{label.toUpperCase()}</div>
+                  <div style={{ fontSize: 10.5, color: MUTE, letterSpacing: '0.05em' }}>{label.toUpperCase()}</div>
                   <div style={{ fontSize: 16, fontWeight: 300, color: 'rgba(255,255,255,0.9)' }}>{last[k] || '—'}</div>
                   {t != null && t !== 0 && (
-                    <div style={{ fontSize: 10, color: t > 0 ? '#6BE3A4' : '#e55a5a' }}>{t > 0 ? '▲' : '▼'} {Math.abs(t).toFixed(1)}</div>
+                    <div style={{ fontSize: 11, color: t > 0 ? '#6BE3A4' : '#e55a5a' }}>{t > 0 ? '▲' : '▼'} {Math.abs(t).toFixed(1)}</div>
                   )}
                 </div>
               );
@@ -651,7 +653,7 @@ function Physique({ profile, saveProfile, metrics, strength, health, workouts })
       <GlassCard>
         <SectionLabel right={Object.keys(lifts).length ? <span style={{ fontSize: 10.5, color: '#6BE3A4' }}>● from Workout</span> : null}>Strength Metrics</SectionLabel>
         {Object.keys(lifts).length > 0 && (
-          <div style={{ fontSize: 11.5, color: 'rgba(255,255,255,0.55)', marginBottom: 12, lineHeight: 1.6 }}>
+          <div style={{ fontSize: 11.5, color: 'var(--text-secondary)', marginBottom: 12, lineHeight: 1.6 }}>
             Latest top sets from your Workout tab:{' '}
             {STRENGTH_FIELDS.filter(([k]) => lifts[k]).map(([k, label]) =>
               `${label} ${lifts[k].weight ? lifts[k].weight + 'kg' : 'BW'}×${lifts[k].reps ?? '?'}`).join(' · ')}
@@ -787,9 +789,9 @@ function ItemList({ items, onRemove, render }) {
     <div style={{ display: 'flex', flexDirection: 'column', gap: 6, marginTop: 12 }}>
       {items.map((it, i) => (
         <div key={it.id || i} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center',
-          padding: '8px 12px', borderRadius: 8, background: 'rgba(255,255,255,0.03)', fontSize: 12, color: 'rgba(255,255,255,0.7)' }}>
+          padding: '8px 12px', borderRadius: 8, background: 'rgba(255,255,255,0.03)', fontSize: 12, color: 'var(--text-secondary)' }}>
           <span>{render(it)}</span>
-          <button onClick={() => onRemove(it.id)} style={{ background: 'none', border: 'none', cursor: 'pointer', color: 'rgba(255,255,255,0.25)', fontSize: 15 }}>&#215;</button>
+          <button onClick={() => onRemove(it.id)} style={{ background: 'none', border: 'none', cursor: 'pointer', color: 'var(--text-muted)', fontSize: 15 }}>&#215;</button>
         </div>
       ))}
     </div>
@@ -911,7 +913,7 @@ function StyleMaxxing({ profile, saveProfile, wardrobe, outfits }) {
               <div style={{ fontSize: 12, color: 'rgba(255,255,255,0.85)', fontWeight: 600 }}>{o.name}</div>
               <div style={{ fontSize: 11, color: 'var(--accent)' }}>{o.rating}/10</div>
               {o.notes && <div style={{ fontSize: 10.5, color: MUTE, marginTop: 2 }}>{o.notes}</div>}
-              <button onClick={() => outfits.remove(o.id)} style={{ position: 'absolute', top: 6, right: 8, background: 'none', border: 'none', cursor: 'pointer', color: 'rgba(255,255,255,0.3)', fontSize: 14 }}>&#215;</button>
+              <button onClick={() => outfits.remove(o.id)} style={{ position: 'absolute', top: 6, right: 8, background: 'none', border: 'none', cursor: 'pointer', color: 'var(--text-muted)', fontSize: 14 }}>&#215;</button>
             </GlassCard>
           ))}
         </div>
@@ -1064,7 +1066,7 @@ function PhotoVault({ photos }) {
           {catPhotos.map((p, i) => (
             <div key={p.id || i} style={{ position: 'relative' }}>
               <img src={p.image} alt="" style={{ width: '100%', borderRadius: 12, aspectRatio: '3/4', objectFit: 'cover' }} />
-              <div style={{ position: 'absolute', bottom: 6, left: 8, fontSize: 10, color: '#fff', textShadow: '0 1px 4px #000', fontFamily: 'ui-monospace,monospace' }}>{p.date}</div>
+              <div style={{ position: 'absolute', bottom: 6, left: 8, fontSize: 11, color: '#fff', textShadow: '0 1px 4px #000', fontFamily: 'ui-monospace,monospace' }}>{p.date}</div>
               <button onClick={() => photos.remove(p.id)} style={{ position: 'absolute', top: 6, right: 8, background: 'rgba(0,0,0,0.5)', border: 'none', borderRadius: '50%', width: 22, height: 22, cursor: 'pointer', color: '#fff', fontSize: 13 }}>&#215;</button>
             </div>
           ))}
@@ -1137,9 +1139,9 @@ function ExperimentCard({ exp, onUpdate, onRemove }) {
             <span style={{ fontSize: 10.5, color: MUTE, fontFamily: 'ui-monospace,monospace' }}>{exp.startDate}{exp.endDate ? ' → ' + exp.endDate : ''}</span>
           </div>
           <div style={{ fontSize: 14, fontWeight: 600, color: 'rgba(255,255,255,0.9)' }}>{exp.goal}</div>
-          {exp.hypothesis && <div style={{ fontSize: 12, color: 'rgba(255,255,255,0.5)', marginTop: 4 }}><strong>Hypothesis:</strong> {exp.hypothesis}</div>}
-          {exp.change && <div style={{ fontSize: 12, color: 'rgba(255,255,255,0.5)', marginTop: 2 }}><strong>Change:</strong> {exp.change}</div>}
-          {exp.results && <div style={{ fontSize: 12, color: 'rgba(255,255,255,0.6)', marginTop: 6 }}><strong>Results:</strong> {exp.results}</div>}
+          {exp.hypothesis && <div style={{ fontSize: 12, color: 'var(--text-secondary)', marginTop: 4 }}><strong>Hypothesis:</strong> {exp.hypothesis}</div>}
+          {exp.change && <div style={{ fontSize: 12, color: 'var(--text-secondary)', marginTop: 2 }}><strong>Change:</strong> {exp.change}</div>}
+          {exp.results && <div style={{ fontSize: 12, color: 'var(--text-secondary)', marginTop: 6 }}><strong>Results:</strong> {exp.results}</div>}
           {exp.verdict && <div style={{ fontSize: 12, color: '#6BE3A4', marginTop: 4 }}><strong>Verdict:</strong> {exp.verdict}</div>}
         </div>
         <button onClick={() => onRemove(exp.id)} style={{ background: 'none', border: 'none', cursor: 'pointer', color: 'rgba(255,255,255,0.2)', fontSize: 16 }}>&#215;</button>
@@ -1208,11 +1210,11 @@ function DailyTracker({ daily }) {
         </GlassCard>
         <GlassCard style={{ textAlign: 'center' }}>
           <div style={{ fontSize: 30, fontWeight: 300, color: '#f4a642' }}>{streak}🔥</div>
-          <div style={{ fontSize: 10, color: MUTE, letterSpacing: '0.08em' }}>DAY STREAK (≥80%)</div>
+          <div style={{ fontSize: 11, color: MUTE, letterSpacing: '0.08em' }}>DAY STREAK (≥80%)</div>
         </GlassCard>
         <GlassCard style={{ textAlign: 'center' }}>
           <div style={{ fontSize: 30, fontWeight: 300, color: '#6BE3A4' }}>{monthConsistency}%</div>
-          <div style={{ fontSize: 10, color: MUTE, letterSpacing: '0.08em' }}>MONTH CONSISTENCY</div>
+          <div style={{ fontSize: 11, color: MUTE, letterSpacing: '0.08em' }}>MONTH CONSISTENCY</div>
         </GlassCard>
       </div>
 
@@ -1306,7 +1308,7 @@ ${ctx}`;
         ].map(([label, val, col]) => (
           <GlassCard key={label} style={{ textAlign: 'center' }}>
             <div style={{ fontSize: 26, fontWeight: 300, color: col }}>{val}</div>
-            <div style={{ fontSize: 9.5, color: MUTE, letterSpacing: '0.06em' }}>{label.toUpperCase()}</div>
+            <div style={{ fontSize: 10.5, color: MUTE, letterSpacing: '0.06em' }}>{label.toUpperCase()}</div>
           </GlassCard>
         ))}
       </div>
@@ -1317,7 +1319,7 @@ ${ctx}`;
           <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
             {habitRates.map(h => (
               <div key={h.label} style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
-                <span style={{ fontSize: 12, color: 'rgba(255,255,255,0.6)', width: 120, flexShrink: 0 }}>{h.label}</span>
+                <span style={{ fontSize: 12, color: 'var(--text-secondary)', width: 120, flexShrink: 0 }}>{h.label}</span>
                 <div style={{ flex: 1 }}><ProgressBar value={h.value} max={100} colour={h.value >= 70 ? '#6BE3A4' : h.value >= 40 ? '#f4a642' : '#e55a5a'} /></div>
                 <span style={{ fontSize: 11, fontFamily: 'ui-monospace,monospace', color: MUTE, width: 38, textAlign: 'right' }}>{h.value}%</span>
               </div>
@@ -1408,7 +1410,7 @@ export default function LM() {
       <div style={{ padding: '18px 24px 0', flexShrink: 0 }}>
         <div style={{ display: 'flex', alignItems: 'baseline', gap: 12, marginBottom: 14 }}>
           <div style={{ fontSize: 20, fontWeight: 300, color: 'rgba(255,255,255,0.9)', letterSpacing: '-0.01em' }}>Looksmaxxing</div>
-          <div style={{ fontSize: 11, color: 'rgba(255,255,255,0.25)', fontFamily: 'ui-monospace,monospace', letterSpacing: '0.06em' }}>
+          <div style={{ fontSize: 11, color: 'var(--text-muted)', fontFamily: 'ui-monospace,monospace', letterSpacing: '0.06em' }}>
             APPEARANCE OPERATING SYSTEM
           </div>
         </div>
@@ -1417,7 +1419,7 @@ export default function LM() {
             <button key={t.id} onClick={() => setSection(t.id)} style={{
               padding: '7px 14px 9px', border: 'none', cursor: 'pointer', background: 'transparent', whiteSpace: 'nowrap',
               color: section === t.id ? 'rgba(255,255,255,0.9)' : 'rgba(255,255,255,0.3)',
-              fontSize: 10, fontWeight: 700, letterSpacing: '0.1em', fontFamily: 'ui-monospace,monospace',
+              fontSize: 11, fontWeight: 700, letterSpacing: '0.1em', fontFamily: 'ui-monospace,monospace',
               borderBottom: section === t.id ? '1.5px solid var(--accent)' : '1.5px solid transparent',
               marginBottom: -0.5, transition: 'all 0.15s ease' }}>{t.label}</button>
           ))}

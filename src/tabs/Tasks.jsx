@@ -2,6 +2,7 @@
 // Split view: list left · detail/add panel right
 // Firebase synced · localStorage fallback · voice commands
 
+import { Icon as LineIcon } from '../components/icons.jsx';
 import { useState, useCallback, useMemo } from 'react';
 import { useCollection } from '../supabase/useCollection.js';
 import { STORAGE_KEYS }  from '../utils/storage.js';
@@ -67,7 +68,7 @@ function PriorityPill({ priority }) {
   const p = PRIORITY[priority] ?? PRIORITY.low;
   return (
     <span style={{
-      fontSize: 9.5, padding: '2px 7px', borderRadius: 20, fontWeight: 500,
+      fontSize: 10.5, padding: '2px 7px', borderRadius: 20, fontWeight: 500,
       letterSpacing: '0.04em',
       background: p.color + '1a',
       color: p.color,
@@ -81,18 +82,18 @@ function PriorityPill({ priority }) {
 // ── Empty state ───────────────────────────────────────────────────────────────
 function EmptyState({ filter, onAdd }) {
   const messages = {
-    all:       { icon: "✅", text: "No pending tasks.", sub: "You're clear." },
-    today:     { icon: '☀️', text: 'Nothing due today.', sub: 'Enjoy the day.' },
-    upcoming:  { icon: '📅', text: 'No upcoming tasks.', sub: 'Schedule something.' },
-    completed: { icon: '🏆', text: 'Nothing completed yet.', sub: 'Start ticking things off.' },
+    all:       { icon: 'checkCircle', text: "No pending tasks.", sub: "You're clear." },
+    today:     { icon: 'today', text: 'Nothing due today.', sub: 'Enjoy the day.' },
+    upcoming:  { icon: 'calendar', text: 'No upcoming tasks.', sub: 'Schedule something.' },
+    completed: { icon: 'progress', text: 'Nothing completed yet.', sub: 'Start ticking things off.' },
   };
   const m = messages[filter];
   return (
     <div style={{
       flex: 1, display: 'flex', flexDirection: 'column',
-      alignItems: 'center', justifyContent: 'center', gap: 8, opacity: 0.45,
+      alignItems: 'center', justifyContent: 'center', gap: 10, padding: '56px 24px',
     }}>
-      <span style={{ fontSize: 28 }}>{m.icon}</span>
+      <span style={{ color: 'var(--text-muted)' }}><LineIcon name={m.icon} size={28} strokeWidth={1.5} /></span>
       <div style={{ textAlign: 'center' }}>
         <div style={{ fontSize: 13, color: 'var(--text-secondary)' }}>{m.text}</div>
         <div style={{ fontSize: 11.5, color: 'var(--text-muted)', marginTop: 3 }}>{m.sub}</div>
@@ -156,15 +157,15 @@ function TaskRow({ task, selected, onSelect, onToggle }) {
         <div style={{ display: 'flex', alignItems: 'center', gap: 6, marginTop: 3 }}>
           {task.priority && <PriorityPill priority={task.priority} />}
           {task.repeat && task.repeat !== 'none' && (
-            <span style={{ fontSize: 10, color: 'var(--accent)' }} title={`Repeats ${REPEATS[task.repeat]?.label?.toLowerCase() ?? task.repeat}`}>🔁</span>
+            <span style={{ fontSize: 11, color: 'var(--accent)' }} title={`Repeats ${REPEATS[task.repeat]?.label?.toLowerCase() ?? task.repeat}`}>🔁</span>
           )}
           {task.dueDate && (
-            <span style={{ fontSize: 10, color: 'var(--text-muted)' }}>
+            <span style={{ fontSize: 11, color: 'var(--text-muted)' }}>
               {new Date(task.dueDate + 'T00:00:00').toLocaleDateString('en-AU', { day: 'numeric', month: 'short' })}
             </span>
           )}
           {task.category && (
-            <span style={{ fontSize: 10, color: 'var(--text-muted)', opacity: 0.7 }}>
+            <span style={{ fontSize: 11, color: 'var(--text-muted)', opacity: 0.7 }}>
               {task.category}
             </span>
           )}
@@ -197,7 +198,7 @@ function TaskPanel({ mode, task, onSave, onDelete, onClose, onToggle }) {
         justifyContent: 'center', gap: 12, height: '100%',
         padding: '24px 16px', opacity: 0.4,
       }}>
-        <span style={{ fontSize: 24 }}>☑</span>
+        <span style={{ display: 'flex', justifyContent: 'center', color: 'var(--text-muted)' }}><LineIcon name="tasks" size={22} strokeWidth={1.5} /></span>
         <p style={{ fontSize: 12, color: 'var(--text-muted)', textAlign: 'center', lineHeight: 1.5 }}>
           Select a task to view details
         </p>
@@ -216,7 +217,7 @@ function TaskPanel({ mode, task, onSave, onDelete, onClose, onToggle }) {
     <div style={{ display: 'flex', flexDirection: 'column', height: '100%', padding: '16px 14px', gap: 14 }}>
       {/* Header */}
       <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
-        <span style={{ fontSize: 10, color: 'var(--text-muted)', letterSpacing: '0.07em' }}>
+        <span style={{ fontSize: 11, color: 'var(--text-muted)', letterSpacing: '0.07em' }}>
           {isAdd ? 'NEW TASK' : 'TASK DETAIL'}
         </span>
         <div style={{ display: 'flex', gap: 6 }}>
@@ -383,7 +384,7 @@ function Row({ label, children }) {
 }
 
 const labelStyle = {
-  display: 'block', fontSize: 10, color: 'var(--text-muted)',
+  display: 'block', fontSize: 11, color: 'var(--text-muted)',
   letterSpacing: '0.06em', marginBottom: 4,
 };
 const iconBtnStyle = {
@@ -499,7 +500,7 @@ export default function Tasks({ ai }) {
           <h2 style={{ fontSize: 15, fontWeight: 500, color: 'var(--text-primary)', margin: 0, flex: 1 }}>
             Tasks
             {synced && (
-              <span style={{ fontSize: 9.5, color: 'var(--text-muted)', marginLeft: 8, fontWeight: 400 }}>
+              <span style={{ fontSize: 10.5, color: 'var(--text-muted)', marginLeft: 8, fontWeight: 400 }}>
                  synced
               </span>
             )}
@@ -542,7 +543,7 @@ export default function Tasks({ ai }) {
               {f}
               {f !== 'completed' && tasks.filter(t => !t.done).length > 0 && f === 'all' && (
                 <span style={{
-                  marginLeft: 5, fontSize: 9.5, padding: '1px 5px', borderRadius: 10,
+                  marginLeft: 5, fontSize: 10.5, padding: '1px 5px', borderRadius: 10,
                   background: 'var(--active-bg)', color: 'var(--accent)',
                 }}>
                   {tasks.filter(t => !t.done).length}

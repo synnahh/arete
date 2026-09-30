@@ -43,12 +43,12 @@ const BTN = {
 const BTN_GHOST = {
   padding: '9px 18px', borderRadius: 10, cursor: 'pointer',
   border: '0.5px solid rgba(255,255,255,0.12)', background: 'transparent',
-  color: 'rgba(255,255,255,0.5)', fontSize: 13,
+  color: 'var(--text-secondary)', fontSize: 13,
 };
 
 function Label({ children }) {
   return (
-    <div style={{ fontSize: 10, fontWeight: 700, letterSpacing: '0.1em', color: 'rgba(255,255,255,0.3)',
+    <div style={{ fontSize: 11, fontWeight: 700, letterSpacing: '0.1em', color: 'var(--text-muted)',
       fontFamily: 'ui-monospace,monospace', marginBottom: 5, textTransform: 'uppercase' }}>
       {children}
     </div>
@@ -114,16 +114,16 @@ function Overview({ holdings, prices }) {
       {/* Hero */}
       <MCard>
         <div style={{ padding: '20px 20px 16px', textAlign: 'center' }}>
-          <div style={{ fontSize: 11, color: 'rgba(255,255,255,0.3)', fontFamily: 'ui-monospace,monospace',
+          <div style={{ fontSize: 11, color: 'var(--text-muted)', fontFamily: 'ui-monospace,monospace',
             letterSpacing: '0.1em', marginBottom: 6 }}>TOTAL PORTFOLIO VALUE</div>
           <div style={{ fontSize: 36, fontWeight: 200, color: 'rgba(255,255,255,0.95)', letterSpacing: '-1px', marginBottom: 6 }}>
             {sym}{totalValue.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
           </div>
           <PctBadge val={pnlPct} />
-          <div style={{ marginTop: 4, fontSize: 12, color: 'rgba(255,255,255,0.3)' }}>
+          <div style={{ marginTop: 4, fontSize: 12, color: 'var(--text-muted)' }}>
             All-time P&L: <span style={{ color: pnl>=0?'#6BE3A4':'#e55a5a' }}>{sym}{Math.abs(pnl).toFixed(2)}</span>
           </div>
-          <div style={{ marginTop: 4, fontSize: 11, color: 'rgba(255,255,255,0.25)' }}>
+          <div style={{ marginTop: 4, fontSize: 11, color: 'var(--text-muted)' }}>
             Cost basis: {sym}{totalCost.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
           </div>
         </div>
@@ -145,8 +145,8 @@ function Overview({ holdings, prices }) {
               {allocTop.map((a,i) => (
                 <div key={a.ticker} style={{ display: 'flex', alignItems: 'center', gap: 5 }}>
                   <div style={{ width: 8, height: 8, borderRadius: 2, background: COLOURS[i % COLOURS.length], flexShrink: 0 }} />
-                  <span style={{ fontSize: 11, color: 'rgba(255,255,255,0.5)' }}>
-                    {a.ticker} <span style={{ color: 'rgba(255,255,255,0.3)' }}>
+                  <span style={{ fontSize: 11, color: 'var(--text-secondary)' }}>
+                    {a.ticker} <span style={{ color: 'var(--text-muted)' }}>
                       {((a.value/totalValue)*100).toFixed(1)}%
                     </span>
                   </span>
@@ -232,7 +232,7 @@ function Holdings({ holdings, prices, refreshPrices, loading }) {
               <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: 5 }}>
                 <div>
                   <div style={{ fontSize: 16, fontWeight: 700, color: 'rgba(255,255,255,0.9)', fontFamily: 'ui-monospace,monospace' }}>{h.ticker}</div>
-                  <div style={{ fontSize: 11, color: 'rgba(255,255,255,0.3)', marginTop: 1 }}>{qty} shares · avg {sym}{avg.toFixed(2)}</div>
+                  <div style={{ fontSize: 11, color: 'var(--text-muted)', marginTop: 1 }}>{qty} shares · avg {sym}{avg.toFixed(2)}</div>
                 </div>
                 <div style={{ textAlign: 'right' }}>
                   {price ? (
@@ -246,13 +246,13 @@ function Holdings({ holdings, prices, refreshPrices, loading }) {
                 </div>
               </div>
               {price && pnl !== null && (
-                <div style={{ fontSize: 11, color: 'rgba(255,255,255,0.3)' }}>
+                <div style={{ fontSize: 11, color: 'var(--text-muted)' }}>
                   Value: {sym}{value.toFixed(2)} · P&L: <span style={{ color: pnl>=0?'#6BE3A4':'#e55a5a' }}>
                     {pnl>=0?'+':''}{sym}{Math.abs(pnl).toFixed(2)}
                   </span>
                 </div>
               )}
-              {h.note && <div style={{ fontSize: 11, color: 'rgba(255,255,255,0.25)', marginTop: 4 }}>{h.note}</div>}
+              {h.note && <div style={{ fontSize: 11, color: 'var(--text-muted)', marginTop: 4 }}>{h.note}</div>}
             </div>
           </MCard>
         );
@@ -306,7 +306,7 @@ function AIAdvisor({ holdings, prices }) {
               <button key={s} onClick={() => send(s)} style={{
                 padding: '10px 14px', borderRadius: 12, fontSize: 13, textAlign: 'left', cursor: 'pointer',
                 border: '0.5px solid rgba(255,255,255,0.08)', background: 'rgba(255,255,255,0.04)',
-                color: 'rgba(255,255,255,0.5)',
+                color: 'var(--text-secondary)',
               }}>{s}</button>
             ))}
           </div>
@@ -317,8 +317,8 @@ function AIAdvisor({ holdings, prices }) {
               maxWidth: '88%', padding: '10px 14px', fontSize: 14, lineHeight: 1.65,
               color: 'rgba(255,255,255,0.85)', whiteSpace: 'pre-wrap',
               borderRadius: m.role==='user'?'18px 18px 4px 18px':'4px 18px 18px 18px',
-              background: m.role==='user'?'var(--accent)22':'rgba(255,255,255,0.05)',
-              border: `0.5px solid ${m.role==='user'?'var(--accent)44':'rgba(255,255,255,0.08)'}`,
+              background: m.role==='user'?'color-mix(in srgb, var(--accent) 13%, transparent)':'rgba(255,255,255,0.05)',
+              border: `0.5px solid ${m.role==='user'?'color-mix(in srgb, var(--accent) 27%, transparent)':'rgba(255,255,255,0.08)'}`,
             }}>{m.content}</div>
           </div>
         ))}
@@ -379,7 +379,7 @@ export default function MobilePortfolio() {
       <div style={{ padding: '14px 16px 0', flexShrink: 0 }}>
         <div style={{ display: 'flex', alignItems: 'baseline', gap: 8, marginBottom: 12 }}>
           <div style={{ fontSize: 22, fontWeight: 300, color: 'rgba(255,255,255,0.9)' }}>Portfolio</div>
-          <div style={{ fontSize: 10, color: 'rgba(255,255,255,0.25)', fontFamily: 'ui-monospace,monospace', letterSpacing: '0.08em' }}>
+          <div style={{ fontSize: 11, color: 'var(--text-muted)', fontFamily: 'ui-monospace,monospace', letterSpacing: '0.08em' }}>
             INVESTMENTS
           </div>
         </div>

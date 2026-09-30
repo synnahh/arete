@@ -22,7 +22,7 @@ function MCard({ children, style = {} }) {
 function Row({ label, children }) {
   return (
     <div style={{ marginBottom: 14 }}>
-      <div style={{ fontSize: 10, fontWeight: 700, letterSpacing: '0.1em', color: 'rgba(255,255,255,0.3)',
+      <div style={{ fontSize: 11, fontWeight: 700, letterSpacing: '0.1em', color: 'var(--text-muted)',
         fontFamily: 'ui-monospace,monospace', marginBottom: 5, textTransform: 'uppercase' }}>{label}</div>
       {children}
     </div>
@@ -45,7 +45,7 @@ const BTN = {
 const BTN_GHOST = {
   padding: '9px 18px', borderRadius: 10, cursor: 'pointer',
   border: '0.5px solid rgba(255,255,255,0.12)',
-  background: 'transparent', color: 'rgba(255,255,255,0.5)', fontSize: 13,
+  background: 'transparent', color: 'var(--text-secondary)', fontSize: 13,
 };
 
 function Spinner() {
@@ -90,7 +90,7 @@ function Constitution({ constitution, onSave }) {
 
   return (
     <div style={{ padding: '16px 16px 40px', display: 'flex', flexDirection: 'column', gap: 16 }}>
-      <div style={{ fontSize: 12, color: 'rgba(255,255,255,0.35)', lineHeight: 1.6 }}>
+      <div style={{ fontSize: 12, color: 'var(--text-muted)', lineHeight: 1.6 }}>
         Your values and principles — fed to every AI advisor as context.
       </div>
       {[
@@ -156,7 +156,7 @@ function AdvisorChat({ advisor, constitution, onBack }) {
       {/* Header */}
       <div style={{ display: 'flex', alignItems: 'center', gap: 10, padding: '14px 16px 10px', flexShrink: 0,
         borderBottom: '0.5px solid rgba(255,255,255,0.06)' }}>
-        <button onClick={onBack} style={{ background: 'none', border: 'none', color: 'rgba(255,255,255,0.4)',
+        <button onClick={onBack} style={{ background: 'none', border: 'none', color: 'var(--text-muted)',
           fontSize: 18, cursor: 'pointer', padding: '0 4px' }}>‹</button>
         <div style={{ width: 34, height: 34, borderRadius: 10, background: advisor.colour + '22',
           display: 'flex', alignItems: 'center', justifyContent: 'center',
@@ -171,7 +171,7 @@ function AdvisorChat({ advisor, constitution, onBack }) {
               <button key={s} onClick={() => send(s)} style={{
                 padding: '7px 13px', borderRadius: 20, fontSize: 12,
                 border: '0.5px solid rgba(255,255,255,0.1)', background: 'rgba(255,255,255,0.04)',
-                color: 'rgba(255,255,255,0.5)', cursor: 'pointer', textAlign: 'left',
+                color: 'var(--text-secondary)', cursor: 'pointer', textAlign: 'left',
               }}>{s}</button>
             ))}
           </div>
@@ -182,8 +182,8 @@ function AdvisorChat({ advisor, constitution, onBack }) {
               maxWidth: '88%', padding: '10px 14px', fontSize: 14, lineHeight: 1.65,
               color: 'rgba(255,255,255,0.85)', whiteSpace: 'pre-wrap',
               borderRadius: m.role === 'user' ? '18px 18px 4px 18px' : '4px 18px 18px 18px',
-              background: m.role === 'user' ? 'var(--accent)22' : 'rgba(255,255,255,0.05)',
-              border: `0.5px solid ${m.role === 'user' ? 'var(--accent)44' : 'rgba(255,255,255,0.08)'}`,
+              background: m.role === 'user' ? 'color-mix(in srgb, var(--accent) 13%, transparent)' : 'rgba(255,255,255,0.05)',
+              border: `0.5px solid ${m.role === 'user' ? 'color-mix(in srgb, var(--accent) 27%, transparent)' : 'rgba(255,255,255,0.08)'}`,
             }}>{m.content}</div>
           </div>
         ))}
@@ -212,7 +212,7 @@ function Advisors({ constitution }) {
 
   return (
     <div style={{ padding: '16px 16px 40px', display: 'flex', flexDirection: 'column', gap: 10 }}>
-      <div style={{ fontSize: 12, color: 'rgba(255,255,255,0.35)', marginBottom: 4 }}>
+      <div style={{ fontSize: 12, color: 'var(--text-muted)', marginBottom: 4 }}>
         Six perspectives on your life and decisions.
       </div>
       {ADVISORS.map(adv => (
@@ -224,7 +224,7 @@ function Advisors({ constitution }) {
               fontWeight: 800, fontSize: 12, color: adv.colour, flexShrink: 0 }}>{adv.emoji}</div>
             <div>
               <div style={{ fontSize: 14, fontWeight: 600, color: adv.colour, marginBottom: 2 }}>{adv.name}</div>
-              <div style={{ fontSize: 11, color: 'rgba(255,255,255,0.3)', lineHeight: 1.4 }}>
+              <div style={{ fontSize: 11, color: 'var(--text-muted)', lineHeight: 1.4 }}>
                 {{ career:'Career trajectory & blind spots', learning:'Skill acquisition & practice',
                    strategist:'Long-game & leverage points', skeptic:'Stress-tests your thinking',
                    future:'10-year future self wisdom', devil:'Strongest counterarguments' }[adv.id]}
@@ -303,16 +303,16 @@ function Ledger() {
           <MCard key={e.id||i} style={{ borderLeft: `3px solid ${col}` }}>
             <div style={{ padding: '12px 14px' }}>
               <div style={{ display: 'flex', alignItems: 'center', gap: 7, marginBottom: 5 }}>
-                <span style={{ fontSize: 9, fontWeight: 700, color: col, letterSpacing: '0.1em',
+                <span style={{ fontSize: 10.5, fontWeight: 700, color: col, letterSpacing: '0.1em',
                   background: col+'20', padding: '2px 7px', borderRadius: 20 }}>
                   {e._t.toUpperCase()}
                 </span>
-                <span style={{ fontSize: 10, color: 'rgba(255,255,255,0.25)', fontFamily: 'ui-monospace,monospace' }}>{e.date}</span>
-                {e.confidence && <span style={{ fontSize: 10, color: 'rgba(255,255,255,0.25)' }}>{e.confidence}/10</span>}
+                <span style={{ fontSize: 11, color: 'var(--text-muted)', fontFamily: 'ui-monospace,monospace' }}>{e.date}</span>
+                {e.confidence && <span style={{ fontSize: 11, color: 'var(--text-muted)' }}>{e.confidence}/10</span>}
               </div>
               <div style={{ fontSize: 14, color: 'rgba(255,255,255,0.85)', fontWeight: 500 }}>{e.title}</div>
               {(e.reasoning||e.what||e.context) && (
-                <div style={{ fontSize: 12, color: 'rgba(255,255,255,0.4)', marginTop: 5, lineHeight: 1.6,
+                <div style={{ fontSize: 12, color: 'var(--text-muted)', marginTop: 5, lineHeight: 1.6,
                   display: '-webkit-box', WebkitLineClamp: 2, WebkitBoxOrient: 'vertical', overflow: 'hidden' }}>
                   {e.reasoning||e.what||e.context}
                 </div>
@@ -377,10 +377,10 @@ function Beliefs() {
             <div style={{ padding: '13px 14px' }}>
               <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 5 }}>
                 <span style={{ fontSize: 12, fontWeight: 700, color: col, fontFamily: 'ui-monospace,monospace' }}>{conf}/10</span>
-                <span style={{ fontSize: 10, color: 'rgba(255,255,255,0.25)', fontFamily: 'ui-monospace,monospace' }}>{b.date}</span>
+                <span style={{ fontSize: 11, color: 'var(--text-muted)', fontFamily: 'ui-monospace,monospace' }}>{b.date}</span>
               </div>
               <div style={{ fontSize: 14, fontWeight: 500, color: 'rgba(255,255,255,0.88)', marginBottom: 4 }}>{b.title}</div>
-              {b.context && <div style={{ fontSize: 12, color: 'rgba(255,255,255,0.4)', lineHeight: 1.6 }}>{b.context}</div>}
+              {b.context && <div style={{ fontSize: 12, color: 'var(--text-muted)', lineHeight: 1.6 }}>{b.context}</div>}
               <div style={{ marginTop: 8, height: 2, borderRadius: 2, background: 'rgba(255,255,255,0.07)' }}>
                 <div style={{ height: '100%', width: `${(conf/10)*100}%`, background: col, borderRadius: 2 }} />
               </div>
@@ -429,7 +429,7 @@ function Vault() {
           const t = VTYPES.find(x=>x.id===v);
           return (
             <button key={v} onClick={()=>setFilter(v)} style={{
-              padding: '4px 11px', borderRadius: 20, border: 'none', cursor: 'pointer', fontSize: 10, fontWeight: 700,
+              padding: '4px 11px', borderRadius: 20, border: 'none', cursor: 'pointer', fontSize: 11, fontWeight: 700,
               fontFamily: 'ui-monospace,monospace', letterSpacing: '0.06em',
               background: filter===v ? (t?t.colour+'33':'var(--accent)') : 'rgba(255,255,255,0.06)',
               color: filter===v ? (t?t.colour:'#fff') : 'rgba(255,255,255,0.4)',
@@ -474,14 +474,14 @@ function Vault() {
             <div style={{ padding: '13px 14px' }}>
               <div style={{ display: 'flex', alignItems: 'center', gap: 7, marginBottom: 5 }}>
                 <span style={{ fontSize: 14 }}>{t.icon}</span>
-                <span style={{ fontSize: 9, fontWeight: 700, color: t.colour, letterSpacing: '0.1em',
+                <span style={{ fontSize: 10.5, fontWeight: 700, color: t.colour, letterSpacing: '0.1em',
                   background: t.colour+'20', padding: '2px 7px', borderRadius: 20 }}>
                   {t.id.toUpperCase()}
                 </span>
-                <span style={{ fontSize: 10, color: 'rgba(255,255,255,0.25)', fontFamily: 'ui-monospace,monospace', marginLeft: 'auto' }}>{m.date}</span>
+                <span style={{ fontSize: 11, color: 'var(--text-muted)', fontFamily: 'ui-monospace,monospace', marginLeft: 'auto' }}>{m.date}</span>
               </div>
               <div style={{ fontSize: 14, fontWeight: 600, color: 'rgba(255,255,255,0.88)', marginBottom: 4 }}>{m.title}</div>
-              {m.content && <div style={{ fontSize: 12, color: 'rgba(255,255,255,0.45)', lineHeight: 1.65,
+              {m.content && <div style={{ fontSize: 12, color: 'var(--text-muted)', lineHeight: 1.65,
                 display: '-webkit-box', WebkitLineClamp: 3, WebkitBoxOrient: 'vertical', overflow: 'hidden' }}>{m.content}</div>}
             </div>
           </MCard>
@@ -537,7 +537,7 @@ function Insights({ constitution }) {
             <div style={{ fontSize: 24 }}>{ins.emoji}</div>
             <div style={{ flex: 1 }}>
               <div style={{ fontSize: 14, fontWeight: 600, color: ins.colour, marginBottom: 2 }}>{ins.title}</div>
-              <div style={{ fontSize: 11, color: 'rgba(255,255,255,0.3)' }}>
+              <div style={{ fontSize: 11, color: 'var(--text-muted)' }}>
                 {ins.id==='alignment'?'Are your actions matching your values?':ins.id==='regret'?'What will you regret in 10 years?':'What are your recurring personal patterns?'}
               </div>
             </div>
@@ -549,7 +549,7 @@ function Insights({ constitution }) {
       {active && result && (
         <MCard>
           <div style={{ padding: '14px 16px' }}>
-            <div style={{ fontSize: 10, fontWeight: 700, letterSpacing: '0.1em', color: INSIGHTS.find(i=>i.id===active)?.colour,
+            <div style={{ fontSize: 11, fontWeight: 700, letterSpacing: '0.1em', color: INSIGHTS.find(i=>i.id===active)?.colour,
               fontFamily: 'ui-monospace,monospace', marginBottom: 10 }}>
               {INSIGHTS.find(i=>i.id===active)?.title?.toUpperCase()} — ANALYSIS
             </div>
@@ -579,7 +579,7 @@ export default function MobileMind() {
       <div style={{ padding: '14px 16px 0', flexShrink: 0 }}>
         <div style={{ display: 'flex', alignItems: 'baseline', gap: 8, marginBottom: 12 }}>
           <div style={{ fontSize: 22, fontWeight: 300, color: 'rgba(255,255,255,0.9)' }}>Mind</div>
-          <div style={{ fontSize: 10, color: 'rgba(255,255,255,0.25)', fontFamily: 'ui-monospace,monospace', letterSpacing: '0.08em' }}>
+          <div style={{ fontSize: 11, color: 'var(--text-muted)', fontFamily: 'ui-monospace,monospace', letterSpacing: '0.08em' }}>
             PERSONAL OS
           </div>
         </div>

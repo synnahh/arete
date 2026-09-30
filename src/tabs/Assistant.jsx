@@ -130,7 +130,7 @@ function MessageBubble({ msg }) {
               color: copied ? 'var(--accent)' : 'var(--text-muted)',
               opacity: 0, transition: 'opacity 0.15s, color 0.15s',
               display: 'flex', alignItems: 'center', gap: 3,
-              fontSize: 10, padding: '2px 4px',
+              fontSize: 11, padding: '2px 4px',
             }}
             title="Copy"
           >
@@ -140,7 +140,7 @@ function MessageBubble({ msg }) {
 
         {/* Engine label */}
         {msg.engine && msg.engine !== 'none' && msg.engine !== 'error' && (
-          <div style={{ marginTop: 5, fontSize: 9.5, color: 'var(--text-muted)', textAlign: 'right' }}>
+          <div style={{ marginTop: 5, fontSize: 10.5, color: 'var(--text-muted)', textAlign: 'right' }}>
             via {msg.engine}
           </div>
         )}
@@ -291,7 +291,7 @@ export default function Assistant({ settings, ai }) {
           {!sessionActive && (
             <>
               <span style={{
-                fontSize: 10, padding: '3px 9px', borderRadius: 20,
+                fontSize: 11, padding: '3px 9px', borderRadius: 20,
                 background: ai.claudeOnline ? 'rgba(76,175,125,0.12)' : 'rgba(255,255,255,0.04)',
                 border: `0.5px solid ${ai.claudeOnline ? 'rgba(76,175,125,0.35)' : 'var(--card-border)'}`,
                 color: ai.claudeOnline ? '#4caf7d' : 'var(--text-muted)',
@@ -299,7 +299,7 @@ export default function Assistant({ settings, ai }) {
                 Claude {ai.claudeOnline ? '' : ''}
               </span>
               <span style={{
-                fontSize: 10, padding: '3px 9px', borderRadius: 20,
+                fontSize: 11, padding: '3px 9px', borderRadius: 20,
                 background: ai.ollamaOnline ? 'rgba(76,175,125,0.12)' : 'rgba(255,255,255,0.04)',
                 border: `0.5px solid ${ai.ollamaOnline ? 'rgba(76,175,125,0.35)' : 'var(--card-border)'}`,
                 color: ai.ollamaOnline ? '#4caf7d' : 'var(--text-muted)',
@@ -487,7 +487,7 @@ export default function Assistant({ settings, ai }) {
               cursor: 'pointer',
               display: 'flex', alignItems: 'center', justifyContent: 'center',
               transition: 'all 0.15s ease', flexShrink: 0,
-              boxShadow: sessionActive && isListening ? '0 0 12px var(--accent)55' : 'none',
+              boxShadow: sessionActive && isListening ? '0 0 12px color-mix(in srgb, var(--accent) 33%, transparent)' : 'none',
             }}
           >
             {sessionActive ? <MicIcon active={isListening} /> : <MicIcon />}
@@ -514,7 +514,7 @@ export default function Assistant({ settings, ai }) {
 
         {/* Session hint text */}
         <p style={{
-          fontSize: 10, color: 'var(--text-muted)', textAlign: 'center', margin: 0,
+          fontSize: 11, color: 'var(--text-muted)', textAlign: 'center', margin: 0,
           opacity: sessionActive ? 0.8 : 0.4,
           transition: 'opacity 0.3s',
         }}>

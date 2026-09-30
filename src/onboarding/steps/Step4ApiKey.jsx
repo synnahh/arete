@@ -1,4 +1,5 @@
 import { useState } from 'react';
+import { Icon as LineIcon } from '../../components/icons.jsx';
 import { PrimaryButton } from './Step1Welcome.jsx';
 import { BackButton } from './Step2Name.jsx';
 
@@ -16,7 +17,7 @@ export default function Step4ApiKey({ data, update, next, back }) {
       <BackButton onClick={back} />
 
       <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
-        <div style={{ fontSize: 28, opacity: 0.4 }}>🔑</div>
+        <div style={{ display: 'flex', justifyContent: 'center', color: 'var(--text-muted)' }}><LineIcon name="key" size={26} strokeWidth={1.5} /></div>
         <h2 style={{ fontSize: 28, fontWeight: 300, color: 'var(--text-primary)', letterSpacing: '0.04em' }}>
           Anthropic API key
         </h2>

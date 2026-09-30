@@ -1,4 +1,5 @@
 // ─── VALERIE — Finance Tab ────────────────────────────────────────────────────
+import { Icon as LineIcon } from '../components/icons.jsx';
 import { useState, useMemo, useEffect, useRef, useCallback } from 'react';
 import { useCollection }     from '../supabase/useCollection.js';
 import { STORAGE_KEYS, storage } from '../utils/storage.js';
@@ -125,7 +126,7 @@ function SectionLabel({ children }) {
   return (
     <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: 14 }}>
       <div style={{ width: 18, height: 1, background: 'rgba(255,255,255,0.25)', flexShrink: 0 }} />
-      <span style={{ fontSize: 10, fontWeight: 700, letterSpacing: '0.18em', textTransform: 'uppercase', color: 'rgba(255,255,255,0.35)', fontFamily: 'ui-monospace,monospace', whiteSpace: 'nowrap' }}>
+      <span style={{ fontSize: 11, fontWeight: 700, letterSpacing: '0.18em', textTransform: 'uppercase', color: 'var(--text-muted)', fontFamily: 'ui-monospace,monospace', whiteSpace: 'nowrap' }}>
         {children}
       </span>
       <div style={{ flex: 1, height: 1, background: 'linear-gradient(90deg,rgba(255,255,255,0.1),transparent)' }} />
@@ -220,7 +221,7 @@ const BTN_ACCENT = {
 };
 const BTN_GHOST = {
   padding: '7px 14px', borderRadius: 9, border: 'none', cursor: 'pointer',
-  background: 'rgba(255,255,255,0.06)', color: 'rgba(255,255,255,0.5)', fontSize: 13,
+  background: 'rgba(255,255,255,0.06)', color: 'var(--text-secondary)', fontSize: 13,
 };
 
 // ─── Stock ticker strip ───────────────────────────────────────────────────────
@@ -250,13 +251,13 @@ function StockTicker({ watchlist, finnhubKey }) {
   }, [watchlist?.join(','), finnhubKey]); // eslint-disable-line react-hooks/exhaustive-deps
 
   if (!finnhubKey) return (
-    <div style={{ padding: '10px 24px', fontSize: 10.5, color: 'rgba(255,255,255,0.25)', fontFamily: 'ui-monospace,monospace', letterSpacing: '0.06em', borderBottom: '0.5px solid rgba(255,255,255,0.06)' }}>
+    <div style={{ padding: '10px 24px', fontSize: 10.5, color: 'var(--text-muted)', fontFamily: 'ui-monospace,monospace', letterSpacing: '0.06em', borderBottom: '0.5px solid rgba(255,255,255,0.06)' }}>
       Add a Finnhub API key in Settings → Integrations to enable live stock prices.
     </div>
   );
 
   if (!watchlist?.length) return (
-    <div style={{ padding: '10px 24px', fontSize: 10.5, color: 'rgba(255,255,255,0.25)', fontFamily: 'ui-monospace,monospace', letterSpacing: '0.06em', borderBottom: '0.5px solid rgba(255,255,255,0.06)' }}>
+    <div style={{ padding: '10px 24px', fontSize: 10.5, color: 'var(--text-muted)', fontFamily: 'ui-monospace,monospace', letterSpacing: '0.06em', borderBottom: '0.5px solid rgba(255,255,255,0.06)' }}>
       No stocks in watchlist  add tickers in Settings → Integrations.
     </div>
   );
@@ -278,7 +279,7 @@ function StockTicker({ watchlist, finnhubKey }) {
         if (!q) return (
           <div key={sym} style={{ display: 'flex', gap: 6, alignItems: 'baseline', flexShrink: 0 }}>
             <span style={{ fontSize: 11, fontWeight: 500, color: 'var(--text-secondary)' }}>{sym}</span>
-            <span style={{ fontSize: 10, color: 'var(--text-muted)' }}>—</span>
+            <span style={{ fontSize: 11, color: 'var(--text-muted)' }}>—</span>
           </div>
         );
         const up = q.d >= 0;
@@ -288,14 +289,14 @@ function StockTicker({ watchlist, finnhubKey }) {
             <span style={{ fontSize: 13, fontWeight: 300, color: 'var(--text-primary)' }}>
               {q.c?.toFixed(2)}
             </span>
-            <span style={{ fontSize: 10, color: up ? '#4caf7d' : '#e55a5a' }}>
+            <span style={{ fontSize: 11, color: up ? '#4caf7d' : '#e55a5a' }}>
               {up ? '+' : ''}{q.dp?.toFixed(2)}%
             </span>
           </div>
         );
       })}
       {!loading && Object.keys(quotes).length > 0 && (
-        <span style={{ fontSize: 9, color: 'var(--text-muted)', marginLeft: 'auto', flexShrink: 0 }}>Live · updates every 60s</span>
+        <span style={{ fontSize: 10.5, color: 'var(--text-muted)', marginLeft: 'auto', flexShrink: 0 }}>Live · updates every 60s</span>
       )}
     </div>
   );
@@ -368,7 +369,7 @@ function Overview({ transactions, goals, subscriptions, purchases = [], fmt, cur
 
       {/* ── Hero card ─────────────────────────────────────────────────────────── */}
       <GlassCard style={{ marginBottom: 10 }}>
-        <div style={{ fontSize: 9.5, fontWeight: 700, letterSpacing: '0.18em', textTransform: 'uppercase', color: 'rgba(255,255,255,0.35)', fontFamily: 'ui-monospace,monospace', marginBottom: 8 }}>
+        <div style={{ fontSize: 10.5, fontWeight: 700, letterSpacing: '0.18em', textTransform: 'uppercase', color: 'var(--text-muted)', fontFamily: 'ui-monospace,monospace', marginBottom: 8 }}>
           THIS MONTH · NET BALANCE
         </div>
         <div style={{ display: 'flex', alignItems: 'flex-end', gap: 14, marginBottom: 6 }}>
@@ -381,7 +382,7 @@ function Overview({ transactions, goals, subscriptions, purchases = [], fmt, cur
             </span>
           </div>
         </div>
-        <div style={{ fontSize: 11.5, color: 'rgba(255,255,255,0.3)', fontFamily: 'ui-monospace,monospace' }}>
+        <div style={{ fontSize: 11.5, color: 'var(--text-muted)', fontFamily: 'ui-monospace,monospace' }}>
           {now.toLocaleDateString('en-GB', { month: 'long', year: 'numeric' })} &nbsp;·&nbsp; All-time net: {allNet >= 0 ? '+' : '−'}{fmt(Math.abs(allNet))}
         </div>
 
@@ -390,8 +391,8 @@ function Overview({ transactions, goals, subscriptions, purchases = [], fmt, cur
           <div style={{ flex: 1, minWidth: 0 }}>
             <AreaChart data={chartData} width={320} height={88} colour={netColour} />
             <div style={{ display: 'flex', justifyContent: 'space-between', marginTop: 5 }}>
-              <span style={{ fontSize: 9.5, color: 'rgba(255,255,255,0.25)', fontFamily: 'ui-monospace,monospace' }}>30 days ago</span>
-              <span style={{ fontSize: 9.5, color: 'rgba(255,255,255,0.25)', fontFamily: 'ui-monospace,monospace' }}>Today</span>
+              <span style={{ fontSize: 10.5, color: 'var(--text-muted)', fontFamily: 'ui-monospace,monospace' }}>30 days ago</span>
+              <span style={{ fontSize: 10.5, color: 'var(--text-muted)', fontFamily: 'ui-monospace,monospace' }}>Today</span>
             </div>
           </div>
 
@@ -402,8 +403,8 @@ function Overview({ transactions, goals, subscriptions, purchases = [], fmt, cur
                 {donutSegs.map(c => (
                   <div key={c.id} style={{ display: 'flex', alignItems: 'center', gap: 7 }}>
                     <div style={{ width: 5, height: 5, borderRadius: '50%', background: c.colour, flexShrink: 0 }} />
-                    <span style={{ fontSize: 10.5, color: 'rgba(255,255,255,0.55)', flex: 1 }}>{c.label}</span>
-                    <span style={{ fontSize: 10.5, color: 'rgba(255,255,255,0.3)', marginLeft: 6, fontFamily: 'ui-monospace,monospace' }}>
+                    <span style={{ fontSize: 10.5, color: 'var(--text-secondary)', flex: 1 }}>{c.label}</span>
+                    <span style={{ fontSize: 10.5, color: 'var(--text-muted)', marginLeft: 6, fontFamily: 'ui-monospace,monospace' }}>
                       {Math.round((c.value / (expenses || 1)) * 100)}%
                     </span>
                   </div>
@@ -422,7 +423,7 @@ function Overview({ transactions, goals, subscriptions, purchases = [], fmt, cur
           { label: 'SUBSCRIPTIONS', value: fmt(monthlySubCost), colour: 'rgba(255,255,255,0.55)' },
         ].map(s => (
           <GlassCard key={s.label} style={{ padding: '14px 16px', marginBottom: 0 }}>
-            <div style={{ fontSize: 9, fontWeight: 700, letterSpacing: '0.16em', textTransform: 'uppercase', color: 'rgba(255,255,255,0.3)', fontFamily: 'ui-monospace,monospace', marginBottom: 7 }}>
+            <div style={{ fontSize: 10.5, fontWeight: 700, letterSpacing: '0.16em', textTransform: 'uppercase', color: 'var(--text-muted)', fontFamily: 'ui-monospace,monospace', marginBottom: 7 }}>
               {s.label}
             </div>
             <div style={{ fontSize: 18, fontWeight: 600, color: s.colour, fontVariantNumeric: 'tabular-nums' }}>{s.value}</div>
@@ -440,12 +441,12 @@ function Overview({ transactions, goals, subscriptions, purchases = [], fmt, cur
           {restocks.lines.map(l => (
             <div key={l.name} style={{ display: 'flex', justifyContent: 'space-between', gap: 10, marginBottom: 6, fontSize: 13 }}>
               <span style={{ color: 'rgba(255,255,255,0.8)' }}>{l.name}{l.dates.length > 1 ? ` ×${l.dates.length}` : ''}</span>
-              <span style={{ color: 'rgba(255,255,255,0.55)', fontFamily: 'ui-monospace,monospace', whiteSpace: 'nowrap' }}>
+              <span style={{ color: 'var(--text-secondary)', fontFamily: 'ui-monospace,monospace', whiteSpace: 'nowrap' }}>
                 {l.dates[0] <= toLocalDateKey(new Date()) ? 'now' : fmtDate(l.dates[0])} · {fmt(l.subtotal)}
               </span>
             </div>
           ))}
-          <div style={{ fontSize: 11, color: 'rgba(255,255,255,0.4)', marginTop: 4 }}>Predicted from your usage and prices in Supplies.</div>
+          <div style={{ fontSize: 11, color: 'var(--text-muted)', marginTop: 4 }}>Predicted from your usage and prices in Supplies.</div>
         </GlassCard>
       )}
 
@@ -458,7 +459,7 @@ function Overview({ transactions, goals, subscriptions, purchases = [], fmt, cur
               <span style={{ fontSize: 13, color: 'rgba(255,255,255,0.8)' }}>{s.name}</span>
               <div style={{ display: 'flex', gap: 10, alignItems: 'center' }}>
                 <span style={{ fontSize: 11, padding: '2px 8px', borderRadius: 999, background: 'rgba(242,192,99,0.15)', color: '#F2C063', fontFamily: 'ui-monospace,monospace', fontWeight: 700 }}>in {s.daysLeft}d</span>
-                <span style={{ fontSize: 13, color: 'rgba(255,255,255,0.6)', fontFamily: 'ui-monospace,monospace' }}>{fmt(s.amount)}</span>
+                <span style={{ fontSize: 13, color: 'var(--text-secondary)', fontFamily: 'ui-monospace,monospace' }}>{fmt(s.amount)}</span>
               </div>
             </div>
           ))}
@@ -494,7 +495,7 @@ function Overview({ transactions, goals, subscriptions, purchases = [], fmt, cur
       <GlassCard>
         <SectionLabel>Recent activity</SectionLabel>
         {recent.length === 0 ? (
-          <div style={{ textAlign: 'center', padding: '20px 0', fontSize: 12, color: 'rgba(255,255,255,0.25)', fontFamily: 'ui-monospace,monospace', letterSpacing: '0.1em', textTransform: 'uppercase' }}>
+          <div style={{ textAlign: 'center', padding: '20px 0', fontSize: 12, color: 'var(--text-muted)', fontFamily: 'ui-monospace,monospace', letterSpacing: '0.1em', textTransform: 'uppercase' }}>
             No transactions yet — add some in Spending
           </div>
         ) : (
@@ -515,9 +516,9 @@ function Overview({ transactions, goals, subscriptions, purchases = [], fmt, cur
                     <div style={{ fontSize: 13, color: 'rgba(255,255,255,0.82)', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
                       {t.description || cat.label}
                     </div>
-                    <div style={{ fontSize: 10.5, color: 'rgba(255,255,255,0.28)', marginTop: 1, fontFamily: 'ui-monospace,monospace' }}>{cat.label}</div>
+                    <div style={{ fontSize: 10.5, color: 'var(--text-muted)', marginTop: 1, fontFamily: 'ui-monospace,monospace' }}>{cat.label}</div>
                   </div>
-                  <div style={{ fontSize: 10.5, color: 'rgba(255,255,255,0.28)', flexShrink: 0, fontFamily: 'ui-monospace,monospace', marginRight: 6 }}>{fmtDate(t.date)}</div>
+                  <div style={{ fontSize: 10.5, color: 'var(--text-muted)', flexShrink: 0, fontFamily: 'ui-monospace,monospace', marginRight: 6 }}>{fmtDate(t.date)}</div>
                   <div style={{ fontSize: 13.5, fontWeight: 600, flexShrink: 0, color: isIncome ? '#6BE3A4' : 'rgba(255,255,255,0.75)', fontVariantNumeric: 'tabular-nums', minWidth: 72, textAlign: 'right' }}>
                     {isIncome ? '+' : '−'}{fmt(t.amount)}
                   </div>
@@ -578,11 +579,11 @@ function Spending({ transactions, onAdd, fmt }) {
       {/* Hero row */}
       <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 8 }}>
         <GlassCard style={{ marginBottom: 0 }}>
-          <div style={{ fontSize: 9, fontWeight: 700, letterSpacing: '0.16em', textTransform: 'uppercase', color: 'rgba(255,255,255,0.3)', fontFamily: 'ui-monospace,monospace', marginBottom: 7 }}>TOTAL SPENT</div>
+          <div style={{ fontSize: 10.5, fontWeight: 700, letterSpacing: '0.16em', textTransform: 'uppercase', color: 'var(--text-muted)', fontFamily: 'ui-monospace,monospace', marginBottom: 7 }}>TOTAL SPENT</div>
           <div style={{ fontSize: 28, fontWeight: 600, color: '#FF6B6B', fontVariantNumeric: 'tabular-nums' }}>{fmt(totalSpend)}</div>
         </GlassCard>
         <GlassCard style={{ marginBottom: 0 }}>
-          <div style={{ fontSize: 9, fontWeight: 700, letterSpacing: '0.16em', textTransform: 'uppercase', color: 'rgba(255,255,255,0.3)', fontFamily: 'ui-monospace,monospace', marginBottom: 7 }}>INCOME</div>
+          <div style={{ fontSize: 10.5, fontWeight: 700, letterSpacing: '0.16em', textTransform: 'uppercase', color: 'var(--text-muted)', fontFamily: 'ui-monospace,monospace', marginBottom: 7 }}>INCOME</div>
           <div style={{ fontSize: 28, fontWeight: 600, color: '#6BE3A4', fontVariantNumeric: 'tabular-nums' }}>{fmt(totalIncome)}</div>
         </GlassCard>
       </div>
@@ -648,11 +649,11 @@ function Spending({ transactions, onAdd, fmt }) {
           {catBreakdown.map(c => (
             <div key={c.id} style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: 8 }}>
               <span style={{ fontSize: 13, width: 20 }}>{c.icon}</span>
-              <span style={{ fontSize: 12, color: 'rgba(255,255,255,0.6)', flex: 1 }}>{c.label}</span>
+              <span style={{ fontSize: 12, color: 'var(--text-secondary)', flex: 1 }}>{c.label}</span>
               <div style={{ width: 90, height: 3, borderRadius: 2, background: 'rgba(255,255,255,0.08)', overflow: 'hidden' }}>
                 <div style={{ height: '100%', width: `${Math.min((c.value / totalSpend) * 100, 100)}%`, background: c.colour, borderRadius: 2 }} />
               </div>
-              <span style={{ fontSize: 11, color: 'rgba(255,255,255,0.4)', width: 60, textAlign: 'right', fontFamily: 'ui-monospace,monospace' }}>{fmt(c.value)}</span>
+              <span style={{ fontSize: 11, color: 'var(--text-muted)', width: 60, textAlign: 'right', fontFamily: 'ui-monospace,monospace' }}>{fmt(c.value)}</span>
             </div>
           ))}
         </GlassCard>
@@ -662,7 +663,7 @@ function Spending({ transactions, onAdd, fmt }) {
       <GlassCard>
         <SectionLabel>Transactions</SectionLabel>
         {sorted.length === 0 ? (
-          <div style={{ textAlign: 'center', padding: '16px 0', fontSize: 11, color: 'rgba(255,255,255,0.25)', fontFamily: 'ui-monospace,monospace', letterSpacing: '0.1em', textTransform: 'uppercase' }}>No transactions in this period</div>
+          <div style={{ textAlign: 'center', padding: '16px 0', fontSize: 11, color: 'var(--text-muted)', fontFamily: 'ui-monospace,monospace', letterSpacing: '0.1em', textTransform: 'uppercase' }}>No transactions in this period</div>
         ) : sorted.map((t, i) => {
           const cat = CAT_MAP[t.category] || { colour: '#6b7280', icon: '📦', label: t.category || 'Other' };
           return (
@@ -670,9 +671,9 @@ function Spending({ transactions, onAdd, fmt }) {
               <div style={{ width: 32, height: 32, borderRadius: 9, flexShrink: 0, background: cat.colour + '20', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 14 }}>{cat.icon}</div>
               <div style={{ flex: 1, minWidth: 0 }}>
                 <div style={{ fontSize: 13, color: 'rgba(255,255,255,0.82)', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{t.description || cat.label}</div>
-                <div style={{ fontSize: 10.5, color: 'rgba(255,255,255,0.28)', fontFamily: 'ui-monospace,monospace' }}>{cat.label}</div>
+                <div style={{ fontSize: 10.5, color: 'var(--text-muted)', fontFamily: 'ui-monospace,monospace' }}>{cat.label}</div>
               </div>
-              <span style={{ fontSize: 10.5, color: 'rgba(255,255,255,0.28)', fontFamily: 'ui-monospace,monospace', marginRight: 6 }}>{fmtDate(t.date)}</span>
+              <span style={{ fontSize: 10.5, color: 'var(--text-muted)', fontFamily: 'ui-monospace,monospace', marginRight: 6 }}>{fmtDate(t.date)}</span>
               <span style={{ fontSize: 13.5, fontWeight: 600, color: t.type === 'income' ? '#6BE3A4' : 'rgba(255,255,255,0.75)', minWidth: 68, textAlign: 'right', fontVariantNumeric: 'tabular-nums' }}>
                 {t.type === 'income' ? '+' : '−'}{fmt(t.amount)}
               </span>
@@ -730,8 +731,8 @@ function Savings({ goals, onAdd, onUpdate, onRemove, fmt }) {
         </GlassCard>
       )}
       {goals.length === 0 && !showForm && (
-        <div style={{ textAlign: 'center', padding: '60px 0', color: 'rgba(255,255,255,0.25)', fontSize: 13 }}>
-          <div style={{ fontSize: 32, marginBottom: 12 }}>🐷</div>
+        <div style={{ textAlign: 'center', padding: '60px 0', color: 'var(--text-muted)', fontSize: 13 }}>
+          <div style={{ marginBottom: 12, display: 'flex', justifyContent: 'center', color: 'var(--text-muted)' }}><LineIcon name="finance" size={30} strokeWidth={1.5} /></div>
           No savings goals yet.
         </div>
       )}
@@ -750,7 +751,7 @@ function Savings({ goals, onAdd, onUpdate, onRemove, fmt }) {
               </div>
               <div style={{ textAlign: 'right' }}>
                 <div style={{ fontSize: 22, fontWeight: 600, color: done ? '#6BE3A4' : 'rgba(255,255,255,0.85)', fontVariantNumeric: 'tabular-nums' }}>{fmt(goal.current || 0)}</div>
-                <div style={{ fontSize: 10.5, color: 'rgba(255,255,255,0.3)', fontFamily: 'ui-monospace,monospace' }}>of {fmt(goal.target)}</div>
+                <div style={{ fontSize: 10.5, color: 'var(--text-muted)', fontFamily: 'ui-monospace,monospace' }}>of {fmt(goal.target)}</div>
               </div>
             </div>
             <div style={{ height: 3, borderRadius: 2, background: 'rgba(255,255,255,0.08)', overflow: 'hidden', marginBottom: 12 }}>
@@ -804,9 +805,9 @@ function Subscriptions({ subs, onAdd, onUpdate, onRemove, fmt }) {
       <GlassCard style={{ marginBottom: 0 }}>
         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
           <div>
-            <div style={{ fontSize: 9, fontWeight: 700, letterSpacing: '0.16em', textTransform: 'uppercase', color: 'rgba(255,255,255,0.3)', fontFamily: 'ui-monospace,monospace', marginBottom: 7 }}>MONTHLY TOTAL</div>
+            <div style={{ fontSize: 10.5, fontWeight: 700, letterSpacing: '0.16em', textTransform: 'uppercase', color: 'var(--text-muted)', fontFamily: 'ui-monospace,monospace', marginBottom: 7 }}>MONTHLY TOTAL</div>
             <div style={{ fontSize: 28, fontWeight: 600, color: 'rgba(255,255,255,0.85)', fontVariantNumeric: 'tabular-nums' }}>{fmt(monthlyTotal)}</div>
-            <div style={{ fontSize: 10.5, color: 'rgba(255,255,255,0.3)', marginTop: 3, fontFamily: 'ui-monospace,monospace' }}>{fmt(monthlyTotal * 12)} / year</div>
+            <div style={{ fontSize: 10.5, color: 'var(--text-muted)', marginTop: 3, fontFamily: 'ui-monospace,monospace' }}>{fmt(monthlyTotal * 12)} / year</div>
           </div>
           <button onClick={() => setShowForm(v => !v)} style={{ ...BTN_ACCENT, padding: '6px 16px', fontSize: 12 }}>+ Add</button>
         </div>
@@ -830,7 +831,7 @@ function Subscriptions({ subs, onAdd, onUpdate, onRemove, fmt }) {
           </div>
           <div style={{ display: 'flex', flexWrap: 'wrap', gap: 5, marginBottom: 10 }}>
             {SUB_CATS.map(c => (
-              <button key={c.id} onClick={() => setSubCat(c.id)} style={{ padding: '3px 10px', borderRadius: 8, border: 'none', cursor: 'pointer', fontSize: 11, background: subCat === c.id ? 'var(--accent)33' : 'rgba(255,255,255,0.05)', color: subCat === c.id ? 'var(--accent)' : 'rgba(255,255,255,0.4)', outline: subCat === c.id ? '0.5px solid var(--accent)44' : '0.5px solid transparent' }}>
+              <button key={c.id} onClick={() => setSubCat(c.id)} style={{ padding: '3px 10px', borderRadius: 8, border: 'none', cursor: 'pointer', fontSize: 11, background: subCat === c.id ? 'color-mix(in srgb, var(--accent) 20%, transparent)' : 'rgba(255,255,255,0.05)', color: subCat === c.id ? 'var(--accent)' : 'rgba(255,255,255,0.4)', outline: subCat === c.id ? '0.5px solid color-mix(in srgb, var(--accent) 27%, transparent)' : '0.5px solid transparent' }}>
                 {c.icon} {c.label}
               </button>
             ))}
@@ -843,8 +844,8 @@ function Subscriptions({ subs, onAdd, onUpdate, onRemove, fmt }) {
       )}
 
       {sorted.length === 0 && !showForm && (
-        <div style={{ textAlign: 'center', padding: '60px 0', color: 'rgba(255,255,255,0.25)', fontSize: 13 }}>
-          <div style={{ fontSize: 32, marginBottom: 12 }}>💳</div>No subscriptions tracked yet.
+        <div style={{ textAlign: 'center', padding: '60px 0', color: 'var(--text-muted)', fontSize: 13 }}>
+          <div style={{ marginBottom: 12, display: 'flex', justifyContent: 'center', color: 'var(--text-muted)' }}><LineIcon name="card" size={30} strokeWidth={1.5} /></div>No subscriptions tracked yet.
         </div>
       )}
 
@@ -868,10 +869,10 @@ function Subscriptions({ subs, onAdd, onUpdate, onRemove, fmt }) {
               </div>
               <div style={{ textAlign: 'right', flexShrink: 0, marginRight: 8 }}>
                 <div style={{ fontSize: 13.5, fontWeight: 600, color: 'rgba(255,255,255,0.82)', fontVariantNumeric: 'tabular-nums' }}>{fmt(s.amount)}</div>
-                <div style={{ fontSize: 10, color: 'rgba(255,255,255,0.3)', fontFamily: 'ui-monospace,monospace' }}>{fmt(toMonthly(s.amount, s.cycle))}/mo</div>
+                <div style={{ fontSize: 11, color: 'var(--text-muted)', fontFamily: 'ui-monospace,monospace' }}>{fmt(toMonthly(s.amount, s.cycle))}/mo</div>
               </div>
               <div style={{ display: 'flex', gap: 5 }}>
-                {!cancelled && <button onClick={() => onUpdate(s.id, { status: paused ? 'active' : 'paused' })} style={{ width: 28, height: 28, borderRadius: 6, border: 'none', cursor: 'pointer', background: 'rgba(255,255,255,0.06)', color: 'rgba(255,255,255,0.4)', fontSize: 12 }}>{paused ? '▶' : '⏸'}</button>}
+                {!cancelled && <button onClick={() => onUpdate(s.id, { status: paused ? 'active' : 'paused' })} style={{ width: 28, height: 28, borderRadius: 6, border: 'none', cursor: 'pointer', background: 'rgba(255,255,255,0.06)', color: 'var(--text-muted)', fontSize: 12 }}>{paused ? '▶' : '⏸'}</button>}
                 <button onClick={() => onRemove(s.id)} style={{ width: 28, height: 28, borderRadius: 6, border: 'none', cursor: 'pointer', background: 'rgba(255,255,255,0.06)', color: '#FF6B6B', fontSize: 16 }}>×</button>
               </div>
             </div>
@@ -913,7 +914,7 @@ function PlannedPurchases({ purchases, onAdd, onRemove, onComplete, fmt }) {
     borderRadius: 8, padding: '8px 11px', fontSize: 13, color: 'rgba(255,255,255,0.9)',
     outline: 'none', boxSizing: 'border-box',
   };
-  const lblSx = { display: 'block', fontSize: 10, color: 'rgba(255,255,255,0.3)', letterSpacing: '0.06em', marginBottom: 4 };
+  const lblSx = { display: 'block', fontSize: 11, color: 'var(--text-muted)', letterSpacing: '0.06em', marginBottom: 4 };
 
   return (
     <div style={{ padding: '20px 24px 32px' }}>
@@ -922,14 +923,14 @@ function PlannedPurchases({ purchases, onAdd, onRemove, onComplete, fmt }) {
       <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 20 }}>
         <div>
           <div style={{ fontSize: 13, fontWeight: 600, color: 'rgba(255,255,255,0.9)' }}>Planned Purchases</div>
-          <div style={{ fontSize: 11, color: 'rgba(255,255,255,0.3)', marginTop: 2 }}>
+          <div style={{ fontSize: 11, color: 'var(--text-muted)', marginTop: 2 }}>
             {pending.length} item{pending.length !== 1 ? 's' : ''} · pending spend {fmt(total)}
           </div>
         </div>
         <button onClick={() => setShowAdd(v => !v)} style={{
           padding: '7px 16px', borderRadius: 8, border: '0.5px solid rgba(255,255,255,0.12)',
           background: showAdd ? 'rgba(255,255,255,0.08)' : 'transparent',
-          color: 'rgba(255,255,255,0.7)', cursor: 'pointer', fontSize: 12,
+          color: 'var(--text-secondary)', cursor: 'pointer', fontSize: 12,
         }}>
           {showAdd ? 'S" Cancel' : '+ Add item'}
         </button>
@@ -1008,7 +1009,7 @@ function PlannedPurchases({ purchases, onAdd, onRemove, onComplete, fmt }) {
                 {/* Details */}
                 <div style={{ flex: 1, minWidth: 0 }}>
                   <div style={{ fontSize: 13, fontWeight: 500, color: 'rgba(255,255,255,0.9)', marginBottom: 2 }}>{item.name}</div>
-                  <div style={{ fontSize: 11, color: 'rgba(255,255,255,0.3)' }}>
+                  <div style={{ fontSize: 11, color: 'var(--text-muted)' }}>
                     {cat.label}{item.notes ? ` · ${item.notes}` : ''}
                   </div>
                 </div>
@@ -1090,7 +1091,7 @@ function EmailImportPanel({ onAddTransaction, fmt }) {
           <div style={{ width: 8, height: 8, borderRadius: '50%', background: '#4a9eff', boxShadow: '0 0 6px rgba(74,158,255,0.5)' }} />
           <div>
             <div style={{ fontSize: 12, fontWeight: 600, color: 'rgba(255,255,255,0.8)' }}>Gmail Auto-Import</div>
-            <div style={{ fontSize: 10.5, color: 'rgba(255,255,255,0.3)' }}>
+            <div style={{ fontSize: 10.5, color: 'var(--text-muted)' }}>
               {pending.length > 0 ? `${pending.length} transaction${pending.length !== 1 ? 's' : ''} detected — review below` : 'Scan emails for payslips & transactions'}
             </div>
           </div>
@@ -1119,7 +1120,7 @@ function EmailImportPanel({ onAddTransaction, fmt }) {
                   overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
                   {item.ruleLabel}
                 </div>
-                <div style={{ fontSize: 10.5, color: 'rgba(255,255,255,0.35)',
+                <div style={{ fontSize: 10.5, color: 'var(--text-muted)',
                   overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
                   {item.subject} &bull; {item.date}
                 </div>
@@ -1141,7 +1142,7 @@ function EmailImportPanel({ onAddTransaction, fmt }) {
                 </button>
                 <button onClick={() => dismiss(item.id)} style={{
                   padding: '4px 8px', borderRadius: 6, border: 'none',
-                  background: 'rgba(255,255,255,0.04)', color: 'rgba(255,255,255,0.3)',
+                  background: 'rgba(255,255,255,0.04)', color: 'var(--text-muted)',
                   fontSize: 13, cursor: 'pointer',
                 }}>
                   &#215;
@@ -1198,20 +1199,20 @@ function Budgets({ transactions, fmt }) {
       {/* Hero: month-over-month */}
       <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: 8 }}>
         <GlassCard style={{ marginBottom: 0 }}>
-          <div style={{ fontSize: 9, fontWeight: 700, letterSpacing: '0.16em', textTransform: 'uppercase', color: 'rgba(255,255,255,0.3)', fontFamily: 'ui-monospace,monospace', marginBottom: 7 }}>SPENT THIS MONTH</div>
+          <div style={{ fontSize: 10.5, fontWeight: 700, letterSpacing: '0.16em', textTransform: 'uppercase', color: 'var(--text-muted)', fontFamily: 'ui-monospace,monospace', marginBottom: 7 }}>SPENT THIS MONTH</div>
           <div style={{ fontSize: 24, fontWeight: 600, color: '#FF6B6B', fontVariantNumeric: 'tabular-nums' }}>{fmt(totalThis)}</div>
         </GlassCard>
         <GlassCard style={{ marginBottom: 0 }}>
-          <div style={{ fontSize: 9, fontWeight: 700, letterSpacing: '0.16em', textTransform: 'uppercase', color: 'rgba(255,255,255,0.3)', fontFamily: 'ui-monospace,monospace', marginBottom: 7 }}>VS LAST MONTH</div>
+          <div style={{ fontSize: 10.5, fontWeight: 700, letterSpacing: '0.16em', textTransform: 'uppercase', color: 'var(--text-muted)', fontFamily: 'ui-monospace,monospace', marginBottom: 7 }}>VS LAST MONTH</div>
           <div style={{ fontSize: 24, fontWeight: 600, color: momDelta == null ? 'rgba(255,255,255,0.4)' : momDelta > 0 ? '#FF6B6B' : '#6BE3A4', fontVariantNumeric: 'tabular-nums' }}>
             {momDelta == null ? '—' : `${momDelta > 0 ? '↑' : '↓'} ${Math.abs(momDelta)}%`}
           </div>
-          <div style={{ fontSize: 10, color: 'rgba(255,255,255,0.3)', marginTop: 3, fontFamily: 'ui-monospace,monospace' }}>was {fmt(totalLast)}</div>
+          <div style={{ fontSize: 11, color: 'var(--text-muted)', marginTop: 3, fontFamily: 'ui-monospace,monospace' }}>was {fmt(totalLast)}</div>
         </GlassCard>
         <GlassCard style={{ marginBottom: 0 }}>
-          <div style={{ fontSize: 9, fontWeight: 700, letterSpacing: '0.16em', textTransform: 'uppercase', color: 'rgba(255,255,255,0.3)', fontFamily: 'ui-monospace,monospace', marginBottom: 7 }}>TOTAL BUDGET</div>
+          <div style={{ fontSize: 10.5, fontWeight: 700, letterSpacing: '0.16em', textTransform: 'uppercase', color: 'var(--text-muted)', fontFamily: 'ui-monospace,monospace', marginBottom: 7 }}>TOTAL BUDGET</div>
           <div style={{ fontSize: 24, fontWeight: 600, color: totalBudget > 0 && totalThis > totalBudget ? '#FF6B6B' : 'rgba(255,255,255,0.85)', fontVariantNumeric: 'tabular-nums' }}>{totalBudget > 0 ? fmt(totalBudget) : '—'}</div>
-          {totalBudget > 0 && <div style={{ fontSize: 10, color: 'rgba(255,255,255,0.3)', marginTop: 3, fontFamily: 'ui-monospace,monospace' }}>{fmt(Math.max(totalBudget - totalThis, 0))} left</div>}
+          {totalBudget > 0 && <div style={{ fontSize: 11, color: 'var(--text-muted)', marginTop: 3, fontFamily: 'ui-monospace,monospace' }}>{fmt(Math.max(totalBudget - totalThis, 0))} left</div>}
         </GlassCard>
       </div>
 
@@ -1233,9 +1234,9 @@ function Budgets({ transactions, fmt }) {
               <div key={c.id}>
                 <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 6 }}>
                   <span style={{ fontSize: 13, width: 20 }}>{c.icon}</span>
-                  <span style={{ fontSize: 12, color: 'rgba(255,255,255,0.6)', flex: 1 }}>{c.label}</span>
+                  <span style={{ fontSize: 12, color: 'var(--text-secondary)', flex: 1 }}>{c.label}</span>
                   {dlt != null && (
-                    <span style={{ fontSize: 10, color: dlt > 0 ? '#FF6B6B' : '#6BE3A4', fontFamily: 'ui-monospace,monospace', marginRight: 8 }}>
+                    <span style={{ fontSize: 11, color: dlt > 0 ? '#FF6B6B' : '#6BE3A4', fontFamily: 'ui-monospace,monospace', marginRight: 8 }}>
                       {dlt > 0 ? '↑' : '↓'}{Math.abs(dlt)}% MoM
                     </span>
                   )}
@@ -1258,7 +1259,7 @@ function Budgets({ transactions, fmt }) {
           })}
         </div>
         {!editing && totalBudget === 0 && (
-          <div style={{ textAlign: 'center', padding: '12px 0 2px', fontSize: 11, color: 'rgba(255,255,255,0.25)', fontFamily: 'ui-monospace,monospace' }}>
+          <div style={{ textAlign: 'center', padding: '12px 0 2px', fontSize: 11, color: 'var(--text-muted)', fontFamily: 'ui-monospace,monospace' }}>
             Tap "Edit limits" to set a monthly budget per category.
           </div>
         )}
@@ -1294,11 +1295,11 @@ function Recurring({ recurring, onAdd, onUpdate, onRemove, fmt }) {
       <GlassCard style={{ marginBottom: 0 }}>
         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
           <div>
-            <div style={{ fontSize: 9, fontWeight: 700, letterSpacing: '0.16em', textTransform: 'uppercase', color: 'rgba(255,255,255,0.3)', fontFamily: 'ui-monospace,monospace', marginBottom: 7 }}>NET MONTHLY IMPACT</div>
+            <div style={{ fontSize: 10.5, fontWeight: 700, letterSpacing: '0.16em', textTransform: 'uppercase', color: 'var(--text-muted)', fontFamily: 'ui-monospace,monospace', marginBottom: 7 }}>NET MONTHLY IMPACT</div>
             <div style={{ fontSize: 28, fontWeight: 600, color: monthlyImpact >= 0 ? '#6BE3A4' : '#FF6B6B', fontVariantNumeric: 'tabular-nums' }}>
               {monthlyImpact >= 0 ? '+' : '−'}{fmt(Math.abs(monthlyImpact))}
             </div>
-            <div style={{ fontSize: 10.5, color: 'rgba(255,255,255,0.3)', marginTop: 3, fontFamily: 'ui-monospace,monospace' }}>auto-posted on each due date</div>
+            <div style={{ fontSize: 10.5, color: 'var(--text-muted)', marginTop: 3, fontFamily: 'ui-monospace,monospace' }}>auto-posted on each due date</div>
           </div>
           <button onClick={() => setShowForm(v => !v)} style={{ ...BTN_ACCENT, padding: '6px 16px', fontSize: 12 }}>+ Add</button>
         </div>
@@ -1345,8 +1346,8 @@ function Recurring({ recurring, onAdd, onUpdate, onRemove, fmt }) {
       )}
 
       {sorted.length === 0 && !showForm && (
-        <div style={{ textAlign: 'center', padding: '60px 0', color: 'rgba(255,255,255,0.25)', fontSize: 13 }}>
-          <div style={{ fontSize: 32, marginBottom: 12 }}>🔁</div>No recurring transactions yet.
+        <div style={{ textAlign: 'center', padding: '60px 0', color: 'var(--text-muted)', fontSize: 13 }}>
+          <div style={{ marginBottom: 12, display: 'flex', justifyContent: 'center', color: 'var(--text-muted)' }}><LineIcon name="repeat" size={30} strokeWidth={1.5} /></div>No recurring transactions yet.
           <div style={{ fontSize: 11, opacity: 0.7, marginTop: 4 }}>Add rent, salary, or any regular bill — VALERIE posts it automatically.</div>
         </div>
       )}
@@ -1362,7 +1363,7 @@ function Recurring({ recurring, onAdd, onUpdate, onRemove, fmt }) {
                 <div style={{ width: 32, height: 32, borderRadius: 9, flexShrink: 0, background: cat.colour + '20', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 14 }}>{cat.icon}</div>
                 <div style={{ flex: 1, minWidth: 0 }}>
                   <div style={{ fontSize: 13, color: 'rgba(255,255,255,0.82)', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{r.name}</div>
-                  <div style={{ fontSize: 10.5, color: 'rgba(255,255,255,0.3)', fontFamily: 'ui-monospace,monospace' }}>
+                  <div style={{ fontSize: 10.5, color: 'var(--text-muted)', fontFamily: 'ui-monospace,monospace' }}>
                     {paused ? 'Paused' : days != null && days >= 0 ? `Next in ${days}d · ${fmtDate(r.nextDate)}` : `Next ${fmtDate(r.nextDate)}`} · {r.cycle}
                   </div>
                 </div>
@@ -1370,7 +1371,7 @@ function Recurring({ recurring, onAdd, onUpdate, onRemove, fmt }) {
                   {r.type === 'income' ? '+' : '−'}{fmt(r.amount)}
                 </div>
                 <div style={{ display: 'flex', gap: 5 }}>
-                  <button onClick={() => onUpdate(r.id, { status: paused ? 'active' : 'paused' })} style={{ width: 28, height: 28, borderRadius: 6, border: 'none', cursor: 'pointer', background: 'rgba(255,255,255,0.06)', color: 'rgba(255,255,255,0.4)', fontSize: 12 }}>{paused ? '▶' : '⏸'}</button>
+                  <button onClick={() => onUpdate(r.id, { status: paused ? 'active' : 'paused' })} style={{ width: 28, height: 28, borderRadius: 6, border: 'none', cursor: 'pointer', background: 'rgba(255,255,255,0.06)', color: 'var(--text-muted)', fontSize: 12 }}>{paused ? '▶' : '⏸'}</button>
                   <button onClick={() => onRemove(r.id)} style={{ width: 28, height: 28, borderRadius: 6, border: 'none', cursor: 'pointer', background: 'rgba(255,255,255,0.06)', color: '#FF6B6B', fontSize: 16 }}>×</button>
                 </div>
               </div>
@@ -1456,7 +1457,7 @@ export default function Finance({ settings = {} }) {
               border: 'none', cursor: 'pointer',
               background: 'transparent',
               color: section === t.id ? 'rgba(255,255,255,0.9)' : 'rgba(255,255,255,0.3)',
-              fontSize: 10, fontWeight: 700,
+              fontSize: 11, fontWeight: 700,
               letterSpacing: '0.1em',
               fontFamily: 'ui-monospace,monospace',
               borderBottom: section === t.id ? '1.5px solid var(--accent)' : '1.5px solid transparent',

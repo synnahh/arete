@@ -150,7 +150,7 @@ export function BarChart({
               transition: 'height 0.4s ease',
             }} />
             <span style={{
-              fontSize: 9, color: 'var(--text-muted)',
+              fontSize: 10.5, color: 'var(--text-muted)',
               whiteSpace: 'nowrap', letterSpacing: '0.02em',
             }}>
               {d.label}

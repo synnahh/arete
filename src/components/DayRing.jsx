@@ -31,13 +31,6 @@ function interpolateColor(pct) {
   return `rgb(${r},${g},${b})`;
 }
 
-function fmtClock(d) {
-  let h = d.getHours(), m = d.getMinutes();
-  const ampm = h >= 12 ? 'PM' : 'AM';
-  h = h % 12 || 12;
-  return `${h}:${String(m).padStart(2, '0')} ${ampm}`;
-}
-
 function fmtRemaining(minutes) {
   if (minutes <= 0) return 'Sleep!';
   const h = Math.floor(minutes / 60);
@@ -95,13 +88,11 @@ function compute(now) {
 
 export default function DayRing() {
   const [state, setState] = useState(() => compute(new Date()));
-  const [clock, setClock] = useState(() => fmtClock(new Date()));
 
   useEffect(() => {
     const tick = () => {
       const now = new Date();
       setState(compute(now));
-      setClock(fmtClock(now));
     };
     const id = setInterval(tick, 60_000);
     return () => clearInterval(id);
@@ -110,10 +101,10 @@ export default function DayRing() {
   const pctLabel = state.percent === 0 ? '—' : `${Math.round(state.percent)}%`;
 
   return (
-    <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 18, flexWrap: 'nowrap', minWidth: 0 }}>
+    <div style={{ display: 'flex', alignItems: 'center', gap: 18, flexWrap: 'nowrap', minWidth: 0 }}>
       {/* Ring */}
-      <div style={{ width: 168, height: 168, position: 'relative', flexShrink: 0 }}>
-        <svg viewBox="0 0 120 120" width="168" height="168">
+      <div style={{ width: 120, height: 120, position: 'relative', flexShrink: 0 }}>
+        <svg viewBox="0 0 120 120" width="120" height="120">
           <defs>
             <filter id="ring-glow">
               <feGaussianBlur stdDeviation="2.5" result="blur" />
@@ -146,7 +137,7 @@ export default function DayRing() {
           pointerEvents: 'none',
         }}>
           <div style={{
-            fontSize: 40, fontWeight: 800,
+            fontSize: 28, fontWeight: 700,
             fontVariantNumeric: 'tabular-nums',
             letterSpacing: '-0.04em',
             color: state.percent === 0 ? 'var(--text-muted)' : state.color,
@@ -155,14 +146,11 @@ export default function DayRing() {
             {pctLabel}
           </div>
           <div style={{
-            fontSize: 9.5, fontFamily: 'monospace', fontWeight: 800,
+            fontSize: 10.5, fontFamily: 'monospace', fontWeight: 800,
             textTransform: 'uppercase', letterSpacing: '0.16em',
-            marginTop: 5, color: 'var(--text-muted)',
+            marginTop: 4, color: 'var(--text-muted)',
           }}>
             {state.phase}
-          </div>
-          <div style={{ fontSize: 10.5, fontFamily: 'monospace', color: 'var(--text-muted)', marginTop: 3 }}>
-            {clock}
           </div>
         </div>
       </div>

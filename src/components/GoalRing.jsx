@@ -83,7 +83,7 @@ export default function GoalRing({ settings, onTabChange, compact = false }) {
         </svg>
         <span style={{ position: 'absolute', inset: 0, display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center' }}>
           <span className="val-num" style={{ fontSize: compact ? 30 : 34, fontWeight: 500, lineHeight: 1, color: 'var(--text-primary)' }}>{score}</span>
-          <span style={{ fontFamily: 'var(--font-mono)', fontSize: 10, letterSpacing: '0.16em', color: 'var(--text-secondary)', marginTop: 4 }}>TODAY</span>
+          <span style={{ fontFamily: 'var(--font-mono)', fontSize: 11, letterSpacing: '0.16em', color: 'var(--text-secondary)', marginTop: 4 }}>TODAY</span>
         </span>
       </span>
       <span style={{ flex: 1, minWidth: 0, display: 'flex', flexDirection: 'column', gap: 8 }}>

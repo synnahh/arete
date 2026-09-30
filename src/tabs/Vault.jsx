@@ -1,5 +1,6 @@
 // ─── VALERIE — Password Vault ─────────────────────────────────────────────────
 // AES-256-GCM · PBKDF2 key derivation · Local only · Never synced to Firebase
+import { Icon as LineIcon } from '../components/icons.jsx';
 import { useState, useEffect, useRef, useCallback } from 'react';
 
 // ─── Vault storage keys (raw localStorage, never Firebase) ───────────────────
@@ -228,7 +229,7 @@ function GeneratorPanel({ onUse }) {
         ].map(([label, val, set]) => (
           <button key={label} onClick={() => set(v => !v)} style={{
             padding: '4px 10px', borderRadius: 7, border: 'none', cursor: 'pointer', fontSize: 11,
-            background: val ? 'var(--accent)33' : 'rgba(255,255,255,0.05)',
+            background: val ? 'color-mix(in srgb, var(--accent) 20%, transparent)' : 'rgba(255,255,255,0.05)',
             color: val ? 'var(--accent)' : 'var(--text-muted)',
           }}>{label}</button>
         ))}
@@ -302,14 +303,14 @@ function DetailPanel({ entry, onUpdate, onDelete }) {
           ['URL', 'url', 'url'],
         ].map(([label, field, type]) => (
           <div key={field}>
-            <div style={{ fontSize: 10, color: 'var(--text-muted)', marginBottom: 3 }}>{label}</div>
+            <div style={{ fontSize: 11, color: 'var(--text-muted)', marginBottom: 3 }}>{label}</div>
             <input type={type} value={form[field] || ''}
               onChange={e => setForm(f => ({ ...f, [field]: e.target.value }))}
               style={INPUT} />
           </div>
         ))}
         <div>
-          <div style={{ fontSize: 10, color: 'var(--text-muted)', marginBottom: 3 }}>Password</div>
+          <div style={{ fontSize: 11, color: 'var(--text-muted)', marginBottom: 3 }}>Password</div>
           <div style={{ display: 'flex', gap: 6 }}>
             <input type="text" value={form.password || ''}
               onChange={e => setForm(f => ({ ...f, password: e.target.value }))}
@@ -322,7 +323,7 @@ function DetailPanel({ entry, onUpdate, onDelete }) {
           <GeneratorPanel onUse={pw => { setForm(f => ({ ...f, password: pw })); setShowGen(false); }} />
         )}
         <div>
-          <div style={{ fontSize: 10, color: 'var(--text-muted)', marginBottom: 3 }}>Category</div>
+          <div style={{ fontSize: 11, color: 'var(--text-muted)', marginBottom: 3 }}>Category</div>
           <select value={form.category || 'Other'}
             onChange={e => setForm(f => ({ ...f, category: e.target.value }))}
             style={{ ...INPUT, width: '100%' }}>
@@ -330,7 +331,7 @@ function DetailPanel({ entry, onUpdate, onDelete }) {
           </select>
         </div>
         <div>
-          <div style={{ fontSize: 10, color: 'var(--text-muted)', marginBottom: 3 }}>Notes</div>
+          <div style={{ fontSize: 11, color: 'var(--text-muted)', marginBottom: 3 }}>Notes</div>
           <textarea value={form.notes || ''} onChange={e => setForm(f => ({ ...f, notes: e.target.value }))}
             rows={2} style={{ ...INPUT, resize: 'vertical', fontFamily: 'inherit' }} />
         </div>
@@ -352,7 +353,7 @@ function DetailPanel({ entry, onUpdate, onDelete }) {
 
       {/* Username */}
       <div>
-        <div style={{ fontSize: 10, color: 'var(--text-muted)', marginBottom: 3 }}>USERNAME / EMAIL</div>
+        <div style={{ fontSize: 11, color: 'var(--text-muted)', marginBottom: 3 }}>USERNAME / EMAIL</div>
         <div style={{ fontSize: 13, color: 'var(--text-primary)', fontFamily: 'monospace' }}>
           {entry.username || '—'}
         </div>
@@ -360,7 +361,7 @@ function DetailPanel({ entry, onUpdate, onDelete }) {
 
       {/* Password row */}
       <div>
-        <div style={{ fontSize: 10, color: 'var(--text-muted)', marginBottom: 6 }}>PASSWORD</div>
+        <div style={{ fontSize: 11, color: 'var(--text-muted)', marginBottom: 6 }}>PASSWORD</div>
         <div style={{
           background: 'rgba(0,0,0,0.3)', borderRadius: 8, padding: '8px 12px',
           fontFamily: 'monospace', fontSize: 13, letterSpacing: revealed ? '0.04em' : '0.2em',
@@ -377,7 +378,7 @@ function DetailPanel({ entry, onUpdate, onDelete }) {
           </button>
         </div>
         {copied && (
-          <div style={{ fontSize: 10, color: 'var(--text-muted)', marginTop: 4, textAlign: 'center' }}>
+          <div style={{ fontSize: 11, color: 'var(--text-muted)', marginTop: 4, textAlign: 'center' }}>
             Clipboard clears automatically in 30 seconds
           </div>
         )}
@@ -409,11 +410,11 @@ function DetailPanel({ entry, onUpdate, onDelete }) {
             : `⚠️ Found in ${breach.toLocaleString()} breach${breach !== 1 ? 'es' : ''}`}
         </button>
         {typeof breach === 'number' && breach > 0 && (
-          <div style={{ fontSize: 10, color: '#f4a642', marginTop: 4, textAlign: 'center' }}>
+          <div style={{ fontSize: 11, color: '#f4a642', marginTop: 4, textAlign: 'center' }}>
             Consider changing this password
           </div>
         )}
-        <div style={{ fontSize: 9, color: 'var(--text-muted)', marginTop: 4, textAlign: 'center' }}>
+        <div style={{ fontSize: 10.5, color: 'var(--text-muted)', marginTop: 4, textAlign: 'center' }}>
           Uses k-anonymity — only the first 5 chars of the SHA-1 hash are sent
         </div>
       </div>
@@ -586,7 +587,7 @@ export default function Vault() {
         <div style={{ flex: 1, overflowY: 'auto' }}>
           {filtered.length === 0 ? (
             <div style={{ padding: 32, textAlign: 'center' }}>
-              <div style={{ fontSize: 32, marginBottom: 10, opacity: 0.3 }}>🔐</div>
+              <div style={{ marginBottom: 10, display: 'flex', justifyContent: 'center', color: 'var(--text-muted)' }}><LineIcon name="lock" size={30} strokeWidth={1.5} /></div>
               <div style={{ color: 'var(--text-muted)', fontSize: 13 }}>
                 {entries.length === 0 ? 'Vault is empty. Add your first password.' : 'No entries match.'}
               </div>
@@ -639,14 +640,14 @@ export default function Vault() {
               ['URL (optional)', 'url',      'url'],
             ].map(([label, field, type]) => (
               <div key={field}>
-                <div style={{ fontSize: 10, color: 'var(--text-muted)', marginBottom: 3 }}>{label}</div>
+                <div style={{ fontSize: 11, color: 'var(--text-muted)', marginBottom: 3 }}>{label}</div>
                 <input type={type} value={addForm[field]}
                   onChange={e => setAddForm(f => ({ ...f, [field]: e.target.value }))}
                   style={INPUT} />
               </div>
             ))}
             <div>
-              <div style={{ fontSize: 10, color: 'var(--text-muted)', marginBottom: 3 }}>Password</div>
+              <div style={{ fontSize: 11, color: 'var(--text-muted)', marginBottom: 3 }}>Password</div>
               <div style={{ display: 'flex', gap: 6 }}>
                 <input type="text" value={addForm.password} placeholder="Enter or generate"
                   onChange={e => setAddForm(f => ({ ...f, password: e.target.value }))}
@@ -662,7 +663,7 @@ export default function Vault() {
               }} />
             )}
             <div>
-              <div style={{ fontSize: 10, color: 'var(--text-muted)', marginBottom: 3 }}>Category</div>
+              <div style={{ fontSize: 11, color: 'var(--text-muted)', marginBottom: 3 }}>Category</div>
               <select value={addForm.category}
                 onChange={e => setAddForm(f => ({ ...f, category: e.target.value }))}
                 style={{ ...INPUT }}>
@@ -670,7 +671,7 @@ export default function Vault() {
               </select>
             </div>
             <div>
-              <div style={{ fontSize: 10, color: 'var(--text-muted)', marginBottom: 3 }}>Notes (optional)</div>
+              <div style={{ fontSize: 11, color: 'var(--text-muted)', marginBottom: 3 }}>Notes (optional)</div>
               <textarea value={addForm.notes}
                 onChange={e => setAddForm(f => ({ ...f, notes: e.target.value }))}
                 rows={2} style={{ ...INPUT, resize: 'vertical', fontFamily: 'inherit' }} />
@@ -688,7 +689,7 @@ export default function Vault() {
           />
         ) : (
           <div style={{ textAlign: 'center', paddingTop: 40 }}>
-            <div style={{ fontSize: 28, marginBottom: 8, opacity: 0.3 }}>🔐</div>
+            <div style={{ marginBottom: 8, display: 'flex', justifyContent: 'center', color: 'var(--text-muted)' }}><LineIcon name="lock" size={26} strokeWidth={1.5} /></div>
             <div style={{ fontSize: 12, color: 'var(--text-muted)' }}>Select an entry to view</div>
             <div style={{ marginTop: 24 }}>
               <GeneratorPanel />
