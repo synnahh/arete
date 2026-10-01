@@ -12,7 +12,7 @@ import { projectedSpend } from '../domain/ahead.js';
 import { suppliesWithUsage } from '../utils/supplies.js';
 
 // ─── Categories ──────────────────────────────────────────────────────────────
-const CATEGORIES = [
+export const CATEGORIES = [
   { id: 'food',          label: 'Food & Drink',   colour: '#f4a642', icon: '🍔' },
   { id: 'transport',     label: 'Transport',       colour: '#5b9cf6', icon: '🚗' },
   { id: 'shopping',      label: 'Shopping',        colour: '#e55a5a', icon: '🛒' },
@@ -1444,25 +1444,21 @@ export default function Finance({ settings = {} }) {
     <div style={{ display: 'flex', flexDirection: 'column', height: '100%', overflow: 'hidden', background: 'var(--bg-base)' }}>
 
       {/* ── Top header ─────────────────────────────────────────────────────── */}
-      <div style={{ padding: '18px 24px 0', flexShrink: 0 }}>
-        <div style={{ fontSize: 20, fontWeight: 300, color: 'rgba(255,255,255,0.9)', letterSpacing: '-0.01em', marginBottom: 14 }}>
-          Finance
-        </div>
-
-        {/* Horizontal nav */}
-        <div style={{ display: 'flex', gap: 0, borderBottom: '0.5px solid rgba(255,255,255,0.07)' }}>
+      <div style={{ padding: '14px 24px 0', flexShrink: 0 }}>
+        {/* Horizontal nav: theme colours, readable sizes */}
+        <div role="tablist" aria-label="Money sections" style={{ display: 'flex', gap: 0, overflowX: 'auto', scrollbarWidth: 'none', borderBottom: '0.5px solid var(--card-border)' }}>
           {TABS.map(t => (
-            <button key={t.id} onClick={() => setSection(t.id)} style={{
-              padding: '7px 18px 9px',
+            <button key={t.id} role="tab" aria-selected={section === t.id} onClick={() => setSection(t.id)} style={{
+              padding: '9px 16px 11px', flexShrink: 0,
               border: 'none', cursor: 'pointer',
               background: 'transparent',
-              color: section === t.id ? 'rgba(255,255,255,0.9)' : 'rgba(255,255,255,0.3)',
-              fontSize: 11, fontWeight: 700,
+              color: section === t.id ? 'var(--text-primary)' : 'var(--text-secondary)',
+              fontSize: 12, fontWeight: 700,
               letterSpacing: '0.1em',
-              fontFamily: 'ui-monospace,monospace',
-              borderBottom: section === t.id ? '1.5px solid var(--accent)' : '1.5px solid transparent',
+              fontFamily: 'var(--font-mono)',
+              borderBottom: section === t.id ? '2px solid var(--tab-accent)' : '2px solid transparent',
               marginBottom: -0.5,
-              transition: 'all 0.15s ease',
+              transition: 'color 0.15s ease, border-color 0.15s ease',
             }}>
               {t.label}
             </button>

@@ -9,14 +9,14 @@ export const GROUPS = [
   { id: 'plan',     label: 'Plan',     desc: 'Tasks · Calendar · Routines · Supplies', screens: ['agenda', 'tasks', 'calendar', 'routines', 'focus', 'progress', 'essentials', 'places'] },
   { id: 'coach',    label: 'Coach',    desc: 'Goal · Train · Fuel · Recover · Look · Body · Habits', screens: ['coachtoday', 'goal', 'workout', 'fuel', 'recover', 'lm', 'body', 'habits', 'style', 'insights'] },
   { id: 'mind',     label: 'Mind',     desc: 'Mind · Notes · Lists',              screens: ['mind', 'notes', 'lists'] },
-  { id: 'finance',  label: 'Finance',  desc: 'Money · Portfolio',                 screens: ['finance', 'portfolio'] },
+  { id: 'finance',  label: 'Finance',  desc: 'Money · Portfolio',                 screens: ['moneytoday', 'finance', 'portfolio'] },
   { id: 'settings', label: 'Settings', desc: 'Settings · Vault',                  screens: ['settings', 'vault'] },
 ];
 
 // Section labels inside a group. Screens keep their ids; only the label changes.
 export const SCREEN_LABELS = {
   dashboard: 'Today',
-  agenda: 'Agenda', coachtoday: 'Today',      tasks: 'Tasks',        calendar: 'Calendar',  routines: 'Routines', focus: 'Focus',
+  agenda: 'Agenda', coachtoday: 'Today', moneytoday: 'Overview',      tasks: 'Tasks',        calendar: 'Calendar',  routines: 'Routines', focus: 'Focus',
   progress: 'Progress',  essentials: 'Supplies', places: 'Places',
   goal: 'Goal HQ',       workout: 'Train',      fuel: 'Fuel',         recover: 'Recover',
   lm: 'Look',            body: 'Body',          habits: 'Habits',     style: 'Style',     insights: 'Insights',

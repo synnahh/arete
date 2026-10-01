@@ -48,6 +48,7 @@ import Mind       from './tabs/Mind.jsx';
 import Insights   from './tabs/Insights.jsx';
 import PlanToday  from './tabs/PlanToday.jsx';
 import CoachToday from './tabs/CoachToday.jsx';
+import MoneyToday from './tabs/MoneyToday.jsx';
 import LM         from './tabs/LM.jsx';
 import NudgeStack from './components/NudgeStack.jsx';
 import WeeklyReview from './components/WeeklyReview.jsx';
@@ -67,6 +68,7 @@ const TAB_MAP = {
   insights:   Insights,
   agenda:     PlanToday,
   coachtoday: CoachToday,
+  moneytoday: MoneyToday,
   finance:    Finance,
   portfolio:  Portfolio,
   progress:   Progress,

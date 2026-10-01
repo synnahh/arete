@@ -317,3 +317,9 @@ Rob does not want a voice AI or anything to talk to. The coach keeps the plan in
 - **Insights** (Coach > Insights, desktop and phone): `domain/insights.js`, `tabs/Insights.jsx`, `TrendChart`. Pattern shown only with 3+ weeks of sleep and 4+ trained days each side.
 - Verified: 473 tests, both builds, browser with stub data (Home recap, Insights month/year, pattern, logo). Not seen: phone width, light theme, real Supabase.
 - Also removed this session: dead mic buttons, VALERIE wording, orb CSS; the day planner now calls `ai-chat` (needs deploy).
+
+### Front pages for Plan, Coach and Finance (2026-10-01)
+- **Plan > Agenda** (`tabs/PlanToday.jsx`, `domain/plan.js`), **Coach > Today** (`tabs/CoachToday.jsx`, `domain/coachToday.js`), **Finance > Overview** (`tabs/MoneyToday.jsx`, `domain/money.js`): each group opens on a front page (desktop and phone) with one-tap logging; the older screens are unchanged and still reachable. Screen ids `agenda`, `coachtoday`, `moneytoday` (never `plan`/`coach`/`finance`: those are group ids).
+- Desktop navigation is a floating dock (`components/Dock.jsx`); Focus mode was removed; every desktop screen sits in `.page-frame` (1240 px, centred).
+- Finance Overview: safe-to-spend uses budgets when set (storage key `budgets`), otherwise income minus spend and bills still due. Month-end pace needs 5 days of data. Verified with demo data only; the month-start demo had just one day of spending.
+- Repeating tasks now spawn their next copy from Home and Plan as well as Tasks (`domain/tasks.js nextOccurrence`).
