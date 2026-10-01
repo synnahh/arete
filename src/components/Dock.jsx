@@ -5,8 +5,6 @@
 import { useMemo, useState } from 'react';
 import { useNextMoves } from '../hooks/useNextMoves.js';
 import { groupOf } from '../nav/groups.js';
-import DockQuickLog from './DockQuickLog.jsx';
-import DockRing from './DockRing.jsx';
 
 // 24x24 line glyphs. Each is a single path string so it can sit in <path d>.
 export const GREEK_GLYPHS = {
@@ -69,8 +67,6 @@ export default function Dock({ groups, settingsGroup, activeGroup, onGroupClick,
           active={activeGroup === g.id} due={due[g.id] || 0} onClick={() => onGroupClick(g.id)} />
       ))}
       <span className="dock-sep" aria-hidden="true" />
-      <DockQuickLog />
-      <DockRing onOpen={() => onGroupClick('home')} />
       {settingsGroup && (
         <Item id="settings" tint="settings" label={settingsGroup.label} desc={settingsGroup.desc} glyph={GREEK_GLYPHS.settings}
           active={activeGroup === 'settings'} due={due.settings || 0} onClick={() => onGroupClick('settings')} />

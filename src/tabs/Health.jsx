@@ -114,7 +114,7 @@ function Section({ title, children, action }) {
       </div>
       <div style={{ flex: 1, overflowY: 'auto', padding: '20px 24px' }}>
         {/* Capped so cards and bars do not stretch across very wide windows. */}
-        <div style={{ maxWidth: 1040 }}>{children}</div>
+        <div style={{ maxWidth: 1040, margin: '0 auto' }}>{children}</div>
       </div>
     </div>
   );

@@ -317,7 +317,7 @@ export default function GoalHQ({ settings, overview = null, compact = false }) {
 
   return (
     <div style={{ height: '100%', overflowY: 'auto' }}>
-      <div style={{ display: 'flex', flexDirection: 'column', gap: 20, padding: compact ? 16 : '20px 28px 40px', maxWidth: 980 }}>
+      <div style={{ display: 'flex', flexDirection: 'column', gap: 20, padding: compact ? 16 : '20px 28px 40px', maxWidth: 980, width: '100%', margin: '0 auto', boxSizing: 'border-box' }}>
         <div style={{ display: 'flex', flexDirection: 'column', gap: 4 }}>
           <h1 style={{ margin: 0, fontSize: compact ? 26 : 32, fontWeight: 700, color: 'var(--text-primary)' }}>Goal HQ</h1>
           <span style={{ fontSize: 15, color: 'var(--text-secondary)' }}>

@@ -433,7 +433,7 @@ export default function TrainSession({
 
   return (
     <div style={{ height: '100%', overflowY: 'auto' }}>
-      <div style={{ display: 'flex', flexDirection: 'column', gap: 14, padding: compact ? 16 : '20px 28px 28px', maxWidth: 760 }}>
+      <div style={{ display: 'flex', flexDirection: 'column', gap: 14, padding: compact ? 16 : '20px 28px 28px', maxWidth: 760, width: '100%', margin: '0 auto', boxSizing: 'border-box' }}>
         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-end', gap: 12, flexWrap: 'wrap' }}>
           <div style={{ display: 'flex', flexDirection: 'column', gap: 4 }}>
             <h1 style={{ margin: 0, fontSize: compact ? 26 : 30, fontWeight: 700, color: 'var(--text-primary)' }}>{splitNames[day] ?? day}</h1>

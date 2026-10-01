@@ -417,9 +417,9 @@ select option {
    short fade, None is instant. transform + opacity only. */
 @keyframes val-snap-in  { 0% { opacity: 0; transform: translateY(-14px); } 60% { opacity: 1; transform: translateY(2px); } 100% { opacity: 1; transform: none; } }
 @keyframes val-bloom-in { 0% { opacity: 0; transform: translateY(8px); } 100% { opacity: 1; transform: none; } }
-html:not([data-motion="reduced"])[data-group="plan"] main > .val-fade-up,
+html:not([data-motion="reduced"])[data-group="plan"] main .page-frame > .val-fade-up,
 html:not([data-motion="reduced"])[data-group="plan"] .m-screen.val-fade-up { animation-name: val-snap-in;  animation-duration: 320ms; }
-html:not([data-motion="reduced"])[data-group="mind"] main > .val-fade-up,
+html:not([data-motion="reduced"])[data-group="mind"] main .page-frame > .val-fade-up,
 html:not([data-motion="reduced"])[data-group="mind"] .m-screen.val-fade-up { animation-name: val-bloom-in; animation-duration: 600ms; }
 @keyframes val-fade-in   { from { opacity: 0; } to { opacity: 1; } }
 @keyframes val-scale-in  { from { opacity: 0; transform: scale(0.94); } to { opacity: 1; transform: scale(1); } }
@@ -537,8 +537,6 @@ html[data-theme="arctic"][data-tab-colours="per-tab"] { --grp-home: #9A6B1F; --g
 .dock-item.is-active::after { content: ""; position: absolute; bottom: 3px; width: 4px; height: 4px; border-radius: 50%; background: var(--t); }
 .dock-due { position: absolute; top: 4px; right: 6px; min-width: 8px; height: 8px; padding: 0 3px; box-sizing: border-box; border-radius: 999px; background: var(--t, var(--accent)); color: var(--on-tab-accent, #111); font-size: 9px; font-weight: 700; line-height: 8px; text-align: center; }
 .dock-due:not(:empty) { height: 14px; min-width: 14px; line-height: 14px; top: 1px; right: 3px; }
-.dock-ring { width: 46px; }
-.dock-pop { position: absolute; bottom: calc(100% + 14px); left: 50%; transform: translateX(-50%); width: 292px; display: flex; flex-direction: column; gap: 14px; padding: 16px; border-radius: 16px; background: var(--bg-panel); border: 0.5px solid var(--card-border); box-shadow: 0 12px 38px rgba(0, 0, 0, 0.5); z-index: 5; }
 .dock-sep { width: 1px; height: 26px; margin: 0 4px; background: var(--card-border); }
 .dock-status { position: relative; width: 26px; height: 40px; display: flex; align-items: center; justify-content: center; background: none; border: none; cursor: default; padding: 0; }
 .dock-tip {
@@ -552,6 +550,10 @@ html[data-theme="arctic"][data-tab-colours="per-tab"] { --grp-home: #9A6B1F; --g
 .dock-item:hover .dock-tip, .dock-item:focus-visible .dock-tip, .dock-tip.is-on { opacity: 1; }
 html[data-motion="reduced"] .dock { animation: none; }
 html[data-motion="reduced"] .dock-item:hover { transform: none; }
+
+/* ─── Page frame: every desktop screen is centred in one column (Home keeps its own). ─── */
+.page-frame { width: 100%; max-width: 1240px; margin: 0 auto; flex: 1; min-height: 0; display: flex; flex-direction: column; box-sizing: border-box; }
+.page-frame[data-screen="dashboard"] { max-width: none; }
 
 /* ─── Home layout ───────────────────────────────────────────────────────────
    One column on narrow windows; from 1100px, the doing column (goal, next moves,

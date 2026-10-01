@@ -2144,7 +2144,7 @@ export default function SettingsTab({ settings: settingsProp }) {
       {/* ── Right content ─────────────────────────────────────────────────── */}
       <div style={{ flex: 1, overflowY: 'auto', padding: '28px 36px' }}>
         {/* Forms read best at a set width rather than stretched across the window. */}
-        <div style={{ maxWidth: 760 }}>{renderSection()}</div>
+        <div style={{ maxWidth: 760, margin: '0 auto' }}>{renderSection()}</div>
       </div>
     </div>
   );

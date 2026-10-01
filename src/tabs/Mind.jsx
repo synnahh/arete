@@ -842,7 +842,7 @@ export default function Mind({ settings = {} }) {
       {/* Content */}
       <div ref={scrollRef} style={{ flex: 1, overflowY: 'auto' }}>
         {/* Reading and writing screens: capped at a comfortable line length instead of the full window. */}
-        <div style={{ maxWidth: 880 }}>
+        <div style={{ maxWidth: 880, margin: '0 auto' }}>
           {section === 'constitution' && <Constitution constitution={constitution} onSave={saveConstitution} />}
           {section === 'ledger'       && <LifeLedger />}
           {section === 'beliefs'      && <Beliefs />}

@@ -414,18 +414,21 @@ export default function App() {
           position: 'relative',
         }}
       >
-        <SectionBar group={activeGroup} screens={sectionScreens} active={activeTab} onPick={goTo} />
+        {/* Every screen sits in one centred frame so nothing hugs the left edge on a wide window. */}
+        <div className="page-frame" data-screen={activeTab}>
+          <SectionBar group={activeGroup} screens={sectionScreens} active={activeTab} onPick={goTo} />
 
-        <TabErrorBoundary key={activeTab}>
-          <div className="val-fade-up" style={{ flex: 1, minHeight: 0, display: 'flex', flexDirection: 'column' }}>
-            <ActiveTab
-              settings={settings}
-              onTabChange={goTo}
-              density={layoutDensity}
-              peakState={peakState}
-            />
-          </div>
-        </TabErrorBoundary>
+          <TabErrorBoundary key={activeTab}>
+            <div className="val-fade-up" style={{ flex: 1, minHeight: 0, display: 'flex', flexDirection: 'column' }}>
+              <ActiveTab
+                settings={settings}
+                onTabChange={goTo}
+                density={layoutDensity}
+                peakState={peakState}
+              />
+            </div>
+          </TabErrorBoundary>
+        </div>
 
         {/* Quick Capture — floats above all content */}
         <QuickCapture />
