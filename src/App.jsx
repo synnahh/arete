@@ -407,6 +407,8 @@ export default function App() {
         data-layout={layoutDensity}
         style={{
           flex: 1, height: '100%',
+          paddingBottom: 76, // room for the floating dock (components/Dock.jsx)
+          boxSizing: 'border-box',
           overflow: 'hidden',
           display: 'flex', flexDirection: 'column',
           position: 'relative',

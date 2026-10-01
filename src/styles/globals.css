@@ -502,6 +502,55 @@ html[data-motion="reduced"] .bg-animated::before { animation: none !important; }
   .val-signature, .bg-animated::before { animation: none !important; }
 }
 
+
+/* ─── Desktop dock (components/Dock.jsx) ─────────────────────────────────────
+   Floating pill, bottom centre. Each group has its own tint (the tab colours);
+   with per-tab colours off, every group uses the theme accent. */
+:root {
+  --grp-home: var(--accent-solid); --grp-plan: var(--accent-solid); --grp-coach: var(--accent-solid);
+  --grp-mind: var(--accent-solid); --grp-finance: var(--accent-solid); --grp-settings: var(--accent-solid); --grp-focus: #f4a642;
+}
+html[data-tab-colours="per-tab"] { --grp-home: #D8B26E; --grp-plan: #6FA8F2; --grp-coach: #F2784B; --grp-mind: #A98FF2; --grp-finance: #52CC9C; }
+html[data-theme="arctic"][data-tab-colours="per-tab"] { --grp-home: #9A6B1F; --grp-plan: #2F6FC4; --grp-coach: #C24E22; --grp-mind: #6B4FCB; --grp-finance: #1F8A5F; }
+.dock {
+  position: fixed; left: 50%; bottom: 14px; z-index: 800; transform: translateX(-50%);
+  display: flex; align-items: center; gap: 4px; padding: 7px 9px; border-radius: 22px;
+  background: color-mix(in srgb, var(--bg-panel) 82%, transparent);
+  border: 0.5px solid var(--card-border);
+  -webkit-backdrop-filter: blur(18px); backdrop-filter: blur(18px);
+  box-shadow: 0 10px 34px rgba(0, 0, 0, 0.42);
+  animation: dock-in 380ms var(--ease-out, cubic-bezier(0.22, 1, 0.36, 1)) 1 both;
+}
+@keyframes dock-in { from { transform: translate(-50%, 18px); opacity: 0; } to { transform: translate(-50%, 0); opacity: 1; } }
+.dock-item {
+  position: relative; width: 50px; height: 46px; display: flex; align-items: center; justify-content: center;
+  border: none; border-radius: 15px; background: transparent; cursor: pointer; padding: 0;
+  color: var(--text-secondary); transition: transform 0.16s ease, color 0.16s ease, background-color 0.16s ease;
+  -webkit-tap-highlight-color: transparent;
+}
+.dock-item.dock-small { width: 38px; height: 38px; border-radius: 12px; }
+.dock-item[data-tint="home"] { --t: var(--grp-home); } .dock-item[data-tint="plan"] { --t: var(--grp-plan); }
+.dock-item[data-tint="coach"] { --t: var(--grp-coach); } .dock-item[data-tint="mind"] { --t: var(--grp-mind); }
+.dock-item[data-tint="finance"] { --t: var(--grp-finance); } .dock-item[data-tint="settings"] { --t: var(--grp-settings); }
+.dock-item[data-tint="focus"] { --t: var(--grp-focus); }
+.dock-item:hover, .dock-item:focus-visible { transform: translateY(-4px) scale(1.1); color: var(--t); outline: none; }
+.dock-item:focus-visible { box-shadow: 0 0 0 2px var(--t); }
+.dock-item.is-active { color: var(--t); background: color-mix(in srgb, var(--t) 16%, transparent); }
+.dock-item.is-active::after { content: ""; position: absolute; bottom: 3px; width: 4px; height: 4px; border-radius: 50%; background: var(--t); }
+.dock-sep { width: 1px; height: 26px; margin: 0 4px; background: var(--card-border); }
+.dock-status { position: relative; width: 26px; height: 40px; display: flex; align-items: center; justify-content: center; background: none; border: none; cursor: default; padding: 0; }
+.dock-tip {
+  position: absolute; bottom: calc(100% + 12px); left: 50%; transform: translateX(-50%); pointer-events: none;
+  display: flex; flex-direction: column; gap: 3px; width: max-content; max-width: 240px; white-space: nowrap; padding: 8px 12px; border-radius: 10px;
+  background: var(--bg-panel); border: 0.5px solid var(--card-border); box-shadow: 0 6px 22px rgba(0, 0, 0, 0.45);
+  opacity: 0; transition: opacity 0.12s ease; text-align: left;
+}
+.dock-tip strong { font-size: 12.5px; font-weight: 600; color: var(--text-primary); }
+.dock-tip em { font-style: normal; font-size: 11.5px; color: var(--text-secondary); max-width: 220px; white-space: normal; }
+.dock-item:hover .dock-tip, .dock-item:focus-visible .dock-tip, .dock-tip.is-on { opacity: 1; }
+html[data-motion="reduced"] .dock { animation: none; }
+html[data-motion="reduced"] .dock-item:hover { transform: none; }
+
 /* ─── Home layout ───────────────────────────────────────────────────────────
    One column on narrow windows; from 1100px, the doing column (goal, next moves,
    tasks) on the left and the reading column (rating, brief, stats) on the right. */
