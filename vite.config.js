@@ -80,6 +80,7 @@ export default defineConfig(async () => ({
           // while `tab-settings` still imports it, producing a circular chunk
           // (mobile -> tab-settings -> mobile).
           if (id.includes('/src/utils/')     ||
+              id.includes('/src/domain/')    ||
               id.includes('/src/hooks/')     ||
               id.includes('/src/supabase/')  ||
               id.includes('/src/styles/')    ||
