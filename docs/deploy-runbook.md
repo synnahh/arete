@@ -1,5 +1,7 @@
 # Arete — go-live steps that need your accounts
 
+**Status 2026-10-01.** The app now points at the NEW Supabase project `jwzgxcqapxaomuenleyt` (org Arete); the old, paused project `ywpwwxtimnqqruwxlpjb` (org Valerie) still holds the previous data and is untouched. Already done on the new project: the three SQL files (50 tables with owner-only policies and realtime, the private `progress-photos` bucket, the `user_meta` unique index), the `ai-chat` function deployed (Verify JWT on), and the `ANTHROPIC_MODEL` secret. Still yours: the Anthropic key secret (step 1 and 2), creating your sign-in account, `OWNER_USER_ID`, turning off public sign-ups, and the Netlify environment variables (step 4).
+
 These cannot be done from the coding session (no Supabase login, no database credentials, and API keys must not be moved by tooling). Each takes a minute. Do them in order.
 
 ## 1. New API keys
@@ -8,11 +10,11 @@ The keys that were in `.env` (`VITE_CLAUDE_API_KEY`, `VITE_ELEVENLABS_API_KEY`) 
 - ElevenLabs: the app no longer has a voice, so delete that key in ElevenLabs (and the account, if you don't use it elsewhere).
 - Remove both lines from `.env`. The app no longer reads either; the AI tools go through the `ai-chat` function.
 
-## 2. Deploy the AI tools function (Supabase project `ywpwwxtimnqqruwxlpjb`)
+## 2. Deploy the AI tools function (Supabase project `jwzgxcqapxaomuenleyt`)
 Arete has no chat assistant. `ai-chat` only runs the tools that read your input: meal photo, describe a meal, skin photo, the weekly and monthly reviews, Mind insights, and the meal-plan and day-plan generators.
 ```bash
 npx supabase login
-npx supabase link --project-ref ywpwwxtimnqqruwxlpjb
+npx supabase link --project-ref jwzgxcqapxaomuenleyt
 npx supabase secrets set ANTHROPIC_API_KEY=<the new key> ANTHROPIC_MODEL=claude-sonnet-5-5
 npx supabase functions deploy ai-chat
 ```
@@ -40,6 +42,8 @@ Open the Supabase dashboard > SQL editor and run, one after the other:
 2. `supabase/progress_photos.sql` (creates the private `progress-photos` bucket and its owner-only policies)
 
 ## 4. Netlify
+Set `VITE_SUPABASE_URL=https://jwzgxcqapxaomuenleyt.supabase.co` and `VITE_SUPABASE_ANON_KEY` (Supabase > Project Settings > API Keys > Legacy > anon) in the site environment variables. Never add an Anthropic or ElevenLabs key there.
+
 `netlify.toml` was reviewed: the Content-Security-Policy allows Supabase (HTTPS + realtime WebSocket) and the Open Food/Beauty Facts APIs, and the camera is allowed for the app's own origin. Deploy, then open the site once and check the browser console for "Refused to connect" messages.
 
 ## 5. Check on a phone (5 minutes)
