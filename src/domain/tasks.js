@@ -39,3 +39,27 @@ export function makeTask({ text, priority, description = '', ...rest } = {}) {
     updatedAt: now,
   };
 }
+
+/** Advance a YYYY-MM-DD date by a repeat cycle using UTC math (no timezone drift). Unknown repeat: unchanged. */
+export function advanceByRepeat(iso, repeat, today = null) {
+  const base = iso || today;
+  const [y, m, d] = String(base || '').split('-').map(Number);
+  if (!y || !m || !d) return base;
+  const dt = new Date(Date.UTC(y, m - 1, d));
+  if (repeat === 'daily')        dt.setUTCDate(dt.getUTCDate() + 1);
+  else if (repeat === 'weekly')  dt.setUTCDate(dt.getUTCDate() + 7);
+  else if (repeat === 'monthly') dt.setUTCMonth(dt.getUTCMonth() + 1);
+  else return base;
+  return dt.toISOString().split('T')[0];
+}
+
+/** The row to add when a repeating task is completed, or null for a one-off. */
+export function nextOccurrence(task, today = null) {
+  if (!task?.repeat || task.repeat === 'none') return null;
+  return {
+    text: task.text, description: task.description || '',
+    priority: task.priority || 'med',
+    dueDate: advanceByRepeat(task.dueDate, task.repeat, today),
+    category: task.category || '', repeat: task.repeat, done: false,
+  };
+}

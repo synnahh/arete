@@ -7,7 +7,7 @@ import { useState, useCallback, useMemo } from 'react';
 import { useCollection } from '../supabase/useCollection.js';
 import { STORAGE_KEYS }  from '../utils/storage.js';
 import { toLocalDateKey } from '../utils/localDate.js';
-import { normalizeTasks } from '../domain/tasks.js';
+import {normalizeTasks, advanceByRepeat } from '../domain/tasks.js';
 
 // ── Helpers ───────────────────────────────────────────────────────────────────
 const PRIORITY = {
@@ -26,19 +26,6 @@ const REPEATS = {
 
 function todayStr() {
   return toLocalDateKey(new Date());
-}
-
-// Advance a YYYY-MM-DD date by a repeat cycle using UTC math (no timezone drift).
-function advanceByRepeat(iso, repeat) {
-  const base = iso || todayStr();
-  const [y, m, d] = base.split('-').map(Number);
-  if (!y || !m || !d) return base;
-  const dt = new Date(Date.UTC(y, m - 1, d));
-  if (repeat === 'daily')        dt.setUTCDate(dt.getUTCDate() + 1);
-  else if (repeat === 'weekly')  dt.setUTCDate(dt.getUTCDate() + 7);
-  else if (repeat === 'monthly') dt.setUTCMonth(dt.getUTCMonth() + 1);
-  else return base;
-  return dt.toISOString().split('T')[0];
 }
 
 function applyFilter(tasks, filter) {
@@ -422,7 +409,7 @@ export default function Tasks() {
       await add({
         text: task.text, description: task.description || '',
         priority: task.priority || 'med',
-        dueDate: advanceByRepeat(task.dueDate, task.repeat),
+        dueDate: advanceByRepeat(task.dueDate, task.repeat, todayStr()),
         category: task.category || '', repeat: task.repeat, done: false,
       });
     }

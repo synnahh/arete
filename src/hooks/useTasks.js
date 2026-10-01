@@ -12,7 +12,8 @@
 import { useState, useMemo, useCallback } from 'react';
 import { useCollection } from '../supabase/useCollection.js';
 import { STORAGE_KEYS } from '../utils/storage.js';
-import { normalizeTasks, makeTask } from '../domain/tasks.js';
+import { normalizeTasks, makeTask, nextOccurrence } from '../domain/tasks.js';
+import { toLocalDateKey } from '../utils/localDate.js';
 
 export function useTasks() {
   const { items, add, update, remove, synced } = useCollection('tasks', STORAGE_KEYS.TASKS);
@@ -29,10 +30,13 @@ export function useTasks() {
     setOptimistic(o => ({ ...o, [task.id]: next }));
     try {
       await update(task.id, { done: next, completedAt: next ? new Date().toISOString() : null });
+      // A repeating task spawns its next occurrence when completed (the Tasks screen does the same).
+      const following = next ? nextOccurrence(task, toLocalDateKey(new Date())) : null;
+      if (following) await add(makeTask(following));
     } finally {
       setOptimistic(({ [task.id]: _, ...rest }) => rest);
     }
-  }, [update]);
+  }, [update, add]);
 
   const addTask = useCallback((text, extra = {}) => {
     const t = String(text ?? '').trim();
@@ -40,5 +44,5 @@ export function useTasks() {
     return add(makeTask({ text: t, ...extra }));
   }, [add]);
 
-  return { tasks, toggle, addTask, remove, synced };
+  return { tasks, toggle, addTask, update, remove, synced };
 }

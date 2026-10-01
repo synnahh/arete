@@ -71,7 +71,7 @@ describe('resolveTarget', () => {
   });
 
   it('opens a group at its first screen by default', () => {
-    expect(resolveTarget('plan')).toBe('tasks');
+    expect(resolveTarget('plan')).toBe('agenda');
   });
 
   it('rejects unknown targets', () => {

@@ -555,6 +555,9 @@ html[data-motion="reduced"] .dock-item:hover { transform: none; }
 .page-frame { width: 100%; max-width: 1240px; margin: 0 auto; flex: 1; min-height: 0; display: flex; flex-direction: column; box-sizing: border-box; }
 .page-frame[data-screen="dashboard"] { max-width: none; }
 
+.plan-grid { display: grid; gap: 16px; grid-template-columns: minmax(0, 1.65fr) minmax(0, 1fr); align-items: start; }
+@media (max-width: 920px) { .plan-grid { grid-template-columns: minmax(0, 1fr); } }
+
 /* ─── Home layout ───────────────────────────────────────────────────────────
    One column on narrow windows; from 1100px, the doing column (goal, next moves,
    tasks) on the left and the reading column (rating, brief, stats) on the right. */
