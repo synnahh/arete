@@ -18,7 +18,10 @@ import GoalEta from '../../components/GoalEta.jsx';
 import { withTodaysTargets } from '../../utils/todaysTargets.js';
 import MicroCoachCard from '../../components/MicroCoachCard.jsx';
 import FoodShortcuts from '../../components/FoodShortcuts.jsx';
-import { yesterdayKey, copyMeals, appendMeals, groupBySection } from '../../domain/foods.js';
+import { yesterdayKey, copyMeals, appendMeals, groupBySection, recentFoods } from '../../domain/foods.js';
+import RecipeBuilder from '../../components/RecipeBuilder.jsx';
+import Sheet from '../Sheet.jsx';
+import { mealEntry, draftFromSaved, PORTIONS } from '../../domain/recipes.js';
 import { storage } from '../../utils/storage.js';
 import { weeklyMicros, microCoach } from '../../domain/micros.js';
 
@@ -541,6 +544,9 @@ function NutritionTab({ settings, today }) {
   const carbGoal = todays?.macros?.carbs    ?? 250;
   const fatGoal  = todays?.macros?.fat      ?? 80;
   const [showAdd, setShowAdd] = useState(false);
+  const { items: savedMeals = [], add: addSavedMeal, update: updateSavedMeal, remove: removeSavedMeal } = useCollection('saved_meals', STORAGE_KEYS.SAVED_MEALS);
+  const [recipeDraft, setRecipeDraft] = useState(null); // null | { initial }
+  const [portions, setPortions] = useState({});
   const { items: supplements = [] } = useCollection('supplements', STORAGE_KEYS.SUPPLEMENTS);
   const { items: suppLogs = [] } = useCollection('supplement_logs', STORAGE_KEYS.SUPP_LOGS);
   const microAdvice = useMemo(
@@ -584,6 +590,9 @@ function NutritionTab({ settings, today }) {
     } }));
   }
 
+  const frequent = useMemo(() => recentFoods(nutritionLogs, { today, limit: 8 }), [nutritionLogs, today]);
+  const logMyMeal = (m) => { const p = portions[m.id] ?? 1; const e = mealEntry(m, p); e.time = nowStr(); return appendEntries([e], `Logged ${m.name}${p === 1 ? '' : ` ×${p}`}`); };
+
   async function removeMealEntry(id) {
     if (!todayLog?.id) return;
     const newMeals = meals.filter(m => m.id !== id);
@@ -625,6 +634,28 @@ function NutritionTab({ settings, today }) {
         color: 'var(--bg-base)', fontSize: 14, fontWeight: 600, cursor: 'pointer',
         WebkitTapHighlightColor: 'transparent',
       }}>+ Log food</button>
+
+      {/* My meals: saved meals and recipes, one tap to log */}
+      <MCard>
+        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 8 }}>
+          <SectionLabel>My meals</SectionLabel>
+          <button onClick={() => setRecipeDraft({ initial: null })} style={{ background: 'none', border: 'none', color: 'var(--accent)', fontSize: 13, fontWeight: 600, cursor: 'pointer', minHeight: 44, padding: '0 6px' }}>Build a recipe</button>
+        </div>
+        {savedMeals.length === 0 && <div style={{ fontSize: 13, color: 'var(--text-muted)', lineHeight: 1.5 }}>No saved meals yet. Build a recipe from ingredients and log it in one tap.</div>}
+        {savedMeals.map(m => (
+          <div key={m.id} style={{ display: 'flex', alignItems: 'center', gap: 8, padding: '9px 0', borderTop: '0.5px solid var(--card-border)' }}>
+            <div style={{ flex: 1, minWidth: 0 }}>
+              <div style={{ fontSize: 14, color: 'var(--text-primary)', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{m.name}</div>
+              <div style={{ fontSize: 11.5, color: 'var(--text-muted)', marginTop: 2 }}>{m.calories} kcal · P{m.protein} C{m.carbs} F{m.fat}{m.servings > 1 ? ` · per serving of ${m.servings}` : ''}</div>
+            </div>
+            <select aria-label={`Portions of ${m.name}`} value={portions[m.id] ?? 1} onChange={e => setPortions(p => ({ ...p, [m.id]: Number(e.target.value) }))} style={{ width: 62, minHeight: 40, padding: '0 6px', fontSize: 13 }}>
+              {PORTIONS.map(x => <option key={x} value={x}>{`×${x}`}</option>)}
+            </select>
+            <button onClick={() => logMyMeal(m)} style={{ minHeight: 40, padding: '0 14px', borderRadius: 10, border: 'none', background: 'var(--accent)', color: 'var(--bg-base)', fontSize: 13, fontWeight: 600, cursor: 'pointer' }}>Log</button>
+            <button onClick={() => setRecipeDraft({ initial: { ...draftFromSaved(m), id: m.id } })} aria-label={`Edit ${m.name}`} style={{ minHeight: 40, padding: '0 10px', borderRadius: 10, border: '0.5px solid var(--card-border)', background: 'none', color: 'var(--text-secondary)', fontSize: 13, cursor: 'pointer' }}>Edit</button>
+          </div>
+        ))}
+      </MCard>
 
       {/* Meal list */}
       <MCard style={{ padding: 0 }}>
@@ -668,6 +699,17 @@ function NutritionTab({ settings, today }) {
       )}
 
       {showAdd && <AddFoodSheet onAdd={addMealEntry} onClose={() => setShowAdd(false)} />}
+      {recipeDraft && (
+        <Sheet title={recipeDraft.initial?.id ? 'Edit recipe' : 'Build a recipe'} onClose={() => setRecipeDraft(null)}>
+          <RecipeBuilder compact key={recipeDraft.initial?.id || 'new'} initial={recipeDraft.initial} recent={frequent}
+            onCancel={() => setRecipeDraft(null)}
+            onDelete={async (id) => { await removeSavedMeal(id); setRecipeDraft(null); }}
+            onSave={async (row, id) => {
+              const ok = id ? await updateSavedMeal(id, row) : await addSavedMeal(row);
+              if (ok) { setRecipeDraft(null); window.dispatchEvent(new CustomEvent('valerie:toast', { detail: { message: id ? 'Recipe updated' : 'Recipe saved to My meals', type: 'success' } })); }
+            }} />
+        </Sheet>
+      )}
     </div>
   );
 }

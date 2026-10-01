@@ -323,3 +323,8 @@ Rob does not want a voice AI or anything to talk to. The coach keeps the plan in
 - Desktop navigation is a floating dock (`components/Dock.jsx`); Focus mode was removed; every desktop screen sits in `.page-frame` (1240 px, centred).
 - Finance Overview: safe-to-spend uses budgets when set (storage key `budgets`), otherwise income minus spend and bills still due. Month-end pace needs 5 days of data. Verified with demo data only; the month-start demo had just one day of spending.
 - Repeating tasks now spawn their next copy from Home and Plan as well as Tasks (`domain/tasks.js nextOccurrence`).
+
+### Recipe builder (2026-10-01)
+- `components/RecipeBuilder.jsx` + `domain/recipes.js`: build a meal from ingredients (food search via Open Food Facts, recent foods, or by hand), quantities scale the numbers, servings divide the total. Saved to `saved_meals` as one serving at the top level plus `recipe: { servings, items }` so it can be edited; `ingredients` are per serving so logging a portion uses up pantry stock. Desktop: Fuel > Nutrition (Build recipe, My Meals Edit/portions/Log with Undo). Phone: "My meals" card on Fuel (sheet builder). Logged entries keep the recipe name and carry `portions` when not 1.
+- Food search could not be exercised in the test browser (no route to Open Food Facts); it shows a clear fallback message. Verified with demo data: build, save, edit, delete, log 1.5 portions, ingredients scaled.
+- The old desktop saved-meal "x" deletes with no confirmation (pre-existing).

@@ -14,6 +14,8 @@ import { currencySymbol as currencySym } from '../utils/currency.js';
 import { searchOpenFoodFacts, lookupBarcode, startBarcodeScan } from '../utils/openFoodFacts.js';
 import { toLocalDateKey } from '../utils/localDate.js';
 import { peekHealthSection, clearHealthSection, screenForHealthSection } from '../nav/healthSection.js';
+import RecipeBuilder from '../components/RecipeBuilder.jsx';
+import { mealEntry, draftFromSaved, PORTIONS } from '../domain/recipes.js';
 import { recentFoods, yesterdayKey, copyMeals, appendMeals, mealFromPlan, cleanIngredients, groupBySection } from '../domain/foods.js';
 import FoodShortcuts from '../components/FoodShortcuts.jsx';
 import { weightCoach } from '../domain/weight.js';
@@ -634,7 +636,7 @@ function MicronutrientPanel({ micros }) {
   );
 }
 
-function Nutrition({ nutritionLogs, addNutritionLog, updateNutritionLog, settings, savedMeals = [], addSavedMeal, removeSavedMeal, supplements = [], suppLogs = [] }) {
+function Nutrition({ nutritionLogs, addNutritionLog, updateNutritionLog, settings, savedMeals = [], addSavedMeal, updateSavedMeal, removeSavedMeal, supplements = [], suppLogs = [] }) {
   const today     = todayStr();
   const goals     = settings?.macros ?? { calories: 2500, protein: 180, carbs: 250, fat: 80 };
   const todayLog  = useMemo(() =>
@@ -665,6 +667,8 @@ function Nutrition({ nutritionLogs, addNutritionLog, updateNutritionLog, setting
   const [showAdd, setShowAdd]   = useState(false);
   const [addMode, setAddMode]   = useState('my');   // 'my' | 'search'
   const [showSaveMeal, setShowSaveMeal] = useState(false);
+  const [recipeDraft, setRecipeDraft] = useState(null); // null | { initial: draft-or-null }
+  const [portions, setPortions] = useState({});
   const [saveMealForm, setSaveMealForm] = useState({ name: '', calories: '', protein: '', carbs: '', fat: '' });
   const [search, setSearch]   = useState('');
   const [results, setResults] = useState([]);
@@ -676,20 +680,9 @@ function Nutrition({ nutritionLogs, addNutritionLog, updateNutritionLog, setting
   const videoRef  = useRef(null);
   const streamRef = useRef(null);
 
-  const logSavedMeal = async (meal) => {
-    const entry = {
-      id: `m_${Date.now()}`,
-      name: meal.name,
-      calories: meal.calories,
-      protein:  meal.protein,
-      carbs:    meal.carbs,
-      fat:      meal.fat,
-      micros:   meal.micros || {},
-      qty: null, unit: null,
-      time: nowStr(),
-      savedMealId: meal.id,
-      ...(cleanIngredients(meal.ingredients).length ? { ingredients: cleanIngredients(meal.ingredients) } : {}),
-    };
+  const logSavedMeal = async (meal, portions = 1) => {
+    const entry = mealEntry(meal, portions);
+    entry.time = nowStr();
     const newMeals = [...meals, entry];
     const newTotals = newMeals.reduce((s, m) => ({
       calories: s.calories + (m.calories||0), protein: s.protein + (m.protein||0),
@@ -827,6 +820,7 @@ function Nutrition({ nutritionLogs, addNutritionLog, updateNutritionLog, setting
     <Section title="Nutrition" action={
       <div style={{ display: 'flex', gap: 6 }}>
         <button onClick={() => { setShowAdd(true); setAddMode('my'); }} style={btnPrimary}>+ Log food</button>
+        <button onClick={() => { setShowSaveMeal(false); setRecipeDraft({ initial: null }); }} style={{ ...btnGhost, fontSize: 11 }}>⊕ Build recipe</button>
         <button onClick={() => setShowSaveMeal(v => !v)} style={{ ...btnGhost, fontSize: 11 }}>
           {showSaveMeal ? '✕' : '⊕ Save meal'}
         </button>
@@ -886,6 +880,20 @@ function Nutrition({ nutritionLogs, addNutritionLog, updateNutritionLog, setting
 
       {/* Micronutrients (food + supplements) */}
       <MicronutrientPanel micros={dailyMicros} />
+
+      {/* Recipe builder: build a meal from ingredients, save or update it in My Meals */}
+      {recipeDraft && (
+        <div style={{ ...cardSx, marginBottom: 16 }}>
+          <div style={{ fontSize: 13, fontWeight: 600, color: 'var(--text-primary)', marginBottom: 12 }}>{recipeDraft.initial?.id ? 'Edit recipe' : 'Build a recipe'}</div>
+          <RecipeBuilder key={recipeDraft.initial?.id || 'new'} initial={recipeDraft.initial} recent={frequent}
+            onCancel={() => setRecipeDraft(null)}
+            onDelete={async (id) => { await removeSavedMeal(id); setRecipeDraft(null); }}
+            onSave={async (row, id) => {
+              const ok = id ? await updateSavedMeal(id, row) : await addSavedMeal(row);
+              if (ok) { setRecipeDraft(null); window.dispatchEvent(new CustomEvent('valerie:toast', { detail: { message: id ? 'Recipe updated' : 'Recipe saved to My Meals', type: 'success' } })); }
+            }} />
+        </div>
+      )}
 
       {/* Save meal form */}
       {showSaveMeal && (
@@ -955,7 +963,11 @@ function Nutrition({ nutritionLogs, addNutritionLog, updateNutritionLog, setting
                           {m.calories} kcal · P{m.protein}g · C{m.carbs}g · F{m.fat}g
                         </div>
                       </div>
-                      <button onClick={() => { logSavedMeal(m); setShowAdd(false); }} style={{ ...btnPrimary, padding: '5px 12px', fontSize: 11 }}>
+                      <select aria-label={`Portions of ${m.name}`} value={portions[m.id] ?? 1} onChange={e => setPortions(p => ({ ...p, [m.id]: Number(e.target.value) }))} style={{ ...inputSx, width: 62, padding: '5px 6px', fontSize: 11 }}>
+                        {PORTIONS.map(x => <option key={x} value={x}>{`×${x}`}</option>)}
+                      </select>
+                      <button onClick={() => { setShowAdd(false); setRecipeDraft({ initial: { ...draftFromSaved(m), id: m.id } }); }} style={{ ...btnGhost, padding: '5px 10px', fontSize: 11 }}>Edit</button>
+                      <button onClick={async () => { const p = portions[m.id] ?? 1; const prev = { meals, ...totals }; setShowAdd(false); await logSavedMeal(m, p); window.dispatchEvent(new CustomEvent('valerie:toast', { detail: { message: `Logged ${m.name}${p === 1 ? '' : ` ×${p}`}`, type: 'success', undo: async () => { const row = storage.get(STORAGE_KEYS.MACROS, []).find(l => l.date === today && !String(l.id).startsWith('local_')); if (row) await updateNutritionLog(row.id, prev); } } })); }} style={{ ...btnPrimary, padding: '5px 12px', fontSize: 11 }}>
                         + Log
                       </button>
                       <button onClick={() => removeSavedMeal(m.id)} style={{ ...btnGhost, padding: '5px 8px', fontSize: 11, color: 'var(--text-muted)' }}>✕</button>
@@ -2779,7 +2791,7 @@ export default function Health({ settings, onTabChange, peakState, sections = nu
   const { items: suppLogs,   add: addSuppLog }                                                      = useCollection('supplement_logs', STORAGE_KEYS.SUPP_LOGS);
   const { items: sleepData }                                                                         = useCollection('sleep_data',      STORAGE_KEYS.SLEEP);
   const { items: stimLogs,   add: addStimLog,   remove: removeStimLog }                             = useCollection('stimulant_logs',  STORAGE_KEYS.STIMULANTS);
-  const { items: savedMeals, add: addSavedMeal, remove: removeSavedMeal }                           = useCollection('saved_meals',      STORAGE_KEYS.SAVED_MEALS);
+  const { items: savedMeals, add: addSavedMeal, update: updateSavedMeal, remove: removeSavedMeal }                           = useCollection('saved_meals',      STORAGE_KEYS.SAVED_MEALS);
   const appleHealth = useAppleHealth();
 
   const renderSection = () => {
@@ -2788,7 +2800,7 @@ export default function Health({ settings, onTabChange, peakState, sections = nu
       case 'overview':    return <Overview {...p} onTabChange={onTabChange} habits={habits} waterLogs={waterLogs} nutritionLogs={nutritionLogs} sleepData={sleepData} supplements={supplements} suppLogs={suppLogs} stimLogs={stimLogs} workoutLogs={workoutLogs} bodyMetrics={bodyMetrics} onNav={goSection} appleHealth={appleHealth} />;
       case 'peakstate':   return <PeakStateSection stimLogs={stimLogs} sleepData={sleepData} peakState={peakState} />;
       case 'habits':      return <Habits       habits={habits} addHabit={addHabit} updateHabit={updateHabit} removeHabit={removeHabit} />;
-      case 'nutrition':   return <Nutrition    {...p} nutritionLogs={nutritionLogs} addNutritionLog={addNutritionLog} updateNutritionLog={updateNutritionLog} savedMeals={savedMeals} addSavedMeal={addSavedMeal} removeSavedMeal={removeSavedMeal} supplements={supplements} suppLogs={suppLogs} />;
+      case 'nutrition':   return <Nutrition    {...p} nutritionLogs={nutritionLogs} addNutritionLog={addNutritionLog} updateNutritionLog={updateNutritionLog} savedMeals={savedMeals} addSavedMeal={addSavedMeal} updateSavedMeal={updateSavedMeal} removeSavedMeal={removeSavedMeal} supplements={supplements} suppLogs={suppLogs} />;
       case 'water':       return <Water        {...p} waterLogs={waterLogs} addWaterLog={addWaterLog} />;
       case 'body':        return <Body         bodyMetrics={bodyMetrics} addBodyMetric={addBodyMetric} settings={p.settings} />;
       case 'supplements': return <Supplements  supplements={supplements} suppLogs={suppLogs} addSupplement={addSupplement} removeSupplement={removeSupplement} addSuppLog={addSuppLog} />;
