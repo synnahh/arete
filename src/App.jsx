@@ -47,6 +47,7 @@ import Routines   from './tabs/Routines.jsx';
 import Mind       from './tabs/Mind.jsx';
 import Insights   from './tabs/Insights.jsx';
 import PlanToday  from './tabs/PlanToday.jsx';
+import CoachToday from './tabs/CoachToday.jsx';
 import LM         from './tabs/LM.jsx';
 import NudgeStack from './components/NudgeStack.jsx';
 import WeeklyReview from './components/WeeklyReview.jsx';
@@ -65,6 +66,7 @@ const TAB_MAP = {
   habits:     Habits,
   insights:   Insights,
   agenda:     PlanToday,
+  coachtoday: CoachToday,
   finance:    Finance,
   portfolio:  Portfolio,
   progress:   Progress,

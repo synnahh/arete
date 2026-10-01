@@ -46,13 +46,13 @@ describe('groups', () => {
 
 describe('groupScreens', () => {
   it('drops hidden screens but never Settings', () => {
-    expect(groupScreens('coach', { hidden: ['style', 'body'] })).toEqual(['goal', 'workout', 'fuel', 'recover', 'lm', 'habits', 'insights']);
+    expect(groupScreens('coach', { hidden: ['style', 'body'] })).toEqual(['coachtoday', 'goal', 'workout', 'fuel', 'recover', 'lm', 'habits', 'insights']);
     expect(groupScreens('settings', { hidden: ['settings', 'vault'] })).toEqual(['settings']);
   });
 
   it('follows the saved sidebar order, unknown ids last in default order', () => {
     const order = ['lm', 'dashboard', 'workout'];
-    expect(groupScreens('coach', { order })).toEqual(['lm', 'workout', 'goal', 'fuel', 'recover', 'body', 'habits', 'style', 'insights']);
+    expect(groupScreens('coach', { order })).toEqual(['lm', 'workout', 'coachtoday', 'goal', 'fuel', 'recover', 'body', 'habits', 'style', 'insights']);
   });
 
   it('returns nothing for an unknown group', () => {
@@ -67,7 +67,7 @@ describe('resolveTarget', () => {
 
   it('opens a group at its last-visited screen when still visible', () => {
     expect(resolveTarget('coach', { lastByGroup: { coach: 'lm' } })).toBe('lm');
-    expect(resolveTarget('coach', { lastByGroup: { coach: 'lm' }, hidden: ['lm'] })).toBe('goal');
+    expect(resolveTarget('coach', { lastByGroup: { coach: 'lm' }, hidden: ['lm'] })).toBe('coachtoday');
   });
 
   it('opens a group at its first screen by default', () => {

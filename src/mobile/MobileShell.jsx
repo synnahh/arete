@@ -20,6 +20,7 @@ import Toaster          from '../components/Toaster.jsx';
 import MobileStyle      from './screens/MobileStyle.jsx';
 import Insights         from '../tabs/Insights.jsx';
 import PlanToday        from '../tabs/PlanToday.jsx';
+import CoachToday       from '../tabs/CoachToday.jsx';
 import { haptics }     from './utils/haptics.js';
 import { storage, STORAGE_KEYS } from '../utils/storage.js';
 import SectionBar      from '../components/SectionBar.jsx';
@@ -140,6 +141,7 @@ const MOBILE_SCREENS = {
   habits:    ()  => <MobileHabits />,
   style:     (p) => <MobileStyle {...p} />,
   insights:  ()  => <Insights />,
+  coachtoday:(p) => <CoachToday compact onTabChange={p.onTabChange} />,
   agenda:    (p) => <PlanToday compact onTabChange={p.onTabChange} />,
   lm:        ()  => <MobileLM />,
   mind:      (p) => <MobileMind {...p} />,
