@@ -3,6 +3,7 @@
 // (Fuel > Nutrition) and on the phone (a sheet).
 import { useMemo, useState } from 'react';
 import { searchOpenFoodFacts } from '../utils/openFoodFacts.js';
+import { itemFromCustom } from '../domain/customFoods.js';
 import { UNITS, blankItem, itemFromFood, itemFromEntry, rescaleItem, recipeTotals, perServing, recipeProblems, toSavedMeal } from '../domain/recipes.js';
 import { label } from './ui.js';
 
@@ -22,7 +23,7 @@ function Cell({ title, children, width }) {
   );
 }
 
-export default function RecipeBuilder({ initial, recent = [], onSave, onCancel, onDelete, compact = false }) {
+export default function RecipeBuilder({ initial, recent = [], foods = [], onSave, onCancel, onDelete, compact = false }) {
   const [name, setName] = useState(initial?.name || '');
   const [servings, setServings] = useState(initial?.servings || 1);
   const [items, setItems] = useState(() => (initial?.items?.length ? initial.items : []));
@@ -87,6 +88,14 @@ export default function RecipeBuilder({ initial, recent = [], onSave, onCancel, 
                 <span style={{ color: 'var(--text-secondary)', flexShrink: 0, fontFamily: 'var(--font-mono)', fontSize: 12 }}>{Math.round(f.per100?.calories || 0)} kcal / 100 g · add</span>
               </button>
             ))}
+          </div>
+        )}
+        {foods.length > 0 && (
+          <div style={{ marginTop: 10 }}>
+            <div style={{ ...cap, marginBottom: 6 }}>My foods</div>
+            <div style={{ display: 'flex', gap: 6, flexWrap: 'wrap' }}>
+              {foods.slice(0, 12).map(f => <button key={f.id ?? f.name} type="button" style={chip} onClick={() => add(itemFromCustom(f))}>+ {f.name}</button>)}
+            </div>
           </div>
         )}
         {recent.length > 0 && (

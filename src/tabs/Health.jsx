@@ -15,6 +15,10 @@ import { searchOpenFoodFacts, lookupBarcode, startBarcodeScan } from '../utils/o
 import { toLocalDateKey } from '../utils/localDate.js';
 import { peekHealthSection, clearHealthSection, screenForHealthSection } from '../nav/healthSection.js';
 import RecipeBuilder from '../components/RecipeBuilder.jsx';
+import CustomFoodForm from '../components/CustomFoodForm.jsx';
+import StarButton from '../components/StarButton.jsx';
+import { useFoodLibrary } from '../hooks/useFoodLibrary.js';
+import { customFoodEntry, favouriteEntry, servingText } from '../domain/customFoods.js';
 import { mealEntry, draftFromSaved, PORTIONS } from '../domain/recipes.js';
 import { recentFoods, yesterdayKey, copyMeals, appendMeals, mealFromPlan, cleanIngredients, groupBySection } from '../domain/foods.js';
 import FoodShortcuts from '../components/FoodShortcuts.jsx';
@@ -669,6 +673,9 @@ function Nutrition({ nutritionLogs, addNutritionLog, updateNutritionLog, setting
   const [showSaveMeal, setShowSaveMeal] = useState(false);
   const [recipeDraft, setRecipeDraft] = useState(null); // null | { initial: draft-or-null }
   const [portions, setPortions] = useState({});
+  const lib = useFoodLibrary();
+  const [foodDraft, setFoodDraft] = useState(null); // null | { initial }
+  const [servingsFor, setServingsFor] = useState({});
   const [saveMealForm, setSaveMealForm] = useState({ name: '', calories: '', protein: '', carbs: '', fat: '' });
   const [search, setSearch]   = useState('');
   const [results, setResults] = useState([]);
@@ -820,6 +827,7 @@ function Nutrition({ nutritionLogs, addNutritionLog, updateNutritionLog, setting
     <Section title="Nutrition" action={
       <div style={{ display: 'flex', gap: 6 }}>
         <button onClick={() => { setShowAdd(true); setAddMode('my'); }} style={btnPrimary}>+ Log food</button>
+        <button onClick={() => { setShowSaveMeal(false); setFoodDraft({ initial: null }); }} style={{ ...btnGhost, fontSize: 11 }}>⊕ New food</button>
         <button onClick={() => { setShowSaveMeal(false); setRecipeDraft({ initial: null }); }} style={{ ...btnGhost, fontSize: 11 }}>⊕ Build recipe</button>
         <button onClick={() => setShowSaveMeal(v => !v)} style={{ ...btnGhost, fontSize: 11 }}>
           {showSaveMeal ? '✕' : '⊕ Save meal'}
@@ -847,6 +855,25 @@ function Nutrition({ nutritionLogs, addNutritionLog, updateNutritionLog, setting
       <FoodShortcuts
         yesterday={yesterdayMeals.length ? { count: yesterdayMeals.length, kcal: Math.round(yesterdayMeals.reduce((s, m) => s + (Number(m.calories) || 0), 0)) } : null}
         onCopy={copyYesterday} onQuickAdd={quickAdd} />
+
+      {/* Favourites: starred foods, one tap to log exactly as starred */}
+      {lib.favourites.length > 0 && (
+        <div style={{ marginBottom: 16 }}>
+          <div style={{ fontSize: 11, color: 'var(--text-muted)', letterSpacing: '0.07em', marginBottom: 8 }}>FAVOURITES</div>
+          <div style={{ display: 'flex', flexWrap: 'wrap', gap: 8 }}>
+            {lib.favourites.map(f => (
+              <div key={f.name} style={{ display: 'flex', alignItems: 'center', borderRadius: 10, background: 'var(--hover-bg)', border: '0.5px solid var(--card-border)' }}>
+                <button type="button" onClick={() => appendEntries([favouriteEntry(f)], `Logged ${f.name} · ${f.calories} kcal`)} aria-label={`Log ${f.name}, ${f.calories} kilocalories`}
+                  style={{ display: 'flex', flexDirection: 'column', alignItems: 'flex-start', gap: 2, padding: '8px 4px 8px 12px', background: 'none', border: 'none', cursor: 'pointer', fontFamily: 'inherit', textAlign: 'left', maxWidth: 190 }}>
+                  <span style={{ fontSize: 12.5, color: 'var(--text-primary)', fontWeight: 500, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis', maxWidth: 170 }}>{f.name}</span>
+                  <span className="val-num" style={{ fontSize: 10.5, color: 'var(--text-secondary)' }}>{f.calories} kcal · P{f.protein}</span>
+                </button>
+                <StarButton on name={f.name} onClick={() => lib.toggleFav(f)} />
+              </div>
+            ))}
+          </div>
+        </div>
+      )}
 
       {/* Recent & frequent: one-tap re-log */}
       {frequent.length > 0 && (
@@ -881,11 +908,25 @@ function Nutrition({ nutritionLogs, addNutritionLog, updateNutritionLog, setting
       {/* Micronutrients (food + supplements) */}
       <MicronutrientPanel micros={dailyMicros} />
 
+      {/* Custom food: your own food, numbers for one serving */}
+      {foodDraft && (
+        <div style={{ ...cardSx, marginBottom: 16 }}>
+          <div style={{ fontSize: 13, fontWeight: 600, color: 'var(--text-primary)', marginBottom: 12 }}>{foodDraft.initial?.id ? 'Edit food' : 'New food'}</div>
+          <CustomFoodForm key={foodDraft.initial?.id || 'new'} initial={foodDraft.initial}
+            onCancel={() => setFoodDraft(null)}
+            onDelete={async (id) => { await lib.removeCustomFood(id); setFoodDraft(null); }}
+            onSave={async (row, id) => {
+              const ok = id ? await lib.updateCustomFood(id, row) : await lib.addCustomFood(row);
+              if (ok) { setFoodDraft(null); window.dispatchEvent(new CustomEvent('valerie:toast', { detail: { message: id ? 'Food updated' : 'Food saved to My Foods', type: 'success' } })); }
+            }} />
+        </div>
+      )}
+
       {/* Recipe builder: build a meal from ingredients, save or update it in My Meals */}
       {recipeDraft && (
         <div style={{ ...cardSx, marginBottom: 16 }}>
           <div style={{ fontSize: 13, fontWeight: 600, color: 'var(--text-primary)', marginBottom: 12 }}>{recipeDraft.initial?.id ? 'Edit recipe' : 'Build a recipe'}</div>
-          <RecipeBuilder key={recipeDraft.initial?.id || 'new'} initial={recipeDraft.initial} recent={frequent}
+          <RecipeBuilder key={recipeDraft.initial?.id || 'new'} initial={recipeDraft.initial} recent={frequent} foods={lib.customFoods}
             onCancel={() => setRecipeDraft(null)}
             onDelete={async (id) => { await removeSavedMeal(id); setRecipeDraft(null); }}
             onSave={async (row, id) => {
@@ -924,7 +965,7 @@ function Nutrition({ nutritionLogs, addNutritionLog, updateNutritionLog, setting
         <div style={{ ...cardSx, marginBottom: 16, display: 'flex', flexDirection: 'column', gap: 10 }}>
           <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
             <div style={{ display: 'flex', gap: 0, borderRadius: 7, overflow: 'hidden', border: '0.5px solid var(--card-border)' }}>
-              {[['my','🍽 My Meals'],['search','🔍 Search']].map(([id, label]) => (
+              {[['my','🍽 My Meals'],['foods','🥣 My Foods'],['search','🔍 Search']].map(([id, label]) => (
                 <button key={id} onClick={() => setAddMode(id)} style={{
                   padding: '5px 14px', border: 'none', cursor: 'pointer', fontSize: 11.5, fontWeight: 500,
                   background: addMode === id ? 'rgba(255,255,255,0.9)' : 'var(--card-fill)',
@@ -966,6 +1007,7 @@ function Nutrition({ nutritionLogs, addNutritionLog, updateNutritionLog, setting
                       <select aria-label={`Portions of ${m.name}`} value={portions[m.id] ?? 1} onChange={e => setPortions(p => ({ ...p, [m.id]: Number(e.target.value) }))} style={{ ...inputSx, width: 62, padding: '5px 6px', fontSize: 11 }}>
                         {PORTIONS.map(x => <option key={x} value={x}>{`×${x}`}</option>)}
                       </select>
+                      <StarButton on={lib.isFav(m.name)} name={m.name} onClick={() => lib.toggleFav(m)} />
                       <button onClick={() => { setShowAdd(false); setRecipeDraft({ initial: { ...draftFromSaved(m), id: m.id } }); }} style={{ ...btnGhost, padding: '5px 10px', fontSize: 11 }}>Edit</button>
                       <button onClick={async () => { const p = portions[m.id] ?? 1; const prev = { meals, ...totals }; setShowAdd(false); await logSavedMeal(m, p); window.dispatchEvent(new CustomEvent('valerie:toast', { detail: { message: `Logged ${m.name}${p === 1 ? '' : ` ×${p}`}`, type: 'success', undo: async () => { const row = storage.get(STORAGE_KEYS.MACROS, []).find(l => l.date === today && !String(l.id).startsWith('local_')); if (row) await updateNutritionLog(row.id, prev); } } })); }} style={{ ...btnPrimary, padding: '5px 12px', fontSize: 11 }}>
                         + Log
@@ -979,6 +1021,35 @@ function Nutrition({ nutritionLogs, addNutritionLog, updateNutritionLog, setting
           )}
 
           {/* Search mode */}
+          {/* My Foods: your own foods, pick how many servings */}
+          {addMode === 'foods' && (
+            <div>
+              {lib.customFoods.length === 0 ? (
+                <div style={{ padding: '20px 0', textAlign: 'center', color: 'var(--text-muted)', fontSize: 12 }}>
+                  No foods of your own yet.
+                  <div style={{ marginTop: 10 }}><button onClick={() => { setShowAdd(false); setFoodDraft({ initial: null }); }} style={btnPrimary}>⊕ New food</button></div>
+                </div>
+              ) : (
+                <div style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
+                  {lib.customFoods.map(food => (
+                    <div key={food.id} style={{ display: 'flex', alignItems: 'center', gap: 10, padding: '9px 12px', borderRadius: 8, background: 'var(--hover-bg)', border: '0.5px solid var(--card-border)' }}>
+                      <div style={{ flex: 1, minWidth: 0 }}>
+                        <div style={{ fontSize: 12.5, color: 'var(--text-primary)', fontWeight: 500 }}>{food.name}{food.brand ? ` (${food.brand})` : ''}</div>
+                        <div style={{ fontSize: 10.5, color: 'var(--text-muted)', marginTop: 2 }}>{food.calories} kcal · P{food.protein}g · C{food.carbs}g · F{food.fat}g · per {servingText(food)}</div>
+                      </div>
+                      <select aria-label={`Servings of ${food.name}`} value={servingsFor[food.id] ?? 1} onChange={e => setServingsFor(p => ({ ...p, [food.id]: Number(e.target.value) }))} style={{ ...inputSx, width: 62, padding: '5px 6px', fontSize: 11 }}>
+                        {PORTIONS.map(x => <option key={x} value={x}>{`×${x}`}</option>)}
+                      </select>
+                      <StarButton on={lib.isFav(food.brand ? `${food.name} (${food.brand})` : food.name)} name={food.name} onClick={() => lib.toggleFav(customFoodEntry(food, 1))} />
+                      <button onClick={() => { setShowAdd(false); setFoodDraft({ initial: food }); }} style={{ ...btnGhost, padding: '5px 10px', fontSize: 11 }}>Edit</button>
+                      <button onClick={() => { const n = servingsFor[food.id] ?? 1; setShowAdd(false); appendEntries([customFoodEntry(food, n)], `Logged ${food.name}${n === 1 ? '' : ` ×${n}`}`); }} style={{ ...btnPrimary, padding: '5px 12px', fontSize: 11 }}>+ Log</button>
+                    </div>
+                  ))}
+                </div>
+              )}
+            </div>
+          )}
+
           {addMode === 'search' && <>
 
           {/* Video preview for barcode scan */}
@@ -1064,6 +1135,7 @@ function Nutrition({ nutritionLogs, addNutritionLog, updateNutritionLog, setting
                     <div>{m.calories} kcal</div>
                     <div style={{ fontSize: 11, color: 'var(--text-muted)' }}>P{m.protein} C{m.carbs} F{m.fat}</div>
                   </div>
+                  <StarButton on={lib.isFav(m.name)} name={m.name} onClick={() => lib.toggleFav(m)} />
                   <button type="button" onClick={() => removeMeal(m.id)} aria-label={`Remove ${m.name}`}
                     style={{ width: 32, height: 32, flexShrink: 0, background: 'none', border: 'none', color: 'var(--text-muted)', fontSize: 16, cursor: 'pointer' }}>×</button>
                 </div>

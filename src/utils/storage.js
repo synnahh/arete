@@ -75,6 +75,7 @@ export const STORAGE_KEYS = {
   SIDEBAR_ORDER_IOS:    'sidebar_order_ios',
   DAILY_BRIEF_DATE:     'daily_brief_date',
   SAVED_MEALS:          'saved_meals',
+  CUSTOM_FOODS:         'custom_foods',
   SLEEP_SCHEDULE:       'sleep_schedule',
   // Finance — separate key from Lists
   PLANNED_PURCHASES:    'planned_purchases',

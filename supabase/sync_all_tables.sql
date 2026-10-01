@@ -14,7 +14,7 @@ BEGIN
   FOREACH t IN ARRAY ARRAY[
     -- core
     'events','programs','essentials','tasks','notes','focus_sessions','habits','goals',
-    'routines','places','style_board','watch_list','mood_logs',
+    'routines','places','style_board','watch_list','mood_logs','custom_foods',
     -- finance
     'transactions','savings_goals','subscriptions','planned_purchases','portfolio_holdings',
     'recurring_transactions',

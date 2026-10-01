@@ -328,3 +328,9 @@ Rob does not want a voice AI or anything to talk to. The coach keeps the plan in
 - `components/RecipeBuilder.jsx` + `domain/recipes.js`: build a meal from ingredients (food search via Open Food Facts, recent foods, or by hand), quantities scale the numbers, servings divide the total. Saved to `saved_meals` as one serving at the top level plus `recipe: { servings, items }` so it can be edited; `ingredients` are per serving so logging a portion uses up pantry stock. Desktop: Fuel > Nutrition (Build recipe, My Meals Edit/portions/Log with Undo). Phone: "My meals" card on Fuel (sheet builder). Logged entries keep the recipe name and carry `portions` when not 1.
 - Food search could not be exercised in the test browser (no route to Open Food Facts); it shows a clear fallback message. Verified with demo data: build, save, edit, delete, log 1.5 portions, ingredients scaled.
 - The old desktop saved-meal "x" deletes with no confirmation (pre-existing).
+
+### Custom foods and favourites (2026-10-01)
+- **Custom foods** (`domain/customFoods.js`, `components/CustomFoodForm.jsx`, collection `custom_foods`): a food with a serving size and numbers for one serving; logged by servings (qty scales). Desktop: Fuel > Nutrition > "New food", "Log food" > My Foods. Phone: "My foods" card. They also appear as "My foods" chips in the recipe builder.
+- **Favourites** (`hooks/useFoodLibrary.js`, document `food_favourites` in user_meta): star anything (a logged entry, a saved meal, a custom food) and log it again in one tap, exactly as starred. Row above Recent & frequent (desktop), card on the phone. Max 40, newest first, matched by name.
+- **Database:** new table `custom_foods` (same shape and owner-only policy as the others) added to `supabase/sync_all_tables.sql` and already created on the Arete project through the SQL editor (RLS, policy and realtime checked).
+- Not built: remembered portions; starring recent-food chips directly (star the logged row instead).
