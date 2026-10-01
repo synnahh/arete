@@ -423,7 +423,7 @@ export default function Sidebar({ activeGroup, onGroupClick, internetOnline, fir
       flexShrink: 0,
     }}>
 
-      {/* VALERIE logo mark */}
+      {/* Arete logo mark */}
       <div style={{
         width: 32, height: 32,
         display: 'flex', alignItems: 'center', justifyContent: 'center',

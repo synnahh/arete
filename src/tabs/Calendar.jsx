@@ -6,6 +6,9 @@ import { useState, useEffect, useCallback, useMemo, useRef } from 'react';
 import { useCollection } from '../supabase/useCollection.js';
 import { STORAGE_KEYS, storage } from '../utils/storage.js';
 import { toLocalDateKey } from '../utils/localDate.js';
+import { askClaudeRaw } from '../utils/claudeRaw.js';
+
+const DAY_PLAN_SYSTEM = "You plan one day as time blocks from the user's tasks, events and routines. Reply with the JSON array only.";
 
 const GCAL_CLIENT_ID = import.meta.env.VITE_GOOGLE_CLIENT_ID;
 const GCAL_SCOPE     = 'https://www.googleapis.com/auth/calendar';
@@ -22,7 +25,6 @@ const Icon = ({ d, size = 15 }) => (
 const TrashIcon = () => <Icon d="M3 6h18 M8 6V4a1 1 0 011-1h6a1 1 0 011 1v2 M19 6l-1 14a2 2 0 01-2 2H8a2 2 0 01-2-2L5 6 M10 11v6 M14 11v6" />;
 const EditIcon  = () => <Icon d="M11 4H4a2 2 0 00-2 2v14a2 2 0 002 2h14a2 2 0 002-2v-7 M18.5 2.5a2.12 2.12 0 013 3L12 15l-4 1 1-4z" />;
 const CloseIcon = () => <Icon d="M18 6L6 18 M6 6l12 12" />;
-const MicIcon   = () => <Icon d="M12 1a3 3 0 00-3 3v8a3 3 0 006 0V4a3 3 0 00-3-3z M19 10v2a7 7 0 01-14 0v-2 M12 19v4 M8 23h8" />;
 
 // ── Colour swatches ───────────────────────────────────────────────────────────
 const EVENT_COLOURS = ['#4a9eff', '#4caf7d', '#f4a642', '#e55a5a', '#9b5de5', '#00c9a7', '#f7b731'];
@@ -367,7 +369,6 @@ function formatTime12(t) {
 }
 
 function buildPrompt({ dateStr, tasks, events, routines, settings, peakState }) {
-  const userName = settings?.userName || 'the user';
   const wakeTime = settings?.wakeTime || '07:00';
   const sleepTime = settings?.sleepTarget || '23:00';
   const peakWindow = peakState?.window || null;
@@ -389,7 +390,7 @@ function buildPrompt({ dateStr, tasks, events, routines, settings, peakState }) 
     .map(r => `- ${r.title} (${r.time || 'flexible'}, ~${r.duration || 15}min)`)
     .join('\n') || 'None';
 
-  return `You are VALERIE, ${userName}'s personal AI assistant. Create a realistic, optimised time-blocked day plan for ${dateStr}.
+  return `Create a realistic, optimised time-blocked day plan for ${dateStr}.
 
 Wake time: ${wakeTime}
 Sleep target: ${sleepTime}
@@ -456,7 +457,7 @@ function DayPlannerBlock({ block, style }) {
   );
 }
 
-function DayPlanner({ ai, allEvents, settings, peakState, onAddEvents }) {
+function DayPlanner({ allEvents, settings, peakState, onAddEvents }) {
   const [selectedDate, setSelectedDate] = useState(() => toLocalDateKey(new Date()));
   const [blocks,       setBlocks]       = useState([]);
   const [loading,      setLoading]      = useState(false);
@@ -467,14 +468,13 @@ function DayPlanner({ ai, allEvents, settings, peakState, onAddEvents }) {
   const routines = useMemo(() => storage.get(STORAGE_KEYS.ROUTINES, []), []);
 
   async function generate() {
-    if (!ai?.ask) { setError('AI not available. Add your Claude API key in Settings.'); return; }
     setLoading(true);
     setError('');
     setBlocks([]);
     setAdded(false);
     try {
       const prompt = buildPrompt({ dateStr: selectedDate, tasks, events: allEvents, routines, settings, peakState });
-      const raw = await ai.ask(prompt, { maxTokens: 1500 });
+      const raw = await askClaudeRaw(prompt, DAY_PLAN_SYSTEM, [], { maxTokens: 1500 });
       const jsonMatch = raw.match(/\[[\s\S]*\]/);
       if (!jsonMatch) throw new Error('No valid schedule returned. Try again.');
       const parsed = JSON.parse(jsonMatch[0]);
@@ -591,7 +591,7 @@ function DayPlanner({ ai, allEvents, settings, peakState, onAddEvents }) {
           <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', height: '70%', gap: 12, opacity: 0.45 }}>
             <div style={{ display: 'flex', justifyContent: 'center', color: 'var(--text-muted)' }}><LineIcon name="calendar" size={30} strokeWidth={1.5} /></div>
             <div style={{ fontSize: 13, color: 'var(--text-muted)', textAlign: 'center', lineHeight: 1.6 }}>
-              VALERIE will build a time-blocked schedule<br />based on your tasks, events, and routines.
+              Arete will build a time-blocked schedule<br />based on your tasks, events, and routines.
             </div>
           </div>
         )}
@@ -639,7 +639,7 @@ function DayPlanner({ ai, allEvents, settings, peakState, onAddEvents }) {
 //  Main Calendar Tab
 // ─────────────────────────────────────────────────────────────
 
-export default function Calendar({ ai, settings, peakState }) {
+export default function Calendar({ settings, peakState }) {
   const { items: localEvents, add, update, remove, synced } = useCollection('events', STORAGE_KEYS.EVENTS);
   // Tasks with due dates appear on the calendar as read-only entries (managed in Tasks tab).
   const { items: taskItems } = useCollection('tasks', STORAGE_KEYS.TASKS);
@@ -650,7 +650,6 @@ export default function Calendar({ ai, settings, peakState }) {
   const [gcalEvents,  setGcalEvents]  = useState([]);
   const [gcalLoading, setGcalLoading] = useState(false);
   const [gcalError,   setGcalError]   = useState(null);
-  const [voiceActive, setVoice]       = useState(false);
   const tokenClientRef = useRef(null);
 
   // ── Google Calendar OAuth (GIS) ────────────────────────────────────────────
@@ -765,22 +764,6 @@ export default function Calendar({ ai, settings, peakState }) {
     }
   }, [remove, gcalToken]);
 
-  // ── Voice command ──────────────────────────────────────────────────────────
-  const handleVoice = useCallback(() => {
-    if (!ai?.startListening) return;
-    setVoice(true);
-    ai.startListening((transcript) => {
-      setVoice(false);
-      const lower = transcript.toLowerCase();
-      if (lower.includes('add event') || lower.includes('new event') || lower.includes('create event') ||
-          lower.includes('schedule') || lower.includes('meeting') || lower.includes('appointment')) {
-        setPanel({ mode: 'add', prefill: transcript });
-      } else {
-        setPanel({ mode: 'add', prefill: transcript });
-      }
-    });
-  }, [ai]);
-
   const clientIdMissing = !GCAL_CLIENT_ID || GCAL_CLIENT_ID === 'YOUR_GOOGLE_CLIENT_ID_HERE';
 
   // Add multiple events to agenda from planner
@@ -814,7 +797,6 @@ export default function Calendar({ ai, settings, peakState }) {
       {/* Day Planner sub-tab */}
       {subTab === 'planner' && (
         <DayPlanner
-          ai={ai}
           allEvents={allEvents}
           settings={settings}
           peakState={peakState}
@@ -879,15 +861,6 @@ export default function Calendar({ ai, settings, peakState }) {
             </button>
           )}
 
-          {/* Voice */}
-          <button onClick={handleVoice} disabled={!ai || voiceActive}
-            style={{
-              background: voiceActive ? 'var(--active-bg)' : 'none', border: 'none',
-              cursor: 'pointer', color: voiceActive ? 'var(--accent)' : 'var(--text-muted)',
-              padding: 6, borderRadius: 6, display: 'flex',
-            }}>
-            <MicIcon />
-          </button>
 
           {/* New event */}
           <button onClick={() => setPanel({ mode: 'add' })} style={{

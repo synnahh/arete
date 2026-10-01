@@ -1,5 +1,5 @@
 import { toLocalDateKey } from './localDate.js';
-// backup.js — one-tap full backup & restore of all VALERIE data.
+// backup.js — one-tap full backup & restore of all Arete data.
 // Exports every localStorage key (the local mirror of all Supabase collections +
 // settings) to a JSON file, and restores from one. A safety net for a daily-driver
 // app that runs your whole life.
@@ -43,7 +43,7 @@ export function importBackup(onDone) {
       try {
         const parsed = JSON.parse(String(reader.result));
         const data = parsed?.data && typeof parsed.data === 'object' ? parsed.data : parsed;
-        if (!data || typeof data !== 'object') throw new Error('Not a valid VALERIE backup file');
+        if (!data || typeof data !== 'object') throw new Error('Not a valid Arete backup file');
         let n = 0;
         Object.entries(data).forEach(([k, v]) => {
           if (typeof v === 'string') { localStorage.setItem(k, v); n++; }

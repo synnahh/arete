@@ -566,15 +566,15 @@ export function UnitsSection({ settings, onSave }) {
 
 // ─── Section: Notifications ───────────────────────────────────────────────────
 const TAB_REMINDERS_DEFAULT = {
-  water:       { enabled: true,  hour: 12, message: 'VALERIE: Only {value}ml logged. Goal is {goal}ml.' },
-  nutrition:   { enabled: true,  hour: 13, message: 'VALERIE: No calories logged yet. {value} kcal remaining.' },
-  supplements: { enabled: true,  hour: 10, message: 'VALERIE: {value} supplement(s) not taken yet today.' },
-  habits:      { enabled: true,  hour: 9,  message: 'VALERIE: {value} habit(s) still pending today.' },
-  tasks:       { enabled: true,  hour: 10, message: 'VALERIE: {value} task(s) need your attention.' },
-  sleep:       { enabled: true,  hour: 8,  message: 'VALERIE: Log last night\'s sleep to track your recovery.' },
-  workout:     { enabled: false, hour: 18, message: 'VALERIE: No workout logged today. Rest day or forgot?' },
-  calendar:    { enabled: true,  hour: 8,  message: 'VALERIE: {value} starts in {time} minutes.', calMinutes: 30 },
-  finance:     { enabled: true,  hour: 9,  message: 'VALERIE: Weekly spend so far: {value}.', weeklyOnly: true },
+  water:       { enabled: true,  hour: 12, message: 'Arete: Only {value}ml logged. Goal is {goal}ml.' },
+  nutrition:   { enabled: true,  hour: 13, message: 'Arete: No calories logged yet. {value} kcal remaining.' },
+  supplements: { enabled: true,  hour: 10, message: 'Arete: {value} supplement(s) not taken yet today.' },
+  habits:      { enabled: true,  hour: 9,  message: 'Arete: {value} habit(s) still pending today.' },
+  tasks:       { enabled: true,  hour: 10, message: 'Arete: {value} task(s) need your attention.' },
+  sleep:       { enabled: true,  hour: 8,  message: 'Arete: Log last night\'s sleep to track your recovery.' },
+  workout:     { enabled: false, hour: 18, message: 'Arete: No workout logged today. Rest day or forgot?' },
+  calendar:    { enabled: true,  hour: 8,  message: 'Arete: {value} starts in {time} minutes.', calMinutes: 30 },
+  finance:     { enabled: true,  hour: 9,  message: 'Arete: Weekly spend so far: {value}.', weeklyOnly: true },
 };
 
 export function NotificationsSection({ settings, onSave }) {
@@ -597,7 +597,7 @@ export function NotificationsSection({ settings, onSave }) {
   const [twilioAccountSid, setTwilioAccountSid] = useState(settings.twilioAccountSid || '');
   const [twilioAuthToken,  setTwilioAuthToken]  = useState(settings.twilioAuthToken  || '');
   const [phoneNumber,      setPhoneNumber]      = useState(settings.phoneNumber || '');
-  const [msgAlert,         setMsgAlert]         = useState(settings.smsMessages?.alert || 'VALERIE ALERT: {message}');
+  const [msgAlert,         setMsgAlert]         = useState(settings.smsMessages?.alert || 'ARETE ALERT: {message}');
 
   const [pushStatus,    setPushStatus]    = useState(() => pushPermissionStatus());
   const [pushLoading,   setPushLoading]   = useState(false);
@@ -679,7 +679,7 @@ export function NotificationsSection({ settings, onSave }) {
     <div>
       <SectionTitle>Notifications <SavedBadge show={saved} /></SectionTitle>
 
-      <Row label="Enable notifications" hint="Master toggle for all VALERIE notifications">
+      <Row label="Enable notifications" hint="Master toggle for all Arete notifications">
         <Toggle value={enabled} onChange={setEnabled} />
       </Row>
 
@@ -729,7 +729,7 @@ export function NotificationsSection({ settings, onSave }) {
           )}
 
           {/*  Proactive nudges  */}
-          <Block label="VALERIE Nudges">
+          <Block label="Arete Nudges">
             <Toggle label="Proactive nudges (max 3/day)" value={nudges} onChange={setNudges} />
           </Block>
 
@@ -1101,7 +1101,7 @@ export function IntegrationsSection({ settings, onSave }) {
             <span style={{ display: 'flex', justifyContent: 'center', color: 'var(--text-muted)' }}><LineIcon name="health" size={22} strokeWidth={1.5} /></span>
             <div>
               <div style={{ fontSize: 13, fontWeight: 600, color: 'var(--text-primary)' }}>Health Auto Export</div>
-              <div style={{ fontSize: 11, color: 'var(--text-muted)' }}>Syncs Apple Health data to VALERIE automatically</div>
+              <div style={{ fontSize: 11, color: 'var(--text-muted)' }}>Syncs Apple Health data to Arete automatically</div>
             </div>
           </div>
 
@@ -1241,7 +1241,7 @@ function ApiUsageSection({ settings }) {
               {localLog.total.toLocaleString()} XP accumulated
             </div>
             <div style={{ fontSize: 11, color: 'var(--text-muted)', marginTop: 3 }}>
-              {(localLog.log || []).length} logged events · VALERIE gets smarter with each interaction
+              {(localLog.log || []).length} logged events
             </div>
           </div>
       </div>
@@ -1536,7 +1536,7 @@ function PlatformsSection({ settings, onSave }) {
           <div>
             <div style={{ fontSize: 13, fontWeight: 600, color: 'var(--text-primary)' }}>Launch on startup</div>
             <div style={{ fontSize: 11, color: 'var(--text-muted)', marginTop: 2 }}>
-              VALERIE starts automatically when Windows boots
+              Arete starts automatically when Windows boots
             </div>
           </div>
           {autostartOk
@@ -1572,14 +1572,14 @@ function PlatformsSection({ settings, onSave }) {
         }}>
           <div>
             <div style={{ fontSize: 13, fontWeight: 600, color: 'var(--text-primary)' }}>
-              VALERIE {updateState === 'available' ? `v${updateInfo?.version} available` : `v${__APP_VERSION__}`}
+              Arete {updateState === 'available' ? `v${updateInfo?.version} available` : `v${__APP_VERSION__}`}
             </div>
             <div style={{ fontSize: 11, color: 'var(--text-muted)', marginTop: 2 }}>
               {updateState === 'idle'       && 'Check for a newer version'}
               {updateState === 'checking'   && 'Checking…'}
               {updateState === 'uptodate'   && '✓ You\'re on the latest version'}
               {updateState === 'available'  && (updateInfo?.notes || 'A new version is ready to install')}
-              {updateState === 'installing' && 'Downloading and installing… VALERIE will restart'}
+              {updateState === 'installing' && 'Downloading and installing… Arete will restart'}
               {updateState === 'error'      && `Error: ${updateError}`}
             </div>
           </div>
@@ -1690,7 +1690,7 @@ export function DataSection() {
     const url  = URL.createObjectURL(blob);
     const a    = document.createElement('a');
     a.href     = url;
-    a.download = `VALERIE_backup_${toLocalDateKey(new Date())}.json`;
+    a.download = `Arete_backup_${toLocalDateKey(new Date())}.json`;
     a.click();
     URL.revokeObjectURL(url);
     setExported(true);
@@ -1701,7 +1701,7 @@ export function DataSection() {
     <div>
       <SectionTitle>Data</SectionTitle>
 
-      <Row label="Export all data" hint="Downloads a JSON backup of all your VALERIE data. Vault is excluded for security.">
+      <Row label="Export all data" hint="Downloads a JSON backup of all your Arete data. Vault is excluded for security.">
         <button
           onClick={handleExport}
           style={{
@@ -1727,7 +1727,7 @@ export function DataSection() {
       <Row label="Clear all app data" hint="Removes all local data except Vault. This cannot be undone.">
         <button
           onClick={() => {
-            if (window.confirm('This will clear ALL VALERIE data (not the Vault). Are you absolutely sure?')) {
+            if (window.confirm('This will clear ALL Arete data (not the Vault). Are you absolutely sure?')) {
               const vaultSalt = localStorage.getItem('valerie_vault_salt');
               const vaultData = localStorage.getItem('valerie_vault_data');
               storage.clear();
@@ -1912,7 +1912,7 @@ export function SecuritySection({ settings, onSave }) {
         <div style={{ fontSize: 11, color: 'var(--text-muted)', marginBottom: 14, lineHeight: 1.55 }}>
           {hasCode
             ? 'The app is password-protected on every open. Face ID / Touch ID is offered if your device supports it.'
-            : 'Set a password to lock VALERIE on every open. Face ID / Touch ID will be offered automatically on supported devices.'}
+            : 'Set a password to lock Arete on every open. Face ID / Touch ID will be offered automatically on supported devices.'}
         </div>
         <form onSubmit={handleSetCode} style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
           <input

@@ -7,9 +7,9 @@ self.addEventListener('push', (event) => {
 
   let payload;
   try { payload = event.data.json(); }
-  catch { payload = { title: 'VALERIE', body: event.data.text() }; }
+  catch { payload = { title: 'Arete', body: event.data.text() }; }
 
-  const { title = 'VALERIE', body = '', icon, tag, url } = payload;
+  const { title = 'Arete', body = '', icon, tag, url } = payload;
 
   event.waitUntil(
     self.registration.showNotification(title, {

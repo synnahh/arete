@@ -5,7 +5,7 @@ export default function Step1Welcome({ next }) {
     <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 32, textAlign: 'center' }}>
       <img
         src="/assets/valerie-logo.png"
-        alt="VALERIE"
+        alt="Arete"
         style={{
           width: 120,
           height: 120,
@@ -24,8 +24,7 @@ export default function Step1Welcome({ next }) {
           Welcome.
         </h1>
         <p style={{ fontSize: 15, color: 'var(--text-secondary)', lineHeight: 1.6, maxWidth: 340 }}>
-          I'm <strong>VALERIE</strong> — your personal{' '}
-          <em>Vocal Adaptive Layer for Emotional Responsive Intelligent Engine</em>.{' '}
+          <strong>Arete</strong> — train, eat, look and spend with a plan that adjusts to your logs.{' '}
           Let's get you set up. This takes about 2 minutes.
         </p>
       </div>

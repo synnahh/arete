@@ -1,6 +1,6 @@
 // ─── useSleepSchedule — bedtime dimming + reminder system ────────────────────
 // Reads bedtime/wakeTime from Firebase meta/sleep_schedule.
-// Dims the interface and fires voice + toast reminders as bedtime approaches.
+// Dims the interface and fires toast reminders as bedtime approaches.
 
 import { useEffect, useRef, useState } from 'react';
 import { useDocument }                  from '../supabase/useDocument.js';

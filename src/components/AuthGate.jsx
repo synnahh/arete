@@ -101,7 +101,7 @@ export default function AuthGate() {
               textTransform: 'uppercase', color: 'var(--text-muted)',
               fontFamily: 'ui-monospace, monospace', marginBottom: 10,
             }}>
-              VALERIE
+              ARETE
             </div>
             <div style={{ fontSize: 20, fontWeight: 300, color: 'rgba(255,255,255,0.85)', letterSpacing: '-0.01em' }}>
               {mode === 'login' ? 'Welcome back.' : 'Create account.'}

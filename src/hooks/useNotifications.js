@@ -53,7 +53,7 @@ async function maybeSMS(settings, message) {
 }
 
 async function maybeAlertSMS(settings, message) {
-  const template = settings.smsMessages?.alert || 'VALERIE ALERT: {message}';
+  const template = settings.smsMessages?.alert || 'ARETE ALERT: {message}';
   const body = template.replace('{message}', message);
   if (settings?.notifications?.sms === true) {
     const server = await sendServerSMS(body, 'sentry');
@@ -114,7 +114,7 @@ export function useNotifications(settings) {
           const goal      = currentWaterGoal(s);
           if (todayML < goal * 0.5) {
             setFlag('water');
-            const msg = resolveMsg(water.message || 'VALERIE: Only {value}ml logged. Goal is {goal}ml.', { value: todayML, goal });
+            const msg = resolveMsg(water.message || 'Arete: Only {value}ml logged. Goal is {goal}ml.', { value: todayML, goal });
             toast(msg);
             await maybeSMS(s, msg);
             await maybePush('Drink water', msg);
@@ -130,7 +130,7 @@ export function useNotifications(settings) {
           const calGoal       = s.macroGoal ?? 2500;
           if (cal === 0) {
             setFlag('nutrition');
-            const msg = resolveMsg(nutrition.message || 'VALERIE: No calories logged yet. {value} kcal remaining.', { value: calGoal });
+            const msg = resolveMsg(nutrition.message || 'Arete: No calories logged yet. {value} kcal remaining.', { value: calGoal });
             toast(msg);
             await maybeSMS(s, msg);
             await maybePush('Log your meals', msg);
@@ -146,7 +146,7 @@ export function useNotifications(settings) {
           const missed   = supps.filter(s => !taken.has(s.id));
           if (missed.length > 0) {
             setFlag('supplements');
-            const msg = resolveMsg(supplements.message || 'VALERIE: {value} supplement(s) not taken yet today.', { value: missed.length });
+            const msg = resolveMsg(supplements.message || 'Arete: {value} supplement(s) not taken yet today.', { value: missed.length });
             toast(msg);
             await maybeSMS(s, msg);
             await maybePush('Supplements', msg);
@@ -160,7 +160,7 @@ export function useNotifications(settings) {
           const missed    = habitList.filter(h => h.active && h.lastCompleted !== today);
           if (missed.length > 0) {
             setFlag('habit');
-            const msg = resolveMsg(habits.message || 'VALERIE: {value} habit(s) still pending today.', { value: missed.length });
+            const msg = resolveMsg(habits.message || 'Arete: {value} habit(s) still pending today.', { value: missed.length });
             toast(msg);
             await maybeSMS(s, msg);
             await maybePush('Habits', msg);
@@ -176,7 +176,7 @@ export function useNotifications(settings) {
           const count    = overdue.length || highOpen.length;
           if (count > 0) {
             setFlag('task');
-            const msg = resolveMsg(tasks.message || 'VALERIE: {value} task(s) need your attention.', { value: count });
+            const msg = resolveMsg(tasks.message || 'Arete: {value} task(s) need your attention.', { value: count });
             toast(msg);
             await maybeSMS(s, msg);
             await maybePush('Tasks', msg);
@@ -190,7 +190,7 @@ export function useNotifications(settings) {
           const logged    = sleepData.some(l => l.date === today || l.date === toLocalDateKey(new Date(Date.now() - 86400000)));
           if (!logged) {
             setFlag('sleep');
-            const msg = sleep.message || 'VALERIE: Log last night\'s sleep to track your recovery.';
+            const msg = sleep.message || 'Arete: Log last night\'s sleep to track your recovery.';
             toast(msg);
             await maybeSMS(s, msg);
             await maybePush('Log your sleep', msg);
@@ -204,7 +204,7 @@ export function useNotifications(settings) {
           const workedOut   = workoutLogs.some(l => l.date === today);
           if (!workedOut) {
             setFlag('workout');
-            const msg = workout.message || 'VALERIE: No workout logged today. Rest day or forgot?';
+            const msg = workout.message || 'Arete: No workout logged today. Rest day or forgot?';
             toast(msg);
             await maybeSMS(s, msg);
             await maybePush('Workout', msg);
@@ -223,7 +223,7 @@ export function useNotifications(settings) {
             const flagK = `calendar_${ev.id ?? ev.title}`;
             if (diff > 0 && diff <= calMinutes && !fired(flagK)) {
               setFlag(flagK);
-              const msg = resolveMsg(cal.message || 'VALERIE: {value} starts in {time} minutes.', { value: ev.title ?? ev.summary ?? 'An event', time: diff });
+              const msg = resolveMsg(cal.message || 'Arete: {value} starts in {time} minutes.', { value: ev.title ?? ev.summary ?? 'An event', time: diff });
               toast(msg);
               await maybeSMS(s, msg);
               await maybePush('Upcoming event', msg);
@@ -242,7 +242,7 @@ export function useNotifications(settings) {
           if (weekSpend > 0) {
             setFlag('finance_week');
             const sym = currencySym(s.currency);
-            const msg = resolveMsg(finance.message || 'VALERIE: Weekly spend so far: {value}.', { value: `${sym}${weekSpend.toFixed(2)}` });
+            const msg = resolveMsg(finance.message || 'Arete: Weekly spend so far: {value}.', { value: `${sym}${weekSpend.toFixed(2)}` });
             toast(msg);
             await maybeSMS(s, msg);
             await maybePush('Finance summary', msg);

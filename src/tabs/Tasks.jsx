@@ -60,7 +60,6 @@ const Icon = ({ d, size = 15 }) => (
 );
 const CheckIcon  = () => <Icon d="M20 6L9 17l-5-5" />;
 const TrashIcon  = () => <Icon d="M3 6h18 M8 6V4a1 1 0 011-1h6a1 1 0 011 1v2 M19 6l-1 14a2 2 0 01-2 2H8a2 2 0 01-2-2L5 6 M10 11v6 M14 11v6" />;
-const MicIcon    = () => <Icon d="M12 1a3 3 0 00-3 3v8a3 3 0 006 0V4a3 3 0 00-3-3z M19 10v2a7 7 0 01-14 0v-2 M12 19v4 M8 23h8" />;
 const EditIcon   = () => <Icon d="M11 4H4a2 2 0 00-2 2v14a2 2 0 002 2h14a2 2 0 002-2v-7 M18.5 2.5a2.12 2.12 0 013 3L12 15l-4 1 1-4z" />;
 
 // ── Pill badge ────────────────────────────────────────────────────────────────
@@ -405,13 +404,12 @@ const primaryBtnStyle = {
 };
 
 // ── Main Tasks component ───────────────────────────────────────────────────────
-export default function Tasks({ ai }) {
+export default function Tasks() {
   const { items: rawTasks, add, update, remove, synced } = useCollection('tasks', STORAGE_KEYS.TASKS);
   // Legacy assistant rows are {title, completed}; show them like UI rows.
   const tasks = useMemo(() => normalizeTasks(rawTasks), [rawTasks]);
   const [filter, setFilter]     = useState('all');
   const [panel, setPanel]       = useState(null); // null | { mode:'add' } | { mode:'view'|'edit', task }
-  const [voiceActive, setVoice] = useState(false);
 
   const filtered = useMemo(() => applyFilter(tasks, filter), [tasks, filter]);
 
@@ -458,31 +456,6 @@ export default function Tasks({ ai }) {
     setPanel(null);
   }, [remove]);
 
-  // ── Voice command ──────────────────────────────────────────────────────────
-  const handleVoice = useCallback(() => {
-    if (!ai?.startListening) return;
-    setVoice(true);
-    ai.startListening((transcript) => {
-      setVoice(false);
-      const lower = transcript.toLowerCase();
-      if (lower.startsWith('add task') || lower.startsWith('create task') || lower.startsWith('new task')) {
-        const name = transcript.replace(/^(add|create|new)\s+task\s*/i, '').trim();
-        if (name) {
-          add({ text: name, description: '', priority: 'med', dueDate: '', category: '', done: false });
-        } else {
-          setPanel({ mode: 'add' });
-        }
-      } else if (lower.includes('complete') || lower.includes('done') || lower.includes('finish')) {
-        const name = transcript.replace(/^(complete|mark|finish)\s*(task)?\s*/i, '').replace(/\s*(as done|as complete|complete)$/i, '').trim();
-        const match = tasks.find(t => !t.done && t.text.toLowerCase().includes(name.toLowerCase()));
-        if (match) update(match.id, { done: true });
-      } else {
-        // Fallback: treat as new task
-        add({ text: transcript.trim(), description: '', priority: 'med', dueDate: '', category: '', done: false });
-      }
-    });
-  }, [ai, add, update, tasks]);
-
   return (
     <div style={{ display: 'flex', height: '100%', overflow: 'hidden' }}>
 
@@ -505,15 +478,6 @@ export default function Tasks({ ai }) {
               </span>
             )}
           </h2>
-          {/* Voice */}
-          <button onClick={handleVoice} disabled={!ai || voiceActive} title="Voice command"
-            style={{
-              ...iconBtnStyle,
-              background: voiceActive ? 'var(--active-bg)' : 'transparent',
-              color: voiceActive ? 'var(--accent)' : 'var(--text-muted)',
-            }}>
-            <MicIcon />
-          </button>
           {/* Add */}
           <button onClick={() => setPanel({ mode: 'add' })}
             style={{

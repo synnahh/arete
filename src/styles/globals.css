@@ -358,21 +358,11 @@ main[data-layout="spacious"] {
   font-size: 1.06em;
 }
 
-/* ─── Voice Orb ─────────────────────────────────────── */
+/* ─── Logo glow ─────────────────────────────────────── */
 @keyframes orb-breathe {
   0%, 100% { transform: scale(1);    filter: drop-shadow(0 0 8px var(--orb-glow)); }
   50%       { transform: scale(1.07); filter: drop-shadow(0 0 18px var(--orb-glow)); }
 }
-@keyframes orb-ripple {
-  0%   { transform: scale(1);   opacity: 0.55; }
-  100% { transform: scale(2.6); opacity: 0; }
-}
-@keyframes orb-thinking {
-  0%   { transform: rotate(0deg); }
-  100% { transform: rotate(360deg); }
-}
-.orb-idle      { animation: orb-breathe  3.2s ease-in-out infinite; }
-.orb-listening { animation: orb-breathe  0.8s ease-in-out infinite; }
 
 /* ─── Global select / dropdown fix ─────────────────────────────────────────
    Browser default <select> renders with OS-native colours (white bg, black
@@ -403,7 +393,6 @@ select option {
   background-color: var(--bg-panel);
   color:            var(--text-primary);
 }
-.orb-thinking  { animation: orb-thinking 1.4s linear infinite; }
 
 /* ════════════════════════════════════════════════════════════════════════════
    VALERIE MOTION SYSTEM (v2.1)

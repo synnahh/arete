@@ -238,7 +238,7 @@ export default function Routines({ settings }) {
           <div style={{ textAlign: 'center', padding: '80px 0', color: 'var(--text-muted)' }}>
             <div style={{ marginBottom: 14, display: 'flex', justifyContent: 'center', color: 'var(--text-muted)' }}><LineIcon name="routines" size={30} strokeWidth={1.5} /></div>
             <div style={{ fontSize: 14, marginBottom: 6 }}>No routines yet</div>
-            <div style={{ fontSize: 12 }}>Build your first routine and VALERIE will include it in your daily brief.</div>
+            <div style={{ fontSize: 12 }}>Build your first routine and it appears in your Next moves and daily plan.</div>
           </div>
         )}
 

@@ -128,7 +128,7 @@ function Constitution({ constitution, onSave }) {
             Personal Constitution
           </div>
           <div style={{ fontSize: 12, color: 'var(--text-muted)', lineHeight: 1.6, maxWidth: 480 }}>
-            Your values, principles, and non-negotiables. This is fed to every AI interaction as context — VALERIE knows who you are before it advises you.
+            Your values, principles, and non-negotiables. The AI tools (reviews, insights, plans) read this as context.
           </div>
         </div>
         {constitution?.lastUpdated && (

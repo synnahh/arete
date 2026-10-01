@@ -17,7 +17,6 @@ const PinIcon    = () => <Icon d="M12 2l2 7h7l-5.6 4.1 2.1 7L12 17l-5.5 3.1 2.1-
 const TrashIcon  = () => <Icon d="M3 6h18 M8 6V4a1 1 0 011-1h6a1 1 0 011 1v2 M19 6l-1 14a2 2 0 01-2 2H8a2 2 0 01-2-2L5 6 M10 11v6 M14 11v6" size={13} />;
 const BoldIcon   = () => <Icon d="M6 4h8a4 4 0 010 8H6z M6 12h9a4 4 0 010 8H6z" size={13} />;
 const ItalicIcon = () => <Icon d="M19 4h-9 M14 20H5 M15 4L9 20" size={13} />;
-const MicIcon    = () => <Icon d="M12 1a3 3 0 00-3 3v8a3 3 0 006 0V4a3 3 0 00-3-3z M19 10v2a7 7 0 01-14 0v-2 M12 19v4 M8 23h8" size={13} />;
 const CloseIcon  = () => <Icon d="M18 6L6 18 M6 6l12 12" size={14} />;
 
 // ── Relative time ──────────────────────────────────────────────────────────────
@@ -223,12 +222,11 @@ function NoteEditor({ note, onSave, onClose, onDelete }) {
 }
 
 // ── Main Notes component ───────────────────────────────────────────────────────
-export default function Notes({ ai }) {
+export default function Notes() {
   const { items: notes, add, update, remove, synced } = useCollection('notes', STORAGE_KEYS.NOTES);
   const [search,     setSearch]     = useState('');
   const [activeNote, setActiveNote] = useState(null); // null | note object
   const [panelOpen,  setPanelOpen]  = useState(false);
-  const [voiceActive, setVoice]     = useState(false);
 
   // Filter + sort: pinned first then by updatedAt
   const displayed = useMemo(() => {
@@ -266,25 +264,6 @@ export default function Notes({ ai }) {
   const handlePin    = useCallback(async (note) => { await update(note.id, { pinned: !note.pinned }); }, [update]);
   const handleDelete = useCallback(async (id)   => { await remove(id); closePanel(); }, [remove]);
 
-  // Voice: "add note [title]" or "new note"
-  const handleVoice = useCallback(() => {
-    if (!ai?.startListening) return;
-    setVoice(true);
-    ai.startListening((transcript) => {
-      setVoice(false);
-      const lower = transcript.toLowerCase();
-      if (lower.startsWith('add note') || lower.startsWith('new note') || lower.startsWith('create note')) {
-        const title = transcript.replace(/^(add|new|create)\s+note\s*/i, '').trim();
-        setActiveNote(title ? { title, body: '', pinned: false } : null);
-        setPanelOpen(true);
-      } else {
-        // Treat as new note with transcript as body
-        setActiveNote({ title: '', body: transcript.trim(), pinned: false });
-        setPanelOpen(true);
-      }
-    });
-  }, [ai]);
-
   return (
     <div style={{ display: 'flex', height: '100%', overflow: 'hidden', position: 'relative' }}>
 
@@ -316,15 +295,6 @@ export default function Notes({ ai }) {
             }}
           />
           <div style={{ flex: 1 }} />
-          {/* Voice */}
-          <button onClick={handleVoice} disabled={!ai || voiceActive} title="Voice note"
-            style={{
-              background: voiceActive ? 'var(--active-bg)' : 'none', border: 'none', cursor: 'pointer',
-              color: voiceActive ? 'var(--accent)' : 'var(--text-muted)', padding: 6, borderRadius: 6,
-              display: 'flex',
-            }}>
-            <MicIcon />
-          </button>
           {/* New note */}
           <button onClick={newNote} style={{
             padding: '5px 14px', borderRadius: 7, fontSize: 12, fontWeight: 500,

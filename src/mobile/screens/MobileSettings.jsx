@@ -169,7 +169,7 @@ export default function MobileSettings({ settings, onSettingsChange }) {
       <div style={{ textAlign: 'center', marginTop: 32, marginBottom: 16 }}>
         <div style={{ fontSize: 11, color: 'var(--text-muted)', opacity: 0.5,
           fontFamily: 'ui-monospace, monospace', letterSpacing: '0.06em' }}>
-          VALERIE v{__APP_VERSION__}
+          Arete v{__APP_VERSION__}
         </div>
       </div>
     </div>

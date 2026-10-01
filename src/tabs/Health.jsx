@@ -1904,7 +1904,7 @@ function Sleep({ sleepData, settings }) {
           </div>
         </div>
         <div style={{ fontSize: 11, color: 'var(--text-muted)', marginBottom: 12, lineHeight: 1.5 }}>
-          VALERIE will remind you 30 minutes before bedtime and gradually dim the interface.
+          Arete will remind you 30 minutes before bedtime and gradually dim the interface.
         </div>
         <button
           onClick={handleScheduleSave}

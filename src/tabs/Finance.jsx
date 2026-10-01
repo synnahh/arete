@@ -1348,7 +1348,7 @@ function Recurring({ recurring, onAdd, onUpdate, onRemove, fmt }) {
       {sorted.length === 0 && !showForm && (
         <div style={{ textAlign: 'center', padding: '60px 0', color: 'var(--text-muted)', fontSize: 13 }}>
           <div style={{ marginBottom: 12, display: 'flex', justifyContent: 'center', color: 'var(--text-muted)' }}><LineIcon name="repeat" size={30} strokeWidth={1.5} /></div>No recurring transactions yet.
-          <div style={{ fontSize: 11, opacity: 0.7, marginTop: 4 }}>Add rent, salary, or any regular bill — VALERIE posts it automatically.</div>
+          <div style={{ fontSize: 11, opacity: 0.7, marginTop: 4 }}>Add rent, salary, or any regular bill — Arete posts it automatically.</div>
         </div>
       )}
 

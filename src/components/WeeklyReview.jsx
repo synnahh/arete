@@ -81,7 +81,7 @@ function buildWeeklyContext() {
   return L.join('\n');
 }
 
-const SYSTEM = (ctx) => `You are VALERIE, generating Rob's WHOLE-LIFE WEEKLY REVIEW from his real dashboard data below. Be sharp, specific, and reference his actual numbers. Cover, with short scannable bullets under clear headers:
+const SYSTEM = (ctx) => `You are generating Rob's WHOLE-LIFE WEEKLY REVIEW from his real dashboard data below. Be sharp, specific, and reference his actual numbers. Cover, with short scannable bullets under clear headers:
 1. WINS — what went well this week across all domains
 2. WATCH-OUTS — where he slipped or risks are building
 3. CROSS-DOMAIN PATTERNS — connections BETWEEN domains (e.g. low sleep weeks ↔ higher spending or worse mood; training consistency ↔ appearance scores). Only claim patterns the data supports; if data is thin, say what to start tracking.

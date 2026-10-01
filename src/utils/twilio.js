@@ -60,7 +60,7 @@ export async function sendTestSMS(settings) {
   return sendSMS({
     to:         phoneNumber,
     from:       twilioReminders,
-    body:       'VALERIE — SMS is working correctly.',
+    body:       'Arete — SMS is working correctly.',
     accountSid: twilioAccountSid,
     authToken:  twilioAuthToken,
   });

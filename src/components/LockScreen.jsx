@@ -41,8 +41,8 @@ async function registerBiometric() {
   const credential = await navigator.credentials.create({
     publicKey: {
       challenge,
-      rp: { name: 'VALERIE', id: window.location.hostname },
-      user: { id: userId, name: 'valerie-user', displayName: 'VALERIE' },
+      rp: { name: 'Arete', id: window.location.hostname },
+      user: { id: userId, name: 'valerie-user', displayName: 'Arete' },
       pubKeyCredParams: [{ alg: -7, type: 'public-key' }, { alg: -257, type: 'public-key' }],
       authenticatorSelection: {
         authenticatorAttachment: 'platform',
@@ -198,7 +198,7 @@ export default function LockScreen({ onUnlock }) {
             }}
           />
           <div style={{ fontSize: 11, fontWeight: 700, letterSpacing: '0.28em', color: 'rgba(255,255,255,0.2)', fontFamily: 'ui-monospace, monospace' }}>
-            VALERIE
+            ARETE
           </div>
           <div style={{ fontSize: 18, fontWeight: 300, color: 'var(--text-secondary)', letterSpacing: '-0.01em' }}>
             {mode === 'setup' ? 'Create your access code.' : 'Welcome back.'}
