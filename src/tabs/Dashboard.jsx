@@ -21,6 +21,7 @@ import DayRing from '../components/DayRing.jsx';
 import GoalRing from '../components/GoalRing.jsx';
 import NextMoves from '../components/NextMoves.jsx';
 import OverallCard from '../components/OverallCard.jsx';
+import { HomeRecap, HomeStreak } from '../components/HomeRecap.jsx';
 import CoachUpdates from '../components/CoachUpdates.jsx';
 import { useCollection } from '../supabase/useCollection.js';
 import { useDocument }   from '../supabase/useDocument.js';
@@ -778,6 +779,7 @@ export default function Dashboard({ settings, onTabChange, density = 'standard',
           <GoalRing settings={settings} onTabChange={onTabChange} />
           {/* What to do next, in order, with the reason */}
           <NextMoves onTabChange={onTabChange} />
+          <HomeRecap />
           <CoachUpdates />
           <GlanceStrip tasks={tasks} />
           <TasksPanel onTabChange={onTabChange} tasks={tasks} toggle={toggle} addTask={addTask} />
@@ -785,6 +787,7 @@ export default function Dashboard({ settings, onTabChange, density = 'standard',
         </div>
         <div className="home-col">
           <OverallCard />
+          <HomeStreak />
           <TodayPanel peakState={peakState} onTabChange={onTabChange} />
           <ProductivityWidget onTabChange={onTabChange} tasks={tasks} />
           <Card><DayRing /></Card>

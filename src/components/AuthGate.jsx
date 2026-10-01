@@ -1,5 +1,6 @@
 // AuthGate.jsx — Email / password authentication wall
 import { useState, useEffect } from 'react';
+import AreteLogo from './AreteLogo.jsx';
 import { signInWithEmail, signUpWithEmail } from '../supabase/supabase.js';
 import { applyTheme } from '../styles/themes.js';
 
@@ -86,8 +87,7 @@ export default function AuthGate() {
 
         {/* Logo */}
         <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 16 }}>
-          <img
-            src="/assets/valerie-logo.png"
+          <AreteLogo
             alt="Arete"
             style={{
               width: 72, height: 72, objectFit: 'contain',

@@ -46,13 +46,13 @@ describe('groups', () => {
 
 describe('groupScreens', () => {
   it('drops hidden screens but never Settings', () => {
-    expect(groupScreens('coach', { hidden: ['style', 'body'] })).toEqual(['goal', 'workout', 'fuel', 'recover', 'lm', 'habits']);
+    expect(groupScreens('coach', { hidden: ['style', 'body'] })).toEqual(['goal', 'workout', 'fuel', 'recover', 'lm', 'habits', 'insights']);
     expect(groupScreens('settings', { hidden: ['settings', 'vault'] })).toEqual(['settings']);
   });
 
   it('follows the saved sidebar order, unknown ids last in default order', () => {
     const order = ['lm', 'dashboard', 'workout'];
-    expect(groupScreens('coach', { order })).toEqual(['lm', 'workout', 'goal', 'fuel', 'recover', 'body', 'habits', 'style']);
+    expect(groupScreens('coach', { order })).toEqual(['lm', 'workout', 'goal', 'fuel', 'recover', 'body', 'habits', 'style', 'insights']);
   });
 
   it('returns nothing for an unknown group', () => {

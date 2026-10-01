@@ -3,6 +3,7 @@
 // then effectively never again. It exists so every device shares ONE user id,
 // which is what makes cross-device sync work (RLS scopes rows to auth.uid()).
 import { useState, useEffect } from 'react';
+import AreteLogo from './AreteLogo.jsx';
 import { signInWithEmail } from '../supabase/supabase.js';
 import { applyTheme } from '../styles/themes.js';
 
@@ -60,8 +61,7 @@ export default function SignIn({ onSignedIn }) {
         width: '100%', maxWidth: 360, padding: '0 28px', position: 'relative',
         display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 24, textAlign: 'center',
       }}>
-        <img
-          src="/assets/valerie-logo.png"
+        <AreteLogo
           alt="Arete"
           style={{ width: 60, height: 60, objectFit: 'contain', filter: 'drop-shadow(0 0 28px rgba(167,139,250,0.5))' }}
         />

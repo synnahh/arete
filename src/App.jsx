@@ -45,6 +45,7 @@ import Settings   from './tabs/Settings.jsx';
 import Places     from './tabs/Places.jsx';
 import Routines   from './tabs/Routines.jsx';
 import Mind       from './tabs/Mind.jsx';
+import Insights   from './tabs/Insights.jsx';
 import LM         from './tabs/LM.jsx';
 import NudgeStack from './components/NudgeStack.jsx';
 import WeeklyReview from './components/WeeklyReview.jsx';
@@ -61,6 +62,7 @@ const TAB_MAP = {
   recover:    Recover,
   body:       Body,
   habits:     Habits,
+  insights:   Insights,
   finance:    Finance,
   portfolio:  Portfolio,
   progress:   Progress,

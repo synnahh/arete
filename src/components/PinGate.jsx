@@ -1,6 +1,7 @@
 // PinGate.jsx — simple hardcoded PIN entry to open the app.
 // Single-user, local-only. No creation flow — the PIN is fixed.
 import { useState, useEffect, useCallback } from 'react';
+import AreteLogo from './AreteLogo.jsx';
 import { applyTheme } from '../styles/themes.js';
 
 applyTheme('obsidian');
@@ -76,8 +77,7 @@ export default function PinGate({ onUnlock }) {
 
       <div style={{ position: 'relative', display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 30 }}>
         {/* Logo */}
-        <img
-          src="/assets/valerie-logo.png"
+        <AreteLogo
           alt="Arete"
           style={{
             width: 64, height: 64, objectFit: 'contain',

@@ -18,6 +18,7 @@ import MobilePortfolio  from './screens/MobilePortfolio.jsx';
 import MobileHabits     from './screens/MobileHabits.jsx';
 import Toaster          from '../components/Toaster.jsx';
 import MobileStyle      from './screens/MobileStyle.jsx';
+import Insights         from '../tabs/Insights.jsx';
 import { haptics }     from './utils/haptics.js';
 import { storage, STORAGE_KEYS } from '../utils/storage.js';
 import SectionBar      from '../components/SectionBar.jsx';
@@ -137,6 +138,7 @@ const MOBILE_SCREENS = {
   body:      (p) => <MobileHealth {...p} tabs={['Body']} title={null} />,
   habits:    ()  => <MobileHabits />,
   style:     (p) => <MobileStyle {...p} />,
+  insights:  ()  => <Insights />,
   lm:        ()  => <MobileLM />,
   mind:      (p) => <MobileMind {...p} />,
   finance:   (p) => <MobileFinance {...p} />,

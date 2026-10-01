@@ -12,6 +12,7 @@ import { useTasks } from '../../hooks/useTasks.js';
 import GoalRing from '../../components/GoalRing.jsx';
 import NextMoves from '../../components/NextMoves.jsx';
 import OverallCard from '../../components/OverallCard.jsx';
+import { HomeRecap, HomeStreak } from '../../components/HomeRecap.jsx';
 import CoachUpdates from '../../components/CoachUpdates.jsx';
 
 // ── Shared components ──────────────────────────────────────────────────────────
@@ -507,8 +508,10 @@ export default function MobileDashboard({ settings, peakState, onTabChange }) {
       <GoalRing settings={settings} onTabChange={onTabChange} compact />
 
       <NextMoves onTabChange={onTabChange} compact />
+      <HomeRecap compact />
       <CoachUpdates compact />
       <OverallCard compact />
+      <HomeStreak compact />
 
       {/* ── Stat strip (horizontal scroll) ── */}
       <StatStrip tasks={tasks} />

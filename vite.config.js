@@ -14,7 +14,7 @@ export default defineConfig(async () => ({
     // PWA plugin — only active when building for Firebase Hosting
     ...(isPWA ? [VitePWA({
       registerType: "autoUpdate",
-      includeAssets: ["assets/valerie-logo.png", "assets/icon-192.png", "assets/icon-512.png"],
+      includeAssets: ["assets/icon-192.png", "assets/icon-512.png"],
       manifest: {
         name: "Arete",
         short_name: "Arete",

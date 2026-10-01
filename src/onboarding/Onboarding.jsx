@@ -1,4 +1,5 @@
 import { useState } from 'react';
+import AreteLogo from '../components/AreteLogo.jsx';
 import { storage, STORAGE_KEYS } from '../utils/storage.js';
 import { applyTheme } from '../styles/themes.js';
 import { PrimaryButton } from './steps/Step1Welcome.jsx';
@@ -32,7 +33,7 @@ export default function Onboarding({ onComplete }) {
       }}>
 
         {/* Logo */}
-        <img src="/assets/valerie-logo.png" alt="Arete" style={{
+        <AreteLogo alt="Arete" style={{
           width: 100, height: 100, objectFit: 'contain',
           filter: 'drop-shadow(0 0 24px var(--orb-glow))',
           animation: 'orb-breathe 3.2s ease-in-out infinite',

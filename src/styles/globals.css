@@ -466,6 +466,11 @@ html:not([data-motion="reduced"])[data-group="mind"] .m-screen.val-fade-up { ani
   border-radius: 8px;
 }
 
+/* Streak milestone: one short scale-in on the day it is reached. */
+@keyframes streak-pop { 0% { transform: scale(0.6); opacity: 0; } 60% { transform: scale(1.12); opacity: 1; } 100% { transform: scale(1); } }
+.streak-pop { display: inline-block; animation: streak-pop 520ms var(--ease-out, cubic-bezier(0.22, 1, 0.36, 1)) 1; }
+html[data-motion="reduced"] .streak-pop { animation: none; }
+
 /* ── Reduced-motion kill switch (accessibility + Settings toggle) ──
    Honour the OS setting, or a manual opt-out via <html data-reduce-motion>. */
 @media (prefers-reduced-motion: reduce) {

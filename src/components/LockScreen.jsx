@@ -1,5 +1,6 @@
 // LockScreen — password-only gate with Face ID / Touch ID via WebAuthn
 import { useState, useEffect, useRef } from 'react';
+import AreteLogo from './AreteLogo.jsx';
 import { applyTheme } from '../styles/themes.js';
 
 applyTheme('obsidian');
@@ -188,8 +189,7 @@ export default function LockScreen({ onUnlock }) {
       }}>
         {/* Logo */}
         <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 14 }}>
-          <img
-            src="/assets/valerie-logo.png"
+          <AreteLogo
             alt="Arete"
             style={{
               width: 68, height: 68, objectFit: 'contain',

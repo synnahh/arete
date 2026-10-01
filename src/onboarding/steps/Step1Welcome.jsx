@@ -1,10 +1,10 @@
-// Step 1 — Welcome screen with VALERIE logo
+// Step 1 — Welcome screen with the Arete logo
+import AreteLogo from '../../components/AreteLogo.jsx';
 
 export default function Step1Welcome({ next }) {
   return (
     <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 32, textAlign: 'center' }}>
-      <img
-        src="/assets/valerie-logo.png"
+      <AreteLogo
         alt="Arete"
         style={{
           width: 120,

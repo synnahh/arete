@@ -1,4 +1,5 @@
 import { useState, useEffect, useRef, useMemo, useCallback } from 'react';
+import AreteLogo from './AreteLogo.jsx';
 import { createPortal } from 'react-dom';
 import { storage, STORAGE_KEYS } from '../utils/storage.js';
 import { supabase, getUserId, getUserIdSync } from '../supabase/supabase.js';
@@ -429,8 +430,7 @@ export default function Sidebar({ activeGroup, onGroupClick, internetOnline, fir
         display: 'flex', alignItems: 'center', justifyContent: 'center',
         marginBottom: 16,
       }}>
-        <img
-          src="/assets/valerie-logo.png"
+        <AreteLogo
           alt="Arete"
           style={{ width: 28, height: 28, objectFit: 'contain', opacity: 0.9 }}
         />
