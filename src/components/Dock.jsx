@@ -2,7 +2,11 @@
 // Greek-inspired glyph per group. The active group glows in its own tab colour,
 // hover lifts a glyph and names it above. The phone keeps its bottom bar.
 // Motion is transform/opacity only and is switched off by the global reduced-motion rules.
-import { useState } from 'react';
+import { useMemo, useState } from 'react';
+import { useNextMoves } from '../hooks/useNextMoves.js';
+import { groupOf } from '../nav/groups.js';
+import DockQuickLog from './DockQuickLog.jsx';
+import DockRing from './DockRing.jsx';
 
 // 24x24 line glyphs. Each is a single path string so it can sit in <path d>.
 export const GREEK_GLYPHS = {
@@ -26,11 +30,12 @@ const Glyph = ({ d, size = 26 }) => (
   </svg>
 );
 
-function Item({ id, label, desc, active, onClick, glyph, tint }) {
+function Item({ id, label, desc, active, onClick, glyph, tint, due = 0 }) {
   return (
     <button type="button" className={`dock-item${active ? ' is-active' : ''}`} data-tint={tint} onClick={onClick}
       aria-label={label} aria-current={active ? 'page' : undefined}>
       <Glyph d={glyph} />
+      {due > 0 && !active && <span className="dock-due" aria-label={`${due} waiting`}>{due > 1 ? due : ''}</span>}
       <span className="dock-tip" role="tooltip"><strong>{label}</strong>{desc ? <em>{desc}</em> : null}</span>
     </button>
   );
@@ -50,16 +55,25 @@ function Status({ internetOnline, synced }) {
 }
 
 export default function Dock({ groups, settingsGroup, activeGroup, onGroupClick, internetOnline, synced }) {
+  // What is waiting, per group: the Next moves, counted by the group their screen lives in.
+  const moves = useNextMoves();
+  const due = useMemo(() => {
+    const by = {};
+    for (const m of moves || []) { const g = m.tab ? groupOf(m.tab)?.id : null; if (g) by[g] = (by[g] || 0) + 1; }
+    return by;
+  }, [moves]);
   return (
     <nav className="dock" aria-label="Main">
       {groups.map(g => (
         <Item key={g.id} id={g.id} tint={g.id} label={g.label} desc={g.desc} glyph={GREEK_GLYPHS[g.id]}
-          active={activeGroup === g.id} onClick={() => onGroupClick(g.id)} />
+          active={activeGroup === g.id} due={due[g.id] || 0} onClick={() => onGroupClick(g.id)} />
       ))}
       <span className="dock-sep" aria-hidden="true" />
+      <DockQuickLog />
+      <DockRing onOpen={() => onGroupClick('home')} />
       {settingsGroup && (
         <Item id="settings" tint="settings" label={settingsGroup.label} desc={settingsGroup.desc} glyph={GREEK_GLYPHS.settings}
-          active={activeGroup === 'settings'} onClick={() => onGroupClick('settings')} />
+          active={activeGroup === 'settings'} due={due.settings || 0} onClick={() => onGroupClick('settings')} />
       )}
       <Status internetOnline={internetOnline} synced={synced} />
     </nav>

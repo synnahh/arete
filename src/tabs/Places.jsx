@@ -169,7 +169,10 @@ export default function Places() {
   const [suggestion, setSuggestion] = useState(null);
   function randomPlace() {
     const pool = items.filter(p => !p.visited);
-    if (!pool.length) return;
+    if (!pool.length) {
+      window.dispatchEvent(new CustomEvent('valerie:toast', { detail: { message: items.length ? 'Every place is marked visited.' : 'Add a place first, then I can pick one.', type: 'info' } }));
+      return;
+    }
     setSuggestion(pool[Math.floor(Math.random() * pool.length)]);
   }
 

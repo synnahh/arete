@@ -535,6 +535,10 @@ html[data-theme="arctic"][data-tab-colours="per-tab"] { --grp-home: #9A6B1F; --g
 .dock-item:focus-visible { box-shadow: 0 0 0 2px var(--t); }
 .dock-item.is-active { color: var(--t); background: color-mix(in srgb, var(--t) 16%, transparent); }
 .dock-item.is-active::after { content: ""; position: absolute; bottom: 3px; width: 4px; height: 4px; border-radius: 50%; background: var(--t); }
+.dock-due { position: absolute; top: 4px; right: 6px; min-width: 8px; height: 8px; padding: 0 3px; box-sizing: border-box; border-radius: 999px; background: var(--t, var(--accent)); color: var(--on-tab-accent, #111); font-size: 9px; font-weight: 700; line-height: 8px; text-align: center; }
+.dock-due:not(:empty) { height: 14px; min-width: 14px; line-height: 14px; top: 1px; right: 3px; }
+.dock-ring { width: 46px; }
+.dock-pop { position: absolute; bottom: calc(100% + 14px); left: 50%; transform: translateX(-50%); width: 292px; display: flex; flex-direction: column; gap: 14px; padding: 16px; border-radius: 16px; background: var(--bg-panel); border: 0.5px solid var(--card-border); box-shadow: 0 12px 38px rgba(0, 0, 0, 0.5); z-index: 5; }
 .dock-sep { width: 1px; height: 26px; margin: 0 4px; background: var(--card-border); }
 .dock-status { position: relative; width: 26px; height: 40px; display: flex; align-items: center; justify-content: center; background: none; border: none; cursor: default; padding: 0; }
 .dock-tip {

@@ -36,7 +36,7 @@ export default function Toaster({ phone = false }) {
   return (
     <div role="status" aria-live="polite" style={{
       position: 'fixed', left: '50%', transform: 'translateX(-50%)', zIndex: 10000,
-      bottom: phone ? 'calc(88px + env(safe-area-inset-bottom))' : 28,
+      bottom: phone ? 'calc(88px + env(safe-area-inset-bottom))' : 92, // desktop: above the dock
       maxWidth: 'calc(100vw - 32px)', boxSizing: 'border-box',
       background: 'rgba(8,12,20,0.96)', border: '0.5px solid rgba(74,158,255,0.3)',
       borderRadius: 12, padding: '11px 18px', fontSize: 13, color: 'var(--text-primary)',

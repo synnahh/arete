@@ -538,7 +538,7 @@ function Habits({ habits, addHabit, updateHabit, removeHabit }) {
                     {currentStreak(h, today)} day streak
                   </div>
                 </div>
-                <button onClick={() => toggle(h)} style={{
+                <button onClick={() => toggle(h)} aria-label={`${done ? 'Untick' : 'Tick'} ${h.name}`} aria-pressed={!!done} style={{
                   width: 32, height: 32, borderRadius: 8, cursor: 'pointer',
                   border: `1.5px solid ${done ? 'var(--accent)' : 'var(--card-border)'}`,
                   background: done ? 'var(--active-bg)' : 'transparent',
@@ -547,7 +547,7 @@ function Habits({ habits, addHabit, updateHabit, removeHabit }) {
                 }}>
                   {done ? '✓' : ''}
                 </button>
-                <button onClick={() => removeHabit(h.id)} style={{
+                <button onClick={() => removeHabit(h.id)} aria-label={`Delete ${h.name}`} style={{
                   background: 'none', border: 'none', cursor: 'pointer',
                   color: 'var(--text-muted)', padding: 4, borderRadius: 4, display: 'flex',
                 }}><TrashIcon /></button>
@@ -1372,8 +1372,9 @@ function Body({ bodyMetrics, addBodyMetric, settings }) {
               <div style={{display:'flex',gap:6}}>
                 <button onClick={()=>setAdding(false)} style={{...btnGhost,flex:1}}>Cancel</button>
                 <button onClick={async()=>{
-                  if(!logForm.weight) return;
-                  await addBodyMetric({date:todayStr(),...logForm});
+                  if(!(Number(logForm.weight) > 0)) return;
+                  const num = (v) => (v === '' || v == null || !(Number(v) > 0) ? undefined : Number(v));
+                  await addBodyMetric({date:todayStr(), weight:num(logForm.weight), bodyFat:num(logForm.bodyFat), muscle:num(logForm.muscle), notes:logForm.notes});
                   setLogForm({weight:'',bodyFat:'',muscle:'',notes:''});setAdding(false);
                 }} style={{...btnPrimary,flex:2}}>Save</button>
               </div>

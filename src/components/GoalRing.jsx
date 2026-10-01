@@ -1,14 +1,8 @@
 //  GoalRing  Home's HUD card: today's score against the Coach goal.
 //  The ring's "laurel draw" is Home's signature moment (approved board):
 //  it sweeps to the score once on mount; Reduced motion skips it.
-import { useMemo } from 'react';
-import { useHealthData } from '../hooks/useHealthData.js';
-import { useCollection } from '../supabase/useCollection.js';
-import { STORAGE_KEYS } from '../utils/storage.js';
-import { toLocalDateKey } from '../utils/localDate.js';
-import { GOAL_TEMPLATES, dayScore } from '../domain/goals.js';
-import { currentWaterGoal } from '../utils/waterGoal.js';
-import { todaysTargets } from '../utils/todaysTargets.js';
+import { useDayScore } from '../hooks/useDayScore.js';
+import { GOAL_TEMPLATES } from '../domain/goals.js';
 
 const R = 50;
 const CIRC = 2 * Math.PI * R;
@@ -27,19 +21,7 @@ function Ticks() {
 
 export default function GoalRing({ settings, onTabChange, compact = false }) {
   const goal = settings?.coachGoal;
-  const health = useHealthData();
-  const { items: workoutLogs = [] } = useCollection('workout_logs', STORAGE_KEYS.WORKOUT_LOGS);
-  const today = toLocalDateKey(new Date());
-
-  const result = useMemo(() => goal && dayScore({
-    targets: { ...goal.targets, ...todaysTargets(settings) },
-    calories: health.todayCalories ?? 0,
-    protein: health.todayProtein ?? 0,
-    waterMl: health.todayWaterMl ?? 0,
-    waterGoalMl: currentWaterGoal(settings),
-    sleepHours: health.lastSleepHours ?? 0,
-    trained: workoutLogs.some(l => l.date === today),
-  }), [goal, health, settings?.waterGoal, settings?.dayCycle, settings?.macros, workoutLogs, today]);
+  const result = useDayScore(settings);
 
   const card = {
     position: 'relative', display: 'flex', alignItems: 'center', gap: compact ? 16 : 22,

@@ -95,7 +95,7 @@ function LockScreen({ onUnlock, isFirstTime }) {
   const [busy,  setBusy]  = useState(false);
 
   async function handleSubmit() {
-    if (!pw) return;
+    if (!pw) { setErr('Enter your master password.'); return; }
     if (isFirstTime && pw !== pw2) { setErr('Passwords do not match.'); return; }
     if (isFirstTime && pw.length < 8) { setErr('Master password must be at least 8 characters.'); return; }
     setBusy(true);
