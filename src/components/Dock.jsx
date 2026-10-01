@@ -19,7 +19,6 @@ export const GREEK_GLYPHS = {
   // Meander (Greek key) spiral.
   settings: 'M4 20V4h16v16H8V8h8v8',
 };
-const FOCUS_GLYPH = 'M12 3a9 9 0 1 0 0 18 9 9 0 1 0 0-18z M12 8a4 4 0 1 0 0 8 4 4 0 1 0 0-8z';
 
 const Glyph = ({ d, size = 26 }) => (
   <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
@@ -50,9 +49,7 @@ function Status({ internetOnline, synced }) {
   );
 }
 
-export default function Dock({ groups, settingsGroup, activeGroup, onGroupClick, focusMode, onCycleFocus, focusCount = 0, internetOnline, synced }) {
-  const focusOn = focusMode !== 'off';
-  const focusLabel = focusMode === 'tomorrow' ? 'Focus mode · tomorrow' : focusMode === 'today' ? 'Focus mode · today' : 'Focus mode';
+export default function Dock({ groups, settingsGroup, activeGroup, onGroupClick, internetOnline, synced }) {
   return (
     <nav className="dock" aria-label="Main">
       {groups.map(g => (
@@ -60,10 +57,6 @@ export default function Dock({ groups, settingsGroup, activeGroup, onGroupClick,
           active={activeGroup === g.id} onClick={() => onGroupClick(g.id)} />
       ))}
       <span className="dock-sep" aria-hidden="true" />
-      <button type="button" className={`dock-item dock-small${focusOn ? ' is-active' : ''}`} data-tint="focus" onClick={onCycleFocus} aria-label={focusLabel}>
-        <Glyph d={FOCUS_GLYPH} size={20} />
-        <span className="dock-tip" role="tooltip"><strong>{focusLabel}</strong><em>{focusOn ? `${focusCount} need attention. Click for ${focusMode === 'today' ? 'tomorrow' : 'off'}.` : 'Hide groups with nothing due today.'}</em></span>
-      </button>
       {settingsGroup && (
         <Item id="settings" tint="settings" label={settingsGroup.label} desc={settingsGroup.desc} glyph={GREEK_GLYPHS.settings}
           active={activeGroup === 'settings'} onClick={() => onGroupClick('settings')} />

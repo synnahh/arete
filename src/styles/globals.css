@@ -508,7 +508,7 @@ html[data-motion="reduced"] .bg-animated::before { animation: none !important; }
    with per-tab colours off, every group uses the theme accent. */
 :root {
   --grp-home: var(--accent-solid); --grp-plan: var(--accent-solid); --grp-coach: var(--accent-solid);
-  --grp-mind: var(--accent-solid); --grp-finance: var(--accent-solid); --grp-settings: var(--accent-solid); --grp-focus: #f4a642;
+  --grp-mind: var(--accent-solid); --grp-finance: var(--accent-solid); --grp-settings: var(--accent-solid);
 }
 html[data-tab-colours="per-tab"] { --grp-home: #D8B26E; --grp-plan: #6FA8F2; --grp-coach: #F2784B; --grp-mind: #A98FF2; --grp-finance: #52CC9C; }
 html[data-theme="arctic"][data-tab-colours="per-tab"] { --grp-home: #9A6B1F; --grp-plan: #2F6FC4; --grp-coach: #C24E22; --grp-mind: #6B4FCB; --grp-finance: #1F8A5F; }
@@ -528,11 +528,9 @@ html[data-theme="arctic"][data-tab-colours="per-tab"] { --grp-home: #9A6B1F; --g
   color: var(--text-secondary); transition: transform 0.16s ease, color 0.16s ease, background-color 0.16s ease;
   -webkit-tap-highlight-color: transparent;
 }
-.dock-item.dock-small { width: 38px; height: 38px; border-radius: 12px; }
 .dock-item[data-tint="home"] { --t: var(--grp-home); } .dock-item[data-tint="plan"] { --t: var(--grp-plan); }
 .dock-item[data-tint="coach"] { --t: var(--grp-coach); } .dock-item[data-tint="mind"] { --t: var(--grp-mind); }
 .dock-item[data-tint="finance"] { --t: var(--grp-finance); } .dock-item[data-tint="settings"] { --t: var(--grp-settings); }
-.dock-item[data-tint="focus"] { --t: var(--grp-focus); }
 .dock-item:hover, .dock-item:focus-visible { transform: translateY(-4px) scale(1.1); color: var(--t); outline: none; }
 .dock-item:focus-visible { box-shadow: 0 0 0 2px var(--t); }
 .dock-item.is-active { color: var(--t); background: color-mix(in srgb, var(--t) 16%, transparent); }

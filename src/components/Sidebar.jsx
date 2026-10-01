@@ -1,7 +1,6 @@
-import { useState, useEffect, useMemo, useCallback } from 'react';
+import { useEffect } from 'react';
 import { storage, STORAGE_KEYS } from '../utils/storage.js';
 import { supabase, getUserId } from '../supabase/supabase.js';
-import { getAttentionTabs, FOCUS_ALWAYS_VISIBLE } from '../utils/attention.js';
 import Dock from './Dock.jsx';
 import { GROUPS, groupScreens, groupOf, ALL_SCREENS, SCREEN_LABELS } from '../nav/groups.js';
 
@@ -39,27 +38,8 @@ export default function Sidebar({ activeGroup, onGroupClick, internetOnline, fir
     return () => { alive = false; if (channel) supabase.removeChannel(channel); };
   }, []); // eslint-disable-line react-hooks/exhaustive-deps
 
-  // Focus Mode: cycles off  today  tomorrow  off, filtering the sidebar
-  // down to only groups with actionable items due (see src/utils/attention.js)
-  const [focusMode, setFocusMode] = useState('off');
-  const attention = useMemo(
-    () => focusMode === 'off' ? null : getAttentionTabs(focusMode === 'tomorrow' ? 1 : 0),
-    [focusMode]
-  );
-  const cycleFocus = useCallback(
-    () => setFocusMode(m => m === 'off' ? 'today' : m === 'today' ? 'tomorrow' : 'off'),
-    []
-  );
-
-  // A group shows when it has a visible screen and, in Focus Mode, when one of
-  // its screens needs attention (Settings always shows).
-  const groupVisible = (g) => {
-    const screens = groupScreens(g.id, { hidden: hiddenTabs });
-    if (!screens.length) return false;
-    if (g.id === 'settings' || !attention) return true;
-    return screens.some(id => FOCUS_ALWAYS_VISIBLE.has(id) || attention.tabs.has(id));
-  };
-  const mainGroups   = GROUPS.filter(g => g.id !== 'settings' && groupVisible(g));
+  const visible = (g) => groupScreens(g.id, { hidden: hiddenTabs }).length > 0;
+  const mainGroups   = GROUPS.filter(g => g.id !== 'settings' && visible(g));
   const settingsTab  = GROUPS.find(g => g.id === 'settings');
 
   return (
@@ -68,9 +48,6 @@ export default function Sidebar({ activeGroup, onGroupClick, internetOnline, fir
       settingsGroup={settingsTab}
       activeGroup={activeGroup}
       onGroupClick={onGroupClick}
-      focusMode={focusMode}
-      onCycleFocus={cycleFocus}
-      focusCount={attention?.count ?? 0}
       internetOnline={internetOnline ?? navigator.onLine}
       synced={firebaseSynced ?? false}
     />
