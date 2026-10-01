@@ -310,3 +310,10 @@ Rob does not want a voice AI or anything to talk to. The coach keeps the plan in
 ### Split rule checked in a browser (2026-10-01)
 - Stubbed database, 5-day plan with 2 sessions a week for 3 weeks: Home showed "Switch to a 2-day split?" as a question (not auto-applied). Apply added an active "2-day plan (coach)" and deactivated the old plan (kept); Undo reactivated the old plan, left the new one inactive, marked the log entry undone, and the question did not come back. Not verified against real Supabase.
 - Exposed keys removed from the gitignored `.env` (Claude, ElevenLabs key and voice id, unused Google search key and cx) and redacted in the Obsidian voice note. Git history and built bundles held no real key. The keys themselves are still live until rotated at the providers.
+
+### Logos, recap, streak, Insights (2026-10-01, 62ad246)
+- **Logos:** `components/AreteLogo.jsx` picks silver (Obsidian/Midnight), gold (Ember/Crimson/Arctic) or violet (Phantom) from `data-theme`; files are in `src/public/assets/arete-*.png` (black knocked out to transparent from the supplied board crops, 724 px, so the wordmark is soft). PWA icons and `src-tauri/icons` regenerated from the gold emblem. Arctic uses a darkening filter. Rob should still supply clean transparent exports if he wants crisper art. Tauri build not run.
+- **Recap and streak:** `domain/recap.js`, `hooks/useRecap.js`, `RecapCard`, `StreakCard`, `HomeRecap` (Home Mon/Tue until dismissed via `settings.recapSeen`). Streak = any logged day (workout, food, sleep, weigh-in, habit).
+- **Insights** (Coach > Insights, desktop and phone): `domain/insights.js`, `tabs/Insights.jsx`, `TrendChart`. Pattern shown only with 3+ weeks of sleep and 4+ trained days each side.
+- Verified: 473 tests, both builds, browser with stub data (Home recap, Insights month/year, pattern, logo). Not seen: phone width, light theme, real Supabase.
+- Also removed this session: dead mic buttons, VALERIE wording, orb CSS; the day planner now calls `ai-chat` (needs deploy).
