@@ -52,3 +52,13 @@ Set `VITE_SUPABASE_URL=https://jwzgxcqapxaomuenleyt.supabase.co` and `VITE_SUPAB
 - Home and Goal HQ: Coach updates appear once you have two weeks of weigh-ins and food logged on your goal.
 - Settings > Notifications: turn on and save, then check the morning/evening check-ins appear.
 - Sign in on a second device with the same account: log water on one, watch it appear on the other.
+
+## Health sync (Apple Health and the Eufy scale)
+
+Eufy has no public API, so the route is EufyLife -> Apple Health -> Health Auto Export -> `health-ingest`.
+
+1. Supabase SQL Editor: run `supabase/health_sync.sql`.
+2. Secrets (Edge Functions > Secrets): `HEALTH_INGEST_TOKEN` (a long random string, 32+ characters) and `OWNER_USER_ID` (already set for the other functions).
+3. Deploy `health-ingest` with JWT verification **off** (the phone app cannot sign in): `supabase functions deploy health-ingest --no-verify-jwt`, or turn "Verify JWT" off for it in the dashboard.
+4. On the iPhone: EufyLife > turn on Apple Health sharing. Health Auto Export > Automations > REST API: URL `https://<project>.supabase.co/functions/v1/health-ingest`, POST, JSON v2, header `x-health-token: <the secret>`, date range Today, summarize data on.
+5. Check: `curl -X POST <url> -H "x-health-token: <secret>" -d '{}'` returns `{"ok":true,"days":0,...}`. A wrong token returns 401.

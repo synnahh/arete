@@ -8,8 +8,20 @@ import { toLocalDateKey } from '../utils/localDate.js';
 
 const todayStr = () => toLocalDateKey(new Date());
 
+// Rows written by the health-ingest function: { sync_date, data: { steps, heartRate:{avg,min,max}, ... } }
+function parseIngested(d, row) {
+  const n = (v) => (Number.isFinite(Number(v)) && v !== null ? Number(v) : null);
+  return {
+    steps: n(d.steps), heartRate: n(d.heartRate?.avg), hrv: n(d.hrv), activeEnergy: n(d.activeEnergy),
+    sleep: null, weight: null, bodyFat: null,
+    restingHeartRate: n(d.restingHeartRate), respiratoryRate: n(d.respiratoryRate), bloodOxygen: n(d.bloodOxygen),
+    _syncedAt: row.updated_at ?? row.sync_date ?? null,
+  };
+}
+
 function parseDoc(data) {
   if (!data) return null;
+  if (data.data && typeof data.data === 'object') return parseIngested(data.data, data);
 
   // Health Auto Export field names vary by metric selection  normalise them
   return {

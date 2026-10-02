@@ -1107,11 +1107,12 @@ export function IntegrationsSection({ settings, onSave }) {
 
           <div style={{ fontSize: 11, color: 'var(--text-secondary)', lineHeight: 1.65, marginBottom: 14 }}>
             <strong style={{ color: 'var(--text-primary)', display: 'block', marginBottom: 6 }}>Setup (one-time):</strong>
-            1. Download <strong>Health Auto Export</strong> (free) from the App Store<br />
-            2. Open <strong>Automations → New Automation → REST API</strong><br />
-            3. Paste the webhook URL below, set Method to <strong>POST</strong>, Format to <strong>JSON</strong><br />
-            4. Select metrics: Sleep, Steps, Heart Rate, HRV, Active Energy, Weight, Body Fat<br />
-            5. Set frequency to <strong>Hourly</strong>, then Save and Enable
+            1. Download <strong>Health Auto Export</strong> from the App Store (REST API automations need its paid tier)<br />
+            2. In <strong>EufyLife</strong>, turn on Apple Health sharing so each weigh-in is written to Health<br />
+            3. In Health Auto Export open <strong>Automations → New Automation → REST API</strong>, Method <strong>POST</strong>, format <strong>JSON v2</strong>, and paste the URL below<br />
+            4. Add the header <strong>x-health-token</strong> with the secret you set as HEALTH_INGEST_TOKEN<br />
+            5. Metrics: Step Count, Weight, Body Fat Percentage, Sleep Analysis, Heart Rate, Resting Heart Rate, HRV, Active Energy<br />
+            6. Date range <strong>Today</strong>, turn on <strong>Summarize data</strong> for steps, then pick a short interval and Enable
           </div>
 
           <div style={{
@@ -1121,13 +1122,13 @@ export function IntegrationsSection({ settings, onSave }) {
             border: '0.5px solid rgba(255,255,255,0.08)',
           }}>
             <div style={{ color: 'var(--text-muted)', fontSize: 11, marginBottom: 6, letterSpacing: '0.1em' }}>WEBHOOK CONFIG</div>
-            <div><span style={{ color: 'var(--text-muted)' }}>URL: </span><span style={{ color: 'var(--accent)', userSelect: 'all' }}>https://healthsync-eglap5gvxa-uc.a.run.app</span></div>
+            <div><span style={{ color: 'var(--text-muted)' }}>URL: </span><span style={{ color: 'var(--accent)', userSelect: 'all' }}>https://jwzgxcqapxaomuenleyt.supabase.co/functions/v1/health-ingest</span></div>
             <div><span style={{ color: 'var(--text-muted)' }}>Method: </span><span style={{ color: 'var(--text-secondary)' }}>POST</span></div>
             <div><span style={{ color: 'var(--text-muted)' }}>Format: </span><span style={{ color: 'var(--text-secondary)' }}>JSON</span></div>
           </div>
 
           <div style={{ fontSize: 11, color: 'var(--text-muted)', lineHeight: 1.55 }}>
-            Once syncing, Health Overview shows a live badge and auto-fills sleep, steps, heart rate, HRV, and weight from your iPhone and Apple Watch.
+            Once syncing, Health Overview shows a live badge and fills steps, heart rate, HRV and active energy, and adds each weigh-in (and sleep) as a normal entry.
           </div>
         </div>
       </div>
