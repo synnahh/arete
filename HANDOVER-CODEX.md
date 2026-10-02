@@ -1,5 +1,56 @@
 # Arete (was VALERIE) — Handover for the next agent
 
+# START HERE: current state (updated 2026-10-02)
+
+Everything under the line "History" further down is older and partly superseded. Trust this section first, then the code.
+
+**Repo** `D:\Work\Projects\Projects\VALERIE-MAKEOVER`, branch `main`, HEAD `9c61383`, tree clean, **533 tests pass**, `npm run build` and `build:pwa` pass. `dist/` holds a current PWA build ready for Netlify. Never touch `D:\Work\Projects\Projects\VALERIE` (Rob's original).
+
+## Where the app is
+- **No voice or chat AI** (Rob's decision). AI only runs as input tools (meal photo, describe a meal, skin photo, reviews, plan generators) through one Supabase function, `ai-chat`. The coach is a data engine (`domain/coachEngine.js`): it adjusts targets from logs, with Undo, and asks before bigger changes.
+- **Navigation:** desktop is a floating **dock** (`components/Dock.jsx`, Greek glyphs, tab colours, a dot when Next moves are waiting in a group). Phone keeps its bottom bar. Every desktop screen sits in `.page-frame` (1240 px, centred). Logo: `components/AreteLogo.jsx` picks silver/gold/violet by theme (files in `src/public/assets/arete-*.png`, crops of the supplied board, so the wordmark is soft; Rob can supply cleaner exports).
+- **Front pages (each group opens on one; desktop and phone):** Plan > **Agenda** (`tabs/PlanToday.jsx`, `domain/plan.js`), Coach > **Today** (`tabs/CoachToday.jsx`, `domain/coachToday.js`), Finance > **Overview** (`tabs/MoneyToday.jsx`, `domain/money.js`), Mind > **Today** (`tabs/MindToday.jsx`, `domain/mindToday.js`; journal entries are ordinary notes flagged `journal:true`). Coach also has **Insights** (week/month/year charts, one sleep-vs-training pattern) and a weekly recap + logging streak on Home (`domain/recap.js`, `domain/insights.js`). Screen ids are `agenda`, `coachtoday`, `moneytoday`, `mindtoday`, `insights` (never reuse the group ids `plan`, `coach`, `finance`, `mind`).
+- **Food:** recipe builder (`components/RecipeBuilder.jsx`, `domain/recipes.js`), custom foods and favourites (`domain/customFoods.js`, `hooks/useFoodLibrary.js`, `components/CustomFoodForm.jsx`, `StarButton.jsx`). Saved meals store one serving at the top level plus the full recipe so they can be edited. Favourites are a document (`food_favourites` in user_meta); custom foods are the `custom_foods` collection.
+- **Repeating tasks** now spawn their next copy from Home and Plan as well as Tasks (`domain/tasks.js nextOccurrence`).
+- Removed this session: Focus mode, the dock quick-log and ring (Rob did not want them), dead mic buttons, orb CSS, the old VALERIE wording (user-facing text says Arete). Feature list vs the inspiration apps: `docs/feature-inventory.md`.
+
+## Deployment state (Rob's accounts)
+- **Supabase project in use: `jwzgxcqapxaomuenleyt`** (org Arete, Tokyo). The app's `.env` (gitignored) points at it. The OLD project `ywpwwxtimnqqruwxlpjb` (org Valerie, "VALERIE") is **paused**, untouched, resumable until Sep 2027, and still holds Rob's previous data. Nothing was migrated.
+- **Done on the new project** (via the dashboard): `sync_all_tables.sql` (49 tables), `user_meta.sql`, `progress_photos.sql` (private bucket), plus `custom_foods`. All have owner-only row policies and realtime (verified by query). Edge function **`ai-chat` deployed** (Verify JWT on; refuses the public anon key with 401). Secret `ANTHROPIC_MODEL=claude-sonnet-5-5` set.
+- **Netlify:** site `arete-dash.netlify.app`, deployed by dragging the `dist` folder. `netlify.toml` headers do not apply to drag-and-drop, so `src/public/_headers` carries the same headers (keep the two in step). Env vars for a Git-based deploy are listed in `docs/deploy-runbook.md` step 4.
+- **STILL NEEDS ROB** (agents cannot do these: no API keys, no account creation, no security settings):
+  1. Rotate the exposed keys (old Anthropic, ElevenLabs, Google search) and add the new Anthropic key as secret `ANTHROPIC_API_KEY` (Supabase > Edge Functions > Secrets). Until then every AI tool answers "not configured".
+  2. Create his sign-in account (Supabase > Authentication > Users > Add user, Auto Confirm), then set secret `OWNER_USER_ID` and turn off public sign-ups.
+  3. Redeploy `dist` to Netlify after any change (rebuild with `npm run build:pwa` first).
+  4. Decide whether to migrate the old project's data.
+
+## Verified vs not
+- **Verified** in a browser with an in-memory Supabase stand-in (desktop 1280/1920, phone 375): every front page, recap/streak/Insights, dock, recipe builder, custom foods, favourites, button audit across all desktop screens (no crashes or console errors), and the production bundle loads through the PIN to the sign-in screen (served with `vite preview`).
+- **Not verified:** anything against the real Supabase or the live `ai-chat`; Open Food Facts search (no route to it from the test browser; shows a fallback message); the Tauri/Windows build (no Rust toolchain here, installer renamed to Arete but never built); light (Arctic) theme and tablet widths; real iPhone.
+
+## Gotchas that cost time
+- **Test the production bundle before every deploy** (`npm run build:pwa`, `npx vite preview --port 4173 --outDir dist`). Dev mode hid a chunk cycle that blanked the live site (`shared -> tab-workout -> shared`). Fix: `src/domain` is in the `shared` chunk in `vite.config.js`. After a build, check the chunk graph has no cycles.
+- **Browser testing needs a bypass** (PIN gate and sign-in gate) plus a fake Supabase: temporary lines marked `TEMP-VERIFY-BYPASS` in `src/App.jsx` and `src/main.jsx` and a throw-away `src/temp-verify-stub.js`. Remove all three before committing (`grep -rn TEMP-VERIFY src` must be empty). The stub also needs `.limit()` and friends. The browser pane can report width 0 (then the phone layout loads): call resize_window with an explicit size first.
+- **Shell quoting:** long Node one-liners and heredocs containing apostrophes break in the bash tool. Write files with the Write tool, or edit with the Edit tool. Files are CRLF-aware in some cases (App.jsx is CRLF); scripts that edit them should match line endings. Never edit with PowerShell string ops (emoji corruption).
+- The app opens each group on the last screen visited, so after adding a front page you may land on the old screen until you tap the new first chip.
+- Only the browser's `localStorage` keys carry the doubled `valerie_valerie_lm_*` prefix for Look data (consistent everywhere; leave it).
+- The PIN gate (`components/PinGate.jsx`) has a hard-coded PIN visible in the bundle. It is a light lock only; the real protection is the Supabase login.
+
+## Rules that still bite
+Never `git reset --hard`, `checkout --`, `clean`, or drop a stash. Never run `npm run deploy:pwa` (publishes to Firebase) unprompted. Never weaken `.gitignore`. No secrets in the repo, Obsidian or chat. Tailwind classes must be literal. Real personal data lives here: no destructive migrations. Screen ids never change. Local day keys via `utils/localDate.js`. Attach a verification level to every completion claim.
+
+## Open work, in order
+1. Rob's account steps above, then a real two-device sync test and a real `ai-chat` test (photo meal, describe a meal, skin photo, reviews, the Calendar day planner).
+2. Phone Money screen is still the old phone layout under the new Overview chip; Settings > Notifications and a few other screens are unchanged and untested on the new dock.
+3. Food gaps vs MyFitnessPal: remembered portions; star on the Recent & frequent chips; barcode scanning cannot work in iOS Safari (typed number is the path).
+4. Dead code: unused Rust `ask_ollama` / `launch_ollama` / `ping_ollama` in `src-tauri/src/lib.rs` (remove only with a Tauri build available).
+5. Desktop saved-meal and several other delete buttons have no confirmation.
+6. Rob-blocked questions: Q-STANCE (which app), logo exports, whether to keep any of the older Mind screens, supersets in Train (needs a design decision), migrating old data.
+7. Security tidy: replace the hard-coded PIN with a real unlock, move any remaining client-held credentials (Twilio) behind `send-sms`.
+
+---
+# History (older notes, in the order written; partly superseded)
+
 **Written:** 2026-09-29, by Claude. **Repo:** `D:\Work\Projects\Projects\VALERIE-MAKEOVER`, branch `main`, clean tree, HEAD `8512a16`.
 **Never touch** `D:\Work\Projects\Projects\VALERIE` (Rob's original, ~115 uncommitted changes). All work happens in MAKEOVER.
 
