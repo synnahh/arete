@@ -6,7 +6,7 @@ import { useRef, useState } from 'react';
 import { checkProduct, TAG_LABELS } from '../domain/skin.js';
 import { scoreProduct, BAND_LABEL, SKIN_TYPES, SKIN_CONCERNS, CONCERN_LABEL } from '../domain/skinScore.js';
 import { isBarcode, lookupBeautyProduct } from '../utils/openBeautyFacts.js';
-import { startBarcodeScan } from '../utils/openFoodFacts.js';
+import { startBarcodeScan, canScanBarcodes } from '../utils/openFoodFacts.js';
 import { label } from './ui.js';
 
 const input = { width: '100%', boxSizing: 'border-box', minHeight: 44, padding: '0 12px', borderRadius: 10, background: 'var(--input-bg)', border: '0.5px solid var(--input-border)', color: 'var(--text-primary)', fontFamily: 'inherit', fontSize: 14 };
@@ -38,7 +38,7 @@ export default function ProductCheck({ steps, onAdd, skinProfile = {}, onSkinPro
   const [track, setTrack] = useState(true);
   const videoRef = useRef(null);
   const stopRef = useRef(null);
-  const canScan = typeof window !== 'undefined' && !!window.BarcodeDetector;
+  const canScan = canScanBarcodes();
 
   const result = name.trim() || ingredients.trim() ? checkProduct({ name, ingredients }, steps) : null;
   const fit = result ? scoreProduct({ name, ingredients }, skinProfile, steps) : null;

@@ -34,36 +34,62 @@ export async function lookupBarcode(code) {
   return mapProduct(data.product);
 }
 
-// Shared BarcodeDetector-based scanner. Calls onDetect(code) once, then stops
-// itself — caller decides what happens next (lookup, close UI, etc).
+// True when the device can show a camera at all. iOS Safari has no BarcodeDetector,
+// so scanning there uses the bundled ZXing decoder instead (loaded on first scan).
+export function canScanBarcodes() {
+  return typeof navigator !== 'undefined' && !!navigator.mediaDevices?.getUserMedia;
+}
+
+// Shared scanner. Calls onDetect(code) once, then stops itself — caller decides
+// what happens next (lookup, close UI, etc). Uses the browser's BarcodeDetector
+// where it exists (Chrome, Android) and ZXing everywhere else (iPhone Safari).
 export function startBarcodeScan(videoEl, { onDetect, onError }) {
-  if (!window.BarcodeDetector) {
-    onError?.(new Error('Barcode scanner not supported in this browser.'));
+  if (!canScanBarcodes()) {
+    onError?.(new Error('This browser cannot open the camera. Type the barcode instead.'));
     return () => {};
   }
   let stopped = false;
   let stream = null;
+  let zxing = null;
+  const finish = (code) => { if (stopped) return; stop(); onDetect?.(code); };
 
-  navigator.mediaDevices.getUserMedia({ video: { facingMode: 'environment', width: 640, height: 480 } })
-    .then(s => {
+  navigator.mediaDevices.getUserMedia({ video: { facingMode: { ideal: 'environment' }, width: { ideal: 1280 }, height: { ideal: 720 } } })
+    .then(async (s) => {
       if (stopped) { s.getTracks().forEach(t => t.stop()); return; }
       stream = s;
-      if (videoEl) { videoEl.srcObject = s; videoEl.play().catch(() => {}); }
-      const detector = new window.BarcodeDetector({ formats: ['ean_13', 'ean_8', 'upc_a', 'upc_e', 'code_128'] });
-      const scan = async () => {
-        if (stopped) return;
-        try {
-          const codes = await detector.detect(videoEl);
-          if (codes.length) { onDetect?.(codes[0].rawValue); }
-          else if (!stopped) requestAnimationFrame(scan);
-        } catch { if (!stopped) requestAnimationFrame(scan); }
-      };
-      requestAnimationFrame(scan);
+      if (videoEl) {
+        videoEl.setAttribute('playsinline', '');
+        videoEl.muted = true;
+        videoEl.srcObject = s;
+        videoEl.play().catch(() => {});
+      }
+      if (window.BarcodeDetector) {
+        const detector = new window.BarcodeDetector({ formats: ['ean_13', 'ean_8', 'upc_a', 'upc_e', 'code_128'] });
+        const scan = async () => {
+          if (stopped) return;
+          try {
+            const codes = await detector.detect(videoEl);
+            if (codes.length) finish(codes[0].rawValue);
+            else if (!stopped) requestAnimationFrame(scan);
+          } catch { if (!stopped) requestAnimationFrame(scan); }
+        };
+        requestAnimationFrame(scan);
+        return;
+      }
+      const { BrowserMultiFormatReader, DecodeHintType, BarcodeFormat } = await import('@zxing/library');
+      if (stopped) return;
+      const hints = new Map();
+      hints.set(DecodeHintType.POSSIBLE_FORMATS, [BarcodeFormat.EAN_13, BarcodeFormat.EAN_8, BarcodeFormat.UPC_A, BarcodeFormat.UPC_E, BarcodeFormat.CODE_128]);
+      hints.set(DecodeHintType.TRY_HARDER, true);
+      zxing = new BrowserMultiFormatReader(hints, 150);
+      zxing.decodeFromStream(s, videoEl, (result) => { if (result) finish(result.getText()); }).catch(err => !stopped && onError?.(err));
     })
     .catch(err => onError?.(err));
 
-  return function stop() {
+  function stop() {
     stopped = true;
+    try { zxing?.reset(); } catch { /* already stopped */ }
     stream?.getTracks().forEach(t => t.stop());
-  };
+  }
+  return stop;
 }

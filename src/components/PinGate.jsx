@@ -1,8 +1,9 @@
 // PinGate.jsx — simple hardcoded PIN entry to open the app.
 // Single-user, local-only. No creation flow — the PIN is fixed.
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect, useCallback, useRef } from 'react';
 import AreteLogo from './AreteLogo.jsx';
 import { applyTheme } from '../styles/themes.js';
+import { biometricAvailable, biometricLabel, faceIdEnabled, faceIdDeclined, declineFaceId, enableFaceId, unlockWithFaceId, forgetFaceId } from '../utils/faceId.js';
 
 applyTheme('obsidian');
 
@@ -12,6 +13,22 @@ const LEN = PIN.length;
 export default function PinGate({ onUnlock }) {
   const [entry, setEntry] = useState('');
   const [error, setError] = useState(false);
+  const [bioReady, setBioReady] = useState(false);   // device can do Face ID
+  const [bioOn, setBioOn] = useState(faceIdEnabled());
+  const [offer, setOffer] = useState(false);         // asking whether to turn Face ID on
+  const label = biometricLabel();
+
+  useEffect(() => { biometricAvailable().then(setBioReady); }, []);
+
+  const unlockRef = useRef(onUnlock);
+  unlockRef.current = onUnlock;   // keeps tryFaceId stable so the prompt fires once, not on every parent render
+  const tryFaceId = useCallback(async () => {
+    if (await unlockWithFaceId()) unlockRef.current();
+  }, []);
+
+  // Prompt for Face ID as soon as the gate opens; the button below covers the
+  // case where the browser wants a tap first.
+  useEffect(() => { if (bioOn) tryFaceId(); }, [bioOn, tryFaceId]);
 
   const press = useCallback((digit) => {
     setEntry(prev => (prev.length >= LEN ? prev : prev + digit));
@@ -23,23 +40,25 @@ export default function PinGate({ onUnlock }) {
   useEffect(() => {
     if (entry.length < LEN) return;
     if (entry === PIN) {
-      onUnlock();
+      if (bioReady && !faceIdEnabled() && !faceIdDeclined()) setOffer(true);
+      else onUnlock();
     } else {
       setError(true);
       const t = setTimeout(() => { setError(false); setEntry(''); }, 500);
       return () => clearTimeout(t);
     }
-  }, [entry, onUnlock]);
+  }, [entry, onUnlock, bioReady]);
 
   // Physical keyboard support
   useEffect(() => {
     const onKey = (e) => {
+      if (offer) return;
       if (e.key >= '0' && e.key <= '9') press(e.key);
       else if (e.key === 'Backspace') backspace();
     };
     window.addEventListener('keydown', onKey);
     return () => window.removeEventListener('keydown', onKey);
-  }, [press, backspace]);
+  }, [press, backspace, offer]);
 
   const keySx = {
     width: 64, height: 64, borderRadius: '50%',
@@ -49,6 +68,8 @@ export default function PinGate({ onUnlock }) {
     cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center',
     transition: 'background 0.12s, transform 0.08s', userSelect: 'none',
   };
+
+  const linkSx = { background: 'transparent', border: 'none', color: 'var(--text-secondary)', fontSize: 12, cursor: 'pointer', padding: 4 };
 
   const Key = ({ children, onClick, faint }) => (
     <button
@@ -93,10 +114,11 @@ export default function PinGate({ onUnlock }) {
             fontFamily: 'ui-monospace, monospace', marginBottom: 10,
           }}>ARETE</div>
           <div style={{ fontSize: 15, fontWeight: 300, color: 'var(--text-secondary)' }}>
-            Enter your PIN
+            {offer ? `Unlock faster with ${label}?` : 'Enter your PIN'}
           </div>
         </div>
 
+        {!offer && (<>
         {/* PIN dots */}
         <div style={{ display: 'flex', gap: 16, animation: error ? 'pin-shake 0.4s' : 'none' }}>
           {Array.from({ length: LEN }).map((_, i) => (
@@ -118,6 +140,22 @@ export default function PinGate({ onUnlock }) {
           <Key onClick={() => press('0')}>0</Key>
           <Key faint onClick={backspace}>⌫</Key>
         </div>
+        {bioReady && bioOn && (
+          <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 10 }}>
+            <button onClick={tryFaceId} style={{ ...linkSx, fontSize: 14 }}>Use {label}</button>
+            <button onClick={() => { forgetFaceId(); setBioOn(false); }} style={linkSx}>Turn off {label} on this device</button>
+          </div>
+        )}
+        </>)}
+        {offer && (
+          <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 14 }}>
+            <button
+              onClick={async () => { if (await enableFaceId()) setBioOn(true); else declineFaceId(); onUnlock(); }}
+              style={{ ...linkSx, fontSize: 15, padding: '12px 28px', border: '0.5px solid rgba(167,139,250,0.6)', borderRadius: 12 }}
+            >Turn on {label}</button>
+            <button onClick={() => { declineFaceId(); onUnlock(); }} style={linkSx}>Not now</button>
+          </div>
+        )}
       </div>
 
       <style>{`
