@@ -9,7 +9,7 @@ import { useDocument } from '../supabase/useDocument.js';
 import { useFoodLibrary } from '../hooks/useFoodLibrary.js';
 import { STORAGE_KEYS } from '../utils/storage.js';
 import { toLocalDateKey } from '../utils/localDate.js';
-import { searchFoods, lookupBarcode, startBarcodeScan, canScanBarcodes } from '../utils/openFoodFacts.js';
+import { searchFoods, lookupBarcode, startBarcodeScan, canScanBarcodes, decodeBarcodeFromFile } from '../utils/openFoodFacts.js';
 import { recentFoods, SECTIONS } from '../domain/foods.js';
 import {
   localFoods, remoteFood, searchLocal, mergeResults, macrosFor, amountChips, startAmount, entryFor, quickFoodEntry, remember, defaultSection,
@@ -46,6 +46,7 @@ export default function FoodLogger({ onLog, onClose }) {
   const videoRef = useRef(null);
   const stopRef = useRef(null);
   const inputRef = useRef(null);
+  const photoRef = useRef(null);
 
   const owned = useMemo(() => localFoods({
     favourites: lib.favourites,
@@ -102,11 +103,22 @@ export default function FoodLogger({ onLog, onClose }) {
           try { pick(remoteFood(await lookupBarcode(code))); }
           catch { setScanMsg(`No product found for ${code}. Try searching by name, or add it by hand.`); }
         },
-        onError: (e) => setScanMsg(e?.message || 'Could not open the camera. Type the name instead.'),
+        onError: (e) => setScanMsg(e?.name === 'NotAllowedError' ? 'The camera is blocked for this app. Use Take a photo below, or type the name.' : (e?.message || 'Could not open the camera. Use Take a photo below, or type the name.')),
       });
     }, 50);
   };
   const stopScan = () => { stopRef.current?.(); stopRef.current = null; };
+
+  // A photo of the barcode from the phone's own camera sheet: no web camera permission.
+  const onBarcodePhoto = async (e) => {
+    const file = e.target.files?.[0];
+    e.target.value = '';
+    if (!file) return;
+    stopScan();
+    setScanMsg('Reading the barcode…');
+    try { pick(remoteFood(await lookupBarcode(await decodeBarcodeFromFile(file)))); }
+    catch { setScanMsg('Could not read a barcode from that photo, or the product is not in the database. Try again closer, or search by name.'); }
+  };
 
   const amt = parseFloat(amount);
   const macros = food && amt > 0 ? macrosFor(food, amt) : null;
@@ -187,6 +199,8 @@ export default function FoodLogger({ onLog, onClose }) {
           <div aria-hidden="true" style={{ position: 'absolute', inset: '32% 12%', border: '2px solid rgba(255,255,255,0.7)', borderRadius: 12 }} />
         </div>
         <div role="status" style={{ fontSize: 13.5, color: scanMsg ? '#e8a13a' : 'var(--text-secondary)', textAlign: 'center' }}>{scanMsg || 'Hold the barcode inside the box, steady and well lit.'}</div>
+        <input ref={photoRef} type="file" accept="image/*" capture="environment" onChange={onBarcodePhoto} aria-label="Barcode photo" style={{ display: 'none' }} />
+        <button type="button" onClick={() => photoRef.current?.click()} style={{ ...ghost, minHeight: 44, fontSize: 14 }}>Take a photo instead (no camera permission)</button>
       </div>
     );
   }

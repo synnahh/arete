@@ -79,6 +79,52 @@ export function canScanBarcodes() {
   return typeof navigator !== 'undefined' && !!navigator.mediaDevices?.getUserMedia;
 }
 
+// ── Camera, asked for once ─────────────────────────────────────────────────────
+// iPhone asks for camera permission every time getUserMedia is called, so closing the
+// scanner and opening it again used to ask again. The stream is now kept for a short
+// while after you close the scanner (so scanning several items asks once), and let go
+// straight away when the app goes to the background. Nothing records or sends frames.
+const IDLE_MS = 30000;
+const cam = { stream: null, timer: null, pending: null };
+
+function acquireCamera() {
+  clearTimeout(cam.timer);
+  if (cam.stream?.active) return Promise.resolve(cam.stream);
+  if (cam.pending) return cam.pending;
+  cam.pending = navigator.mediaDevices
+    .getUserMedia({ video: { facingMode: { ideal: 'environment' }, width: { ideal: 1280 }, height: { ideal: 720 } } })
+    .then((s) => { cam.stream = s; return s; })
+    .finally(() => { cam.pending = null; });
+  return cam.pending;
+}
+function releaseCameraSoon() {
+  clearTimeout(cam.timer);
+  cam.timer = setTimeout(releaseCameraNow, IDLE_MS);
+}
+export function releaseCameraNow() {
+  clearTimeout(cam.timer);
+  cam.stream?.getTracks().forEach(t => t.stop());
+  cam.stream = null;
+}
+if (typeof document !== 'undefined') {
+  document.addEventListener('visibilitychange', () => { if (document.hidden) releaseCameraNow(); });
+}
+
+/**
+ * Read a barcode from a photo (an <input type="file" capture> result). The phone's own
+ * camera sheet takes the picture, so there is no web camera permission at all.
+ * Resolves to the code, or rejects when none is found.
+ */
+export async function decodeBarcodeFromFile(file) {
+  const { BrowserMultiFormatReader, DecodeHintType, BarcodeFormat } = await import('@zxing/library');
+  const hints = new Map();
+  hints.set(DecodeHintType.POSSIBLE_FORMATS, [BarcodeFormat.EAN_13, BarcodeFormat.EAN_8, BarcodeFormat.UPC_A, BarcodeFormat.UPC_E, BarcodeFormat.CODE_128]);
+  hints.set(DecodeHintType.TRY_HARDER, true);
+  const url = URL.createObjectURL(file);
+  try { return (await new BrowserMultiFormatReader(hints).decodeFromImageUrl(url)).getText(); }
+  finally { URL.revokeObjectURL(url); }
+}
+
 // Shared scanner. Calls onDetect(code) once, then stops itself — caller decides
 // what happens next (lookup, close UI, etc). Uses the browser's BarcodeDetector
 // where it exists (Chrome, Android) and ZXing everywhere else (iPhone Safari).
@@ -89,12 +135,12 @@ export function startBarcodeScan(videoEl, { onDetect, onError }) {
   }
   let stopped = false;
   let stream = null;
-  let zxing = null;
+  let timer = null;
   const finish = (code) => { if (stopped) return; stop(); onDetect?.(code); };
 
-  navigator.mediaDevices.getUserMedia({ video: { facingMode: { ideal: 'environment' }, width: { ideal: 1280 }, height: { ideal: 720 } } })
+  acquireCamera()
     .then(async (s) => {
-      if (stopped) { s.getTracks().forEach(t => t.stop()); return; }
+      if (stopped) { releaseCameraSoon(); return; }
       stream = s;
       if (videoEl) {
         videoEl.setAttribute('playsinline', '');
@@ -115,20 +161,37 @@ export function startBarcodeScan(videoEl, { onDetect, onError }) {
         requestAnimationFrame(scan);
         return;
       }
-      const { BrowserMultiFormatReader, DecodeHintType, BarcodeFormat } = await import('@zxing/library');
+      // Our own frame loop (the library's stream helper stops the camera when it is reset,
+      // which would throw the permission away).
+      const { MultiFormatReader, BinaryBitmap, HybridBinarizer, RGBLuminanceSource, DecodeHintType, BarcodeFormat } = await import('@zxing/library');
       if (stopped) return;
       const hints = new Map();
       hints.set(DecodeHintType.POSSIBLE_FORMATS, [BarcodeFormat.EAN_13, BarcodeFormat.EAN_8, BarcodeFormat.UPC_A, BarcodeFormat.UPC_E, BarcodeFormat.CODE_128]);
       hints.set(DecodeHintType.TRY_HARDER, true);
-      zxing = new BrowserMultiFormatReader(hints, 150);
-      zxing.decodeFromStream(s, videoEl, (result) => { if (result) finish(result.getText()); }).catch(err => !stopped && onError?.(err));
+      const reader = new MultiFormatReader();
+      reader.setHints(hints);
+      const canvas = document.createElement('canvas');
+      const ctx = canvas.getContext('2d', { willReadFrequently: true });
+      timer = setInterval(() => {
+        if (stopped || !videoEl || videoEl.readyState < 2 || !videoEl.videoWidth) return;
+        const w = Math.min(videoEl.videoWidth, 960);
+        const h = Math.round(videoEl.videoHeight * (w / videoEl.videoWidth));
+        canvas.width = w; canvas.height = h;
+        ctx.drawImage(videoEl, 0, 0, w, h);
+        const px = ctx.getImageData(0, 0, w, h).data;
+        const gray = new Uint8ClampedArray(w * h);
+        for (let i = 0, j = 0; i < px.length; i += 4, j++) gray[j] = (px[i] * 299 + px[i + 1] * 587 + px[i + 2] * 114) / 1000;
+        try { finish(reader.decode(new BinaryBitmap(new HybridBinarizer(new RGBLuminanceSource(gray, w, h)))).getText()); }
+        catch { /* no barcode in this frame */ }
+      }, 150);
     })
     .catch(err => onError?.(err));
 
   function stop() {
     stopped = true;
-    try { zxing?.reset(); } catch { /* already stopped */ }
-    stream?.getTracks().forEach(t => t.stop());
+    clearInterval(timer);
+    if (videoEl) videoEl.srcObject = null;
+    if (stream) releaseCameraSoon();
   }
   return stop;
 }

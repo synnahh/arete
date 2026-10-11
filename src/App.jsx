@@ -19,6 +19,7 @@ import { useCoachReminders }   from './hooks/useCoachReminders.js';
 import { useCoachEngine }      from './hooks/useCoachEngine.js';
 import Onboarding                from './onboarding/Onboarding.jsx';
 import PinGate                   from './components/PinGate.jsx';
+import LoadingScreen              from './components/LoadingScreen.jsx';
 import SignIn                    from './components/SignIn.jsx';
 import Sidebar                   from './components/Sidebar.jsx';
 import QuickCapture              from './components/QuickCapture.jsx';
@@ -352,7 +353,7 @@ export default function App() {
 
   // ── One-time device sign-in (only when there's no persisted session) ──
   if (hasSession === null) {
-    return <div style={{ width: '100%', height: '100%', background: '#080c14' }} />;
+    return <LoadingScreen message="Signing in" />;
   }
   if (hasSession === false) {
     return <SignIn onSignedIn={() => setHasSession(true)} />;
@@ -360,13 +361,7 @@ export default function App() {
 
   //  Loading state (settings loading)
   if (onboarded === null) {
-    return (
-      <div style={{
-        width: '100%', height: '100%',
-        display: 'flex', alignItems: 'center', justifyContent: 'center',
-        background: '#080c14',
-      }} />
-    );
+    return <LoadingScreen message="Loading your data" />;
   }
 
   //  Onboarding (name personalisation — runs once after first sign-in)
