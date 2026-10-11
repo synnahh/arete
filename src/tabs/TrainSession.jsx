@@ -15,6 +15,7 @@ import { storage, STORAGE_KEYS } from '../utils/storage.js';
 import LiftChart from '../components/LiftChart.jsx';
 import StrengthCard from '../components/StrengthCard.jsx';
 import { useRecovery } from '../hooks/useRecovery.js';
+import { WEEK, dayExercises, materialize, sessionChoices, sessionDayKey, dayKeyFromDate } from '../domain/splits.js';
 
 const today = () => toLocalDateKey(new Date());
 const fmt = (s) => `${Math.floor(s / 60)}:${String(Math.max(0, s) % 60).padStart(2, '0')}`;
@@ -131,9 +132,10 @@ function EquipmentSettings({ eq }) {
 }
 
 //  One exercise card
-function ExerciseCard({ ex, prog, rows, onChange, onTick, onRate, onAddSet, onRemoveSet, prs, compact, history, eq }) {
+function ExerciseCard({ ex, prog, rows, onChange, onTick, onRate, onAddSet, onRemoveSet, prs, compact, history, eq, alternatives = [], onReplace }) {
   const doneSets = rows.filter(r => r.done);
   const [showChart, setShowChart] = useState(false);
+  const [swapping, setSwapping] = useState(false);
   const barbell = !ex.bodyweight && isBarbell(ex.name);
   const workKg = Number(rows[0]?.weight) || prog.nextWeight;
   const plates = barbell ? platesFor(workKg, { bar: eq.bar, plates: eq.plates }) : null;
@@ -147,6 +149,20 @@ function ExerciseCard({ ex, prog, rows, onChange, onTick, onRate, onAddSet, onRe
         <span style={{ fontSize: 17, fontWeight: 600, color: 'var(--text-primary)' }}>{ex.name}</span>
         <span className="val-num" style={{ fontSize: 12, color: 'var(--text-secondary)' }}>{doneSets.length}/{rows.length} sets</span>
       </div>
+      {onReplace && doneSets.length === 0 && (
+        <div>
+          <button type="button" aria-expanded={swapping} onClick={() => setSwapping(s => !s)} style={{ background: 'none', border: 'none', padding: 0, minHeight: 28, cursor: 'pointer', fontFamily: 'inherit', fontSize: 12.5, color: 'var(--accent)' }}>Replace</button>
+          {swapping && (
+            <div style={{ display: 'flex', flexDirection: 'column', gap: 6, marginTop: 6 }}>
+              {alternatives.length === 0
+                ? <div style={{ fontSize: 12.5, color: 'var(--text-secondary)' }}>No other exercise in your library trains the same muscle. Add one from the exercise database in Exercises.</div>
+                : alternatives.slice(0, 6).map(a => (
+                  <button key={a.id} type="button" onClick={() => { setSwapping(false); onReplace(a); }} style={{ textAlign: 'left', minHeight: 38, padding: '0 12px', borderRadius: 10, border: '0.5px solid var(--card-border)', background: 'transparent', color: 'var(--text-primary)', fontFamily: 'inherit', fontSize: 14, cursor: 'pointer' }}>{a.name}</button>
+                ))}
+            </div>
+          )}
+        </div>
+      )}
       <div className="val-num" style={{ fontSize: 12, color: 'var(--text-secondary)' }}>
         TARGET {ex.bodyweight ? 'BW' : `${prog.nextWeight} kg`} × {ex.repsMin}–{ex.repsMax} ·{' '}
         <span style={{ color: ACTION_COLOUR[prog.action] ?? 'var(--text-secondary)', fontWeight: 600 }}>{prog.action}</span>
@@ -241,12 +257,20 @@ function ExerciseCard({ ex, prog, rows, onChange, onTick, onRate, onAddSet, onRe
 //  Session
 export default function TrainSession({
   exercises, workoutLogs, addWorkoutLog, updateWorkoutLog, removeWorkoutLog,
-  splitNames, todaySplitType, progression, musclesFor, compact = false,
+  splitNames, todaySplitType, progression, musclesFor, compact = false, program = null, updateProgram = null,
 }) {
   const date = today();
   const [gym, setGymState] = useState(() => readPref('valerie_train_gym', 'home'));
-  const [day, setDay] = useState(() => (['push', 'pull', 'legs'].includes(todaySplitType) ? todaySplitType : 'push'));
+  // With an active program the session days are the program's own workout days
+  // (week-day keys, e.g. 'mon'); without one it falls back to push / pull / legs.
+  const [day, setDay] = useState(() => (program ? (sessionDayKey(program, dayKeyFromDate()) ?? 'push') : (['push', 'pull', 'legs'].includes(todaySplitType) ? todaySplitType : 'push')));
+  useEffect(() => {
+    if (!program) { if (WEEK.includes(day)) setDay(['push', 'pull', 'legs'].includes(todaySplitType) ? todaySplitType : 'push'); return; }
+    const d = program.days?.[day];
+    if (!WEEK.includes(day) || !d || d.splitType === 'rest') setDay(sessionDayKey(program, dayKeyFromDate()) ?? 'push');
+  }, [program, day, todaySplitType]);
   const [extraIds, setExtraIds] = useState([]);
+  const [hiddenIds, setHiddenIds] = useState([]);
   // exId → rows. Mirrored in a ref and updated synchronously so two taps in
   // the same frame each see the other's set (state alone would be stale).
   const planRef = useRef({});
@@ -275,10 +299,29 @@ export default function TrainSession({
   const equipment = useEquipment();
 
   const todays = useMemo(() => {
-    const base = exercises.filter(e => (e.gym === gym || e.gym === 'both') && e.day === day);
+    const gymOk = (e) => e.gym === gym || e.gym === 'both';
+    const base = (program && WEEK.includes(day)
+      ? dayExercises(program.days?.[day], exercises).filter(gymOk)
+      : exercises.filter(e => gymOk(e) && e.day === day)).filter(e => !hiddenIds.includes(e.id));
     const extra = exercises.filter(e => extraIds.includes(e.id) && !base.includes(e));
     return [...base, ...extra];
-  }, [exercises, gym, day, extraIds]);
+  }, [exercises, gym, day, extraIds, hiddenIds, program]);
+
+  // Swap an exercise for another that trains the same muscle (equipment busy, joint sore).
+  // With a program the swap is saved into that day, so next week has it too.
+  const alternativesFor = (ex) => {
+    const m = musclesFor(ex)?.[0];
+    return exercises.filter(e => e.id !== ex.id && !todays.includes(e) && (e.gym === gym || e.gym === 'both') && musclesFor(e)?.[0] === m);
+  };
+  const replaceExercise = async (oldEx, newEx) => {
+    setHiddenIds(h => [...h, oldEx.id]);
+    setExtraIds(ids => [...ids, newEx.id]);
+    const d = program?.days?.[day];
+    if (program && updateProgram && d && WEEK.includes(day)) {
+      const ids = materialize(d, exercises).exerciseIds.map(x => (x === oldEx.id ? newEx.id : x));
+      await updateProgram(program.id, { days: { ...program.days, [day]: { ...d, exerciseIds: ids } } });
+    }
+  };
 
   // What we pre-filled for each exercise (weight x reps per row), so a later change of
   // readiness only rewrites rows you have not touched.
@@ -436,14 +479,14 @@ export default function TrainSession({
       <div style={{ display: 'flex', flexDirection: 'column', gap: 14, padding: compact ? 16 : '20px 28px 28px', maxWidth: 760, width: '100%', margin: '0 auto', boxSizing: 'border-box' }}>
         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-end', gap: 12, flexWrap: 'wrap' }}>
           <div style={{ display: 'flex', flexDirection: 'column', gap: 4 }}>
-            <h1 style={{ margin: 0, fontSize: compact ? 26 : 30, fontWeight: 700, color: 'var(--text-primary)' }}>{splitNames[day] ?? day}</h1>
+            <h1 style={{ margin: 0, fontSize: compact ? 26 : 30, fontWeight: 700, color: 'var(--text-primary)' }}>{program && WEEK.includes(day) ? (program.days?.[day]?.label || 'Workout') : (splitNames[day] ?? day)}</h1>
             <span className="val-num" style={{ fontSize: 12, color: 'var(--text-secondary)', letterSpacing: '0.06em' }}>
               {allDone.length} SETS · {volume(allDone).toLocaleString()} KG{minutes ? ` · ${minutes} MIN` : ''}{prCount ? ` · ${prCount} PR${prCount > 1 ? 'S' : ''}` : ''}
             </span>
           </div>
           <div style={{ display: 'flex', gap: 6, flexWrap: 'wrap' }}>
-            {['push', 'pull', 'legs'].map(d => (
-              <button key={d} type="button" aria-pressed={day === d} onClick={() => setDay(d)} style={pill(day === d)}>{splitNames[d] ?? d}</button>
+            {(program ? sessionChoices(program, exercises).map(c => ({ id: c.key, label: c.label })) : ['push', 'pull', 'legs'].map(d => ({ id: d, label: splitNames[d] ?? d }))).map(c => (
+              <button key={c.id} type="button" aria-pressed={day === c.id} onClick={() => { setDay(c.id); setExtraIds([]); setHiddenIds([]); }} style={pill(day === c.id)}>{c.label}</button>
             ))}
             <button type="button" onClick={() => setGym(gym === 'home' ? 'commercial' : 'home')} style={pill(false)}
               aria-label={`Gym: ${gym === 'home' ? 'Home' : 'Commercial'}. Switch`}>
@@ -472,7 +515,7 @@ export default function TrainSession({
 
         {todays.length === 0 && (
           <div style={{ fontSize: 14, color: 'var(--text-secondary)', padding: '24px 0' }}>
-            No exercises for this day and gym. Add some in Exercises, or add one below.
+            {program ? 'No exercises on this day for this gym. Edit the day in Split, or add one below.' : 'No exercises for this day and gym. Add some in Exercises, or add one below.'}
           </div>
         )}
 
@@ -481,7 +524,8 @@ export default function TrainSession({
             onChange={(i, patch) => setRows(ex.id, rs => rs.map((r, j) => j === i ? { ...r, ...patch } : r))}
             onTick={(i) => tick(ex, i)} onRate={(i, v) => rate(ex, i, v)}
             onAddSet={() => setRows(ex.id, rs => [...rs, { ...(rs[rs.length - 1] ?? { weight: 0, reps: ex.repsMin }), prev: null, done: false, justDone: false, rpe: '' }])}
-            onRemoveSet={() => setRows(ex.id, rs => rs.slice(0, -1))} history={liftHistory(workoutLogs, ex.name)} eq={equipment} />
+            onRemoveSet={() => setRows(ex.id, rs => rs.slice(0, -1))} history={liftHistory(workoutLogs, ex.name)} eq={equipment}
+            alternatives={alternativesFor(ex)} onReplace={(n) => replaceExercise(ex, n)} />
         ))}
 
         {others.length > 0 && (

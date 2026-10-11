@@ -11,7 +11,7 @@ import { anteriorData, posteriorData } from '../components/bodyModel.js';
 import { toLocalDateKey } from '../utils/localDate.js';
 import TrainSession from './TrainSession.jsx';
 import { suggestNext } from '../domain/progression.js';
-import { suggestWeek, describeWeek } from '../domain/split.js';
+import SplitBuilder from '../components/SplitBuilder.jsx';
 import { EXERCISE_MUSCLES, MUSCLE_MAP, musclesForLog as getLogMuscles, musclesForExercise } from '../domain/muscles.js';
 import ExerciseSuggest from '../components/ExerciseSuggest.jsx';
 import ExerciseBrowser from '../components/ExerciseBrowser.jsx';
@@ -105,17 +105,6 @@ export const DEFAULT_OVERLOAD_EXERCISES = [
 ];
 
 export const DEFAULT_SPLITS = { push: 'Push', pull: 'Pull', legs: 'Legs' };
-
-// ── Default program template (PPL Mon–Sat, rest Sun) ─────────────────────────
-const DEFAULT_PROGRAM_DAYS = {
-  mon: { splitType: 'push', label: 'Push' },
-  tue: { splitType: 'pull', label: 'Pull' },
-  wed: { splitType: 'legs', label: 'Legs' },
-  thu: { splitType: 'push', label: 'Push' },
-  fri: { splitType: 'pull', label: 'Pull' },
-  sat: { splitType: 'legs', label: 'Legs' },
-  sun: { splitType: 'rest', label: 'Rest' },
-};
 
 // ── Progression logic ────────────────────────────────────────────────────────
 // Next-session target: the rules live in domain/progression.js (all working sets,
@@ -389,7 +378,7 @@ title="Rename splits">✎</button>
 // """""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
 // 2. EXERCISES LIBRARY
 // """""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
-function ExercisesLibrary({ exercises, saveExercises }) {
+function ExercisesLibrary({ exercises, saveExercises, usingSamples = false }) {
   const [filter, setFilter]   = useState('all');
   const [showAdd, setShowAdd] = useState(false);
   const [editing, setEditing] = useState(null);
@@ -416,6 +405,13 @@ function ExercisesLibrary({ exercises, saveExercises }) {
     <Section title="Exercise Library" action={
       <button onClick={() => setShowAdd(true)} style={{ ...btnPrimary, fontSize: 11 }}>+ Add exercise</button>
     }>
+      {usingSamples && (
+        <div role="status" style={{ marginBottom: 14, padding: '12px 14px', borderRadius: 12, border: '0.5px solid #e8a13a', display: 'flex', alignItems: 'center', gap: 10, flexWrap: 'wrap', fontSize: 13, color: 'var(--text-primary)' }}>
+          <span style={{ flex: 1, minWidth: 200 }}>These are sample exercises. Keep and edit them, or clear them and build your own from the exercise database.</span>
+          <button onClick={() => saveExercises([...exercises])} style={{ ...btnGhost, fontSize: 12 }}>Keep these</button>
+          <button onClick={() => saveExercises([])} style={{ ...btnPrimary, fontSize: 12 }}>Clear all</button>
+        </div>
+      )}
       <ExerciseSuggest exercises={exercises} saveExercises={saveExercises} />
       <ExerciseBrowser exercises={exercises} saveExercises={saveExercises} />
       {/* Filter row */}
@@ -458,224 +454,6 @@ function ExercisesLibrary({ exercises, saveExercises }) {
 
       {showAdd && <ExerciseModal onClose={() => setShowAdd(false)} onSave={handleSave} />}
       {editing  && <ExerciseModal onClose={() => setEditing(null)} onSave={handleSave} initial={editing} />}
-    </Section>
-  );
-}
-
-// """""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
-// 3. SPLIT PLANNER
-// """""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
-function SplitPlanner({ programs, addProgram, updateProgram, removeProgram, exercises, splitNames }) {
-  const todayKey   = DAY_KEYS[new Date().getDay()];
-  const activeProgram = programs.find(p => p.isActive) ?? null;
-
-  const [editingDay, setEditingDay] = useState(null);
-  const [showNewProgram, setShowNewProgram] = useState(false);
-  const [newProgramName, setNewProgramName] = useState('');
-
-  const setActiveProgram = useCallback(async (id) => {
-    for (const p of programs) {
-      if (p.isActive !== (p.id === id)) await updateProgram(p.id, { isActive: p.id === id });
-    }
-  }, [programs, updateProgram]);
-
-  const createProgram = async () => {
-    const name = newProgramName.trim() || 'My Program';
-    await addProgram({ name, isActive: programs.length === 0, days: { ...DEFAULT_PROGRAM_DAYS }, pinnedExercises: {} });
-    setShowNewProgram(false); setNewProgramName('');
-  };
-
-  // Suggest a week from how many days you can train; creates a NEW program
-  // (never edits the one you have) and only switches to it if asked.
-  const [suggestDays, setSuggestDays] = useState(null);
-  const suggestion = useMemo(() => suggestWeek(suggestDays, splitNames), [suggestDays, splitNames]);
-  const createSuggested = async (makeActive) => {
-    if (!suggestion) return;
-    const id = await addProgram({ name: `${suggestDays}-day ${splitNames.push || 'Push'}/${splitNames.pull || 'Pull'}/${splitNames.legs || 'Legs'}`, isActive: programs.length === 0, days: suggestion, pinnedExercises: {} });
-    if (makeActive && id) {
-      for (const p of programs) if (p.isActive) await updateProgram(p.id, { isActive: false });
-      await updateProgram(id, { isActive: true });
-    }
-    setSuggestDays(null);
-  };
-
-  const updateDay = async (dayKey, patch) => {
-    if (!activeProgram) return;
-    const days = { ...activeProgram.days, [dayKey]: { ...activeProgram.days?.[dayKey], ...patch } };
-    await updateProgram(activeProgram.id, { days });
-  };
-
-  const SPLIT_OPTIONS = [
-    { value: 'push', label: splitNames.push || 'Push' },
-    { value: 'pull', label: splitNames.pull || 'Pull' },
-    { value: 'legs', label: splitNames.legs || 'Legs' },
-    { value: 'rest', label: 'Rest' },
-    { value: 'custom', label: 'Custom' },
-  ];
-
-  return (
-    <Section title="Split Planner">
-      <div style={{ maxWidth: '100%' }}>
-
-        {/* Program selector */}
-        <GlassCard style={{ marginBottom: 20 }}>
-          <GlassLabel>Active Program</GlassLabel>
-          {programs.length === 0 ? (
-            <div style={{ textAlign: 'center', padding: '8px 0', color: 'var(--text-muted)', fontSize: 13 }}>
-              No programs yet.
-              <button onClick={() => setShowNewProgram(true)} style={{ ...btnPrimary, display: 'block', margin: '12px auto 0' }}>Create program</button>
-            </div>
-          ) : (
-            <div style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
-              {programs.map(p => (
-                <div key={p.id} style={{ display: 'flex', alignItems: 'center', gap: 10, padding: '8px 10px', borderRadius: 8, background: p.isActive ? 'rgba(255,255,255,0.06)' : 'transparent', border: `0.5px solid ${p.isActive ? 'var(--accent)' : 'var(--card-border)'}` }}>
-                  <div style={{ flex: 1, fontSize: 13, fontWeight: p.isActive ? 600 : 400, color: p.isActive ? 'var(--accent)' : 'var(--text-secondary)' }}>{p.name}</div>
-                  {p.isActive && <span style={{ fontSize: 11, color: 'var(--accent)', letterSpacing: '0.08em' }}>ACTIVE</span>}
-                  {!p.isActive && <button onClick={() => setActiveProgram(p.id)} style={{ ...btnGhost, padding: '3px 10px', fontSize: 11 }}>Set active</button>}
-                  <button onClick={() => removeProgram(p.id)} style={{ ...btnGhost, padding: '3px 8px', fontSize: 11, color: '#e25d7a', borderColor: 'rgba(226,93,122,0.3)' }}>🗑</button>
-                </div>
-              ))}
-              <button onClick={() => setShowNewProgram(true)} style={{ ...btnGhost, alignSelf: 'flex-start', marginTop: 4, fontSize: 11 }}>+ New program</button>
-            </div>
-          )}
-        </GlassCard>
-
-        {/* Suggest a week */}
-        <GlassCard style={{ marginBottom: 16 }}>
-          <GlassLabel>Suggest a week</GlassLabel>
-          <div style={{ fontSize: 12.5, color: 'var(--text-secondary)', marginBottom: 8 }}>How many days can you train? Arete lays out a push / pull / legs week with the hard days spread out. Edit it after.</div>
-          <div style={{ display: 'flex', gap: 6, flexWrap: 'wrap' }}>
-            {[2, 3, 4, 5, 6].map(n => (
-              <button key={n} type="button" aria-pressed={suggestDays === n} onClick={() => setSuggestDays(suggestDays === n ? null : n)}
-                style={{ ...btnGhost, minHeight: 40, padding: '0 16px', borderColor: suggestDays === n ? 'var(--accent)' : undefined, color: suggestDays === n ? 'var(--accent)' : undefined }}>{n} days</button>
-            ))}
-          </div>
-          {suggestion && (
-            <div style={{ marginTop: 10, display: 'flex', flexDirection: 'column', gap: 8 }}>
-              <div className="val-num" style={{ fontSize: 13, color: 'var(--text-primary)' }}>{describeWeek(suggestion)}</div>
-              <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>
-                <button type="button" onClick={() => createSuggested(false)} style={btnGhost}>Save as a program</button>
-                <button type="button" onClick={() => createSuggested(true)} style={btnPrimary}>Save and make active</button>
-              </div>
-            </div>
-          )}
-        </GlassCard>
-
-        {/* New program inline form */}
-        {showNewProgram && (
-          <GlassCard style={{ marginBottom: 16 }}>
-            <GlassLabel>New Program</GlassLabel>
-            <div style={{ display: 'flex', gap: 8 }}>
-              <input value={newProgramName} onChange={e => setNewProgramName(e.target.value)} placeholder="Program name" style={{ ...inputSx, flex: 1 }}
-                onFocus={e => e.target.style.borderColor = 'var(--accent)'} onBlur={e => e.target.style.borderColor = 'var(--input-border)'}
-                onKeyDown={e => e.key === 'Enter' && createProgram()} />
-              <button onClick={createProgram} style={btnPrimary}>Create</button>
-              <button onClick={() => setShowNewProgram(false)} style={btnGhost}>Cancel</button>
-            </div>
-          </GlassCard>
-        )}
-
-        {/* Weekly grid */}
-        {activeProgram && (
-          <>
-            <GlassLabel>Weekly Schedule</GlassLabel>
-            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(7, 1fr)', gap: 8, marginBottom: 20 }}>
-              {DAY_KEYS.map(dk => {
-                const dayData   = activeProgram.days?.[dk] ?? { splitType: 'rest', label: 'Rest' };
-                const isToday   = dk === todayKey;
-                const colour    = SPLIT_COLOURS[dayData.splitType] ?? 'var(--accent)';
-                const isEditing = editingDay === dk;
-                return (
-                  <div key={dk} style={{
-                    borderRadius: 10, padding: '10px 8px', border: `0.5px solid ${isToday ? colour : 'var(--card-border)'}`,
-                    background: isToday ? `${colour}15` : 'var(--card-fill)',
-                    cursor: 'pointer', transition: 'all 0.15s', minWidth: 0,
-                  }} onClick={() => setEditingDay(isEditing ? null : dk)}>
-                    <div style={{ fontSize: 10.5, fontWeight: 700, letterSpacing: '0.1em', color: isToday ? colour : 'var(--text-muted)', textTransform: 'uppercase', marginBottom: 6, textAlign: 'center' }}>
-                      {DAY_LABELS[dk]}{isToday ? ' ·' : ''}
-                    </div>
-                    <div style={{ fontSize: 11, fontWeight: 600, color: colour, textAlign: 'center', lineHeight: 1.3 }}>
-                      {dayData.label || dayData.splitType}
-                    </div>
-                    {isToday && (
-                      <div style={{ fontSize: 10.5, color: colour, textAlign: 'center', marginTop: 4, opacity: 0.7 }}>Today</div>
-                    )}
-                  </div>
-                );
-              })}
-            </div>
-
-            {/* Day editor */}
-            {editingDay && (
-              <GlassCard style={{ marginBottom: 16 }}>
-                <GlassLabel>{DAY_LABELS[editingDay]} — Edit Day</GlassLabel>
-                <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
-                  <div>
-                    <span style={lblSx}>SPLIT TYPE</span>
-                    <div style={{ display: 'flex', gap: 6, flexWrap: 'wrap' }}>
-                      {SPLIT_OPTIONS.map(opt => {
-                        const current = activeProgram.days?.[editingDay]?.splitType;
-                        return (
-                          <button key={opt.value} onClick={() => updateDay(editingDay, { splitType: opt.value, label: opt.label })} style={{
-                            padding: '5px 14px', borderRadius: 20, border: `0.5px solid ${current === opt.value ? SPLIT_COLOURS[opt.value] : 'var(--card-border)'}`,
-                            background: current === opt.value ? `${SPLIT_COLOURS[opt.value]}22` : 'transparent',
-                            color: current === opt.value ? SPLIT_COLOURS[opt.value] : 'var(--text-secondary)',
-                            fontSize: 12, cursor: 'pointer', transition: 'all 0.12s',
-                          }}>{opt.label}</button>
-                        );
-                      })}
-                    </div>
-                  </div>
-
-                  {/* Custom label input */}
-                  {activeProgram.days?.[editingDay]?.splitType === 'custom' && (
-                    <div>
-                      <span style={lblSx}>CUSTOM LABEL</span>
-                      <input
-                        value={activeProgram.days?.[editingDay]?.label ?? ''}
-                        onChange={e => updateDay(editingDay, { label: e.target.value })}
-                        placeholder="e.g. Upper Body"
-                        style={inputSx}
-                        onFocus={e => e.target.style.borderColor = 'var(--accent)'}
-                        onBlur={e => e.target.style.borderColor = 'var(--input-border)'}
-                      />
-                    </div>
-                  )}
-
-                  {/* Exercise count for the assigned day */}
-                  {['push','pull','legs'].includes(activeProgram.days?.[editingDay]?.splitType) && (
-                    <div style={{ fontSize: 11, color: 'var(--text-muted)' }}>
-                      {exercises.filter(e => e.day === activeProgram.days[editingDay].splitType).length} exercises in library for this split type.
-                    </div>
-                  )}
-
-                  <button onClick={() => setEditingDay(null)} style={{ ...btnGhost, alignSelf: 'flex-start', fontSize: 11 }}>Done</button>
-                </div>
-              </GlassCard>
-            )}
-
-            {/* Today's workout summary */}
-            {(() => {
-              const today = activeProgram.days?.[todayKey];
-              if (!today || today.splitType === 'rest') return (
-                <div style={{ padding: '16px 20px', borderRadius: 12, background: 'rgba(255,255,255,0.03)', border: '0.5px solid var(--card-border)', textAlign: 'center' }}>
-                  <div style={{ fontSize: 13, color: 'var(--text-muted)' }}>Rest day — recover and recharge.</div>
-                </div>
-              );
-              const exCount = exercises.filter(e => e.day === today.splitType).length;
-              const colour  = SPLIT_COLOURS[today.splitType] ?? 'var(--accent)';
-              return (
-                <div style={{ padding: '16px 20px', borderRadius: 12, background: `${colour}12`, border: `0.5px solid ${colour}40`, display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
-                  <div>
-                    <div style={{ fontSize: 12, color: colour, fontWeight: 700, letterSpacing: '0.08em', textTransform: 'uppercase', marginBottom: 4 }}>Today</div>
-                    <div style={{ fontSize: 16, fontWeight: 600, color: 'var(--text-primary)' }}>{today.label} Day — {exCount} exercise{exCount !== 1 ? 's' : ''}</div>
-                  </div>
-                </div>
-              );
-            })()}
-          </>
-        )}
-      </div>
     </Section>
   );
 }
@@ -1102,7 +880,8 @@ export function useTrainData() {
   const { data: storedSplitNames, save: saveSplitNamesDoc } = useDocument('split_names',        STORAGE_KEYS.SPLIT_NAMES,        DEFAULT_SPLITS);
   const { items: programs, add: addProgram, update: updateProgram, remove: removeProgram } = useCollection('programs', STORAGE_KEYS.PROGRAMS);
 
-  const exercises  = (Array.isArray(storedExercises) && storedExercises.length) ? storedExercises : DEFAULT_OVERLOAD_EXERCISES;
+  const usingSamples = !Array.isArray(storedExercises);   // never saved: the sample list is shown until you edit or clear it
+  const exercises  = usingSamples ? DEFAULT_OVERLOAD_EXERCISES : storedExercises;
   const splitNames = storedSplitNames?.push ? storedSplitNames : { ...DEFAULT_SPLITS };
 
   // Today's split type from active program
@@ -1112,8 +891,8 @@ export function useTrainData() {
 
   return {
     workoutLogs, addWorkoutLog, updateWorkoutLog, removeWorkoutLog,
-    exercises, saveExercisesDoc, splitNames, saveSplitNamesDoc,
-    programs, addProgram, updateProgram, removeProgram, todaySplitType,
+    exercises, saveExercisesDoc, splitNames, saveSplitNamesDoc, usingSamples,
+    programs, addProgram, updateProgram, removeProgram, todaySplitType, activeProgram,
   };
 }
 
@@ -1123,7 +902,7 @@ export function TrainSessionScreen({ compact = true }) {
   return (
     <TrainSession exercises={d.exercises} workoutLogs={d.workoutLogs}
       addWorkoutLog={d.addWorkoutLog} updateWorkoutLog={d.updateWorkoutLog} removeWorkoutLog={d.removeWorkoutLog}
-      splitNames={d.splitNames} todaySplitType={d.todaySplitType}
+      splitNames={d.splitNames} todaySplitType={d.todaySplitType} program={d.activeProgram} updateProgram={d.updateProgram}
       progression={computeProgression} musclesFor={musclesFor} compact={compact} />
   );
 }
@@ -1132,8 +911,8 @@ export default function WorkoutTab({ settings }) {
   const [sub, setSub] = useState('session');
   const {
     workoutLogs, addWorkoutLog, updateWorkoutLog, removeWorkoutLog,
-    exercises, saveExercisesDoc, splitNames, saveSplitNamesDoc,
-    programs, addProgram, updateProgram, removeProgram, todaySplitType,
+    exercises, saveExercisesDoc, splitNames, saveSplitNamesDoc, usingSamples,
+    programs, addProgram, updateProgram, removeProgram, todaySplitType, activeProgram,
   } = useTrainData();
 
   return (
@@ -1158,10 +937,10 @@ export default function WorkoutTab({ settings }) {
 
       {/* Content */}
       <div style={{ flex: 1, overflow: 'hidden' }}>
-        {sub === 'session'   && <TrainSession exercises={exercises} workoutLogs={workoutLogs} addWorkoutLog={addWorkoutLog} updateWorkoutLog={updateWorkoutLog} removeWorkoutLog={removeWorkoutLog} splitNames={splitNames} todaySplitType={todaySplitType} progression={computeProgression} musclesFor={musclesFor} />}
+        {sub === 'session'   && <TrainSession exercises={exercises} workoutLogs={workoutLogs} addWorkoutLog={addWorkoutLog} updateWorkoutLog={updateWorkoutLog} removeWorkoutLog={removeWorkoutLog} splitNames={splitNames} todaySplitType={todaySplitType} program={activeProgram} updateProgram={updateProgram} progression={computeProgression} musclesFor={musclesFor} />}
         {sub === 'overload'  && <OverloadCoach workoutLogs={workoutLogs} addWorkoutLog={addWorkoutLog} exercises={exercises} saveExercises={saveExercisesDoc} splitNames={splitNames} saveSplitNames={saveSplitNamesDoc} todaySplitType={todaySplitType} />}
-        {sub === 'splits'    && <SplitPlanner programs={programs} addProgram={addProgram} updateProgram={updateProgram} removeProgram={removeProgram} exercises={exercises} splitNames={splitNames} />}
-        {sub === 'exercises' && <ExercisesLibrary exercises={exercises} saveExercises={saveExercisesDoc} />}
+        {sub === 'splits'    && <SplitBuilder programs={programs} addProgram={addProgram} updateProgram={updateProgram} removeProgram={removeProgram} exercises={exercises} workoutLogs={workoutLogs} />}
+        {sub === 'exercises' && <ExercisesLibrary exercises={exercises} saveExercises={saveExercisesDoc} usingSamples={usingSamples} />}
         {sub === 'muscles'   && <MuscleRanking workoutLogs={workoutLogs} settings={settings} />}
         {sub === 'calendar'  && <WorkoutCalendar workoutLogs={workoutLogs} />}
       </div>

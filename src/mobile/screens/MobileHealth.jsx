@@ -600,6 +600,13 @@ function NutritionTab({ settings, today }) {
   const frequent = useMemo(() => recentFoods(nutritionLogs, { today, limit: 8 }), [nutritionLogs, today]);
   const logMyMeal = (m) => { const p = portions[m.id] ?? 1; const e = mealEntry(m, p); e.time = nowStr(); return appendEntries([e], `Logged ${m.name}${p === 1 ? '' : ` ×${p}`}`); };
 
+  // Swipe-delete a saved meal; Undo puts the same recipe back.
+  async function dropSavedMeal(m) {
+    const { id: _id, ...rest } = m;
+    await removeSavedMeal(m.id);
+    window.dispatchEvent(new CustomEvent('valerie:toast', { detail: { message: 'Deleted ' + m.name, type: 'success', undo: () => addSavedMeal(rest) } }));
+  }
+
   async function removeMealEntry(id) {
     if (!todayLog?.id) return;
     const totalsOf = (list) => list.reduce((s, m) => ({
@@ -697,7 +704,8 @@ function NutritionTab({ settings, today }) {
         </div>
         {savedMeals.length === 0 && <div style={{ fontSize: 13, color: 'var(--text-muted)', lineHeight: 1.5 }}>No saved meals yet. Build a recipe from ingredients and log it in one tap.</div>}
         {savedMeals.map(m => (
-          <div key={m.id} style={{ display: 'flex', alignItems: 'center', gap: 8, padding: '9px 0', borderTop: '0.5px solid var(--card-border)' }}>
+          <SwipeRow key={m.id} onDelete={() => dropSavedMeal(m)} style={{ borderTop: '0.5px solid var(--card-border)' }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: 8, padding: '9px 0' }}>
             <div style={{ flex: 1, minWidth: 0 }}>
               <div style={{ fontSize: 14, color: 'var(--text-primary)', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{m.name}</div>
               <div style={{ fontSize: 11.5, color: 'var(--text-muted)', marginTop: 2 }}>{m.calories} kcal · P{m.protein} C{m.carbs} F{m.fat}{m.servings > 1 ? ` · per serving of ${m.servings}` : ''}</div>
@@ -708,6 +716,7 @@ function NutritionTab({ settings, today }) {
             <button onClick={() => logMyMeal(m)} style={{ minHeight: 40, padding: '0 14px', borderRadius: 10, border: 'none', background: 'var(--accent)', color: 'var(--bg-base)', fontSize: 13, fontWeight: 600, cursor: 'pointer' }}>Log</button>
             <button onClick={() => setRecipeDraft({ initial: { ...draftFromSaved(m), id: m.id } })} aria-label={`Edit ${m.name}`} style={{ minHeight: 40, padding: '0 10px', borderRadius: 10, border: '0.5px solid var(--card-border)', background: 'none', color: 'var(--text-secondary)', fontSize: 13, cursor: 'pointer' }}>Edit</button>
           </div>
+          </SwipeRow>
         ))}
       </MCard>
 

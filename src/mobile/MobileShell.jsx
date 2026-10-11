@@ -8,6 +8,7 @@ import { isInstalledPWA }     from '../utils/platform.js';
 import MobileDashboard  from './screens/MobileDashboard.jsx';
 import MobileHealth     from './screens/MobileHealth.jsx';
 import { TasksScreen, PlaceholderScreen } from './screens/MobileMore.jsx';
+import MobileNotes from './screens/MobileNotes.jsx';
 import { TrainSessionScreen } from '../tabs/Workout.jsx';
 import MobileLM         from './screens/MobileLM.jsx';
 import GoalHQ           from '../tabs/GoalHQ.jsx';
@@ -124,6 +125,7 @@ function usePullToRefresh(scrollRef, onRefresh) {
 const MOBILE_SCREENS = {
   dashboard: (p) => <MobileDashboard {...p} />,
   tasks:     ()  => <TasksScreen />,
+  notes:     ()  => <MobileNotes />,
   goal:      (p) => <GoalHQ {...p} compact overview={<MobileHealth {...p} tabs={['Overview']} title={null} />} />,
   workout:   ()  => <TrainSessionScreen compact />,
   fuel:      (p) => <MobileHealth {...p} tabs={['Nutrition', 'Water']} title={null} />,
