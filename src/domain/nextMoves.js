@@ -19,6 +19,8 @@
 //   sleep: { debtHours, status, bedtime } | null,
 //   skin: { amDone, amTotal, pmDone, pmTotal } | null,
 //   fast: { done, elapsedH, targetHours } | null,
+//   steps: { count, goal } | null,               // from Apple Health sync
+
 // }
 
 const MAX_MOVES = 5;
@@ -76,6 +78,11 @@ export function nextMoves(snap = {}) {
 
   if (snap.weight?.hasGoal && (snap.weight.daysSinceWeighIn == null || snap.weight.daysSinceWeighIn >= 4)) {
     add('weigh-in', 45, 'Log a weigh-in', snap.weight.daysSinceWeighIn == null ? 'No weight logged yet, so the trend and goal date cannot start.' : `Last one was ${plural(snap.weight.daysSinceWeighIn, 'day')} ago. The trend needs regular readings.`, 'body');
+  }
+
+  const st = snap.steps;
+  if (st && st.goal > 0 && Number.isFinite(st.count) && hour >= 17 && st.count < st.goal * 0.6) {
+    add('steps', 44, 'Steps are behind', `${st.count.toLocaleString('en-AU')} of ${st.goal.toLocaleString('en-AU')} so far. A 20 minute walk adds about 2,000.`, 'coachtoday');
   }
 
   const h = snap.habits;

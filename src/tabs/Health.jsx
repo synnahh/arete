@@ -11,7 +11,7 @@ import { askClaudeRaw } from '../utils/claudeRaw.js';
 import { useAppleHealth } from '../hooks/useAppleHealth.js';
 import { MICRONUTRIENTS, MICRO_BY_KEY, MICRO_GROUPS, extractMicrosFromOFF, scaleMicros, sumMicros, hasMicros } from '../utils/micronutrients.js';
 import { currencySymbol as currencySym } from '../utils/currency.js';
-import { searchOpenFoodFacts, lookupBarcode, startBarcodeScan } from '../utils/openFoodFacts.js';
+import { searchFoods, lookupBarcode, startBarcodeScan } from '../utils/openFoodFacts.js';
 import { toLocalDateKey } from '../utils/localDate.js';
 import { peekHealthSection, clearHealthSection, screenForHealthSection } from '../nav/healthSection.js';
 import RecipeBuilder from '../components/RecipeBuilder.jsx';
@@ -763,7 +763,7 @@ function Nutrition({ nutritionLogs, addNutritionLog, updateNutritionLog, setting
   const doSearch = async () => {
     if (!search.trim()) return;
     setSearching(true);
-    try { setResults(await searchOpenFoodFacts(search)); }
+    try { setResults(await searchFoods(search)); }
     catch { setResults([]); }
     finally { setSearching(false); }
   };

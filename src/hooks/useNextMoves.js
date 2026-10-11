@@ -8,6 +8,7 @@ import { completion } from '../domain/skin.js';
 import { storage, STORAGE_KEYS } from '../utils/storage.js';
 import { toLocalDateKey } from '../utils/localDate.js';
 import { useRecovery } from './useRecovery.js';
+import { useAppleHealth } from './useAppleHealth.js';
 import { nextMoves } from '../domain/nextMoves.js';
 import { applyUsage, dueItems, expiringItems } from '../domain/ahead.js';
 import { waterAdvice } from '../domain/water.js';
@@ -29,6 +30,7 @@ export function useNextMoves() {
   const { items: lmDaily = [] } = useCollection('lm_daily', 'valerie_lm_daily');
   const lmProfile = useDocument('lm_profile', 'valerie_lm_profile', {}).data;
   const recovery = useRecovery();
+  const health = useAppleHealth();
 
   const [tick, setTick] = useState(0);
   const [settings, setSettings] = useState(() => storage.get(STORAGE_KEYS.SETTINGS, {}) || {});
@@ -77,8 +79,9 @@ export function useNextMoves() {
       weight: { hasGoal: !!settings.coachGoal, daysSinceWeighIn: lastWeigh ? dayIndex(today) - dayIndex(lastWeigh) : null },
       sleep: recovery.debt && recovery.debt.status !== 'insufficient' ? { status: recovery.debt.status, debtHours: recovery.debt.debtHours, bedtime: sleepWindow().bed } : null,
       skin: am.total || pm.total ? { amDone: am.done, amTotal: am.total, pmDone: pm.done, pmTotal: pm.total } : null,
+      steps: Number.isFinite(health.data?.steps) && health.lastSync === today ? { count: health.data.steps, goal: Number(settings.stepGoal) || 8000 } : null,
       fast: settings.fast ? fastProgress(settings.fast, now.getTime()) : null,
     });
   // tick re-runs the clock-dependent rules once a minute
-  }, [nutrition, water, workouts, body, habits, supplies, lmDaily, lmProfile, recovery, settings, tick]);
+  }, [nutrition, water, workouts, body, habits, supplies, lmDaily, lmProfile, recovery, health.data, health.lastSync, settings, tick]);
 }

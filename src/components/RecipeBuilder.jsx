@@ -2,7 +2,7 @@
 // and save it to My Meals (or update one). Rules: src/domain/recipes.js. Used on desktop
 // (Fuel > Nutrition) and on the phone (a sheet).
 import { useMemo, useState } from 'react';
-import { searchOpenFoodFacts } from '../utils/openFoodFacts.js';
+import { searchFoods } from '../utils/openFoodFacts.js';
 import { itemFromCustom } from '../domain/customFoods.js';
 import { UNITS, blankItem, itemFromFood, itemFromEntry, rescaleItem, recipeTotals, perServing, recipeProblems, toSavedMeal } from '../domain/recipes.js';
 import { label } from './ui.js';
@@ -47,7 +47,7 @@ export default function RecipeBuilder({ initial, recent = [], foods = [], onSave
     const q = query.trim();
     if (!q || searching) return;
     setSearching(true); setSearchError('');
-    try { setResults((await searchOpenFoodFacts(q)).slice(0, 6)); }
+    try { setResults((await searchFoods(q)).slice(0, 6)); }
     catch { setResults([]); setSearchError('Food search is unavailable right now. Add the ingredient by hand instead.'); }
     finally { setSearching(false); }
   }

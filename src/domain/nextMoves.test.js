@@ -98,4 +98,11 @@ describe('nextMoves', () => {
     expect(m.map(x => x.priority)).toEqual([...m.map(x => x.priority)].sort((a, b) => b - a));
     expect(m[0].id).toBe('reorder');
   });
+
+  it('nudges about steps only in the evening and only when well behind', () => {
+    expect(ids({ hour: 10, steps: { count: 500, goal: 8000 } })).not.toContain('steps');
+    expect(ids({ hour: 18, steps: { count: 7000, goal: 8000 } })).not.toContain('steps');
+    expect(ids({ hour: 18, steps: { count: 3200, goal: 8000 } })).toContain('steps');
+    expect(ids({ hour: 18, steps: null })).not.toContain('steps');
+  });
 });

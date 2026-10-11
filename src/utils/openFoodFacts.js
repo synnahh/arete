@@ -4,6 +4,7 @@
 
 import { extractMicrosFromOFF } from './micronutrients.js';
 import { platformFetch } from './platform.js';
+import { supabase } from '../supabase/supabase.js';
 
 function mapProduct(p) {
   return {
@@ -18,12 +19,50 @@ function mapProduct(p) {
   };
 }
 
+// Branded-product search. The old world.openfoodfacts.org/cgi/search.pl route fails
+// from the browser (no CORS), while the country sites answer, so try Australia
+// first (local brands), then the rest of the world.
+const OFF_HOSTS = ['au.openfoodfacts.org', 'world.openfoodfacts.org'];
+
 export async function searchOpenFoodFacts(query) {
-  const url = `https://world.openfoodfacts.org/cgi/search.pl?action=process&search_terms=${encodeURIComponent(query)}&json=1&fields=product_name,nutriments&page_size=8&search_simple=1`;
-  const res = await platformFetch(url);
-  if (!res.ok) throw new Error('Food search failed');
-  const data = await res.json();
-  return (data.products || []).filter(p => p.product_name).map(mapProduct);
+  let lastError = null;
+  for (const host of OFF_HOSTS) {
+    try {
+      const url = `https://${host}/cgi/search.pl?action=process&search_terms=${encodeURIComponent(query)}&json=1&fields=product_name,nutriments&page_size=8`;
+      const res = await platformFetch(url);
+      if (!res.ok) throw new Error('Food search failed');
+      const data = await res.json();
+      const found = (data.products || []).filter(p => p.product_name).map(mapProduct);
+      if (found.length) return found;
+    } catch (e) { lastError = e; }
+  }
+  if (lastError) throw lastError;
+  return [];
+}
+
+// Server-side search (USDA generic foods + Open Food Facts, with the User-Agent and
+// rate-limit handling a browser cannot provide). 404/503 means it is not deployed:
+// skip it for the session and use the direct route below.
+let serverSearchOff = false;
+async function searchViaServer(query) {
+  if (serverSearchOff) return null;
+  try {
+    const { data, error } = await supabase.functions.invoke('food-search', { body: { query } });
+    if (error) {
+      const status = error.context?.status;
+      if (status === 404 || status === 503) serverSearchOff = true;
+      return null;
+    }
+    return Array.isArray(data?.foods) ? data.foods : null;
+  } catch { return null; }
+}
+
+// Everything the app can search: the server (generic + branded) first, then the
+// direct Open Food Facts route when the server is unavailable or finds nothing.
+export async function searchFoods(query) {
+  const viaServer = await searchViaServer(query);
+  if (viaServer?.length) return viaServer;
+  return searchOpenFoodFacts(query);
 }
 
 export async function lookupBarcode(code) {

@@ -2,7 +2,7 @@
 import { useState, useMemo, useRef } from 'react';
 import { useCollection } from '../../supabase/useCollection.js';
 import { STORAGE_KEYS }  from '../../utils/storage.js';
-import { searchOpenFoodFacts, lookupBarcode, startBarcodeScan } from '../../utils/openFoodFacts.js';
+import { searchFoods, lookupBarcode, startBarcodeScan } from '../../utils/openFoodFacts.js';
 import { scaleMicros } from '../../utils/micronutrients.js';
 import { toLocalDateKey } from '../../utils/localDate.js';
 import { currentWaterGoal, sleepWindow } from '../../utils/waterGoal.js';
@@ -393,7 +393,7 @@ function AddFoodSheet({ onAdd, onClose }) {
   const doSearch = async () => {
     if (!query.trim()) return;
     setSearching(true);
-    try { setResults(await searchOpenFoodFacts(query)); }
+    try { setResults(await searchFoods(query)); }
     catch { setResults([]); }
     finally { setSearching(false); }
   };
