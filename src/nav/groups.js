@@ -1,4 +1,4 @@
-// groups.js — Arete navigation: six groups laid over Valerie's existing screens.
+// groups.js — Arete navigation: five groups laid over Valerie's existing screens.
 //
 // Screen ids are unchanged ('workout', 'tasks', ...), so AI navigate actions,
 // the command palette, nudges, hidden-tab settings and saved sidebar order all
@@ -6,9 +6,8 @@
 
 export const GROUPS = [
   { id: 'home',     label: 'Home',     desc: 'Today at a glance',                 screens: ['dashboard'] },
-  { id: 'plan',     label: 'Plan',     desc: 'Tasks · Calendar · Routines · Supplies', screens: ['agenda', 'tasks', 'calendar', 'routines', 'focus', 'progress', 'essentials', 'places'] },
+  { id: 'plan',     label: 'Plan',     desc: 'Tasks · Calendar · Routines · Supplies · Notes', screens: ['agenda', 'tasks', 'calendar', 'routines', 'focus', 'progress', 'essentials', 'places', 'notes', 'lists'] },
   { id: 'coach',    label: 'Coach',    desc: 'Goal · Train · Fuel · Recover · Look · Body · Habits', screens: ['coachtoday', 'goal', 'workout', 'fuel', 'recover', 'lm', 'body', 'habits', 'style', 'insights'] },
-  { id: 'mind',     label: 'Mind',     desc: 'Mind · Notes · Lists',              screens: ['mindtoday', 'mind', 'notes', 'lists'] },
   { id: 'finance',  label: 'Finance',  desc: 'Money · Portfolio',                 screens: ['moneytoday', 'finance', 'portfolio'] },
   { id: 'settings', label: 'Settings', desc: 'Settings · Vault',                  screens: ['settings', 'vault'] },
 ];
@@ -20,7 +19,7 @@ export const SCREEN_LABELS = {
   progress: 'Progress',  essentials: 'Supplies', places: 'Places',
   goal: 'Goal HQ',       workout: 'Train',      fuel: 'Fuel',         recover: 'Recover',
   lm: 'Look',            body: 'Body',          habits: 'Habits',     style: 'Style',     insights: 'Insights',
-  mind: 'Mind',          notes: 'Notes',        lists: 'Lists',
+  notes: 'Notes',        lists: 'Lists',
   finance: 'Money',      portfolio: 'Portfolio',
   settings: 'Settings',  vault: 'Vault',
 };
@@ -30,7 +29,8 @@ export const DEFAULT_SCREEN = 'dashboard';
 // Old ids that now open a newer screen. Health was split across Coach;
 // its overview lives on Goal HQ.
 // The assistant screen was removed; old links open Home.
-export const SCREEN_ALIASES = { health: 'goal', assistant: 'dashboard' };
+// The Mind tab was removed (its Notes and Lists moved to Plan); old Mind links open Notes.
+export const SCREEN_ALIASES = { health: 'goal', assistant: 'dashboard', mind: 'notes', mindtoday: 'notes' };
 
 // Settings can never be hidden, or there would be no way to unhide anything.
 const NEVER_HIDDEN = new Set(['settings']);

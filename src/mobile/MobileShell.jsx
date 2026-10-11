@@ -79,17 +79,6 @@ const BAR = [
       </svg>
     ),
   },
-  {
-    id: 'mind',
-    label: 'Mind',
-    icon: (active) => (
-      <svg width="22" height="22" viewBox="0 0 24 24" fill="none" aria-hidden="true">
-        <path d="M9.5 2a2.5 2.5 0 015 0v.5A7.5 7.5 0 0117 9.5v1a5 5 0 01-10 0v-1A7.5 7.5 0 019.5 2.5V2z"
-          {...stroke(active)} fill={active ? 'currentColor' : 'none'} fillOpacity={active ? 0.15 : 0} />
-        <path d="M12 16v6M9 22h6" {...stroke(active)} strokeLinecap="round" />
-      </svg>
-    ),
-  },
 ];
 
 // ── Pull-to-refresh ────────────────────────────────────────────────────────────

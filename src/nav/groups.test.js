@@ -31,8 +31,8 @@ describe('groups', () => {
     for (const screen of Object.keys(HEALTH_SECTIONS_BY_SCREEN)) expect(groupOf(screen).id).toBe('coach');
   });
 
-  it('has the six agreed groups in order', () => {
-    expect(GROUPS.map(g => g.id)).toEqual(['home', 'plan', 'coach', 'mind', 'finance', 'settings']);
+  it('has the five groups in order', () => {
+    expect(GROUPS.map(g => g.id)).toEqual(['home', 'plan', 'coach', 'finance', 'settings']);
   });
 
   it('maps screens to their group', () => {
