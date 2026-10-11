@@ -2,6 +2,8 @@
 // (tabs/Workout.jsx), the recovery map, and the exercise picker's additions.
 // Unknown or custom exercises fall back to their split day's muscle groups.
 
+import { findExercise, trackedMuscles } from './exerciseDb.js';
+
 export const MUSCLE_IDS = ['chest', 'shoulders', 'triceps', 'back', 'biceps', 'forearms', 'quads', 'hamstrings', 'glutes', 'calves'];
 export const MUSCLE_LABEL = {
   chest: 'Chest', shoulders: 'Shoulders', triceps: 'Triceps', back: 'Back', biceps: 'Biceps', forearms: 'Forearms',
@@ -58,12 +60,15 @@ export const EXERCISE_MUSCLES = {
 };
 
 /** Muscles for an exercise entry ({ name, day }). */
-export const musclesForExercise = (ex) => EXERCISE_MUSCLES[ex?.name] || MUSCLE_MAP[ex?.day] || [];
+const fromDb = (name) => { const e = findExercise(name); return e ? trackedMuscles(e) : null; };
+export const musclesForExercise = (ex) => EXERCISE_MUSCLES[ex?.name] || fromDb(ex?.name) || MUSCLE_MAP[ex?.day] || [];
 
 /** Muscles a single logged set/exercise trained, most specific first. */
 export function musclesForLog(log) {
   if (Array.isArray(log?.muscles) && log.muscles.length) return log.muscles;
   if (log?.exerciseName && EXERCISE_MUSCLES[log.exerciseName]) return EXERCISE_MUSCLES[log.exerciseName];
+  const db = fromDb(log?.exerciseName);
+  if (db?.length) return db;
   const split = log?.splitType || log?.day || log?.muscle;
   return MUSCLE_MAP[split] || [];
 }

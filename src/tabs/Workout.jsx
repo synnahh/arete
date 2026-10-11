@@ -14,6 +14,7 @@ import { suggestNext } from '../domain/progression.js';
 import { suggestWeek, describeWeek } from '../domain/split.js';
 import { EXERCISE_MUSCLES, MUSCLE_MAP, musclesForLog as getLogMuscles, musclesForExercise } from '../domain/muscles.js';
 import ExerciseSuggest from '../components/ExerciseSuggest.jsx';
+import ExerciseBrowser from '../components/ExerciseBrowser.jsx';
 
 // ── Helpers ───────────────────────────────────────────────────────────────────
 const todayStr = () => toLocalDateKey(new Date());
@@ -416,6 +417,7 @@ function ExercisesLibrary({ exercises, saveExercises }) {
       <button onClick={() => setShowAdd(true)} style={{ ...btnPrimary, fontSize: 11 }}>+ Add exercise</button>
     }>
       <ExerciseSuggest exercises={exercises} saveExercises={saveExercises} />
+      <ExerciseBrowser exercises={exercises} saveExercises={saveExercises} />
       {/* Filter row */}
       <div style={{ display: 'flex', gap: 6, marginBottom: 18 }}>
         {['all','push','pull','legs'].map(f => (

@@ -6,6 +6,7 @@ import { insightSeries, sleepTrainingLink, RANGES } from '../domain/insights.js'
 import TrendChart from '../components/TrendChart.jsx';
 import RecapCard from '../components/RecapCard.jsx';
 import StreakCard from '../components/StreakCard.jsx';
+import LogCalendar from '../components/LogCalendar.jsx';
 import { label } from '../components/ui.js';
 
 const CARD = { padding: 18, borderRadius: 16, background: 'var(--bg-panel)', border: '0.5px solid var(--card-border)', display: 'flex', flexDirection: 'column', gap: 10 };
@@ -55,6 +56,8 @@ export default function Insights() {
         <RecapCard recap={recap} />
         <StreakCard streak={streak} />
       </div>
+
+      <LogCalendar data={data} />
 
       {link && (
         <section aria-label="Pattern" style={CARD}>

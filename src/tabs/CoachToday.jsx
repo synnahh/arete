@@ -25,6 +25,7 @@ import CoachUpdates from '../components/CoachUpdates.jsx';
 import GoalEta from '../components/GoalEta.jsx';
 import WeightChart from '../components/WeightChart.jsx';
 import StreakCard from '../components/StreakCard.jsx';
+import LogCalendar from "../components/LogCalendar.jsx";
 import RecapCard from '../components/RecapCard.jsx';
 import { label } from '../components/ui.js';
 
@@ -69,7 +70,7 @@ export default function CoachToday({ onTabChange, compact = false }) {
   const score = useDayScore(settings);
   const moves = useNextMoves();
   const recovery = useRecovery();
-  const { streak, recap } = useRecap();
+  const { streak, recap, data: trackedData } = useRecap();
 
   const nutrition = useCollection('nutrition_logs', STORAGE_KEYS.MACROS);
   const water = useCollection('water_logs', STORAGE_KEYS.WATER);
@@ -251,6 +252,7 @@ export default function CoachToday({ onTabChange, compact = false }) {
           </section>
 
           <StreakCard streak={streak} compact />
+          <LogCalendar data={trackedData} compact />
           {recap && <RecapCard recap={recap} compact />}
         </div>
       </div>
