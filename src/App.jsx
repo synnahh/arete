@@ -187,14 +187,23 @@ export default function App() {
     setActiveTab(screen);
   }, []);
 
+  // ── Dev view ───────────────────────────────────────────────────────────────
+  // On the local dev server only, skip the PIN and sign-in so a change can be looked
+  // at while it is being built. import.meta.env.DEV is replaced with false in every
+  // production build, so this whole path is removed from dist: it cannot ship. There
+  // is no session in this mode, so nothing syncs. Add ?login=1 to the address to see
+  // the real gates on the dev server.
+  const DEV_VIEW = import.meta.env.DEV && new URLSearchParams(window.location.search).get('login') !== '1';
+
   // ── PIN gate — always required on app open (hardcoded single-user PIN) ──────
-  const [locked, setLocked] = useState(true);
+  const [locked, setLocked] = useState(!DEV_VIEW);
 
   // ── Supabase session ──────────────────────────────────────────────────────
   // One shared account across all devices = one auth.uid() = RLS lets every
   // device see the same rows. Sign-in shows ONCE per device (session persists).
-  const [hasSession, setHasSession] = useState(null); // null = checking
+  const [hasSession, setHasSession] = useState(DEV_VIEW ? true : null); // null = checking
   useEffect(() => {
+    if (DEV_VIEW) return undefined;
     supabase.auth.getSession().then(({ data: { session } }) => {
       setHasSession(!!session?.user);
     });
@@ -283,7 +292,7 @@ export default function App() {
 
   //  On mount: load settings, apply theme, check onboarding flag
   useEffect(() => {
-    const isOnboarded = storage.get(STORAGE_KEYS.ONBOARDED, false);
+    const isOnboarded = DEV_VIEW || storage.get(STORAGE_KEYS.ONBOARDED, false);
     setOnboarded(isOnboarded);
 
     function applyAndSet(s) {
