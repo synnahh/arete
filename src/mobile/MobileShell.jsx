@@ -23,7 +23,7 @@ import PlanToday        from '../tabs/PlanToday.jsx';
 import CoachToday       from '../tabs/CoachToday.jsx';
 import MoneyToday       from '../tabs/MoneyToday.jsx';
 import MindToday        from '../tabs/MindToday.jsx';
-import { haptics }     from './utils/haptics.js';
+import { haptics, installTapHaptics } from './utils/haptics.js';
 import { storage, STORAGE_KEYS } from '../utils/storage.js';
 import SectionBar      from '../components/SectionBar.jsx';
 import { groupOf, groupScreens, resolveTarget, DEFAULT_SCREEN, SCREEN_LABELS } from '../nav/groups.js';
@@ -151,6 +151,9 @@ export default function MobileShell({ settings, onSettingsChange }) {
   const scrollRef = useRef(null);
   const lastByGroupRef = useRef({});
   const peakState = usePeakState(settings);
+
+  // A light tap on every button press, the way native apps feel (iPhone Safari 17.4+ and Android).
+  useEffect(() => installTapHaptics(document), []);
 
   // Notification scheduler — drives SMS + push on mobile
   useNotifications(settings);
