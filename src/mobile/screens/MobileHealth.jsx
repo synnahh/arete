@@ -1,5 +1,6 @@
 //  MobileHealth.jsx  Health tab matching desktop overview layout
 import { useState, useMemo, useRef } from 'react';
+import SwipeRow from '../SwipeRow.jsx';
 import { useCollection } from '../../supabase/useCollection.js';
 import { STORAGE_KEYS }  from '../../utils/storage.js';
 import { searchFoods, lookupBarcode, startBarcodeScan } from '../../utils/openFoodFacts.js';
@@ -601,12 +602,19 @@ function NutritionTab({ settings, today }) {
 
   async function removeMealEntry(id) {
     if (!todayLog?.id) return;
-    const newMeals = meals.filter(m => m.id !== id);
-    const newTotals = newMeals.reduce((s, m) => ({
+    const totalsOf = (list) => list.reduce((s, m) => ({
       calories: s.calories + (m.calories || 0), protein: s.protein + (m.protein || 0),
       carbs: s.carbs + (m.carbs || 0), fat: s.fat + (m.fat || 0),
     }), { calories: 0, protein: 0, carbs: 0, fat: 0 });
-    await updateNutritionLog(todayLog.id, { meals: newMeals, ...newTotals });
+    const before = meals;
+    const removed = before.find(m => m.id === id);
+    const newMeals = before.filter(m => m.id !== id);
+    const logId = todayLog.id;
+    await updateNutritionLog(logId, { meals: newMeals, ...totalsOf(newMeals) });
+    window.dispatchEvent(new CustomEvent('valerie:toast', { detail: {
+      message: `Removed ${removed?.name || 'entry'}`, type: 'success',
+      undo: () => updateNutritionLog(logId, { meals: before, ...totalsOf(before) }),
+    } }));
   }
 
   return (
@@ -713,10 +721,10 @@ function NutritionTab({ settings, today }) {
               <span>{sec.label}</span><span>{sec.kcal} kcal</span>
             </div>
             {sec.meals.map((m, i) => (
-              <div key={m.id || i} style={{
+              <SwipeRow key={m.id || i} onDelete={() => removeMealEntry(m.id)} style={{ borderBottom: '0.5px solid var(--card-border)' }}>
+              <div style={{
                 display: 'flex', justifyContent: 'space-between', alignItems: 'center',
                 padding: '8px 4px 8px 16px',
-                borderBottom: '0.5px solid var(--card-border)',
               }}>
                 <div style={{ minWidth: 0 }}>
                   {m.time && <div style={{ fontSize: 11, color: 'var(--text-muted)', marginBottom: 2 }}>{m.time}</div>}
@@ -736,6 +744,7 @@ function NutritionTab({ settings, today }) {
                     cursor: 'pointer', width: 44, height: 44, WebkitTapHighlightColor: 'transparent' }}>×</button>
                 </div>
               </div>
+              </SwipeRow>
             ))}
           </div>
         ))}
@@ -784,6 +793,14 @@ function WaterTab({ settings, today }) {
   const [custom, setCustom] = useState('');
 
   const log = (ml) => addWaterLog({ date: today, amount: ml, time: nowStr() });
+  // Remove a drink, with an Undo that puts the same entry back.
+  const dropWater = async (l) => {
+    await removeWaterLog(l.id);
+    window.dispatchEvent(new CustomEvent('valerie:toast', { detail: {
+      message: 'Removed ' + (l.amount >= 1000 ? (l.amount / 1000) + 'L' : l.amount + 'ml'), type: 'success',
+      undo: () => addWaterLog({ date: l.date, amount: l.amount, time: l.time }),
+    } }));
+  };
 
   return (
     <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
@@ -832,10 +849,10 @@ function WaterTab({ settings, today }) {
           <div style={{ padding: '16px 18px', fontSize: 13, color: 'var(--text-muted)' }}>Nothing logged yet</div>
         ) : (
           [...waterLogs.filter(l => l.date === today)].reverse().map((l, i, arr) => (
-            <div key={l.id || i} style={{
+            <SwipeRow key={l.id || i} onDelete={() => dropWater(l)} style={{ borderBottom: i < arr.length - 1 ? '0.5px solid var(--card-border)' : 'none' }}>
+            <div style={{
               display: 'flex', justifyContent: 'space-between', alignItems: 'center',
               padding: '11px 16px',
-              borderBottom: i < arr.length - 1 ? '0.5px solid var(--card-border)' : 'none',
             }}>
               <span style={{ fontSize: 13, color: 'var(--text-secondary)' }}>
                 {l.amount >= 1000 ? `${l.amount/1000}L` : `${l.amount}ml`}
@@ -847,6 +864,7 @@ function WaterTab({ settings, today }) {
                   cursor: 'pointer', padding: '2px 4px', WebkitTapHighlightColor: 'transparent' }}>×</button>
               </div>
             </div>
+            </SwipeRow>
           ))
         )}
       </MCard>

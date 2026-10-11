@@ -148,6 +148,7 @@ const MOBILE_EXCLUDED = [];
 //  Shell
 export default function MobileShell({ settings, onSettingsChange }) {
   const [activeTab, setActiveTab]   = useState(DEFAULT_SCREEN);
+  const [slide, setSlide] = useState(null);   // 'fwd' | 'back' when moving between screens of one group
   const scrollRef = useRef(null);
   const lastByGroupRef = useRef({});
   const peakState = usePeakState(settings);
@@ -190,6 +191,15 @@ export default function MobileShell({ settings, onSettingsChange }) {
     if (!screen) return;
     haptics.tap();
     lastByGroupRef.current[groupOf(screen).id] = screen;
+    // Within a group the new screen slides in from the side you are heading toward;
+    // a change of group keeps that group's own entrance.
+    const to = groupOf(screen);
+    let dir = null;
+    if (screen !== activeTab && groupOf(activeTab).id === to.id) {
+      const list = groupScreens(to.id, navOpts());
+      dir = list.indexOf(screen) > list.indexOf(activeTab) ? 'fwd' : 'back';
+    }
+    setSlide(dir);
     setActiveTab(screen);
   }
 
@@ -262,7 +272,7 @@ export default function MobileShell({ settings, onSettingsChange }) {
             transition: refreshing ? 'none' : 'opacity 0.15s',
           }} />
         </div>
-        <div key={activeTab} className="val-fade-up m-screen">
+        <div key={activeTab} className="val-fade-up m-screen" data-dir={slide || undefined}>
           {render
             ? render(screenProps)
             : <div style={{ padding: 16 }}><PlaceholderScreen title={SCREEN_LABELS[activeTab] ?? activeTab} /></div>}

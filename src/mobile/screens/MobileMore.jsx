@@ -3,6 +3,7 @@ import { useState, useMemo, useRef } from 'react';
 import { STORAGE_KEYS } from '../../utils/storage.js';
 import { useCollection } from '../../supabase/useCollection.js';
 import { haptics }       from '../utils/haptics.js';
+import SwipeRow from '../SwipeRow.jsx';
 import { normalizeTasks } from '../../domain/tasks.js';
 
 // ── Shared card ────────────────────────────────────────────────────────────────
@@ -115,7 +116,16 @@ export function TasksScreen({ onBack }) {
     haptics.light();
     update(t.id, { done: !t.done, completedAt: !t.done ? new Date().toISOString() : null });
   }
-  function remove(id) { haptics.tap(); removeTask(id); }
+  // Delete with an Undo that puts the same task back (done state and notes included).
+  async function remove(task) {
+    haptics.tap();
+    await removeTask(task.id);
+    const { id: _gone, ...rest } = task;
+    window.dispatchEvent(new CustomEvent('valerie:toast', { detail: {
+      message: 'Deleted ' + (task.text || 'task'), type: 'success',
+      undo: () => add(rest),
+    } }));
+  }
 
   const filtered = useMemo(() => {
     if (filter === 'pending') return tasks.filter(t => !t.done);
@@ -169,9 +179,9 @@ export function TasksScreen({ onBack }) {
             </div>
           ) : (
             filtered.map((t, i) => (
-              <div key={t.id} style={{
+              <SwipeRow key={t.id} onDelete={() => remove(t)} style={{ borderBottom: i < filtered.length - 1 ? '0.5px solid var(--card-border)' : 'none' }}>
+              <div style={{
                 display: 'flex', alignItems: 'center', gap: 12, padding: '14px 18px',
-                borderBottom: i < filtered.length - 1 ? '0.5px solid var(--card-border)' : 'none',
               }}>
                 <button onClick={() => toggle(t)} style={{
                   width: 22, height: 22, borderRadius: '50%', flexShrink: 0,
@@ -188,12 +198,13 @@ export function TasksScreen({ onBack }) {
                 <span style={{ flex: 1, fontSize: 14, lineHeight: 1.4,
                   color: t.done ? 'var(--text-muted)' : 'var(--text-primary)',
                   textDecoration: t.done ? 'line-through' : 'none' }}>{t.text}</span>
-                <button onClick={() => remove(t.id)} style={{
+                <button onClick={() => remove(t)} style={{
                   background: 'none', border: 'none', cursor: 'pointer',
                   color: 'var(--text-muted)', padding: '4px', fontSize: 16,
                   WebkitTapHighlightColor: 'transparent', lineHeight: 1,
                 }}>×</button>
               </div>
+              </SwipeRow>
             ))
           )}
         </MCard>
