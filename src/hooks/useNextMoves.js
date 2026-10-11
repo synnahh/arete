@@ -13,7 +13,6 @@ import { nextMoves } from '../domain/nextMoves.js';
 import { applyUsage, dueItems, expiringItems } from '../domain/ahead.js';
 import { waterAdvice } from '../domain/water.js';
 import { todayProgress } from '../domain/habits.js';
-import { fastProgress } from '../domain/fasting.js';
 import { todaysTargets, isTrainingDay } from '../utils/todaysTargets.js';
 import { currentWaterGoal, sleepWindow } from '../utils/waterGoal.js';
 import { dayIndex } from '../utils/dayIndex.js';
@@ -80,7 +79,6 @@ export function useNextMoves() {
       sleep: recovery.debt && recovery.debt.status !== 'insufficient' ? { status: recovery.debt.status, debtHours: recovery.debt.debtHours, bedtime: sleepWindow().bed } : null,
       skin: am.total || pm.total ? { amDone: am.done, amTotal: am.total, pmDone: pm.done, pmTotal: pm.total } : null,
       steps: Number.isFinite(health.data?.steps) && health.lastSync === today ? { count: health.data.steps, goal: Number(settings.stepGoal) || 8000 } : null,
-      fast: settings.fast ? fastProgress(settings.fast, now.getTime()) : null,
     });
   // tick re-runs the clock-dependent rules once a minute
   }, [nutrition, water, workouts, body, habits, supplies, lmDaily, lmProfile, recovery, health.data, health.lastSync, settings, tick]);

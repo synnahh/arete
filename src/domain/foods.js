@@ -134,6 +134,9 @@ export const SECTIONS = [
   { id: 'snacks', label: 'Snacks' },
 ];
 
+/** The section an entry belongs to: the one you chose when logging it, else by its time. */
+export const sectionOf = (meal) => (SECTIONS.some(s => s.id === meal?.section) ? meal.section : mealSection(meal?.time));
+
 /** Which section a logged time falls in: 4-11 breakfast, 11-15 lunch, 17-22 dinner, otherwise snacks. */
 export function mealSection(time) {
   const m = /^(\d{1,2}):(\d{2})$/.exec(String(time || '').trim());
@@ -150,7 +153,7 @@ export function groupBySection(meals = []) {
   const order = new Map(SECTIONS.map((s, i) => [s.id, i]));
   const groups = new Map();
   for (const m of meals) {
-    const id = mealSection(m?.time);
+    const id = sectionOf(m);
     if (!groups.has(id)) groups.set(id, []);
     groups.get(id).push(m);
   }

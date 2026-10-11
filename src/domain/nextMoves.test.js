@@ -37,8 +37,6 @@ describe('nextMoves', () => {
   it('only worries about food at sensible times of day', () => {
     expect(ids({ hour: 10, targets, eaten: { calories: 0, protein: 0 } })).not.toContain('log-food');
     expect(ids({ hour: 13, targets, eaten: { calories: 0, protein: 0 } })).toContain('log-food');
-    // Fasting: not eating yet is the plan.
-    expect(ids({ hour: 13, targets, eaten: { calories: 0, protein: 0 }, fast: { done: false, elapsedH: 15, targetHours: 16 } })).not.toContain('log-food');
   });
 
   it('flags protein that is behind the pace for the time of day', () => {
@@ -79,8 +77,7 @@ describe('nextMoves', () => {
     expect(ids({ hour: 9, skin: { ...skin, amDone: 3 } })).toEqual([]);
   });
 
-  it('celebrates a finished fast and flags expired products', () => {
-    expect(ids({ hour: 12, fast: { done: true, elapsedH: 17.4, targetHours: 16 } })).toContain('fast-done');
+  it('flags expired products', () => {
     const m = nextMoves({ hour: 12, supplies: { due: [], expiring: [{ name: 'Serum', daysLeft: -3 }, { name: 'SPF', daysLeft: 9 }] } });
     expect(m).toHaveLength(1);
     expect(m[0].title).toBe('Serum is past its use-by date');

@@ -22,13 +22,13 @@ import { customFoodEntry, favouriteEntry, servingText } from '../domain/customFo
 import { mealEntry, draftFromSaved, PORTIONS } from '../domain/recipes.js';
 import { recentFoods, yesterdayKey, copyMeals, appendMeals, mealFromPlan, cleanIngredients, groupBySection } from '../domain/foods.js';
 import FoodShortcuts from '../components/FoodShortcuts.jsx';
+import FoodLogger from '../components/FoodLogger.jsx';
 import { weightCoach } from '../domain/weight.js';
 import { weeklyMicros, microCoach } from '../domain/micros.js';
 import ProgressPhotos from '../components/ProgressPhotos.jsx';
 import ReadinessCard from '../components/ReadinessCard.jsx';
 import MuscleRecovery from '../components/MuscleRecovery.jsx';
 import SleepLogger from '../components/SleepLogger.jsx';
-import FastingCard from '../components/FastingCard.jsx';
 import GoalEta from '../components/GoalEta.jsx';
 import HabitHeatmap from '../components/HabitHeatmap.jsx';
 import { withTodaysTargets } from '../utils/todaysTargets.js';
@@ -850,8 +850,6 @@ function Nutrition({ nutritionLogs, addNutritionLog, updateNutritionLog, setting
         ))}
       </div>
 
-      <FastingCard />
-
       <FoodShortcuts
         yesterday={yesterdayMeals.length ? { count: yesterdayMeals.length, kcal: Math.round(yesterdayMeals.reduce((s, m) => s + (Number(m.calories) || 0), 0)) } : null}
         onCopy={copyYesterday} onQuickAdd={quickAdd} />
@@ -960,152 +958,57 @@ function Nutrition({ nutritionLogs, addNutritionLog, updateNutritionLog, setting
         </div>
       )}
 
-      {/* Add food modal */}
+      {/* My meals and my foods: log, edit, delete. (The add-food search finds them too.) */}
+      <div style={{ ...cardSx, marginBottom: 16, display: 'flex', flexDirection: 'column', gap: 10 }}>
+        <div style={{ fontSize: 11, color: 'var(--text-muted)', letterSpacing: '0.07em' }}>MY MEALS</div>
+        {savedMeals.length === 0 ? (
+          <div style={{ fontSize: 12.5, color: 'var(--text-muted)' }}>No saved meals yet. Build a recipe or save a meal and it shows here for one-click logging.</div>
+        ) : savedMeals.map(m => (
+          <div key={m.id} style={{ display: 'flex', alignItems: 'center', gap: 10, padding: '9px 12px', borderRadius: 8, background: 'var(--hover-bg)', border: '0.5px solid var(--card-border)' }}>
+            <div style={{ flex: 1, minWidth: 0 }}>
+              <div style={{ fontSize: 12.5, color: 'var(--text-primary)', fontWeight: 500 }}>{m.name}</div>
+              <div style={{ fontSize: 10.5, color: 'var(--text-muted)', marginTop: 2 }}>{m.calories} kcal · P{m.protein}g · C{m.carbs}g · F{m.fat}g</div>
+            </div>
+            <select aria-label={`Portions of ${m.name}`} value={portions[m.id] ?? 1} onChange={e => setPortions(pp => ({ ...pp, [m.id]: Number(e.target.value) }))} style={{ ...inputSx, width: 62, padding: '5px 6px', fontSize: 11 }}>
+              {PORTIONS.map(x => <option key={x} value={x}>{`×${x}`}</option>)}
+            </select>
+            <StarButton on={lib.isFav(m.name)} name={m.name} onClick={() => lib.toggleFav(m)} />
+            <button onClick={() => setRecipeDraft({ initial: { ...draftFromSaved(m), id: m.id } })} style={{ ...btnGhost, padding: '5px 10px', fontSize: 11 }}>Edit</button>
+            <button onClick={async () => { const pc = portions[m.id] ?? 1; const prev = { meals, ...totals }; await logSavedMeal(m, pc); window.dispatchEvent(new CustomEvent('valerie:toast', { detail: { message: `Logged ${m.name}${pc === 1 ? '' : ` ×${pc}`}`, type: 'success', undo: async () => { const row = storage.get(STORAGE_KEYS.MACROS, []).find(l => l.date === today && !String(l.id).startsWith('local_')); if (row) await updateNutritionLog(row.id, prev); } } })); }} style={{ ...btnPrimary, padding: '5px 12px', fontSize: 11 }}>+ Log</button>
+            <button onClick={async () => { const { id: _gone, ...rest } = m; await removeSavedMeal(m.id); window.dispatchEvent(new CustomEvent('valerie:toast', { detail: { message: `Deleted ${m.name}`, type: 'success', undo: () => addSavedMeal(rest) } })); }} aria-label={`Delete ${m.name}`} style={{ ...btnGhost, padding: '5px 8px', fontSize: 11, color: 'var(--text-muted)' }}>✕</button>
+          </div>
+        ))}
+
+        <div style={{ fontSize: 11, color: 'var(--text-muted)', letterSpacing: '0.07em', marginTop: 6 }}>MY FOODS</div>
+        {lib.customFoods.length === 0 ? (
+          <div style={{ fontSize: 12.5, color: 'var(--text-muted)' }}>No foods of your own yet. Use New food for a label you typed in or something homemade.</div>
+        ) : lib.customFoods.map(food => (
+          <div key={food.id} style={{ display: 'flex', alignItems: 'center', gap: 10, padding: '9px 12px', borderRadius: 8, background: 'var(--hover-bg)', border: '0.5px solid var(--card-border)' }}>
+            <div style={{ flex: 1, minWidth: 0 }}>
+              <div style={{ fontSize: 12.5, color: 'var(--text-primary)', fontWeight: 500 }}>{food.name}{food.brand ? ` (${food.brand})` : ''}</div>
+              <div style={{ fontSize: 10.5, color: 'var(--text-muted)', marginTop: 2 }}>{food.calories} kcal · P{food.protein}g · C{food.carbs}g · F{food.fat}g · per {servingText(food)}</div>
+            </div>
+            <select aria-label={`Servings of ${food.name}`} value={servingsFor[food.id] ?? 1} onChange={e => setServingsFor(pp => ({ ...pp, [food.id]: Number(e.target.value) }))} style={{ ...inputSx, width: 62, padding: '5px 6px', fontSize: 11 }}>
+              {PORTIONS.map(x => <option key={x} value={x}>{`×${x}`}</option>)}
+            </select>
+            <StarButton on={lib.isFav(food.brand ? `${food.name} (${food.brand})` : food.name)} name={food.name} onClick={() => lib.toggleFav(customFoodEntry(food, 1))} />
+            <button onClick={() => setFoodDraft({ initial: food })} style={{ ...btnGhost, padding: '5px 10px', fontSize: 11 }}>Edit</button>
+            <button onClick={() => { const n = servingsFor[food.id] ?? 1; appendEntries([customFoodEntry(food, n)], `Logged ${food.name}${n === 1 ? '' : ` ×${n}`}`); }} style={{ ...btnPrimary, padding: '5px 12px', fontSize: 11 }}>+ Log</button>
+          </div>
+        ))}
+      </div>
+
+      {/* Add food: one search for everything */}
       {showAdd && (
-        <div style={{ ...cardSx, marginBottom: 16, display: 'flex', flexDirection: 'column', gap: 10 }}>
-          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
-            <div style={{ display: 'flex', gap: 0, borderRadius: 7, overflow: 'hidden', border: '0.5px solid var(--card-border)' }}>
-              {[['my','🍽 My Meals'],['foods','🥣 My Foods'],['search','🔍 Search']].map(([id, label]) => (
-                <button key={id} onClick={() => setAddMode(id)} style={{
-                  padding: '5px 14px', border: 'none', cursor: 'pointer', fontSize: 11.5, fontWeight: 500,
-                  background: addMode === id ? 'rgba(255,255,255,0.9)' : 'var(--card-fill)',
-                  color: addMode === id ? '#111' : 'var(--text-secondary)', transition: 'all 0.12s',
-                }}>{label}</button>
-              ))}
+        <div role="dialog" aria-modal="true" aria-label="Log food" onClick={() => setShowAdd(false)}
+          style={{ position: 'fixed', inset: 0, zIndex: 300, background: 'rgba(0,0,0,0.55)', display: 'flex', alignItems: 'flex-start', justifyContent: 'center', padding: '8vh 16px 16px', overflowY: 'auto' }}>
+          <div onClick={e => e.stopPropagation()} style={{ width: '100%', maxWidth: 520, borderRadius: 18, background: 'var(--bg-panel)', border: '0.5px solid var(--card-border)', padding: 18, boxShadow: '0 24px 60px rgba(0,0,0,0.5)' }}>
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 12 }}>
+              <span style={{ fontFamily: 'var(--font-display)', fontSize: 17, fontWeight: 700, color: 'var(--text-primary)' }}>Log food</span>
+              <button onClick={() => setShowAdd(false)} aria-label="Close" style={{ ...btnGhost, minWidth: 36 }}>×</button>
             </div>
-            <div style={{ display: 'flex', gap: 6 }}>
-              {addMode === 'search' && (
-                <button onClick={scanning ? stopScan : startScan} title="Scan barcode"
-                  style={{ ...btnGhost, padding: '5px 8px', display: 'flex', alignItems: 'center', gap: 5 }}>
-                  <ScanIcon /> {scanning ? 'Stop scan' : 'Scan'}
-                </button>
-              )}
-              <button onClick={() => { setShowAdd(false); stopScan(); }} style={btnGhost}>Cancel</button>
-            </div>
+            <FoodLogger onLog={(entry) => appendEntries([entry], `Logged ${entry.name} · ${entry.calories} kcal`)} onClose={() => setShowAdd(false)} />
           </div>
-
-          {/* My Meals quick-pick */}
-          {addMode === 'my' && (
-            <div>
-              {savedMeals.length === 0 ? (
-                <div style={{ padding: '20px 0', textAlign: 'center', color: 'var(--text-muted)', fontSize: 12 }}>
-                  No saved meals yet — save a meal above for quick logging.
-                </div>
-              ) : (
-                <div style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
-                  {savedMeals.map(m => (
-                    <div key={m.id} style={{
-                      display: 'flex', alignItems: 'center', gap: 10, padding: '9px 12px',
-                      borderRadius: 8, background: 'var(--hover-bg)', border: '0.5px solid var(--card-border)',
-                    }}>
-                      <div style={{ flex: 1, minWidth: 0 }}>
-                        <div style={{ fontSize: 12.5, color: 'var(--text-primary)', fontWeight: 500 }}>{m.name}</div>
-                        <div style={{ fontSize: 10.5, color: 'var(--text-muted)', marginTop: 2 }}>
-                          {m.calories} kcal · P{m.protein}g · C{m.carbs}g · F{m.fat}g
-                        </div>
-                      </div>
-                      <select aria-label={`Portions of ${m.name}`} value={portions[m.id] ?? 1} onChange={e => setPortions(p => ({ ...p, [m.id]: Number(e.target.value) }))} style={{ ...inputSx, width: 62, padding: '5px 6px', fontSize: 11 }}>
-                        {PORTIONS.map(x => <option key={x} value={x}>{`×${x}`}</option>)}
-                      </select>
-                      <StarButton on={lib.isFav(m.name)} name={m.name} onClick={() => lib.toggleFav(m)} />
-                      <button onClick={() => { setShowAdd(false); setRecipeDraft({ initial: { ...draftFromSaved(m), id: m.id } }); }} style={{ ...btnGhost, padding: '5px 10px', fontSize: 11 }}>Edit</button>
-                      <button onClick={async () => { const p = portions[m.id] ?? 1; const prev = { meals, ...totals }; setShowAdd(false); await logSavedMeal(m, p); window.dispatchEvent(new CustomEvent('valerie:toast', { detail: { message: `Logged ${m.name}${p === 1 ? '' : ` ×${p}`}`, type: 'success', undo: async () => { const row = storage.get(STORAGE_KEYS.MACROS, []).find(l => l.date === today && !String(l.id).startsWith('local_')); if (row) await updateNutritionLog(row.id, prev); } } })); }} style={{ ...btnPrimary, padding: '5px 12px', fontSize: 11 }}>
-                        + Log
-                      </button>
-                      <button onClick={() => removeSavedMeal(m.id)} style={{ ...btnGhost, padding: '5px 8px', fontSize: 11, color: 'var(--text-muted)' }}>✕</button>
-                    </div>
-                  ))}
-                </div>
-              )}
-            </div>
-          )}
-
-          {/* Search mode */}
-          {/* My Foods: your own foods, pick how many servings */}
-          {addMode === 'foods' && (
-            <div>
-              {lib.customFoods.length === 0 ? (
-                <div style={{ padding: '20px 0', textAlign: 'center', color: 'var(--text-muted)', fontSize: 12 }}>
-                  No foods of your own yet.
-                  <div style={{ marginTop: 10 }}><button onClick={() => { setShowAdd(false); setFoodDraft({ initial: null }); }} style={btnPrimary}>⊕ New food</button></div>
-                </div>
-              ) : (
-                <div style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
-                  {lib.customFoods.map(food => (
-                    <div key={food.id} style={{ display: 'flex', alignItems: 'center', gap: 10, padding: '9px 12px', borderRadius: 8, background: 'var(--hover-bg)', border: '0.5px solid var(--card-border)' }}>
-                      <div style={{ flex: 1, minWidth: 0 }}>
-                        <div style={{ fontSize: 12.5, color: 'var(--text-primary)', fontWeight: 500 }}>{food.name}{food.brand ? ` (${food.brand})` : ''}</div>
-                        <div style={{ fontSize: 10.5, color: 'var(--text-muted)', marginTop: 2 }}>{food.calories} kcal · P{food.protein}g · C{food.carbs}g · F{food.fat}g · per {servingText(food)}</div>
-                      </div>
-                      <select aria-label={`Servings of ${food.name}`} value={servingsFor[food.id] ?? 1} onChange={e => setServingsFor(p => ({ ...p, [food.id]: Number(e.target.value) }))} style={{ ...inputSx, width: 62, padding: '5px 6px', fontSize: 11 }}>
-                        {PORTIONS.map(x => <option key={x} value={x}>{`×${x}`}</option>)}
-                      </select>
-                      <StarButton on={lib.isFav(food.brand ? `${food.name} (${food.brand})` : food.name)} name={food.name} onClick={() => lib.toggleFav(customFoodEntry(food, 1))} />
-                      <button onClick={() => { setShowAdd(false); setFoodDraft({ initial: food }); }} style={{ ...btnGhost, padding: '5px 10px', fontSize: 11 }}>Edit</button>
-                      <button onClick={() => { const n = servingsFor[food.id] ?? 1; setShowAdd(false); appendEntries([customFoodEntry(food, n)], `Logged ${food.name}${n === 1 ? '' : ` ×${n}`}`); }} style={{ ...btnPrimary, padding: '5px 12px', fontSize: 11 }}>+ Log</button>
-                    </div>
-                  ))}
-                </div>
-              )}
-            </div>
-          )}
-
-          {addMode === 'search' && <>
-
-          {/* Video preview for barcode scan */}
-          {scanning && (
-            <div style={{ borderRadius: 8, overflow: 'hidden', background: '#000', height: 180 }}>
-              <video ref={videoRef} style={{ width: '100%', height: '100%', objectFit: 'cover' }} muted playsInline />
-            </div>
-          )}
-
-          <div style={{ display: 'flex', gap: 6 }}>
-            <input value={search} onChange={e => setSearch(e.target.value)}
-              onKeyDown={e => e.key === 'Enter' && doSearch()}
-              placeholder="Search food or scan barcode…" style={{ ...inputSx, flex: 1 }}
-              onFocus={e => e.target.style.borderColor = 'var(--accent)'}
-              onBlur={e => e.target.style.borderColor = 'var(--input-border)'}
-            />
-            <button onClick={doSearch} style={btnPrimary} disabled={searching}>
-              {searching ? '…' : 'Search'}
-            </button>
-          </div>
-
-          {results.map((r, i) => (
-            <div key={i} onClick={() => setSelected(r)} style={{
-              padding: '8px 10px', borderRadius: 8, cursor: 'pointer',
-              background: selected?.name === r.name ? 'var(--active-bg)' : 'var(--hover-bg)',
-              border: `0.5px solid ${selected?.name === r.name ? 'var(--accent)' : 'var(--card-border)'}`,
-            }}>
-              <div style={{ fontSize: 12.5, color: 'var(--text-primary)' }}>{r.name}</div>
-              <div style={{ fontSize: 10.5, color: 'var(--text-muted)', marginTop: 2 }}>
-                {r.per100.calories} kcal · P {r.per100.protein}g · C {r.per100.carbs}g · F {r.per100.fat}g — per 100g
-              </div>
-            </div>
-          ))}
-
-          {selected && (
-            <div style={{ display: 'flex', gap: 6, alignItems: 'flex-end' }}>
-              <div style={{ flex: 1 }}>
-                <label style={lblSx}>Quantity</label>
-                <input type="number" value={qty} onChange={e => setQty(e.target.value)}
-                  style={inputSx} min="1"
-                  onFocus={e => e.target.style.borderColor = 'var(--accent)'}
-                  onBlur={e => e.target.style.borderColor = 'var(--input-border)'}
-                />
-              </div>
-              <div style={{ flex: 1 }}>
-                <label style={lblSx}>Unit</label>
-                <select value={unit} onChange={e => setUnit(e.target.value)} style={{ ...inputSx, cursor: 'pointer' }}>
-                  <option value="g">grams</option>
-                  <option value="ml">ml</option>
-                  <option value="serving">serving</option>
-                </select>
-              </div>
-              <button onClick={addMeal} style={btnPrimary}>Add</button>
-            </div>
-          )}
-          </>}
         </div>
       )}
 

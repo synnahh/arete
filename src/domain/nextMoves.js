@@ -18,7 +18,6 @@
 //   weight: { daysSinceWeighIn, hasGoal } | null,
 //   sleep: { debtHours, status, bedtime } | null,
 //   skin: { amDone, amTotal, pmDone, pmTotal } | null,
-//   fast: { done, elapsedH, targetHours } | null,
 //   steps: { count, goal } | null,               // from Apple Health sync
 
 // }
@@ -55,10 +54,9 @@ export function nextMoves(snap = {}) {
     }
   }
 
-  if (snap.fast?.done) add('fast-done', 62, `Your ${snap.fast.targetHours} h fast is done`, `${Math.floor(snap.fast.elapsedH)} hours in. Break it with protein first.`, 'fuel');
 
   const kcalNow = Number(snap.eaten?.calories) || 0;
-  if (snap.targets && hour >= 12 && kcalNow === 0 && !snap.fast) {
+  if (snap.targets && hour >= 12 && kcalNow === 0) {
     add('log-food', 68, 'Nothing logged yet today', 'Copy yesterday or quick-add so today has a record.', 'fuel');
   }
   if (snap.targets?.protein && hour >= 13 && kcalNow > 0) {

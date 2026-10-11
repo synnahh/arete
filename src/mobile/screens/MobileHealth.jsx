@@ -14,11 +14,11 @@ import ProgressPhotos from '../../components/ProgressPhotos.jsx';
 import ReadinessCard from '../../components/ReadinessCard.jsx';
 import MuscleRecovery from '../../components/MuscleRecovery.jsx';
 import SleepLogger from '../../components/SleepLogger.jsx';
-import FastingCard from '../../components/FastingCard.jsx';
 import GoalEta from '../../components/GoalEta.jsx';
 import { withTodaysTargets } from '../../utils/todaysTargets.js';
 import MicroCoachCard from '../../components/MicroCoachCard.jsx';
 import FoodShortcuts from '../../components/FoodShortcuts.jsx';
+import FoodLogger from '../../components/FoodLogger.jsx';
 import { yesterdayKey, copyMeals, appendMeals, groupBySection, recentFoods } from '../../domain/foods.js';
 import RecipeBuilder from '../../components/RecipeBuilder.jsx';
 import CustomFoodForm from '../../components/CustomFoodForm.jsx';
@@ -379,167 +379,6 @@ function SleepTab({ today }) {
 }
 
 //  Add Food sheet  search (OpenFoodFacts) + barcode scan, same schema as desktop
-function AddFoodSheet({ onAdd, onClose }) {
-  const [mode, setMode]       = useState('search'); // 'search' | 'scan'
-  const [query, setQuery]     = useState('');
-  const [results, setResults] = useState([]);
-  const [searching, setSearching] = useState(false);
-  const [selected, setSelected]   = useState(null);
-  const [qty, setQty]         = useState('100');
-  const [scanning, setScanning] = useState(false);
-  const [scanError, setScanError] = useState('');
-  const videoRef  = useRef(null);
-  const stopRef   = useRef(null);
-
-  const doSearch = async () => {
-    if (!query.trim()) return;
-    setSearching(true);
-    try { setResults(await searchFoods(query)); }
-    catch { setResults([]); }
-    finally { setSearching(false); }
-  };
-
-  const startScan = () => {
-    setScanError(''); setScanning(true);
-    stopRef.current = startBarcodeScan(videoRef.current, {
-      onDetect: async (code) => {
-        stopScan();
-        try {
-          const food = await lookupBarcode(code);
-          setSelected(food); setMode('search'); setQuery(food.name); setResults([food]);
-        } catch { setScanError('Product not found for that barcode.'); }
-      },
-      onError: (err) => { setScanError(err.message); setScanning(false); },
-    });
-  };
-  const stopScan = () => { stopRef.current?.(); stopRef.current = null; setScanning(false); };
-
-  const confirmAdd = () => {
-    if (!selected) return;
-    const factor = (parseFloat(qty) || 100) / 100;
-    onAdd({
-      id: `m_${Date.now()}`,
-      name: selected.name,
-      calories: Math.round(selected.per100.calories * factor),
-      protein:  Math.round(selected.per100.protein  * factor * 10) / 10,
-      carbs:    Math.round(selected.per100.carbs    * factor * 10) / 10,
-      fat:      Math.round(selected.per100.fat      * factor * 10) / 10,
-      micros:   scaleMicros(selected.per100.micros, factor),
-      qty: parseFloat(qty), unit: 'g',
-      time: nowStr(),
-    });
-  };
-
-  return (
-    <div style={{ position: 'fixed', inset: 0, zIndex: 200, background: 'rgba(0,0,0,0.6)',
-      display: 'flex', alignItems: 'flex-end' }} onClick={() => { stopScan(); onClose(); }}>
-      <div onClick={e => e.stopPropagation()} style={{
-        width: '100%', maxHeight: '82vh', overflowY: 'auto',
-        background: 'var(--bg-panel)', borderRadius: '20px 20px 0 0', padding: 18,
-        display: 'flex', flexDirection: 'column', gap: 12,
-      }}>
-        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-          <span style={{ fontSize: 16, fontWeight: 600, color: 'var(--text-primary)' }}>Log food</span>
-          <button onClick={() => { stopScan(); onClose(); }} style={{
-            background: 'none', border: 'none', color: 'var(--text-muted)', fontSize: 20, cursor: 'pointer' }}>×</button>
-        </div>
-
-        {/* Mode toggle */}
-        <div style={{ display: 'flex', gap: 8 }}>
-          <button onClick={() => { stopScan(); setMode('search'); }} style={{
-            flex: 1, padding: '8px 0', borderRadius: 10, fontSize: 13, fontWeight: 600, cursor: 'pointer',
-            border: mode === 'search' ? '1px solid var(--accent)' : '0.5px solid var(--card-border)',
-            background: mode === 'search' ? 'var(--active-bg)' : 'none',
-            color: mode === 'search' ? 'var(--accent)' : 'var(--text-secondary)',
-          }}>🔍 Search</button>
-          <button onClick={() => { setMode('scan'); startScan(); }} style={{
-            flex: 1, padding: '8px 0', borderRadius: 10, fontSize: 13, fontWeight: 600, cursor: 'pointer',
-            border: mode === 'scan' ? '1px solid var(--accent)' : '0.5px solid var(--card-border)',
-            background: mode === 'scan' ? 'var(--active-bg)' : 'none',
-            color: mode === 'scan' ? 'var(--accent)' : 'var(--text-secondary)',
-          }}>📷 Scan barcode</button>
-        </div>
-
-        {mode === 'scan' && (
-          <div style={{ borderRadius: 12, overflow: 'hidden', background: '#000', position: 'relative' }}>
-            <video ref={videoRef} muted playsInline style={{ width: '100%', height: 220, objectFit: 'cover', display: scanning ? 'block' : 'none' }} />
-            {!scanning && (
-              <div style={{ padding: 30, textAlign: 'center', color: 'var(--text-muted)', fontSize: 13 }}>
-                {scanError || 'Starting camera…'}
-              </div>
-            )}
-            {scanning && (
-              <div style={{ position: 'absolute', bottom: 8, left: 0, right: 0, textAlign: 'center', fontSize: 11, color: '#fff' }}>
-                Point at a barcode
-              </div>
-            )}
-          </div>
-        )}
-
-        {mode === 'search' && !selected && (
-          <>
-            <div style={{ display: 'flex', gap: 8 }}>
-              <input value={query} onChange={e => setQuery(e.target.value)}
-                onKeyDown={e => e.key === 'Enter' && doSearch()}
-                placeholder="Search food (e.g. chicken breast)" style={{
-                flex: 1, padding: '10px 12px', borderRadius: 10, border: '0.5px solid var(--card-border)',
-                background: 'var(--bg-base)', color: 'var(--text-primary)', fontSize: 14, outline: 'none',
-              }} />
-              <button onClick={doSearch} style={{
-                padding: '0 16px', borderRadius: 10, border: 'none', background: 'var(--accent)',
-                color: 'var(--bg-base)', fontWeight: 600, cursor: 'pointer' }}>
-                {searching ? '…' : 'Go'}
-              </button>
-            </div>
-            <div style={{ display: 'flex', flexDirection: 'column', gap: 6, maxHeight: 260, overflowY: 'auto' }}>
-              {results.map((r, i) => (
-                <button key={i} onClick={() => setSelected(r)} style={{
-                  textAlign: 'left', padding: '10px 12px', borderRadius: 10,
-                  border: '0.5px solid var(--card-border)', background: 'var(--bg-base)', cursor: 'pointer',
-                }}>
-                  <div style={{ fontSize: 13, color: 'var(--text-primary)' }}>{r.name}</div>
-                  <div style={{ fontSize: 11, color: 'var(--text-muted)', marginTop: 2 }}>
-                    {r.per100.calories}kcal · P{r.per100.protein}g · C{r.per100.carbs}g · F{r.per100.fat}g / 100g
-                  </div>
-                </button>
-              ))}
-            </div>
-          </>
-        )}
-
-        {selected && (
-          <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
-            <div style={{ fontSize: 14, color: 'var(--text-primary)', fontWeight: 600 }}>{selected.name}</div>
-            <div style={{ display: 'flex', gap: 8, alignItems: 'center' }}>
-              <input type="number" value={qty} onChange={e => setQty(e.target.value)} style={{
-                width: 90, padding: '9px 10px', borderRadius: 10, border: '0.5px solid var(--card-border)',
-                background: 'var(--bg-base)', color: 'var(--text-primary)', fontSize: 14, outline: 'none',
-              }} />
-              <span style={{ fontSize: 13, color: 'var(--text-muted)' }}>grams</span>
-            </div>
-            <div style={{ fontSize: 12, color: 'var(--text-muted)' }}>
-              ≈ {Math.round(selected.per100.calories * (parseFloat(qty) || 0) / 100)}kcal ·
-              {' '}P{Math.round(selected.per100.protein * (parseFloat(qty) || 0) / 100 * 10) / 10}g ·
-              {' '}C{Math.round(selected.per100.carbs * (parseFloat(qty) || 0) / 100 * 10) / 10}g ·
-              {' '}F{Math.round(selected.per100.fat * (parseFloat(qty) || 0) / 100 * 10) / 10}g
-            </div>
-            <div style={{ display: 'flex', gap: 8 }}>
-              <button onClick={() => setSelected(null)} style={{
-                flex: 1, padding: '10px 0', borderRadius: 10, border: '0.5px solid var(--card-border)',
-                background: 'none', color: 'var(--text-secondary)', cursor: 'pointer' }}>Back</button>
-              <button onClick={confirmAdd} style={{
-                flex: 1, padding: '10px 0', borderRadius: 10, border: 'none',
-                background: 'var(--accent)', color: 'var(--bg-base)', fontWeight: 600, cursor: 'pointer' }}>
-                Log it
-              </button>
-            </div>
-          </div>
-        )}
-      </div>
-    </div>
-  );
-}
-
 //  Nutrition tab
 function NutritionTab({ settings, today }) {
   const { items: nutritionLogs = [], add: addNutritionLog, update: updateNutritionLog } = useCollection('nutrition_logs', STORAGE_KEYS.MACROS);
@@ -643,18 +482,21 @@ function NutritionTab({ settings, today }) {
           color="#4caf7d" barValue={totFat} barMax={fatGoal} barColor="#4caf7d" />
       </div>
 
-      <FastingCard />
       <FoodShortcuts
         yesterday={yesterdayMeals.length ? { count: yesterdayMeals.length, kcal: Math.round(yesterdayMeals.reduce((s, m) => s + (Number(m.calories) || 0), 0)) } : null}
         onCopy={() => appendEntries(yesterdayMeals, `Copied ${yesterdayMeals.length} item${yesterdayMeals.length === 1 ? '' : 's'} from yesterday`)}
         onQuickAdd={(entry) => appendEntries([entry], `Added ${entry.calories} kcal`)} />
 
-      {/* Log food button */}
-      <button onClick={() => setShowAdd(true)} style={{
-        padding: '12px 0', borderRadius: 12, border: 'none', background: 'var(--accent)',
-        color: 'var(--bg-base)', fontSize: 14, fontWeight: 600, cursor: 'pointer',
-        WebkitTapHighlightColor: 'transparent',
-      }}>+ Log food</button>
+      {/* The front door: tap to search, scan or pick a favourite */}
+      <button onClick={() => setShowAdd(true)} aria-label="Log food: search, scan or pick a favourite" style={{
+        minHeight: 52, padding: '0 16px', borderRadius: 14, border: '0.5px solid var(--accent)', background: 'var(--bg-panel)',
+        color: 'var(--text-secondary)', fontSize: 15, fontFamily: 'inherit', cursor: 'pointer', textAlign: 'left',
+        display: 'flex', alignItems: 'center', gap: 10, WebkitTapHighlightColor: 'transparent',
+      }}>
+        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="var(--accent)" strokeWidth="2" strokeLinecap="round" aria-hidden="true"><circle cx="11" cy="11" r="7" /><path d="M20 20l-3.5-3.5" /></svg>
+        <span style={{ flex: 1 }}>Search or scan food</span>
+        <span style={{ color: 'var(--accent)', fontWeight: 700, fontSize: 22, lineHeight: 1 }}>+</span>
+      </button>
 
       {/* Favourites: starred foods, one tap to log exactly as starred */}
       {lib.favourites.length > 0 && (
@@ -763,7 +605,11 @@ function NutritionTab({ settings, today }) {
         <MCard><MicroCoachCard advice={microAdvice} /></MCard>
       )}
 
-      {showAdd && <AddFoodSheet onAdd={addMealEntry} onClose={() => setShowAdd(false)} />}
+      {showAdd && (
+        <Sheet title="Log food" onClose={() => setShowAdd(false)}>
+          <FoodLogger onLog={(entry) => appendEntries([entry], `Logged ${entry.name} · ${entry.calories} kcal`)} onClose={() => setShowAdd(false)} />
+        </Sheet>
+      )}
       {foodDraft && (
         <Sheet title={foodDraft.initial?.id ? 'Edit food' : 'New food'} onClose={() => setFoodDraft(null)}>
           <CustomFoodForm key={foodDraft.initial?.id || 'new'} initial={foodDraft.initial}
