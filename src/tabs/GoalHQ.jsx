@@ -8,6 +8,8 @@ import { STORAGE_KEYS } from '../utils/storage.js';
 import { toLocalDateKey } from '../utils/localDate.js';
 import { updateSettings } from '../utils/settingsStore.js';
 import CoachIntake from '../components/CoachIntake.jsx';
+import CustomGoalFields, { fieldsFromPreset } from '../components/CustomGoalFields.jsx';
+import { baseTemplateFor } from '../domain/intake.js';
 import WeeklyCheckIn from '../components/WeeklyCheckIn.jsx';
 import GoalEta from '../components/GoalEta.jsx';
 import CoachUpdates from '../components/CoachUpdates.jsx';
@@ -86,7 +88,11 @@ function GoalEditor({ settings, latestWeight, adaptive, onDone, onCancel }) {
   const current = settings?.coachGoal;
   const [template, setTemplate] = useState(current?.template ?? 'cut');
   const [custom, setCustom]     = useState(!!current?.customText);
-  const [customText, setText]   = useState(current?.customText ?? '');
+  // A custom goal carries its own numbers: calories vs maintenance, protein per kg.
+  const [cf, setCf] = useState(() => current?.custom
+    ? { customPreset: null, customText: current.customText ?? '', customDeltaPct: current.custom.deltaPct, customProtein: current.custom.proteinPerKg, customFat: current.custom.fatPerKg }
+    : fieldsFromPreset('muscleDeficit'));
+  const customText = cf.customText ?? '';
   const [weight, setWeight]     = useState(latestWeight ? String(latestWeight) : '');
   const suggested = adaptive?.kcal ?? estimateMaintenance(Number(weight));
   const [maint, setMaint]       = useState('');
@@ -94,14 +100,16 @@ function GoalEditor({ settings, latestWeight, adaptive, onDone, onCancel }) {
   const [pace, setPace]         = useState(current?.pace && PACES[current.pace] ? current.pace : 'normal');
   const maintenanceKcal = Number(maint) || suggested || 0;
   const maintenanceSource = maint ? 'manual' : adaptive ? 'adaptive' : 'estimate';
-  const targets = computeTargets(template, { weightKg: Number(weight), maintenanceKcal, paceFactor: template === 'recomp' ? 1 : PACES[pace].factor });
-  const t = GOAL_TEMPLATES[template];
+  const customSpec = custom ? { deltaPct: Number(cf.customDeltaPct), proteinPerKg: Number(cf.customProtein) || 2.2, fatPerKg: Number(cf.customFat) || 0.9 } : null;
+  const baseTemplate = custom ? baseTemplateFor(customSpec.deltaPct) : template;
+  const targets = computeTargets(baseTemplate, { weightKg: Number(weight), maintenanceKcal, paceFactor: baseTemplate === 'recomp' ? 1 : PACES[pace].factor, custom: customSpec });
+  const t = GOAL_TEMPLATES[baseTemplate];
 
   function lockIn() {
     const goal = makeGoal({
-      template, customText: custom ? customText : '', weightKg: Number(weight),
+      template: baseTemplate, customText: custom ? customText : '', weightKg: Number(weight),
       maintenanceKcal, maintenanceSource, startedOn: toLocalDateKey(new Date()), targetWeightKg: Number(targetWeight) || null,
-      pace: template === 'recomp' ? 'normal' : pace,
+      pace: baseTemplate === 'recomp' || custom ? 'normal' : pace, custom: customSpec,
     });
     if (!goal) return;
     updateSettings(settingsForGoal(goal, settings?.macros));
@@ -140,7 +148,7 @@ function GoalEditor({ settings, latestWeight, adaptive, onDone, onCancel }) {
         </button>
       </div>
 
-      {template !== 'recomp' && Number(weight) > 0 && (
+      {baseTemplate !== 'recomp' && !custom && Number(weight) > 0 && (
         <div role="group" aria-label="Speed" style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
           <span style={label}>Speed</span>
           <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(130px, 1fr))', gap: 8 }}>
@@ -162,19 +170,7 @@ function GoalEditor({ settings, latestWeight, adaptive, onDone, onCancel }) {
       )}
 
       {custom && (
-        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(240px, 1fr))', gap: 12 }}>
-          <label style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
-            <span style={label}>Your goal</span>
-            <input value={customText} onChange={e => setText(e.target.value)} placeholder="e.g. Visible abs by summer without losing my bench"
-              style={{ ...input, fontFamily: 'inherit', fontSize: 15 }} />
-          </label>
-          <label style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
-            <span style={label}>Closest template (sets the numbers)</span>
-            <select value={template} onChange={e => setTemplate(e.target.value)} style={{ ...input, fontFamily: 'inherit', fontSize: 15 }}>
-              {TEMPLATE_IDS.map(id => <option key={id} value={id}>{GOAL_TEMPLATES[id].label}</option>)}
-            </select>
-          </label>
-        </div>
+        <CustomGoalFields value={cf} onChange={(patch) => setCf(prev => ({ ...prev, ...patch }))} weightKg={Number(weight) || null} maintenanceKcal={maintenanceKcal || null} />
       )}
 
       <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', gap: 12 }}>

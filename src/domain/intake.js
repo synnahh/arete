@@ -7,7 +7,7 @@
 // Nothing here is a fixed demo: every number comes from your answers, and anything it
 // cannot work out is reported, not guessed.
 
-import { makeGoal, GOAL_TEMPLATES, PACES, TEMPLATE_IDS } from './goals.js';
+import { makeGoal, GOAL_TEMPLATES, PACES, TEMPLATE_IDS, CUSTOM_PRESETS, CUSTOM_LIMITS } from './goals.js';
 import { TEMPLATES } from './splits.js';
 
 export const ACTIVITY = {
@@ -87,8 +87,13 @@ const REQUIRED = [
 
 /** The questions still unanswered that the plan needs, as plain phrases. */
 export function missingAnswers(a = {}) {
-  return REQUIRED.filter(([k]) => a[k] == null || a[k] === '' || Number.isNaN(a[k])).map(([, label]) => label);
+  const out = REQUIRED.filter(([k]) => a[k] == null || a[k] === '' || Number.isNaN(a[k])).map(([, label]) => label);
+  if (a.goal === 'custom' && (a.customDeltaPct === '' || a.customDeltaPct == null || !Number.isFinite(Number(a.customDeltaPct)))) out.push('your calorie target for the custom goal');
+  return out;
 }
+
+/** The closest template for a custom goal's direction: it supplies the label, the numbers are yours. */
+export const baseTemplateFor = (deltaPct) => (deltaPct < -2 ? 'cut' : deltaPct > 2 ? 'bulk' : 'recomp');
 
 /**
  * The whole plan from the answers, or { missing } when something it needs is absent.
@@ -97,7 +102,8 @@ export function missingAnswers(a = {}) {
 export function planFromAnswers(a = {}, today) {
   const missing = missingAnswers(a);
   if (missing.length) return { missing };
-  if (!TEMPLATE_IDS.includes(a.goal)) return { missing: ['a goal'] };
+  const isCustom = a.goal === 'custom';
+  if (!isCustom && !TEMPLATE_IDS.includes(a.goal)) return { missing: ['a goal'] };
   const age = ageFrom(a.birthDate, today);
   if (age == null) return { missing: ['a valid birth date'] };
 
@@ -105,20 +111,29 @@ export function planFromAnswers(a = {}, today) {
   const maintenanceKcal = maintenanceFrom({ weightKg, heightCm: Number(a.heightCm), age, sex: a.sex }, a.activity);
   if (!maintenanceKcal) return { missing: ['your height and weight'] };
 
+  const deltaPct = Number(a.customDeltaPct);
   const goal = makeGoal({
-    template: a.goal, weightKg, maintenanceKcal, maintenanceSource: 'formula', startedOn: today,
-    targetWeightKg: Number(a.targetWeightKg) || null, pace: a.goal === 'recomp' ? 'normal' : (a.pace || 'normal'),
+    template: isCustom ? baseTemplateFor(deltaPct) : a.goal, weightKg, maintenanceKcal, maintenanceSource: 'formula', startedOn: today,
+    targetWeightKg: Number(a.targetWeightKg) || null, pace: isCustom || a.goal === 'recomp' ? 'normal' : (a.pace || 'normal'),
+    customText: isCustom ? String(a.customText || '') : '',
+    custom: isCustom ? { deltaPct, proteinPerKg: Number(a.customProtein) || 2.2, fatPerKg: Number(a.customFat) || 0.9 } : null,
   });
   if (!goal) return { missing: ['a goal'] };
 
-  const templateId = splitFor(a.days, a.experience);
+  const templateId = TEMPLATES[a.splitTemplate] && a.splitTemplate !== 'blank' ? a.splitTemplate : splitFor(a.days, a.experience);
   const eq = EQUIPMENT_CHOICES[a.equipment];
   const notes = [];
   const target = Number(a.targetWeightKg);
   if (target > 0 && a.goal === 'cut' && target >= weightKg) notes.push('Your goal weight is not below your current weight, so a cut has nothing to aim at. Check it.');
   if (target > 0 && a.goal === 'bulk' && target <= weightKg) notes.push('Your goal weight is not above your current weight, so a bulk has nothing to aim at. Check it.');
+  if (isCustom) {
+    const [lo, hi] = CUSTOM_LIMITS.deltaPct;
+    if (deltaPct < lo || deltaPct > hi) notes.push(`A change of ${deltaPct}% is outside what the app allows (${lo}% to +${hi}%), so it was held at the limit.`);
+    if (deltaPct < -20) notes.push('A deficit this big slows muscle gain and is hard to hold. A smaller one is usually faster for muscle.');
+    if (deltaPct < 0 && (Number(a.customProtein) || 2.2) < 1.8) notes.push('In a deficit, protein under about 1.8 g per kg makes it hard to keep or build muscle.');
+  }
   if (goal.targets.kcal <= 1300) notes.push('Targets are held at the 1,300 kcal floor. A slower pace is safer.');
-  if (String(a.limitations || '').trim()) notes.push(`Limitations noted: ${String(a.limitations).trim()}. Pick exercises that work around them.`);
+  if (String(a.limitations || '').trim()) notes.push(`Limitations noted: ${String(a.limitations).trim().replace(/[.s]+$/, '')}. Pick exercises that work around them.`);
 
   return {
     goal, maintenance: { kcal: maintenanceKcal, age, source: 'formula' },

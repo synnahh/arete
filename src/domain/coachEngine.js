@@ -44,7 +44,7 @@ const coolingDown = (log, key, today) => { const d = daysSinceLast(log, key, tod
 function rebuilt(goal, { weightKg, maintenanceKcal, maintenanceSource }) {
   const next = makeGoal({
     template: goal.template, customText: goal.customText || '', startedOn: goal.startedOn,
-    weightKg, maintenanceKcal, maintenanceSource, targetWeightKg: goal.targetWeightKg, pace: goal.pace,   // keep the speed you chose
+    weightKg, maintenanceKcal, maintenanceSource, targetWeightKg: goal.targetWeightKg, pace: goal.pace, custom: goal.custom,   // keep the speed and custom numbers you chose
   });
   if (!next) return null;
   return { ...next, startWeightKg: goal.startWeightKg, targetsWeightKg: round1(weightKg) };

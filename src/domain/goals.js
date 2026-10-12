@@ -42,6 +42,55 @@ export const PACES = {
 };
 export const MIN_KCAL = 1300;   // targets never go below this whatever the pace
 
+// A custom goal sets its own numbers instead of a template's. The limits keep it sane:
+// a deficit past 25% or protein past 3 g/kg adds risk, not speed.
+export const CUSTOM_LIMITS = { deltaPct: [-25, 20], proteinPerKg: [1.2, 3], fatPerKg: [0.5, 1.5] };
+
+/**
+ * Starting points for a custom goal. Building muscle in a deficit works best with a modest
+ * deficit (large ones slow muscle gain), very high protein, hard progressive training and
+ * steps rather than extra cardio, and it works best for people returning from a layoff or
+ * carrying some body fat.
+ */
+export const CUSTOM_PRESETS = {
+  muscleDeficit: {
+    label: 'Build muscle in a deficit',
+    text: 'Build muscle as fast as possible in a calorie deficit',
+    deltaPct: -12, proteinPerKg: 2.2, fatPerKg: 0.9,
+    note: 'A modest deficit (about 10 to 15%), protein around 2.2 g/kg, hard progressive training and steps. A bigger deficit loses fat faster but slows muscle gain.',
+  },
+  leanOut: {
+    label: 'Lean out, keep muscle',
+    text: 'Lose fat and keep my muscle',
+    deltaPct: -18, proteinPerKg: 2.3, fatPerKg: 0.8,
+    note: 'A firmer deficit with the protein high enough to protect muscle. Best for a short block.',
+  },
+  slowRecomp: {
+    label: 'Slow recomposition',
+    text: 'Recompose slowly at maintenance',
+    deltaPct: 0, proteinPerKg: 2.0, fatPerKg: 0.9,
+    note: 'Eat at maintenance and let training and time change the shape. The scale barely moves.',
+  },
+};
+
+/** The answer fields a custom preset sets (used by the intake form and the Goal editor). */
+export const customFieldsFromPreset = (id) => {
+  const p = CUSTOM_PRESETS[id];
+  return { customPreset: id, customText: p.text, customDeltaPct: p.deltaPct, customProtein: p.proteinPerKg, customFat: p.fatPerKg };
+};
+
+const clampTo = (v, [lo, hi], fallback) => { const n = Number(v); return Number.isFinite(n) ? Math.min(hi, Math.max(lo, n)) : fallback; };
+
+/** A custom spec cleaned to safe numbers, or null when none was given. */
+export function cleanCustom(c) {
+  if (!c || typeof c !== 'object') return null;
+  return {
+    deltaPct: clampTo(c.deltaPct, CUSTOM_LIMITS.deltaPct, 0),
+    proteinPerKg: clampTo(c.proteinPerKg, CUSTOM_LIMITS.proteinPerKg, 2),
+    fatPerKg: clampTo(c.fatPerKg, CUSTOM_LIMITS.fatPerKg, 0.9),
+  };
+}
+
 /** The weekly change in kg each pace gives for a template at a bodyweight (negative = loss). */
 export function paceRows(templateId, weightKg) {
   const t = GOAL_TEMPLATES[templateId];
@@ -61,18 +110,24 @@ export function estimateMaintenance(weightKg) {
 }
 
 /** Daily targets for a template at a bodyweight and maintenance. */
-export function computeTargets(templateId, { weightKg, maintenanceKcal, paceFactor = 1 } = {}) {
+export function computeTargets(templateId, { weightKg, maintenanceKcal, paceFactor = 1, custom = null } = {}) {
   const t = GOAL_TEMPLATES[templateId];
   if (!t || !(weightKg > 0) || !(maintenanceKcal > 0)) return null;
-  const kcal    = Math.max(MIN_KCAL, round(maintenanceKcal * (1 + t.energyDelta * paceFactor), 10));
-  const protein = round(weightKg * t.proteinPerKg, 5);
+  const c = cleanCustom(custom);
+  // A custom goal brings its own deficit/surplus and protein; the template only supplies its label.
+  const energyDelta = c ? c.deltaPct / 100 : t.energyDelta * paceFactor;
+  const proteinPerKg = c ? c.proteinPerKg : t.proteinPerKg;
+  const fatPerKg = c ? c.fatPerKg : t.fatPerKg;
+  const kcal    = Math.max(MIN_KCAL, round(maintenanceKcal * (1 + energyDelta), 10));
+  const protein = round(weightKg * proteinPerKg, 5);
   // Fat floor: at least 20% of energy, whichever is higher.
-  const fat     = round(Math.max(weightKg * t.fatPerKg, (kcal * 0.2) / 9), 5);
+  const fat     = round(Math.max(weightKg * fatPerKg, (kcal * 0.2) / 9), 5);
   const carbs   = Math.max(0, round((kcal - protein * 4 - fat * 9) / 4, 5));
   return {
     kcal, protein, fat, carbs,
-    weeklyRatePct: +(t.weeklyRatePct * paceFactor).toFixed(3),
-    weeklyRateKg: +((weightKg * t.weeklyRatePct * paceFactor) / 100).toFixed(2),
+    // From the actual calorie change, so a custom goal reports the pace it really gives.
+    weeklyRatePct: c ? +(((kcal - maintenanceKcal) * 7 / KCAL_PER_KG / weightKg) * 100).toFixed(3) : +(t.weeklyRatePct * paceFactor).toFixed(3),
+    weeklyRateKg: c ? +(((kcal - maintenanceKcal) * 7) / KCAL_PER_KG).toFixed(2) : +((weightKg * t.weeklyRatePct * paceFactor) / 100).toFixed(2),
   };
 }
 
@@ -131,12 +186,14 @@ export function adaptiveMaintenance(weights = [], intakes = [], { minDays = 14, 
 }
 
 /** A goal record ready to store in settings.coachGoal. */
-export function makeGoal({ template, customText = '', weightKg, maintenanceKcal, maintenanceSource = 'estimate', startedOn, targetWeightKg = null, pace = 'normal' }) {
+export function makeGoal({ template, customText = '', weightKg, maintenanceKcal, maintenanceSource = 'estimate', startedOn, targetWeightKg = null, pace = 'normal', custom = null }) {
   const paceFactor = PACES[pace]?.factor ?? 1;
-  const targets = computeTargets(template, { weightKg, maintenanceKcal, paceFactor });
+  const spec = cleanCustom(custom);
+  const targets = computeTargets(template, { weightKg, maintenanceKcal, paceFactor, custom: spec });
   if (!targets) return null;
   return {
     template, customText: customText.trim(), startedOn, pace: PACES[pace] ? pace : 'normal',
+    ...(spec ? { custom: spec } : {}),
     startWeightKg: weightKg, maintenanceKcal, maintenanceSource, targets,
     ...(Number(targetWeightKg) > 0 ? { targetWeightKg: Number(targetWeightKg) } : {}),
   };

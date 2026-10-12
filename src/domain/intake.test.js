@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest';
-import { ageFrom, bmr, maintenanceFrom, splitFor, fitDays, missingAnswers, planFromAnswers } from './intake.js';
+import { ageFrom, bmr, maintenanceFrom, splitFor, fitDays, missingAnswers, planFromAnswers, baseTemplateFor } from './intake.js';
 import { buildFromTemplate } from './splits.js';
 import { paceRows } from './goals.js';
 
@@ -79,5 +79,58 @@ describe('the plan', () => {
     expect(rows[1].weeklyRateKg).toBe(-0.6);
     expect(rows[3].discouraged).toBe(true);
     expect(paceRows('cut', 0)).toEqual([]);
+  });
+});
+
+describe('a custom goal', () => {
+  const custom = { ...answers, goal: 'custom', customText: 'Build muscle as fast as possible in a calorie deficit', customDeltaPct: -12, customProtein: 2.2, customFat: 0.9 };
+  it('uses your own deficit and protein, not a template', () => {
+    const p = planFromAnswers(custom, TODAY);
+    expect(p.goal.template).toBe('cut');                      // only the label and direction
+    expect(p.goal.customText).toMatch(/muscle/);
+    expect(p.goal.custom).toEqual({ deltaPct: -12, proteinPerKg: 2.2, fatPerKg: 0.9 });
+    expect(p.goal.targets.kcal).toBe(2430);                   // 2760 x 0.88, to the nearest 10
+    expect(p.goal.targets.protein).toBe(175);                 // 80 kg x 2.2 = 176, to the nearest 5
+    expect(p.goal.targets.weeklyRateKg).toBeCloseTo(-0.3, 1); // from the real calorie change
+  });
+  it('picks the direction from the sign of the change', () => {
+    expect([-12, 0, 8].map(baseTemplateFor)).toEqual(['cut', 'recomp', 'bulk']);
+  });
+  it('asks for the calorie target when it is missing', () => {
+    expect(missingAnswers({ ...custom, customDeltaPct: '' })).toContain('your calorie target for the custom goal');
+  });
+  it('warns when the deficit is too big to build muscle in or protein is too low', () => {
+    expect(planFromAnswers({ ...custom, customDeltaPct: -24 }, TODAY).notes.join(' ')).toMatch(/slows muscle gain/);
+    expect(planFromAnswers({ ...custom, customProtein: 1.4 }, TODAY).notes.join(' ')).toMatch(/protein under/);
+  });
+  it('holds an out-of-range change at the limit and says so', () => {
+    const p = planFromAnswers({ ...custom, customDeltaPct: -40 }, TODAY);
+    expect(p.goal.custom.deltaPct).toBe(-25);
+    expect(p.notes.join(' ')).toMatch(/outside what the app allows/);
+  });
+  it('can name its own training week', () => {
+    expect(planFromAnswers({ ...custom, days: 5, splitTemplate: 'upperFrame' }, TODAY).split).toMatchObject({ templateId: 'upperFrame', days: 5 });
+    expect(planFromAnswers({ ...custom, days: 5, splitTemplate: 'nonsense' }, TODAY).split.templateId).toBe('bro');
+  });
+});
+
+describe("Rob's answers from his guides", () => {
+  it('give a deficit in the size the guides call a mini-cut, with the guides protein', async () => {
+    const { ROB_GUIDE_ANSWERS } = await import('./guideAnswers.js');
+    const p = planFromAnswers({ ...ROB_GUIDE_ANSWERS, birthDate: '2005-03-01' }, TODAY);
+    expect(p.missing).toBeUndefined();
+    expect(p.maintenance.age).toBe(21);
+    expect(p.maintenance.kcal).toBe(2390);                  // close to the guides' 2,300 trial intake
+    expect(p.goal.targets.kcal).toBe(2100);                 // about 300 below, the guides' mini-cut size
+    expect(p.goal.targets.protein).toBe(155);               // inside the guides' 145 to 160 g
+    expect(p.goal.targets.weeklyRateKg).toBeCloseTo(-0.26, 2);
+    expect(p.split).toMatchObject({ templateId: 'upperFrame', days: 5 });
+    expect(p.goal.customText).toMatch(/muscle as fast as possible/);
+    expect(p.notes.join(' ')).toMatch(/Right shoulder/);
+  });
+  it('leaves the birth date for him, since the guides only say 21', async () => {
+    const { ROB_GUIDE_ANSWERS } = await import('./guideAnswers.js');
+    expect(ROB_GUIDE_ANSWERS.birthDate).toBeUndefined();
+    expect(planFromAnswers(ROB_GUIDE_ANSWERS, TODAY).missing).toContain('your birth date');
   });
 });

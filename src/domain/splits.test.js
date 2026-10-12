@@ -117,9 +117,9 @@ describe('session days', () => {
 
 describe('template filter', () => {
   it('shows what suits your level and days, blank always last', () => {
-    expect(templatesFor({})).toEqual(['ppl', 'bro', 'upperLower', 'fullBody', 'blank']);
-    expect(templatesFor({ experience: 'beginner' })).toEqual(['upperLower', 'fullBody', 'blank']);
+    expect(templatesFor({})).toEqual(['ppl', 'upperFrame', 'bro', 'upperLower', 'fullBody', 'blank']);
+    expect(templatesFor({ experience: 'beginner' })).toEqual(['upperFrame', 'upperLower', 'fullBody', 'blank']);
     expect(templatesFor({ days: 4 })).toEqual(['upperLower', 'fullBody', 'blank']);
-    expect(templatesFor({ experience: 'advanced', days: 5 })).toEqual(['bro', 'blank']);
+    expect(templatesFor({ experience: 'advanced', days: 5 })).toEqual(['upperFrame', 'bro', 'blank']);
   });
 });

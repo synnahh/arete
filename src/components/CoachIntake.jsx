@@ -16,6 +16,9 @@ import { buildFromTemplate } from '../domain/splits.js';
 import { PRESETS, suggestLibrary, freshEntries, styleFor } from '../domain/exercisePick.js';
 import { SKIN_TYPES, SKIN_CONCERNS, CONCERN_LABEL } from '../domain/skinScore.js';
 import { label } from './ui.js';
+import CustomGoalFields, { fieldsFromPreset } from './CustomGoalFields.jsx';
+import { maintenanceFrom, ageFrom } from '../domain/intake.js';
+import { ROB_GUIDE_ANSWERS } from '../domain/guideAnswers.js';
 
 const card = { padding: 18, borderRadius: 16, background: 'var(--bg-panel)', border: '0.5px solid var(--card-border)', display: 'flex', flexDirection: 'column', gap: 14 };
 const field = { width: '100%', boxSizing: 'border-box', minHeight: 46, borderRadius: 12, padding: '0 14px', border: '0.5px solid var(--card-border)', background: 'var(--bg-base)', color: 'var(--text-primary)', fontFamily: 'inherit', fontSize: 16 };
@@ -59,12 +62,13 @@ export default function CoachIntake({ settings, onDone }) {
   }, today), [a, today]);
   const ready = !plan.missing;
   const stepId = STEPS[step];
-  const visible = STEPS.filter(s => !(s === 'pace' && a.goal === 'recomp'));
+  const skipsPace = a.goal === 'recomp' || a.goal === 'custom';
+  const visible = STEPS.filter(s => !(s === 'pace' && skipsPace));
   const pos = visible.indexOf(stepId);
-  const go = (d) => { let n = step + d; while (STEPS[n] === 'pace' && a.goal === 'recomp') n += d; setStep(Math.max(0, Math.min(STEPS.length - 1, n))); };
+  const go = (d) => { let n = step + d; while (STEPS[n] === 'pace' && skipsPace) n += d; setStep(Math.max(0, Math.min(STEPS.length - 1, n))); };
 
   const bodyOk = a.birthDate && a.sex && Number(a.heightCm) > 0 && Number(a.weightKg) > 0;
-  const stepOk = { goal: !!a.goal, body: bodyOk, pace: true, training: a.experience && a.days && a.equipment, activity: !!a.activity, life: true, skin: true, plan: ready }[stepId];
+  const stepOk = { goal: !!a.goal && (a.goal !== 'custom' || (String(a.customText || '').trim() && a.customDeltaPct !== '' && a.customDeltaPct != null)), body: bodyOk, pace: true, training: a.experience && a.days && a.equipment, activity: !!a.activity, life: true, skin: true, plan: ready }[stepId];
 
   async function apply() {
     if (!ready || busy) return;
@@ -77,7 +81,7 @@ export default function CoachIntake({ settings, onDone }) {
         ...(plan.sleepNeedHours ? { sleepNeedHours: plan.sleepNeedHours } : {}),
         coachIntake: { answers: a, doneOn: today },
       });
-      lines.push(`Goal set: ${GOAL_TEMPLATES[plan.goal.template].label}, ${plan.goal.targets.kcal} kcal a day.`);
+      lines.push(`Goal set: ${plan.goal.customText || GOAL_TEMPLATES[plan.goal.template].label}, ${plan.goal.targets.kcal} kcal a day.`);
 
       try { localStorage.setItem('valerie_train_gym', plan.equipment.gym); } catch { /* storage blocked */ }
 
@@ -119,7 +123,18 @@ export default function CoachIntake({ settings, onDone }) {
 
       {stepId === 'goal' && (<>
         <h2 style={{ margin: 0, fontSize: 22, color: 'var(--text-primary)' }}>What is your goal?</h2>
-        <div style={grid}>{TEMPLATE_IDS.map(id => <Choice key={id} on={a.goal === id} title={GOAL_TEMPLATES[id].label} hint={GOAL_TEMPLATES[id].blurb} onClick={() => set({ goal: id })} />)}</div>
+        <div style={grid}>
+          {TEMPLATE_IDS.map(id => <Choice key={id} on={a.goal === id} title={GOAL_TEMPLATES[id].label} hint={GOAL_TEMPLATES[id].blurb} onClick={() => set({ goal: id })} />)}
+          <Choice on={a.goal === 'custom'} title="Custom" hint="Your own goal and numbers, e.g. build muscle in a deficit" onClick={() => set(a.goal === 'custom' ? {} : { goal: 'custom', ...(a.customDeltaPct == null || a.customDeltaPct === '' ? fieldsFromPreset('muscleDeficit') : {}) })} />
+        </div>
+        {a.goal === 'custom' && (
+          <CustomGoalFields value={a} onChange={set} weightKg={Number(a.weightKg) || null}
+            maintenanceKcal={ageFrom(a.birthDate, today) && a.sex && Number(a.heightCm) > 0 && Number(a.weightKg) > 0 && a.activity ? maintenanceFrom({ weightKg: Number(a.weightKg), heightCm: Number(a.heightCm), age: ageFrom(a.birthDate, today), sex: a.sex }, a.activity) : null} />
+        )}
+        <div>
+          <button type="button" onClick={() => setA(prev => ({ ...prev, ...ROB_GUIDE_ANSWERS, birthDate: prev.birthDate }))} style={{ ...btn(false), minHeight: 40, fontSize: 14 }}>Fill in the answers from my guide</button>
+          <div style={{ fontSize: 12.5, color: 'var(--text-secondary)', marginTop: 6 }}>Fills this form from your two guides (weight, height, five training days, shoulder, skin and the muscle-in-a-deficit goal). Nothing is saved until you apply the plan. Your birth date is not in the guides, so enter it in the next step.</div>
+        </div>
       </>)}
 
       {stepId === 'body' && (<>
@@ -188,7 +203,7 @@ export default function CoachIntake({ settings, onDone }) {
               </div>
               <ul style={{ margin: 0, paddingLeft: 18, fontSize: 14, lineHeight: 1.7, color: 'var(--text-secondary)' }}>
                 <li>Maintenance about {plan.maintenance.kcal} kcal (age {plan.maintenance.age}, {ACTIVITY[a.activity].label.toLowerCase()}). It becomes exact once you have 2 weeks of weigh-ins and food logs.</li>
-                <li>{GOAL_TEMPLATES[plan.goal.template].label}{plan.goal.targets.weeklyRateKg ? `: about ${plan.goal.targets.weeklyRateKg > 0 ? '+' : ''}${plan.goal.targets.weeklyRateKg} kg a week` : ''}{plan.goal.targetWeightKg ? `, towards ${plan.goal.targetWeightKg} kg` : ''}.</li>
+                <li>{plan.goal.customText || GOAL_TEMPLATES[plan.goal.template].label}{plan.goal.targets.weeklyRateKg ? `: about ${plan.goal.targets.weeklyRateKg > 0 ? '+' : ''}${plan.goal.targets.weeklyRateKg} kg a week` : ''}{plan.goal.targetWeightKg ? `, towards ${plan.goal.targetWeightKg} kg` : ''}.</li>
                 <li>Training: {plan.split.label}, {plan.split.days} days, {plan.equipment.label.toLowerCase()}.</li>
                 {(plan.skinProfile.type || plan.skinProfile.concerns.length) && <li>Skin: {plan.skinProfile.type || 'type not set'}{plan.skinProfile.concerns.length ? `, ${plan.skinProfile.concerns.map(c => CONCERN_LABEL[c]).join(', ').toLowerCase()}` : ''}.</li>}
               </ul>

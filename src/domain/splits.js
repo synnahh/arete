@@ -122,6 +122,13 @@ export const TEMPLATES = {
     wed: { label: 'Full body B', muscles: ['back', 'chest', 'glutes', 'shoulders', 'biceps', 'triceps'] },
     fri: { label: 'Full body C', muscles: ['quads', 'back', 'chest', 'hamstrings', 'calves'] },
   } },
+  upperFrame: { label: 'Upper-priority 5 day', note: '5 days: upper, lower, upper, lower, upper. Upper body three times, legs twice.', trainDays: 5, levels: ['beginner', 'intermediate', 'advanced'], days: {
+    mon: { label: 'Upper A', muscles: ['chest', 'back', 'shoulders', 'biceps', 'triceps'] },
+    tue: { label: 'Lower A', muscles: ['quads', 'hamstrings', 'glutes', 'calves'] },
+    thu: { label: 'Upper B', muscles: ['chest', 'shoulders', 'back', 'triceps'] },
+    fri: { label: 'Lower B', muscles: ['quads', 'hamstrings', 'glutes', 'calves'] },
+    sat: { label: 'Upper C', muscles: ['back', 'shoulders', 'chest', 'biceps', 'triceps'] },
+  } },
   bro: { label: 'Body-part split', note: '5 days: one area per day.', trainDays: 5, levels: ['intermediate', 'advanced'], days: {
     mon: { label: 'Chest', muscles: ['chest', 'triceps'] },
     tue: { label: 'Back', muscles: ['back', 'biceps'] },
