@@ -1,5 +1,23 @@
 # Arete (was VALERIE) — Handover for the next agent
 
+# LATEST (2026-10-12): read this first, it supersedes parts of START HERE below
+
+**Rob's standing decisions:** this is a personal app that will never be published. No onboarding, no paywall, no demo data. The coach asks its first questions itself (Goal HQ intake). Rob will upload his complete fitness and looks improvement guide; it is to be copied into the app's data so he does not type it (plan and folder: `docs/reference/guide/README.md`; the guide is NOT in the repo yet, so nothing from it has been imported).
+
+**Dev view:** on the Vite dev server only, `DEV_VIEW` in `src/App.jsx` skips PIN, sign-in and onboarding so changes can be looked at (`?login=1` restores the gates). It is stripped from production builds; after any build confirm `grep -l "login=1" dist/assets/*.js` finds nothing. There is no session in that mode, so nothing syncs.
+
+**Changed since START HERE (all committed, 605 tests):**
+- **Removed:** the Mind tab (Notes and Lists moved to Plan; old Mind ids alias to Notes), fasting, onboarding, every demo/sample (Health overview and Body fallbacks, the sample exercise library). An empty library stays empty.
+- **Coach intake** (`components/CoachIntake.jsx`, `domain/intake.js`, tests): goal, body (Mifflin-St Jeor maintenance), pace, experience/days/equipment, activity, limits, sleep, skin. Apply sets the goal and targets, `settings.profile`, skin profile, Train gym, a starter library only if the library is empty, and a NEW active program (old ones kept). Goal speed presets in `domain/goals.js` (`PACES`, floor 1,300 kcal, kept by the coach engine).
+- **Train:** your own split (`domain/splits.js`, `components/SplitBuilder.jsx`: per-day exercises, templates built from YOUR library, filters by level/days, favourites, weekly volume), exercise database (`domain/exerciseDb.js`, 120+ moves), Replace, recommended sets line (`recommendedSets`), dated history list, rest-time chips (`settings.restSeconds`).
+- **Food:** one add-food flow for phone and desktop (`components/FoodLogger.jsx`, `domain/foodLogger.js`): search across favourites/recents/own foods/meals plus database (`food-search` function: USDA + Open Food Facts, needs deploy and `USDA_API_KEY`), remembered portions (`food_portions` doc), meal slots stored as `entry.section`.
+- **Progress/Profile (from GROWTH):** `components/WeeklyCheckIn.jsx` (kg lost/gained tiles, week number, weight + 3 photos; check-ins are `body_metrics` rows with `source:'check-in'`), `tabs/Profile.jsx` (screen id `profile`, Settings group: streak, goals achieved, training days, week strip, birth date/sex/height).
+- **Health sync:** `health-ingest` function + `supabase/health_sync.sql` (Apple Health and the Eufy scale via Health Auto Export). Not deployed.
+- **Phone feel:** iOS haptics, no input zoom, swipe-to-delete (`mobile/SwipeRow.jsx`) on food, water, tasks, saved meals, notes; slide transitions; loading screen (`components/LoadingScreen.jsx`); barcode scanning works on iPhone (ZXing, camera kept 30 s, photo fallback).
+- **Notes on GROWTH** (the app Rob is learning from): `docs/reference/grow/GROWTH-feature-notes.md`.
+
+**Not verified:** anything against real Supabase; swipe, slide, haptics and the food logger on a real iPhone; the intake Apply flow end to end (needs a signed-in session).
+
 # START HERE: current state (updated 2026-10-02)
 
 Everything under the line "History" further down is older and partly superseded. Trust this section first, then the code.
