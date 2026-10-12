@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest';
-import { e1rm, setsOf, topSetOf, previousSets, todaysLog, bests, detectPR, restSeconds, plannedRows, volume } from './training.js';
+import { e1rm, setsOf, topSetOf, previousSets, todaysLog, bests, detectPR, restSeconds, plannedRows, volume, recommendedSets } from './training.js';
 
 const logs = [
   { id: 'a', date: '2026-09-20', exerciseName: 'Bench Press', topSet: { weight: 80, reps: 6 } },               // legacy row
@@ -103,5 +103,27 @@ describe('planning', () => {
 
   it('sums volume', () => {
     expect(volume([{ weight: 80, reps: 8 }, { weight: 80, reps: 7 }])).toBe(1200);
+  });
+});
+
+describe('recommendedSets and a chosen rest time', () => {
+  it('gives compounds more sets than isolation, within 2 to 5', () => {
+    expect(recommendedSets({ name: 'Bench Press', repsMin: 6, repsMax: 8 }).sets).toBe(3);
+    expect(recommendedSets({ name: 'DB Curl', repsMin: 8, repsMax: 12 }).sets).toBe(2);
+    expect(recommendedSets({ name: 'Squat', repsMax: 6 }, { goal: 'strength', experience: 'advanced' }).sets).toBe(5);
+  });
+  it('adapts to goal and experience', () => {
+    expect(recommendedSets({ name: 'Lateral Raise', repsMax: 15 }, { goal: 'bulk' }).sets).toBe(3);
+    expect(recommendedSets({ name: 'Row', repsMax: 10 }, { experience: 'advanced' }).sets).toBe(4);
+    expect(recommendedSets({ name: 'Row', repsMax: 10 }, { experience: 'beginner' }).sets).toBe(3);
+  });
+  it('words the line the way a person would say it', () => {
+    expect(recommendedSets({ name: 'Bench Press', repsMin: 8, repsMax: 10 }).text).toBe('Recommended number of sets: 3. Aim for 8-10 repetitions per set.');
+    expect(recommendedSets({ name: 'Plank', repsMin: 10, repsMax: 10 }).text).toMatch(/Aim for 10 repetitions/);
+  });
+  it('a rest time you set wins, within sane limits', () => {
+    expect(restSeconds({ repsMax: 5 }, 75)).toBe(75);
+    expect(restSeconds({ repsMax: 5 }, 5)).toBe(180);
+    expect(restSeconds({ repsMax: 5 }, null)).toBe(180);
   });
 });

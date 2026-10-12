@@ -79,11 +79,30 @@ export function detectPR(set, { history, todaySets = [] }) {
 }
 
 /** Rest between sets from the exercise's rep range: heavier work, longer rest. */
-export function restSeconds(ex) {
+export function restSeconds(ex, override = null) {
+  const o = Number(override);
+  if (o >= 15 && o <= 600) return Math.round(o);          // a rest time you chose beats the guess
   const max = Number(ex?.repsMax) || 10;
   if (max <= 6) return 180;
   if (max <= 10) return 120;
   return 90;
+}
+
+/**
+ * How many working sets to do and the rep range, for the line under an exercise's name.
+ * Compound lifts get more sets than isolation work; strength goals trade sets for load;
+ * beginners start lower and advanced lifters can do more. Never below 2, never above 5.
+ */
+export function recommendedSets(ex, { goal = null, experience = null, compound = null } = {}) {
+  const isCompound = compound ?? ((Number(ex?.repsMax) || 10) <= 10 && !/curl|raise|extension|fly|pushdown|kickback|shrug|crunch/i.test(String(ex?.name || '')));
+  let sets = isCompound ? 3 : 2;
+  if (experience === 'advanced') sets += 1;
+  if (experience === 'beginner' && isCompound) sets = 3;
+  if (goal === 'bulk' || goal === 'recomp') sets += isCompound ? 0 : 1;
+  if (goal === 'strength') sets = isCompound ? Math.min(5, sets + 1) : 2;
+  sets = Math.max(2, Math.min(5, sets));
+  const lo = Number(ex?.repsMin) || 8, hi = Number(ex?.repsMax) || Math.max(lo, 10);
+  return { sets, repsMin: lo, repsMax: hi, text: `Recommended number of sets: ${sets}. Aim for ${lo === hi ? lo : `${lo}-${hi}`} repetitions per set.` };
 }
 
 /**

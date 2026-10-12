@@ -1,7 +1,7 @@
 import { describe, it, expect } from 'vitest';
 import {
   dayExercises, materialize, addToDay, removeFromDay, moveInDay, setDayKind, weekPlan,
-  plannedSets, doneSets, volumeStatus, volumeRows, buildFromTemplate, sessionDayKey, sessionChoices, dayKeyFromDate, TEMPLATES,
+  plannedSets, doneSets, volumeStatus, volumeRows, buildFromTemplate, sessionDayKey, sessionChoices, dayKeyFromDate, TEMPLATES, templatesFor,
 } from './splits.js';
 
 const lib = [
@@ -112,5 +112,14 @@ describe('session days', () => {
   it('weekPlan always has seven days', () => {
     expect(weekPlan(program, lib)).toHaveLength(7);
     expect(weekPlan(null, lib).every(d => d.rest)).toBe(true);
+  });
+});
+
+describe('template filter', () => {
+  it('shows what suits your level and days, blank always last', () => {
+    expect(templatesFor({})).toEqual(['ppl', 'bro', 'upperLower', 'fullBody', 'blank']);
+    expect(templatesFor({ experience: 'beginner' })).toEqual(['upperLower', 'fullBody', 'blank']);
+    expect(templatesFor({ days: 4 })).toEqual(['upperLower', 'fullBody', 'blank']);
+    expect(templatesFor({ experience: 'advanced', days: 5 })).toEqual(['bro', 'blank']);
   });
 });

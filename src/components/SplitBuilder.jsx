@@ -3,11 +3,12 @@
 // order you want. Programs can be renamed, copied and deleted (any of them, with
 // Undo). The volume panel shows what the plan trains per muscle each week against
 // what you really logged. Rules: src/domain/splits.js.
-import { useMemo, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import {
   WEEK, WEEK_LABEL, TEMPLATES, isRest, dayExercises, addToDay, removeFromDay, moveInDay, setDayKind, materialize,
-  buildFromTemplate, plannedSets, doneSets, volumeRows, dayKeyFromDate, SETS_BAND,
+  buildFromTemplate, plannedSets, doneSets, volumeRows, dayKeyFromDate, SETS_BAND, templatesFor,
 } from '../domain/splits.js';
+import { EXPERIENCE } from '../domain/intake.js';
 import { toLocalDateKey } from '../utils/localDate.js';
 import { label } from './ui.js';
 
@@ -27,10 +28,15 @@ export default function SplitBuilder({ programs, addProgram, updateProgram, remo
   const [template, setTemplate] = useState('ppl');
   const [newName, setNewName] = useState('');
   const [pick, setPick] = useState('');
+  const [level, setLevel] = useState(null);    // experience filter for starting weeks
+  const [maxDays, setMaxDays] = useState(null);
 
   const planned = useMemo(() => plannedSets(active, exercises), [active, exercises]);
   const done = useMemo(() => doneSets(workoutLogs, toLocalDateKey(new Date())), [workoutLogs]);
   const rows = useMemo(() => volumeRows(planned, done), [planned, done]);
+
+  const choices = useMemo(() => templatesFor({ experience: level, days: maxDays }), [level, maxDays]);
+  useEffect(() => { if (!choices.includes(template)) setTemplate(choices[0] || 'blank'); }, [choices, template]);
 
   const makeActive = async (id) => { for (const p of programs) if (p.isActive !== (p.id === id)) await updateProgram(p.id, { isActive: p.id === id }); };
 
@@ -70,11 +76,12 @@ export default function SplitBuilder({ programs, addProgram, updateProgram, remo
       <section style={card} aria-label="Programs">
         <div style={label}>Programs</div>
         {programs.length === 0 && <div style={{ fontSize: 13.5, color: 'var(--text-secondary)' }}>You have no program. Make one below, or leave it empty: Train still works from your Exercise Library.</div>}
-        {programs.map(p => (
+        {[...programs].sort((a, b) => Number(!!b.favourite) - Number(!!a.favourite)).map(p => (
           <div key={p.id} style={{ display: 'flex', alignItems: 'center', gap: 8, flexWrap: 'wrap', padding: '8px 10px', borderRadius: 10, border: `0.5px solid ${p.isActive ? 'var(--accent)' : 'var(--card-border)'}` }}>
             {naming === p.id
               ? <input autoFocus value={draftName} onChange={e => setDraftName(e.target.value)} onBlur={() => commitRename(p)} onKeyDown={e => { if (e.key === 'Enter') e.currentTarget.blur(); if (e.key === 'Escape') setNaming(null); }} aria-label="Program name" style={{ ...field, flex: 1, minWidth: 120 }} />
               : <button type="button" onClick={() => { setNaming(p.id); setDraftName(p.name); }} title="Rename" style={{ flex: 1, minWidth: 120, textAlign: 'left', background: 'none', border: 'none', cursor: 'text', fontFamily: 'inherit', fontSize: 14, fontWeight: p.isActive ? 700 : 500, color: p.isActive ? 'var(--accent)' : 'var(--text-primary)', padding: 0 }}>{p.name}</button>}
+            <button type="button" aria-pressed={!!p.favourite} aria-label={p.favourite ? `Unstar ${p.name}` : `Star ${p.name}`} onClick={() => updateProgram(p.id, { favourite: !p.favourite })} style={{ width: 40, height: 40, background: 'none', border: 'none', cursor: 'pointer', fontSize: 18, color: p.favourite ? '#e8a13a' : 'var(--text-secondary)' }}>{p.favourite ? '★' : '☆'}</button>
             {p.isActive ? <span style={{ fontSize: 11, letterSpacing: '0.08em', color: 'var(--accent)' }}>ACTIVE</span> : <button type="button" onClick={() => makeActive(p.id)} style={btn(false)}>Make active</button>}
             <button type="button" onClick={() => duplicate(p)} style={btn(false)}>Copy</button>
             <button type="button" onClick={() => remove(p)} aria-label={`Delete ${p.name}`} style={{ ...btn(false), color: '#e25d7a', borderColor: 'rgba(226,93,122,0.4)' }}>Delete</button>
@@ -85,12 +92,23 @@ export default function SplitBuilder({ programs, addProgram, updateProgram, remo
           : (
             <div style={{ display: 'flex', flexDirection: 'column', gap: 10, paddingTop: 8, borderTop: '0.5px solid var(--card-border)' }}>
               <div style={label}>Start from</div>
-              <div role="group" aria-label="Template" style={{ display: 'flex', gap: 6, flexWrap: 'wrap' }}>
-                {Object.entries(TEMPLATES).map(([id, t]) => (
-                  <button key={id} type="button" aria-pressed={template === id} onClick={() => setTemplate(id)} style={{ ...btn(false), borderColor: template === id ? 'var(--accent)' : undefined, color: template === id ? 'var(--accent)' : undefined }}>{t.label}</button>
+              <div role="group" aria-label="Filter by experience" style={{ display: 'flex', gap: 6, flexWrap: 'wrap', alignItems: 'center' }}>
+                <span style={{ fontSize: 12.5, color: 'var(--text-secondary)' }}>Suits</span>
+                {[[null, 'Anyone'], ...Object.entries(EXPERIENCE).map(([id, e]) => [id, e.label])].map(([id, text]) => (
+                  <button key={String(id)} type="button" aria-pressed={level === id} onClick={() => setLevel(id)} style={{ ...btn(false), minHeight: 32, fontSize: 12.5, borderColor: level === id ? 'var(--accent)' : undefined, color: level === id ? 'var(--accent)' : undefined }}>{text}</button>
+                ))}
+                <span style={{ fontSize: 12.5, color: 'var(--text-secondary)', marginLeft: 6 }}>Days</span>
+                {[null, 3, 4, 5, 6].map(n => (
+                  <button key={String(n)} type="button" aria-pressed={maxDays === n} onClick={() => setMaxDays(n)} style={{ ...btn(false), minHeight: 32, minWidth: 40, padding: '0 10px', fontSize: 12.5, borderColor: maxDays === n ? 'var(--accent)' : undefined, color: maxDays === n ? 'var(--accent)' : undefined }}>{n ?? 'Any'}</button>
                 ))}
               </div>
-              <div style={{ fontSize: 12.5, color: 'var(--text-secondary)' }}>{TEMPLATES[template].note} The days are filled from the exercises in your library, and every day stays editable.</div>
+              <div role="group" aria-label="Template" style={{ display: 'flex', gap: 6, flexWrap: 'wrap' }}>
+                {choices.map(id => {
+                  const t = TEMPLATES[id];
+                  return <button key={id} type="button" aria-pressed={template === id} onClick={() => setTemplate(id)} style={{ ...btn(false), borderColor: template === id ? 'var(--accent)' : undefined, color: template === id ? 'var(--accent)' : undefined }}>{t.label}</button>;
+                })}
+              </div>
+              <div style={{ fontSize: 12.5, color: 'var(--text-secondary)' }}>{TEMPLATES[template].note}{TEMPLATES[template].levels.length < 3 ? ` Best for ${TEMPLATES[template].levels.join(' and ')}.` : ''} The days are filled from the exercises in your library, and every day stays editable.</div>
               <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>
                 <input value={newName} onChange={e => setNewName(e.target.value)} placeholder={TEMPLATES[template].label} aria-label="New program name" style={{ ...field, flex: 1, minWidth: 160 }} onKeyDown={e => e.key === 'Enter' && create()} />
                 <button type="button" onClick={create} style={btn(true)}>Create</button>

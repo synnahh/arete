@@ -102,8 +102,8 @@ export function volumeRows(planned, done = {}) {
 // ── Starters, built from what you have ────────────────────────────────────────
 // muscles: what each day should cover. The exercises come from YOUR library.
 export const TEMPLATES = {
-  blank: { label: 'Blank week', note: 'Every day is a rest day. You build it.', days: {} },
-  ppl: { label: 'Push / Pull / Legs', note: '6 days: push, pull, legs, twice.', days: {
+  blank: { label: 'Blank week', note: 'Every day is a rest day. You build it.', trainDays: 0, levels: ['beginner', 'intermediate', 'advanced'], days: {} },
+  ppl: { label: 'Push / Pull / Legs', note: '6 days: push, pull, legs, twice.', trainDays: 6, levels: ['intermediate', 'advanced'], days: {
     mon: { label: 'Push', muscles: ['chest', 'shoulders', 'triceps'] },
     tue: { label: 'Pull', muscles: ['back', 'biceps', 'forearms'] },
     wed: { label: 'Legs', muscles: ['quads', 'hamstrings', 'glutes', 'calves'] },
@@ -111,18 +111,18 @@ export const TEMPLATES = {
     fri: { label: 'Pull', muscles: ['back', 'biceps', 'forearms'] },
     sat: { label: 'Legs', muscles: ['quads', 'hamstrings', 'glutes', 'calves'] },
   } },
-  upperLower: { label: 'Upper / Lower', note: '4 days: upper and lower, twice.', days: {
+  upperLower: { label: 'Upper / Lower', note: '4 days: upper and lower, twice.', trainDays: 4, levels: ['beginner', 'intermediate'], days: {
     mon: { label: 'Upper', muscles: ['chest', 'back', 'shoulders', 'biceps', 'triceps'] },
     tue: { label: 'Lower', muscles: ['quads', 'hamstrings', 'glutes', 'calves'] },
     thu: { label: 'Upper', muscles: ['chest', 'back', 'shoulders', 'biceps', 'triceps'] },
     fri: { label: 'Lower', muscles: ['quads', 'hamstrings', 'glutes', 'calves'] },
   } },
-  fullBody: { label: 'Full body', note: '3 days: everything each time.', days: {
+  fullBody: { label: 'Full body', note: '3 days: everything each time.', trainDays: 3, levels: ['beginner', 'intermediate'], days: {
     mon: { label: 'Full body A', muscles: ['chest', 'back', 'quads', 'shoulders', 'hamstrings'] },
     wed: { label: 'Full body B', muscles: ['back', 'chest', 'glutes', 'shoulders', 'biceps', 'triceps'] },
     fri: { label: 'Full body C', muscles: ['quads', 'back', 'chest', 'hamstrings', 'calves'] },
   } },
-  bro: { label: 'Body-part split', note: '5 days: one area per day.', days: {
+  bro: { label: 'Body-part split', note: '5 days: one area per day.', trainDays: 5, levels: ['intermediate', 'advanced'], days: {
     mon: { label: 'Chest', muscles: ['chest', 'triceps'] },
     tue: { label: 'Back', muscles: ['back', 'biceps'] },
     wed: { label: 'Legs', muscles: ['quads', 'hamstrings', 'glutes', 'calves'] },
@@ -130,6 +130,21 @@ export const TEMPLATES = {
     fri: { label: 'Arms', muscles: ['biceps', 'triceps', 'forearms'] },
   } },
 };
+
+/**
+ * Template ids for a filter. Blank always shows; the rest must suit the experience
+ * level and not need more training days than you have. Best fit (most days you can use) first.
+ */
+export function templatesFor({ experience = null, days = null } = {}) {
+  const ids = Object.keys(TEMPLATES).filter(id => {
+    const t = TEMPLATES[id];
+    if (id === 'blank') return true;
+    if (experience && !t.levels.includes(experience)) return false;
+    if (days && t.trainDays > days) return false;
+    return true;
+  });
+  return ids.sort((a, b) => (a === 'blank') - (b === 'blank') || TEMPLATES[b].trainDays - TEMPLATES[a].trainDays);
+}
 
 const primary = (ex) => musclesForExercise(ex)[0];
 const isCompound = (ex) => (findExercise(ex.name)?.kind ?? 'compound') === 'compound';

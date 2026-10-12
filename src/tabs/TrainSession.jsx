@@ -6,9 +6,10 @@
 import { useCallback, useEffect, useMemo, useRef, useState, Fragment } from 'react';
 import { toLocalDateKey } from '../utils/localDate.js';
 import {
-  bests, detectPR, plannedRows, previousSets, restSeconds, setsOf, todaysLog, topSetOf, volume,
+  bests, detectPR, plannedRows, previousSets, restSeconds, setsOf, todaysLog, topSetOf, volume, recommendedSets,
 } from '../domain/training.js';
-import { plateaus, applyReadiness, liftHistory, validRpe } from '../domain/progression.js';
+import { plateaus, applyReadiness, liftHistory, validRpe, sessionsOf } from '../domain/progression.js';
+import LiftSessions from '../components/LiftSessions.jsx';
 import { isBarbell, platesFor, warmupSets, parsePlates, barFrom, DEFAULT_PLATES_KG } from '../domain/plates.js';
 import { updateSettings } from '../utils/settingsStore.js';
 import { storage, STORAGE_KEYS } from '../utils/storage.js';
@@ -132,7 +133,7 @@ function EquipmentSettings({ eq }) {
 }
 
 //  One exercise card
-function ExerciseCard({ ex, prog, rows, onChange, onTick, onRate, onAddSet, onRemoveSet, prs, compact, history, eq, alternatives = [], onReplace }) {
+function ExerciseCard({ ex, prog, rows, onChange, onTick, onRate, onAddSet, onRemoveSet, prs, compact, history, sessions = [], rec = null, eq, alternatives = [], onReplace }) {
   const doneSets = rows.filter(r => r.done);
   const [showChart, setShowChart] = useState(false);
   const [swapping, setSwapping] = useState(false);
@@ -163,6 +164,7 @@ function ExerciseCard({ ex, prog, rows, onChange, onTick, onRate, onAddSet, onRe
           )}
         </div>
       )}
+      {rec && <div style={{ fontSize: 13, color: 'var(--text-secondary)' }}>{rec.text}</div>}
       <div className="val-num" style={{ fontSize: 12, color: 'var(--text-secondary)' }}>
         TARGET {ex.bodyweight ? 'BW' : `${prog.nextWeight} kg`} × {ex.repsMin}–{ex.repsMax} ·{' '}
         <span style={{ color: ACTION_COLOUR[prog.action] ?? 'var(--text-secondary)', fontWeight: 600 }}>{prog.action}</span>
@@ -245,11 +247,11 @@ function ExerciseCard({ ex, prog, rows, onChange, onTick, onRate, onAddSet, onRe
         {rows.length > 1 && !rows[rows.length - 1].done && (
           <button type="button" onClick={onRemoveSet} style={pill(false)}>Remove set</button>
         )}
-        {history.length > 0 && (
+        {(history.length > 0 || sessions.length > 0) && (
           <button type="button" aria-expanded={showChart} onClick={() => setShowChart(v => !v)} style={{ ...pill(showChart), marginLeft: 'auto' }}>History</button>
         )}
       </div>
-      {showChart && <LiftChart history={history} />}
+      {showChart && (<><LiftChart history={history} /><LiftSessions sessions={sessions} /></>)}
     </section>
   );
 }
@@ -298,6 +300,12 @@ export default function TrainSession({
   const recovery = useRecovery();
   const equipment = useEquipment();
 
+  // What the coach knows (goal, experience) shapes the recommended sets; the rest time is yours to set.
+  const saved = storage.get(STORAGE_KEYS.SETTINGS, {}) || {};
+  const recPrefs = { goal: saved.coachGoal?.template ?? null, experience: saved.coachIntake?.answers?.experience ?? null };
+  const [restPref, setRestPref] = useState(() => Number(saved.restSeconds) || 0);   // 0 = automatic
+  const chooseRest = (v) => { setRestPref(v); updateSettings({ restSeconds: v || null }); };
+
   const todays = useMemo(() => {
     const gymOk = (e) => e.gym === gym || e.gym === 'both';
     const base = (program && WEEK.includes(day)
@@ -336,7 +344,7 @@ export default function TrainSession({
       for (const ex of todays) {
         if (next[ex.id]) continue;
         const prog = applyReadiness(progression(ex, workoutLogs.filter(l => l.date < date)), recovery);
-        const rows = plannedRows(ex, prog, previousSets(workoutLogs, ex.name, date));
+        const rows = plannedRows(ex, prog, previousSets(workoutLogs, ex.name, date), recommendedSets(ex, recPrefs).sets);
         const existing = todaysLog(workoutLogs, ex.name, date);
         if (existing) {
           rowIds.current[ex.id] = existing.id;
@@ -365,7 +373,7 @@ export default function TrainSession({
         const rows = prev[ex.id];
         const auto = autoPlan.current[ex.id];
         if (!rows || auto == null || rows.some(r => r.done) || sig(rows) !== auto) continue;
-        const fresh = plannedRows(ex, applyReadiness(progression(ex, workoutLogs.filter(l => l.date < date)), recovery), previousSets(workoutLogs, ex.name, date));
+        const fresh = plannedRows(ex, applyReadiness(progression(ex, workoutLogs.filter(l => l.date < date)), recovery), previousSets(workoutLogs, ex.name, date), recommendedSets(ex, recPrefs).sets);
         if (sig(fresh) === auto) continue;
         autoPlan.current[ex.id] = sig(fresh);
         confirmedRows.current[ex.id] = fresh.map(r => ({ ...r, justDone: false }));
@@ -427,7 +435,7 @@ export default function TrainSession({
       const todaySets = rows.filter((r, j) => r.done && j !== i).map(r => ({ weight: Number(r.weight) || 0, reps: Number(r.reps) || 0 }));
       pr = detectPR({ weight: Number(row.weight) || 0, reps: Number(row.reps) }, { history, todaySets });
       if (!sessionStartedAt) sessionStartedAt = Date.now();
-      restTotal = restSeconds(ex);
+      restTotal = restSeconds(ex, restPref);
       restUntil = Date.now() + restTotal * 1000;
     }
     setPrs(p => ({ ...p, [ex.id]: { ...(p[ex.id] ?? {}), [i]: pr } }));
@@ -495,6 +503,13 @@ export default function TrainSession({
           </div>
         </div>
 
+        <div role="group" aria-label="Rest time between sets" style={{ display: 'flex', alignItems: 'center', gap: 6, flexWrap: 'wrap' }}>
+          <span style={label}>Rest</span>
+          {[[0, 'Auto'], [60, '60 s'], [90, '90 s'], [120, '2 min'], [180, '3 min']].map(([v, text]) => (
+            <button key={v} type="button" aria-pressed={restPref === v} onClick={() => chooseRest(v)} style={pill(restPref === v)}>{text}</button>
+          ))}
+        </div>
+
         {todays.some(e => !e.bodyweight && isBarbell(e.name)) && <EquipmentSettings key={equipment.plates.join(',')} eq={equipment} />}
 
         {recovery.status === 'ok' && (
@@ -524,7 +539,7 @@ export default function TrainSession({
             onChange={(i, patch) => setRows(ex.id, rs => rs.map((r, j) => j === i ? { ...r, ...patch } : r))}
             onTick={(i) => tick(ex, i)} onRate={(i, v) => rate(ex, i, v)}
             onAddSet={() => setRows(ex.id, rs => [...rs, { ...(rs[rs.length - 1] ?? { weight: 0, reps: ex.repsMin }), prev: null, done: false, justDone: false, rpe: '' }])}
-            onRemoveSet={() => setRows(ex.id, rs => rs.slice(0, -1))} history={liftHistory(workoutLogs, ex.name)} eq={equipment}
+            onRemoveSet={() => setRows(ex.id, rs => rs.slice(0, -1))} history={liftHistory(workoutLogs, ex.name)} sessions={sessionsOf(workoutLogs.filter(l => l.date < date), ex.name)} rec={recommendedSets(ex, recPrefs)} eq={equipment}
             alternatives={alternativesFor(ex)} onReplace={(n) => replaceExercise(ex, n)} />
         ))}
 
