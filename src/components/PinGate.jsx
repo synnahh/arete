@@ -3,7 +3,7 @@
 import { useState, useEffect, useCallback, useRef } from 'react';
 import AreteLogo from './AreteLogo.jsx';
 import { applyTheme } from '../styles/themes.js';
-import { biometricAvailable, biometricLabel, faceIdEnabled, faceIdDeclined, declineFaceId, enableFaceId, unlockWithFaceId, forgetFaceId } from '../utils/faceId.js';
+import { biometricAvailable, biometricLabel, faceIdEnabled, faceIdDeclined, declineFaceId, enableFaceIdDetailed, unlockWithFaceId, forgetFaceId } from '../utils/faceId.js';
 
 applyTheme('obsidian');
 
@@ -16,6 +16,7 @@ export default function PinGate({ onUnlock }) {
   const [bioReady, setBioReady] = useState(false);   // device can do Face ID
   const [bioOn, setBioOn] = useState(faceIdEnabled());
   const [offer, setOffer] = useState(false);         // asking whether to turn Face ID on
+  const [offerError, setOfferError] = useState('');  // why turning it on failed (never counts as declining)
   const label = biometricLabel();
 
   useEffect(() => { biometricAvailable().then(setBioReady); }, []);
@@ -150,10 +151,14 @@ export default function PinGate({ onUnlock }) {
         {offer && (
           <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 14 }}>
             <button
-              onClick={async () => { if (await enableFaceId()) setBioOn(true); else declineFaceId(); onUnlock(); }}
+              onClick={async () => {
+                const r = await enableFaceIdDetailed();
+                if (r.ok) { setBioOn(true); onUnlock(); } else setOfferError(r.error);   // stay here so you can try again
+              }}
               style={{ ...linkSx, fontSize: 15, padding: '12px 28px', border: '0.5px solid rgba(167,139,250,0.6)', borderRadius: 12 }}
-            >Turn on {label}</button>
-            <button onClick={() => { declineFaceId(); onUnlock(); }} style={linkSx}>Not now</button>
+            >{offerError ? `Try ${label} again` : `Turn on ${label}`}</button>
+            {offerError && <div role="alert" style={{ maxWidth: 280, textAlign: 'center', fontSize: 12.5, lineHeight: 1.45, color: '#e8a13a' }}>{offerError}</div>}
+            <button onClick={() => { if (!offerError) declineFaceId(); onUnlock(); }} style={linkSx}>{offerError ? 'Skip for now' : 'Not now'}</button>
           </div>
         )}
       </div>

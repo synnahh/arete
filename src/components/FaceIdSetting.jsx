@@ -3,7 +3,7 @@
 // The key lives on this device and this web address only, so each device (and a new site address)
 // is set up on its own. Rules: utils/faceId.js.
 import { useEffect, useState } from 'react';
-import { biometricAvailable, biometricLabel, faceIdEnabled, enableFaceId, forgetFaceId, unlockWithFaceId } from '../utils/faceId.js';
+import { biometricAvailable, biometricLabel, faceIdEnabled, enableFaceIdDetailed, forgetFaceId, unlockWithFaceId } from '../utils/faceId.js';
 
 const btn = { minHeight: 44, padding: '0 18px', borderRadius: 12, border: '0.5px solid var(--card-border)', background: 'transparent', color: 'var(--text-primary)', fontFamily: 'inherit', fontSize: 14, fontWeight: 700, cursor: 'pointer' };
 
@@ -17,9 +17,9 @@ export default function FaceIdSetting() {
 
   const turnOn = async () => {
     setNote('');
-    const ok = await enableFaceId();
-    setOn(ok);
-    setNote(ok ? `${label} is on. The PIN screen will ask for it when the app opens.` : `Could not turn on ${label}. Check it is set up on this device, then try again.`);
+    const r = await enableFaceIdDetailed();
+    setOn(r.ok);
+    setNote(r.ok ? `${label} is on. The PIN screen will ask for it when the app opens.` : r.error);
   };
   const turnOff = () => { forgetFaceId(); setOn(false); setNote(`${label} is off. The PIN still works.`); };
   const test = async () => { setNote((await unlockWithFaceId()) ? `${label} worked.` : `${label} did not verify.`); };

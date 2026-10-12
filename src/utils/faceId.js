@@ -29,8 +29,21 @@ export const faceIdDeclined = () => read(DECLINED) === '1';
 export const declineFaceId = () => write(DECLINED, '1');
 export const forgetFaceId = () => { write(KEY, null); write(DECLINED, null); };
 
-/** Create the device credential. Must be called from a tap. Returns true on success. */
-export async function enableFaceId() {
+/** Plain-words reason for a failed attempt, from the error the browser raised. */
+export function explainFaceIdError(e, label = 'Face ID') {
+  const name = e?.name || '';
+  if (name === 'NotAllowedError') return `${label} was cancelled or not allowed. Allow it when iOS asks, and check ${label} is set up in iOS Settings.`;
+  if (name === 'SecurityError') return `The browser refused ${label} for this web address. Open the app from the Home Screen icon and try again.`;
+  if (name === 'NotSupportedError' || name === 'InvalidStateError') return `This device or browser does not support ${label} here.`;
+  if (name === 'TypeError' || !name) return `${label} is not available in this browser.`;
+  return `${label} could not be turned on (${name}).`;
+}
+
+/**
+ * Create the device credential. Must be called from a tap. Resolves { ok, error }:
+ * a failure is never recorded as "declined", so you can try again.
+ */
+export async function enableFaceIdDetailed() {
   try {
     const cred = await navigator.credentials.create({
       publicKey: {
@@ -42,12 +55,15 @@ export async function enableFaceId() {
         timeout: 60000,
       },
     });
-    if (!cred) return false;
+    if (!cred) return { ok: false, error: explainFaceIdError(null) };
     write(KEY, toB64(cred.rawId));
     write(DECLINED, null);
-    return true;
-  } catch { return false; }
+    return { ok: true, error: null };
+  } catch (e) { return { ok: false, error: explainFaceIdError(e) }; }
 }
+
+/** Same, as a plain yes/no. */
+export async function enableFaceId() { return (await enableFaceIdDetailed()).ok; }
 
 /** Ask the device to verify the person. Resolves true only after Face ID succeeds. */
 export async function unlockWithFaceId() {
