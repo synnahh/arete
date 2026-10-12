@@ -25,7 +25,7 @@ describe('suggestRoutine', () => {
   it('picks the treatment from the concern, morning or night', () => {
     const pig = suggestRoutine('complete', { concerns: ['pigmentation'] }).find(s => /Vitamin C/.test(s.name));
     expect(pig.when).toBe('am');
-    const red = suggestRoutine('complete', { concerns: ['redness'] }).find(s => /Azelaic/.test(s.name));
+    const red = suggestRoutine('complete', { concerns: ['redness'] }).find(s => /Centella/.test(s.name));
     expect(red.when).toBe('pm');
     expect(names(suggestRoutine('complete', {}))).toContain('Hyaluronic acid serum');
   });

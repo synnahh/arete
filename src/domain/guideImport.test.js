@@ -68,6 +68,7 @@ describe('guide import', () => {
       skinSteps: fresh.skinSteps,
       skinProfile: fresh.skinProfile,
       notes: [fresh.note],
+      habits: fresh.habits,
     });
     expect(summarise(second)).toEqual([]);
     expect(isEmpty(second)).toBe(true);
@@ -85,6 +86,11 @@ describe('guide import', () => {
 
   it('leaves an existing skin profile alone', () => {
     expect(buildGuideImport({ skinProfile: { type: 'oily', concerns: [], avoid: '' } }).skinProfile).toBeNull();
+  });
+
+  it('adds the daily habits from the guide', () => {
+    expect(fresh.habits.map(h => h.name)).toContain('Weigh in (morning, before food)');
+    expect(fresh.habits.every(h => h.frequency === 'daily' && h.history.length === 0)).toBe(true);
   });
 
   it('both programs exist as named', () => {

@@ -80,8 +80,10 @@ export function detectPR(set, { history, todaySets = [] }) {
 
 /** Rest between sets from the exercise's rep range: heavier work, longer rest. */
 export function restSeconds(ex, override = null) {
+  const own = Number(ex?.restSeconds);
+  if (own >= 15 && own <= 600) return Math.round(own);    // a rest time set on this exercise wins
   const o = Number(override);
-  if (o >= 15 && o <= 600) return Math.round(o);          // a rest time you chose beats the guess
+  if (o >= 15 && o <= 600) return Math.round(o);          // then one you chose for the session; both beat the guess
   const max = Number(ex?.repsMax) || 10;
   if (max <= 6) return 180;
   if (max <= 10) return 120;
@@ -93,7 +95,7 @@ export function restSeconds(ex, override = null) {
  * Compound lifts get more sets than isolation work; strength goals trade sets for load;
  * beginners start lower and advanced lifters can do more. Never below 2, never above 5.
  */
-export function recommendedSets(ex, { goal = null, experience = null, compound = null } = {}) {
+export function recommendedSets(ex, { goal = null, experience = null, compound = null, defaultSets = null } = {}) {
   const isCompound = compound ?? ((Number(ex?.repsMax) || 10) <= 10 && !/curl|raise|extension|fly|pushdown|kickback|shrug|crunch/i.test(String(ex?.name || '')));
   let sets = isCompound ? 3 : 2;
   if (experience === 'advanced') sets += 1;
@@ -101,6 +103,7 @@ export function recommendedSets(ex, { goal = null, experience = null, compound =
   if (goal === 'bulk' || goal === 'recomp') sets += isCompound ? 0 : 1;
   if (goal === 'strength') sets = isCompound ? Math.min(5, sets + 1) : 2;
   sets = Math.max(2, Math.min(5, sets));
+  if (Number(defaultSets) >= 1 && Number(defaultSets) <= 8) sets = Math.round(Number(defaultSets));   // your default for the whole app
   if (Number(ex?.plannedSets) >= 1 && Number(ex.plannedSets) <= 8) sets = Math.round(Number(ex.plannedSets));   // your program's own number wins
   const lo = Number(ex?.repsMin) || 8, hi = Number(ex?.repsMax) || Math.max(lo, 10);
   return { sets, repsMin: lo, repsMax: hi, text: `Recommended number of sets: ${sets}. Aim for ${lo === hi ? lo : `${lo}-${hi}`} repetitions per set.` };

@@ -27,6 +27,7 @@ import WeightChart from '../components/WeightChart.jsx';
 import StreakCard from '../components/StreakCard.jsx';
 import LogCalendar from "../components/LogCalendar.jsx";
 import RecapCard from '../components/RecapCard.jsx';
+import StepsCard from '../components/StepsCard.jsx';
 import { label } from '../components/ui.js';
 
 const CARD = { padding: 18, borderRadius: 16, background: 'var(--bg-panel)', border: '0.5px solid var(--card-border)', display: 'flex', flexDirection: 'column', gap: 12 };
@@ -251,6 +252,7 @@ export default function CoachToday({ onTabChange, compact = false }) {
             })}
           </section>
 
+          <StepsCard />
           <StreakCard streak={streak} compact />
           <LogCalendar data={trackedData} compact />
           {recap && <RecapCard recap={recap} compact />}

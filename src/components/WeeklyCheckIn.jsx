@@ -9,6 +9,7 @@ import { STORAGE_KEYS } from '../utils/storage.js';
 import { toLocalDateKey } from '../utils/localDate.js';
 import { uploadPhoto, removePhotoFiles } from '../utils/photoStore.js';
 import { POSES, BODY_POSES } from '../domain/photos.js';
+import { averageOfTwo } from '../domain/waist.js';
 import { progressTiles, checkInStatus, previousCheckIn, checkInRow } from '../domain/checkin.js';
 import { label } from './ui.js';
 
@@ -35,6 +36,8 @@ export default function WeeklyCheckIn({ goal }) {
 
   const [date, setDate] = useState(today);
   const [weight, setWeight] = useState('');
+  const [waist1, setWaist1] = useState('');
+  const [waist2, setWaist2] = useState('');
   const [files, setFiles] = useState({});          // pose -> File
   const [previews, setPreviews] = useState({});    // pose -> object url
   const [busy, setBusy] = useState(false);
@@ -52,7 +55,7 @@ export default function WeeklyCheckIn({ goal }) {
   };
 
   async function save() {
-    const row = checkInRow({ date, weight });
+    const row = checkInRow({ date, weight, waist: averageOfTwo(waist1, waist2) ?? (waist1 || waist2 || null) });
     if (!row || busy) { if (!row) toast('Enter your weight in kg and a valid date.', 'error'); return; }
     setBusy(true); setDone('');
     const before = previousCheckIn(items, date);
@@ -74,8 +77,8 @@ export default function WeeklyCheckIn({ goal }) {
         }
       }
       const delta = before ? Math.round((row.weight - Number(before.weight)) * 10) / 10 : null;
-      setDone(`Check-in saved: ${row.weight} kg${delta != null ? ` (${delta > 0 ? '+' : ''}${delta} kg since ${before.date})` : ''}${saved ? `, ${saved} photo${saved === 1 ? '' : 's'}` : ''}${failed ? `, ${failed} photo${failed === 1 ? '' : 's'} not saved` : ''}.`);
-      setFiles({}); Object.values(previews).forEach(u => URL.revokeObjectURL(u)); setPreviews({});
+      setDone(`Check-in saved: ${row.weight} kg${delta != null ? ` (${delta > 0 ? '+' : ''}${delta} kg since ${before.date})` : ''}${row.waist ? `, waist ${row.waist} cm` : ''}${saved ? `, ${saved} photo${saved === 1 ? '' : 's'}` : ''}${failed ? `, ${failed} photo${failed === 1 ? '' : 's'} not saved` : ''}.`);
+      setWaist1(''); setWaist2(''); setFiles({}); Object.values(previews).forEach(u => URL.revokeObjectURL(u)); setPreviews({});
     } finally { setBusy(false); }
   }
 
@@ -104,6 +107,8 @@ export default function WeeklyCheckIn({ goal }) {
 
       <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(140px, 1fr))', gap: 10 }}>
         <label style={{ display: 'flex', flexDirection: 'column', gap: 6 }}><span style={label}>Weight (kg)</span><input type="number" inputMode="decimal" value={weight} onChange={e => setWeight(e.target.value)} style={field} /></label>
+        <label style={{ display: 'flex', flexDirection: 'column', gap: 6 }}><span style={label}>Waist 1 (cm, optional)</span><input type="number" inputMode="decimal" value={waist1} onChange={e => setWaist1(e.target.value)} style={field} /></label>
+        <label style={{ display: 'flex', flexDirection: 'column', gap: 6 }}><span style={label}>Waist 2 (cm)</span><input type="number" inputMode="decimal" value={waist2} onChange={e => setWaist2(e.target.value)} style={field} /></label>
         <label style={{ display: 'flex', flexDirection: 'column', gap: 6 }}><span style={label}>Date</span><input type="date" value={date} max={today} onChange={e => setDate(e.target.value)} style={field} /></label>
       </div>
 

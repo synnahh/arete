@@ -46,6 +46,27 @@ export function withDayTargets(exercises, day) {
   });
 }
 
+/** One exercise's targets on a day: { sets, repsMin, repsMax } with only the fields you set. */
+export function dayTarget(day, id) { return (day?.targets && day.targets[id]) || {}; }
+
+/**
+ * A day with one exercise's sets and rep range changed. A blank or invalid value clears that
+ * field; when nothing is left for an exercise its entry is removed. Sets 1-8, reps 1-100, min <= max.
+ */
+export function setDayTarget(day, id, patch) {
+  const cur = { ...dayTarget(day, id) };
+  const num = (v, lo, hi) => { const n = Math.round(Number(v)); return v !== '' && v != null && n >= lo && n <= hi ? n : null; };
+  if ('sets' in patch) { const n = num(patch.sets, 1, 8); if (n == null) delete cur.sets; else cur.sets = n; }
+  if ('repsMin' in patch) { const n = num(patch.repsMin, 1, 100); if (n == null) delete cur.repsMin; else cur.repsMin = n; }
+  if ('repsMax' in patch) { const n = num(patch.repsMax, 1, 100); if (n == null) delete cur.repsMax; else cur.repsMax = n; }
+  if (cur.repsMin && cur.repsMax && cur.repsMin > cur.repsMax) { if ('repsMin' in patch) cur.repsMax = cur.repsMin; else cur.repsMin = cur.repsMax; }
+  const targets = { ...(day?.targets || {}) };
+  if (Object.keys(cur).length) targets[id] = cur; else delete targets[id];
+  const out = { ...day, targets };
+  if (!Object.keys(targets).length) delete out.targets;
+  return out;
+}
+
 /** A day with its exercise list written out, so it can be edited by id. */
 export function materialize(day, library = []) {
   return { ...day, exerciseIds: dayExercises(day, library).map(e => e.id) };

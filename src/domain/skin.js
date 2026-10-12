@@ -50,6 +50,7 @@ const TAGS = [
   ['vitc',         /\b(vitamin\s*c|ascorbic|l-ascorbic)\b/i],
   ['spf',          /\b(spf|sunscreen|sun\s*screen|sunblock)\b/i],
   ['niacinamide',  /\bniacinamide\b/i],
+  ['azelaic',      /\b(azelaic)\b/i],
   ['copper',       /\b(copper\s*(tri)?peptide|ghk-?cu)\b/i],
   ['scrub',        /\b(scrub|exfoliating\s*(beads|polish|mitt)|microdermabrasion|dermaplan\w*)\b/i],
 ];
@@ -94,6 +95,8 @@ export function routineWarnings(steps) {
       if ((tags.has('bpo') && acid(other.tags)) || (other.tags.has('bpo') && acid(tags))) add('tip', `${label}: benzoyl peroxide with an exfoliating acid is drying and irritating. Alternate them.`);
       if ((tags.has('copper') && (other.tags.has('vitc') || acid(other.tags) || other.tags.has('retinoid'))) || (other.tags.has('copper') && (tags.has('vitc') || acid(tags) || tags.has('retinoid')))) add('tip', `${label}: copper peptides work best away from strong actives. Use them at a different time.`);
       if ((tags.has('scrub') && (acid(other.tags) || other.tags.has('retinoid') || other.tags.has('bpo'))) || (other.tags.has('scrub') && (acid(tags) || tags.has('retinoid') || tags.has('bpo')))) add('warn', `${label}: a physical scrub on top of an active is a fast way to over-exfoliate. Drop the scrub or the active.`);
+      const azelaicClash = (t) => t.has('retinoid') || t.has('aha') || t.has('bha') || t.has('bpo');
+      if ((tags.has('azelaic') && azelaicClash(other.tags)) || (other.tags.has('azelaic') && azelaicClash(tags))) add('warn', `${label}: azelaic acid should not share a night with a retinoid, an exfoliating acid or benzoyl peroxide. Use them on different nights.`);
       if ((tags.has('aha') && other.tags.has('bha')) || (tags.has('bha') && other.tags.has('aha'))) add('tip', `${label}: two exfoliating acids together can over-exfoliate. Watch for stinging or tightness.`);
     }
   }

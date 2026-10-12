@@ -21,19 +21,20 @@ export default function GuideImport({ settings }) {
   const meals = useCollection('saved_meals', STORAGE_KEYS.SAVED_MEALS);
   const supps = useCollection('supplements', STORAGE_KEYS.SUPPLEMENTS);
   const notes = useCollection('notes', STORAGE_KEYS.NOTES);
+  const habits = useCollection('habits', STORAGE_KEYS.HABITS);
   const lm = useDocument('lm_profile', 'valerie_lm_profile', {});
   const [open, setOpen] = useState(false);
   const [busy, setBusy] = useState(false);
   const [message, setMessage] = useState('');
 
-  const ready = exDoc.synced && lm.synced && programs.synced && meals.synced && supps.synced && notes.synced;
+  const ready = exDoc.synced && lm.synced && programs.synced && meals.synced && supps.synced && notes.synced && habits.synced;
   const library = Array.isArray(exDoc.data) ? exDoc.data : [];
   const skinSteps = Array.isArray(lm.data?.skinSteps) ? lm.data.skinSteps : [];
 
   const plan = useMemo(() => buildGuideImport({
     library, programs: programs.items || [], savedMeals: meals.items || [], supplements: supps.items || [],
-    skinSteps, skinProfile: lm.data?.skinProfile || null, notes: notes.items || [],
-  }), [library, programs.items, meals.items, supps.items, skinSteps, lm.data, notes.items]);
+    skinSteps, skinProfile: lm.data?.skinProfile || null, notes: notes.items || [], habits: habits.items || [],
+  }), [library, programs.items, meals.items, supps.items, skinSteps, lm.data, notes.items, habits.items]);
 
   const done = settings?.guideImport?.id === GUIDE_ID;
   const nothing = isEmpty(plan);
@@ -58,6 +59,8 @@ export default function GuideImport({ settings }) {
       if (plan.meals.length) lines.push(`${plan.meals.length} meals saved.`);
       for (const s of plan.supplements) await supps.add(s);
       if (plan.supplements.length) lines.push(`${plan.supplements.length} supplements added.`);
+      for (const h of plan.habits) await habits.add(h);
+      if (plan.habits.length) lines.push(`${plan.habits.length} daily habits added.`);
       if (plan.skinSteps.length || plan.skinProfile) {
         await lm.save({ ...(lm.data || {}), skinSteps: [...skinSteps, ...plan.skinSteps], ...(plan.skinProfile ? { skinProfile: plan.skinProfile } : {}) });
         if (plan.skinSteps.length) lines.push(`${plan.skinSteps.length} skin steps added.`);
@@ -105,6 +108,7 @@ export default function GuideImport({ settings }) {
           {plan.meals.length > 0 && (
             <div style={small}>Meals: {plan.meals.map(m => `${m.name} (${m.calories} kcal, ${m.protein} g protein)`).join('; ')}. The guide gives no carbs or fat for the three snacks, so those show 0.</div>
           )}
+          {plan.habits.length > 0 && <div style={small}>Habits: {plan.habits.map(h => h.name).join('; ')}.</div>}
           {plan.skinSteps.length > 0 && <div style={small}>Skin steps: {plan.skinSteps.map(s => s.name).join('; ')}. Azelaic acid is not added: the guide starts it only after 2 calm weeks (see the note).</div>}
           {plan.kept.length > 0 && <div style={small}>Left as they are: {plan.kept.join('; ')}.</div>}
           {plan.problems.length > 0 && <div role="alert" style={{ ...small, color: '#e8a13a' }}>Skipped: {plan.problems.join('; ')}.</div>}

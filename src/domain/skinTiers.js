@@ -22,7 +22,7 @@ const SUNDAY = [0];
 const TREATMENT = {
   acne:         { name: 'Niacinamide serum', when: 'am' },
   pigmentation: { name: 'Vitamin C serum', when: 'am' },
-  redness:      { name: 'Azelaic acid or centella serum', when: 'pm' },
+  redness:      { name: 'Centella serum', when: 'pm' },
   dryness:      { name: 'Hyaluronic acid serum', when: 'pm' },
   aging:        { name: 'Peptide serum', when: 'pm' },
 };

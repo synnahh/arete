@@ -123,3 +123,23 @@ describe('template filter', () => {
     expect(templatesFor({ experience: 'advanced', days: 5 })).toEqual(['upperFrame', 'bro', 'blank']);
   });
 });
+
+describe('day targets', () => {
+  const day = { splitType: 'custom', label: 'Upper', exerciseIds: ['a', 'b'] };
+  it('sets and clears sets and reps for one exercise', async () => {
+    const { setDayTarget, dayTarget } = await import('./splits.js');
+    let d = setDayTarget(day, 'a', { sets: '4', repsMin: '8', repsMax: '12' });
+    expect(dayTarget(d, 'a')).toEqual({ sets: 4, repsMin: 8, repsMax: 12 });
+    d = setDayTarget(d, 'a', { sets: '' });
+    expect(dayTarget(d, 'a')).toEqual({ repsMin: 8, repsMax: 12 });
+    d = setDayTarget(d, 'a', { repsMin: '', repsMax: '' });
+    expect(d.targets).toBeUndefined();
+  });
+  it('keeps min below max and rejects nonsense', async () => {
+    const { setDayTarget, dayTarget } = await import('./splits.js');
+    let d = setDayTarget(day, 'a', { repsMin: 10, repsMax: 12 });
+    d = setDayTarget(d, 'a', { repsMin: 15 });
+    expect(dayTarget(d, 'a')).toEqual({ repsMin: 15, repsMax: 15 });
+    expect(dayTarget(setDayTarget(day, 'a', { sets: 99 }), 'a')).toEqual({});
+  });
+});

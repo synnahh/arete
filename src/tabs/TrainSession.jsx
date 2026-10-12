@@ -16,6 +16,9 @@ import { storage, STORAGE_KEYS } from '../utils/storage.js';
 import LiftChart from '../components/LiftChart.jsx';
 import StrengthCard from '../components/StrengthCard.jsx';
 import { useRecovery } from '../hooks/useRecovery.js';
+import { useSettingsValue } from '../hooks/useSettingsValue.js';
+import { cleanTrainPrefs, effortOptions, effortLabel, ownRest } from '../domain/trainPrefs.js';
+import { demoUrl } from '../domain/exerciseDb.js';
 import { WEEK, dayExercises, withDayTargets, materialize, sessionChoices, sessionDayKey, dayKeyFromDate } from '../domain/splits.js';
 
 const today = () => toLocalDateKey(new Date());
@@ -94,6 +97,39 @@ function RestTimer({ onDone }) {
   );
 }
 
+// How Train behaves for you. Saved in settings.train; every choice defaults to the old behaviour.
+function TrainPrefsPanel({ prefs }) {
+  const set = (patch) => updateSettings({ train: { ...prefs, ...patch } });
+  const toggle = (key, text) => (
+    <button key={key} type="button" aria-pressed={prefs[key]} onClick={() => set({ [key]: !prefs[key] })} style={pill(prefs[key])}>{text}: {prefs[key] ? 'on' : 'off'}</button>
+  );
+  return (
+    <details style={{ fontSize: 13, color: 'var(--text-secondary)' }}>
+      <summary style={{ cursor: 'pointer', minHeight: 32, display: 'flex', alignItems: 'center' }}>Customise Train</summary>
+      <div style={{ display: 'flex', flexDirection: 'column', gap: 10, paddingTop: 8 }}>
+        <div role="group" aria-label="Effort scale" style={{ display: 'flex', alignItems: 'center', gap: 6, flexWrap: 'wrap' }}>
+          <span style={label}>Effort</span>
+          {[['rpe', 'How hard (RPE)'], ['rir', 'Reps left (RIR)'], ['off', 'Off']].map(([v, text]) => (
+            <button key={v} type="button" aria-pressed={prefs.effort === v} onClick={() => set({ effort: v })} style={pill(prefs.effort === v)}>{text}</button>
+          ))}
+        </div>
+        <div style={{ display: 'flex', gap: 6, flexWrap: 'wrap' }}>
+          {toggle('autoRest', 'Start rest timer on a set')}
+          {toggle('warmups', 'Warm-up ramp')}
+          {toggle('plates', 'Plate breakdown')}
+        </div>
+        <div role="group" aria-label="Default sets" style={{ display: 'flex', alignItems: 'center', gap: 6, flexWrap: 'wrap' }}>
+          <span style={label}>Sets</span>
+          {[[null, 'Auto'], [2, '2'], [3, '3'], [4, '4'], [5, '5']].map(([v, text]) => (
+            <button key={text} type="button" aria-pressed={prefs.defaultSets === v} onClick={() => set({ defaultSets: v })} style={pill(prefs.defaultSets === v)}>{text}</button>
+          ))}
+          <span style={{ fontSize: 12 }}>Your program's own sets still win.</span>
+        </div>
+      </div>
+    </details>
+  );
+}
+
 // Bar weight and plate set, saved in settings (barKg, platesKg) so they follow you.
 const readEquipment = () => {
   const s = storage.get(STORAGE_KEYS.SETTINGS, {}) || {};
@@ -132,8 +168,32 @@ function EquipmentSettings({ eq }) {
   );
 }
 
+// Your own note and rest time for one exercise, saved on the exercise in your library.
+function ExerciseTweaks({ ex, onEdit }) {
+  const [note, setNote] = useState(ex.note || '');
+  const rest = ownRest(ex);
+  return (
+    <details style={{ fontSize: 13, color: 'var(--text-secondary)' }}>
+      <summary style={{ cursor: 'pointer', minHeight: 32, display: 'flex', alignItems: 'center' }}>Customise this exercise{rest || ex.note ? ' ·' : ''}{rest ? ` rest ${rest}s` : ''}{ex.note ? ' · note' : ''}</summary>
+      <div style={{ display: 'flex', flexDirection: 'column', gap: 10, paddingTop: 8 }}>
+        <label style={{ display: 'flex', flexDirection: 'column', gap: 4 }}>
+          <span style={label}>Note (seat setting, grip, a cue)</span>
+          <input value={note} maxLength={140} onChange={e => setNote(e.target.value)} onBlur={() => note !== (ex.note || '') && onEdit({ note: note.trim() || null })}
+            onKeyDown={e => { if (e.key === 'Enter') e.currentTarget.blur(); }} aria-label={`Note for ${ex.name}`} style={{ ...numInput, textAlign: 'left' }} />
+        </label>
+        <div role="group" aria-label={`Rest time for ${ex.name}`} style={{ display: 'flex', alignItems: 'center', gap: 6, flexWrap: 'wrap' }}>
+          <span style={label}>Rest</span>
+          {[[null, 'Session'], [45, '45 s'], [60, '60 s'], [90, '90 s'], [120, '2 min'], [180, '3 min']].map(([v, text]) => (
+            <button key={text} type="button" aria-pressed={rest === v} onClick={() => onEdit({ restSeconds: v })} style={pill(rest === v)}>{text}</button>
+          ))}
+        </div>
+      </div>
+    </details>
+  );
+}
+
 //  One exercise card
-function ExerciseCard({ ex, prog, rows, onChange, onTick, onRate, onAddSet, onRemoveSet, prs, compact, history, sessions = [], rec = null, eq, alternatives = [], onReplace }) {
+function ExerciseCard({ ex, prog, rows, onChange, onTick, onRate, onAddSet, onRemoveSet, prs, compact, history, sessions = [], rec = null, eq, alternatives = [], onReplace, prefs, onEdit = null }) {
   const doneSets = rows.filter(r => r.done);
   const [showChart, setShowChart] = useState(false);
   const [swapping, setSwapping] = useState(false);
@@ -147,7 +207,7 @@ function ExerciseCard({ ex, prog, rows, onChange, onTick, onRate, onAddSet, onRe
       background: 'var(--bg-panel)', border: '0.5px solid var(--card-border)',
     }}>
       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'baseline', gap: 10 }}>
-        <span style={{ fontSize: 17, fontWeight: 600, color: 'var(--text-primary)' }}>{ex.name}</span>
+        <span style={{ fontSize: 17, fontWeight: 600, color: 'var(--text-primary)' }}>{ex.name}{demoUrl(ex.name) && <a href={demoUrl(ex.name)} target="_blank" rel="noopener noreferrer" aria-label={`How to do ${ex.name} (opens a video search)`} style={{ marginLeft: 10, fontSize: 12, fontWeight: 500, color: 'var(--tab-accent)' }}>Demo</a>}</span>
         <span className="val-num" style={{ fontSize: 12, color: 'var(--text-secondary)' }}>{doneSets.length}/{rows.length} sets</span>
       </div>
       {onReplace && doneSets.length === 0 && (
@@ -165,6 +225,7 @@ function ExerciseCard({ ex, prog, rows, onChange, onTick, onRate, onAddSet, onRe
         </div>
       )}
       {rec && <div style={{ fontSize: 13, color: 'var(--text-secondary)' }}>{rec.text}</div>}
+      {ex.note && <div style={{ fontSize: 13, color: 'var(--text-primary)', fontStyle: 'italic' }}>{ex.note}</div>}
       <div className="val-num" style={{ fontSize: 12, color: 'var(--text-secondary)' }}>
         TARGET {ex.bodyweight ? 'BW' : `${prog.nextWeight} kg`} × {ex.repsMin}–{ex.repsMax} ·{' '}
         <span style={{ color: ACTION_COLOUR[prog.action] ?? 'var(--text-secondary)', fontWeight: 600 }}>{prog.action}</span>
@@ -178,12 +239,12 @@ function ExerciseCard({ ex, prog, rows, onChange, onTick, onRate, onAddSet, onRe
         <div style={{ fontSize: 12.5, lineHeight: 1.45, color: 'var(--text-secondary)' }}>{prog.hint}</div>
       )}
 
-      {barbell && (plates || warmups.length > 0) && (
+      {barbell && ((prefs.plates && plates) || (prefs.warmups && warmups.length > 0)) && (
         <div className="val-num" style={{ fontSize: 12, lineHeight: 1.6, color: 'var(--text-secondary)' }}>
-          {plates && workKg > eq.bar && (
+          {prefs.plates && plates && workKg > eq.bar && (
             <div>Per side for {plates.total} kg: {plates.perSide.length ? plates.perSide.join(' + ') : 'bar only'}{plates.short > 0 ? ` (${plates.short} kg short)` : ''}</div>
           )}
-          {warmups.length > 0 && <div>Warm-up: {warmups.map(w => `${w.weight}×${w.reps}`).join(' · ')}</div>}
+          {prefs.warmups && warmups.length > 0 && <div>Warm-up: {warmups.map(w => `${w.weight}×${w.reps}`).join(' · ')}</div>}
         </div>
       )}
 
@@ -222,17 +283,17 @@ function ExerciseCard({ ex, prog, rows, onChange, onTick, onRate, onAddSet, onRe
                 <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.6" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true"><path d="M5 12.5 10 17l9-10" /></svg>
               </button>
             </div>
-            {r.done && (
+            {r.done && prefs.effort !== 'off' && (
               <div role="group" aria-label={`Set ${i + 1} effort`} style={{ display: 'flex', alignItems: 'center', gap: 4, padding: '0 6px 4px 36px', margin: '-2px 0 2px', flexWrap: 'wrap' }}>
-                <span style={{ fontSize: 11.5, color: 'var(--text-muted)', marginRight: 4 }} title="Rate of perceived exertion: 10 means nothing left in the tank">How hard?</span>
-                {[6, 7, 8, 9, 10].map(v => {
+                <span style={{ fontSize: 11.5, color: 'var(--text-muted)', marginRight: 4 }} title={prefs.effort === 'rir' ? 'Reps in reserve: 0 means nothing left in the tank' : 'Rate of perceived exertion: 10 means nothing left in the tank'}>{effortLabel(prefs.effort)}</span>
+                {effortOptions(prefs.effort).map(({ rpe: v, text }) => {
                   const on = validRpe(r.rpe) === v;
                   return (
-                    <button key={v} type="button" aria-pressed={on} aria-label={`RPE ${v}`} onClick={() => onRate(i, v)} style={{
+                    <button key={v} type="button" aria-pressed={on} aria-label={prefs.effort === 'rir' ? `${text} reps left` : `RPE ${v}`} onClick={() => onRate(i, v)} style={{
                       minWidth: 32, height: 28, borderRadius: 999, cursor: 'pointer', fontFamily: 'inherit', fontSize: 12.5, WebkitTapHighlightColor: 'transparent',
                       border: `0.5px solid ${on ? 'var(--tab-accent)' : 'var(--card-border)'}`, fontWeight: on ? 700 : 500,
                       background: on ? 'var(--tab-accent)' : 'transparent', color: on ? 'var(--on-tab-accent)' : 'var(--text-secondary)',
-                    }}>{v}</button>
+                    }}>{text}</button>
                   );
                 })}
               </div>
@@ -241,6 +302,8 @@ function ExerciseCard({ ex, prog, rows, onChange, onTick, onRate, onAddSet, onRe
           );
         })}
       </div>
+
+      {onEdit && <ExerciseTweaks key={`${ex.id}:${ex.note || ''}`} ex={ex} onEdit={onEdit} />}
 
       <div style={{ display: 'flex', gap: 8 }}>
         <button type="button" onClick={onAddSet} style={pill(false)}>+ Add set</button>
@@ -259,7 +322,7 @@ function ExerciseCard({ ex, prog, rows, onChange, onTick, onRate, onAddSet, onRe
 //  Session
 export default function TrainSession({
   exercises, workoutLogs, addWorkoutLog, updateWorkoutLog, removeWorkoutLog,
-  splitNames, todaySplitType, progression, musclesFor, compact = false, program = null, updateProgram = null,
+  splitNames, todaySplitType, progression, musclesFor, compact = false, program = null, updateProgram = null, saveExercises = null,
 }) {
   const date = today();
   const [gym, setGymState] = useState(() => readPref('valerie_train_gym', 'home'));
@@ -302,7 +365,10 @@ export default function TrainSession({
 
   // What the coach knows (goal, experience) shapes the recommended sets; the rest time is yours to set.
   const saved = storage.get(STORAGE_KEYS.SETTINGS, {}) || {};
-  const recPrefs = { goal: saved.coachGoal?.template ?? null, experience: saved.coachIntake?.answers?.experience ?? null };
+  const settingsNow = useSettingsValue();
+  const prefs = cleanTrainPrefs(settingsNow.train);
+  const recPrefs = { goal: saved.coachGoal?.template ?? null, experience: saved.coachIntake?.answers?.experience ?? null, defaultSets: prefs.defaultSets };
+  const editExercise = saveExercises ? (id, patch) => saveExercises(exercises.map(e => (e.id === id ? { ...e, ...patch } : e))) : null;
   const [restPref, setRestPref] = useState(() => Number(saved.restSeconds) || 0);   // 0 = automatic
   const chooseRest = (v) => { setRestPref(v); updateSettings({ restSeconds: v || null }); };
 
@@ -435,8 +501,10 @@ export default function TrainSession({
       const todaySets = rows.filter((r, j) => r.done && j !== i).map(r => ({ weight: Number(r.weight) || 0, reps: Number(r.reps) || 0 }));
       pr = detectPR({ weight: Number(row.weight) || 0, reps: Number(row.reps) }, { history, todaySets });
       if (!sessionStartedAt) sessionStartedAt = Date.now();
-      restTotal = restSeconds(ex, restPref);
-      restUntil = Date.now() + restTotal * 1000;
+      if (prefs.autoRest) {
+        restTotal = restSeconds(ex, restPref);
+        restUntil = Date.now() + restTotal * 1000;
+      }
     }
     setPrs(p => ({ ...p, [ex.id]: { ...(p[ex.id] ?? {}), [i]: pr } }));
 
@@ -510,6 +578,8 @@ export default function TrainSession({
           ))}
         </div>
 
+        <TrainPrefsPanel prefs={prefs} />
+
         {todays.some(e => !e.bodyweight && isBarbell(e.name)) && <EquipmentSettings key={equipment.plates.join(',')} eq={equipment} />}
 
         {recovery.status === 'ok' && (
@@ -540,7 +610,7 @@ export default function TrainSession({
             onTick={(i) => tick(ex, i)} onRate={(i, v) => rate(ex, i, v)}
             onAddSet={() => setRows(ex.id, rs => [...rs, { ...(rs[rs.length - 1] ?? { weight: 0, reps: ex.repsMin }), prev: null, done: false, justDone: false, rpe: '' }])}
             onRemoveSet={() => setRows(ex.id, rs => rs.slice(0, -1))} history={liftHistory(workoutLogs, ex.name)} sessions={sessionsOf(workoutLogs.filter(l => l.date < date), ex.name)} rec={recommendedSets(ex, recPrefs)} eq={equipment}
-            alternatives={alternativesFor(ex)} onReplace={(n) => replaceExercise(ex, n)} />
+            alternatives={alternativesFor(ex)} onReplace={(n) => replaceExercise(ex, n)} prefs={prefs} onEdit={editExercise ? (patch) => editExercise(ex.id, patch) : null} />
         ))}
 
         {others.length > 0 && (

@@ -16,6 +16,8 @@ import { todayProgress } from '../domain/habits.js';
 import { todaysTargets, isTrainingDay } from '../utils/todaysTargets.js';
 import { currentWaterGoal, sleepWindow } from '../utils/waterGoal.js';
 import { dayIndex } from '../utils/dayIndex.js';
+import { waistTrend } from '../domain/waist.js';
+import { weekAverage, rampedGoal, cleanLog } from '../domain/steps.js';
 
 const DAY_KEYS = ['sun', 'mon', 'tue', 'wed', 'thu', 'fri', 'sat'];
 
@@ -28,6 +30,7 @@ export function useNextMoves() {
   const { items: supplies = [] } = useCollection('essentials', STORAGE_KEYS.ESSENTIALS);
   const { items: lmDaily = [] } = useCollection('lm_daily', 'valerie_lm_daily');
   const lmProfile = useDocument('lm_profile', 'valerie_lm_profile', {}).data;
+  const stepLog = useDocument('step_log', 'valerie_step_log', {}).data;
   const recovery = useRecovery();
   const health = useAppleHealth();
 
@@ -78,8 +81,23 @@ export function useNextMoves() {
       weight: { hasGoal: !!settings.coachGoal, daysSinceWeighIn: lastWeigh ? dayIndex(today) - dayIndex(lastWeigh) : null },
       sleep: recovery.debt && recovery.debt.status !== 'insufficient' ? { status: recovery.debt.status, debtHours: recovery.debt.debtHours, bedtime: sleepWindow().bed } : null,
       skin: am.total || pm.total ? { amDone: am.done, amTotal: am.total, pmDone: pm.done, pmTotal: pm.total } : null,
-      steps: Number.isFinite(health.data?.steps) && health.lastSync === today ? { count: health.data.steps, goal: Number(settings.stepGoal) || 8000 } : null,
+      steps: Number.isFinite(health.data?.steps) && health.lastSync === today
+        ? { count: health.data.steps, goal: Number(settings.stepGoal) || 8000 }
+        : (Number.isFinite(cleanLog(stepLog)[today]) ? { count: cleanLog(stepLog)[today], goal: Number(settings.stepGoal) || 8000 } : null),
+      stepsPlan: (() => {
+        const average = weekAverage(stepLog, today);
+        const goal = Number(settings.stepGoal) || 0;
+        const since = settings.stepGoalOn ? dayIndex(today) - dayIndex(settings.stepGoalOn) : null;
+        const next = average && goal ? rampedGoal(average, goal, Number.isFinite(since) ? since : null) : null;
+        return next ? { average, goal, next } : null;
+      })(),
+      waist: (() => {
+        const w = waistTrend(body, today);
+        const g = settings.coachGoal;
+        const deficit = !!g && (g.template === 'cut' || g.template === 'recomp' || (g.custom && Number(g.custom.deltaPct) <= 0));
+        return w ? { flat: w.flat, latest: w.latest, deficit } : null;
+      })(),
     });
   // tick re-runs the clock-dependent rules once a minute
-  }, [nutrition, water, workouts, body, habits, supplies, lmDaily, lmProfile, recovery, health.data, health.lastSync, settings, tick]);
+  }, [nutrition, water, workouts, body, habits, supplies, lmDaily, lmProfile, recovery, health.data, health.lastSync, settings, stepLog, tick]);
 }

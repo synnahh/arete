@@ -4,6 +4,7 @@ import { useState, useEffect } from 'react';
 import { supabase, getUserId, getUserIdSync } from '../supabase/supabase.js';
 import { storage, STORAGE_KEYS } from './storage.js';
 import { computeStreaks } from './streaks.js';
+import { liftPRs } from '../domain/liftXp.js';
 
 const XP_KEY = 'valerie_xp';
 
@@ -67,6 +68,7 @@ export const XP_SOURCES = {
   TASK_COMPLETED:     { amount: 10,  label: 'Task completed'           },
   HABIT_DAILY:        { amount: 25,  label: 'Habit maintained'         },
   WORKOUT_LOGGED:     { amount: 20,  label: 'Workout logged'           },
+  LIFT_PR:            { amount: 30,  label: 'New personal best'        },
   GOAL_MILESTONE:     { amount: 50,  label: 'Goal milestone reached'   },
   FOCUS_SESSION:      { amount: 15,  label: 'Focus session completed'  },
   MACROS_HIT:         { amount: 20,  label: 'Daily macros hit'         },
@@ -129,6 +131,7 @@ export function awardActivityXP() {
 
   arr(STORAGE_KEYS.TASKS).forEach(t => { if (t.done && t.id) award(`TASK:${t.id}`, 'TASK_COMPLETED'); });
   arr(STORAGE_KEYS.WORKOUT_LOGS).forEach(w => { if (w.id) award(`WORKOUT:${w.id}`, 'WORKOUT_LOGGED'); });
+  liftPRs(arr(STORAGE_KEYS.WORKOUT_LOGS)).forEach(p => award(p.key, 'LIFT_PR', `New best: ${p.name}`));
   arr(STORAGE_KEYS.HABITS).forEach(h => { if (h.id && h.lastCompleted) award(`HABIT:${h.id}:${h.lastCompleted}`, 'HABIT_DAILY'); });
 
   try {

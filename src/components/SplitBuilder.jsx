@@ -7,6 +7,7 @@ import { useEffect, useMemo, useState } from 'react';
 import {
   WEEK, WEEK_LABEL, TEMPLATES, isRest, dayExercises, addToDay, removeFromDay, moveInDay, setDayKind, materialize,
   buildFromTemplate, plannedSets, doneSets, volumeRows, dayKeyFromDate, SETS_BAND, templatesFor,
+  dayTarget, setDayTarget,
 } from '../domain/splits.js';
 import { EXPERIENCE } from '../domain/intake.js';
 import { toLocalDateKey } from '../utils/localDate.js';
@@ -156,6 +157,11 @@ export default function SplitBuilder({ programs, addProgram, updateProgram, remo
                     {inDay.map((ex, i) => (
                       <li key={ex.id} style={{ display: 'flex', alignItems: 'center', gap: 6, padding: '6px 10px', borderRadius: 10, border: '0.5px solid var(--card-border)' }}>
                         <span style={{ flex: 1, minWidth: 0, fontSize: 14, color: 'var(--text-primary)', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{ex.name}</span>
+                        {[['sets', 'Sets', 'sets'], ['repsMin', 'Min', 'min reps'], ['repsMax', 'Max', 'max reps']].map(([k, ph, aria]) => (
+                          <input key={k} type="number" inputMode="numeric" min="1" placeholder={ph} aria-label={`${ex.name} ${aria}`} value={dayTarget(day, ex.id)[k] ?? ''}
+                            onChange={e => saveDay(editing, setDayTarget(materialize(day, exercises), ex.id, { [k]: e.target.value }))}
+                            style={{ ...field, width: 56, minHeight: 34, padding: '0 6px', textAlign: 'center', fontSize: 14 }} />
+                        ))}
                         <button type="button" aria-label={`Move ${ex.name} up`} disabled={i === 0} onClick={() => saveDay(editing, moveInDay(day, exercises, ex.id, -1))} style={{ ...btn(false), minWidth: 36, padding: 0, opacity: i === 0 ? 0.4 : 1 }}>↑</button>
                         <button type="button" aria-label={`Move ${ex.name} down`} disabled={i === inDay.length - 1} onClick={() => saveDay(editing, moveInDay(day, exercises, ex.id, 1))} style={{ ...btn(false), minWidth: 36, padding: 0, opacity: i === inDay.length - 1 ? 0.4 : 1 }}>↓</button>
                         <button type="button" aria-label={`Remove ${ex.name}`} onClick={() => saveDay(editing, removeFromDay(day, exercises, ex.id))} style={{ ...btn(false), minWidth: 36, padding: 0, color: '#e25d7a' }}>×</button>
@@ -177,7 +183,7 @@ export default function SplitBuilder({ programs, addProgram, updateProgram, remo
 
           <section style={card} aria-label="Weekly volume">
             <div style={label}>Weekly sets per muscle</div>
-            <div style={{ fontSize: 12.5, color: 'var(--text-secondary)' }}>Planned assumes 3 sets an exercise. {SETS_BAND.low} to {SETS_BAND.high} hard sets a week per muscle is the usual range. "Done" is your last 7 days of logs.</div>
+            <div style={{ fontSize: 12.5, color: 'var(--text-secondary)' }}>Planned uses the sets you set on each exercise (3 where none is set). {SETS_BAND.low} to {SETS_BAND.high} hard sets a week per muscle is the usual range. "Done" is your last 7 days of logs.</div>
             <div style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
               {rows.map(r => {
                 const [text, colour] = STATUS[r.status];

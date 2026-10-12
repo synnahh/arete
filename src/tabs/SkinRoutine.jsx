@@ -7,6 +7,7 @@ import { useCollection } from '../supabase/useCollection.js';
 import { STORAGE_KEYS } from '../utils/storage.js';
 import { toLocalDateKey } from '../utils/localDate.js';
 import ProgressPhotos from '../components/ProgressPhotos.jsx';
+import RednessAzelaic from '../components/RednessAzelaic.jsx';
 import ProductCheck from '../components/ProductCheck.jsx';
 import SkinScan from '../components/SkinScan.jsx';
 import SkinTiers from '../components/SkinTiers.jsx';
@@ -14,6 +15,7 @@ import {
   ALL_DAYS, WHEN_LABEL, RATING_LABELS, newStep, usesPerDay, supplyUsage, stepsFor, completion, routineWarnings, ratingTrend, routineInsight,
 } from '../domain/skin.js';
 import { label } from '../components/ui.js';
+import { useSettingsValue } from '../hooks/useSettingsValue.js';
 
 const DAY_LETTERS = ['S', 'M', 'T', 'W', 'T', 'F', 'S'];
 const DAY_NAMES = ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'];
@@ -69,11 +71,26 @@ export default function SkinRoutine({ profile, saveProfile, daily }) {
   const todayRow = daily.items.find(d => d.date === todayKey);
   const skinTicks = todayRow?.skin ?? {};
   const warnings = useMemo(() => routineWarnings(steps), [steps]);
+  const settings = useSettingsValue();
+  // The base routine began on the first day anything was ticked, else the day the guide was imported.
+  const routineStart = useMemo(() => {
+    const ticked = daily.items.filter(d => d.date && ['am', 'pm'].some(p => Object.values(d.skin?.[p] || {}).some(Boolean))).map(d => d.date).sort()[0];
+    return ticked || settings?.guideImport?.doneOn || null;
+  }, [daily.items, settings?.guideImport?.doneOn]);
+
+  async function rateRedness(v) {
+    if (busy.current) return;
+    busy.current = true;
+    try {
+      if (todayRow) await daily.update(todayRow.id, { redness: v });
+      else await daily.add({ date: todayKey, items: {}, pct: 0, redness: v });
+    } finally { busy.current = false; }
+  }
 
   // Save the routine, then keep every linked supply's usage in step with it.
-  async function commit(next) {
+  async function commit(next, extra = {}) {
     const prev = steps;
-    await saveProfile({ ...profile, skinSteps: next });
+    await saveProfile({ ...profile, ...extra, skinSteps: next });
     const ids = new Set([...prev, ...next].map(s => s.supplyId).filter(Boolean));
     for (const id of ids) {
       const usage = supplyUsage(next, id);
@@ -198,6 +215,9 @@ export default function SkinRoutine({ profile, saveProfile, daily }) {
           </div>
         )}
       </div>
+
+      <RednessAzelaic rows={daily.items} todayRow={todayRow} todayKey={todayKey} steps={steps} profile={profile} routineStart={routineStart}
+        onRate={rateRedness} onSteps={commit} />
 
       {warnings.length > 0 && (
         <div role="status" style={{ ...card, gap: 8 }}>

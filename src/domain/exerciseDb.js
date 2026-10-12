@@ -209,6 +209,12 @@ export function trackedMuscles(ex) {
 const BY_NAME = new Map(EXERCISE_DB.map(e => [e.name.toLowerCase(), e]));
 export const findExercise = (name) => BY_NAME.get(String(name || '').trim().toLowerCase()) || null;
 
+/** A video search for how to do an exercise (opens in a new tab; nothing is stored or downloaded). */
+export const demoUrl = (name) => {
+  const n = String(name || '').trim();
+  return n ? `https://www.youtube.com/results?search_query=${encodeURIComponent(`${n} exercise form`)}` : null;
+};
+
 /** A database exercise as an Exercise Library entry (same shape Train already reads). */
 export function toLibraryEntry(ex) {
   const bw = ex.equipment === 'bodyweight' || ex.equipment === 'bar' || ex.equipment === 'band';

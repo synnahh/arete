@@ -872,7 +872,7 @@ export function TrainSessionScreen({ compact = true }) {
   return (
     <TrainSession exercises={d.exercises} workoutLogs={d.workoutLogs}
       addWorkoutLog={d.addWorkoutLog} updateWorkoutLog={d.updateWorkoutLog} removeWorkoutLog={d.removeWorkoutLog}
-      splitNames={d.splitNames} todaySplitType={d.todaySplitType} program={d.activeProgram} updateProgram={d.updateProgram}
+      splitNames={d.splitNames} todaySplitType={d.todaySplitType} program={d.activeProgram} updateProgram={d.updateProgram} saveExercises={d.saveExercisesDoc}
       progression={computeProgression} musclesFor={musclesFor} compact={compact} />
   );
 }
@@ -907,7 +907,7 @@ export default function WorkoutTab({ settings }) {
 
       {/* Content */}
       <div style={{ flex: 1, overflow: 'hidden' }}>
-        {sub === 'session'   && <TrainSession exercises={exercises} workoutLogs={workoutLogs} addWorkoutLog={addWorkoutLog} updateWorkoutLog={updateWorkoutLog} removeWorkoutLog={removeWorkoutLog} splitNames={splitNames} todaySplitType={todaySplitType} program={activeProgram} updateProgram={updateProgram} progression={computeProgression} musclesFor={musclesFor} />}
+        {sub === 'session'   && <TrainSession exercises={exercises} workoutLogs={workoutLogs} addWorkoutLog={addWorkoutLog} updateWorkoutLog={updateWorkoutLog} removeWorkoutLog={removeWorkoutLog} splitNames={splitNames} todaySplitType={todaySplitType} program={activeProgram} updateProgram={updateProgram} saveExercises={saveExercisesDoc} progression={computeProgression} musclesFor={musclesFor} />}
         {sub === 'overload'  && <OverloadCoach workoutLogs={workoutLogs} addWorkoutLog={addWorkoutLog} exercises={exercises} saveExercises={saveExercisesDoc} splitNames={splitNames} saveSplitNames={saveSplitNamesDoc} todaySplitType={todaySplitType} />}
         {sub === 'splits'    && <SplitBuilder programs={programs} addProgram={addProgram} updateProgram={updateProgram} removeProgram={removeProgram} exercises={exercises} workoutLogs={workoutLogs} />}
         {sub === 'exercises' && <ExercisesLibrary exercises={exercises} saveExercises={saveExercisesDoc} />}

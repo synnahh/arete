@@ -18,7 +18,9 @@
 //   weight: { daysSinceWeighIn, hasGoal } | null,
 //   sleep: { debtHours, status, bedtime } | null,
 //   skin: { amDone, amTotal, pmDone, pmTotal } | null,
-//   steps: { count, goal } | null,               // from Apple Health sync
+//   steps: { count, goal } | null,               // from Apple Health sync or typed in
+//   stepsPlan: { average, goal, next } | null,   // 7-day average and the next goal when it is time to step up
+//   waist: { flat, latest, deficit } | null,     // flat for 3 weeks; deficit = your goal is to lose fat
 
 // }
 
@@ -81,6 +83,16 @@ export function nextMoves(snap = {}) {
   const st = snap.steps;
   if (st && st.goal > 0 && Number.isFinite(st.count) && hour >= 17 && st.count < st.goal * 0.6) {
     add('steps', 44, 'Steps are behind', `${st.count.toLocaleString('en-AU')} of ${st.goal.toLocaleString('en-AU')} so far. A 20 minute walk adds about 2,000.`, 'coachtoday');
+  }
+
+  const sp = snap.stepsPlan;
+  if (sp?.next && sp.next > sp.goal) {
+    add('steps-ramp', 42, `Raise your step goal to ${sp.next.toLocaleString('en-AU')}`, `You averaged ${sp.average.toLocaleString('en-AU')} over the week against ${sp.goal.toLocaleString('en-AU')}. The guide adds about 1,000 every 1-2 weeks towards 8-10k.`, 'coachtoday');
+  }
+
+  const wa = snap.waist;
+  if (wa?.flat && wa.deficit) {
+    add('waist-flat', 57, 'Your waist has not moved in 3 weeks', `Still ${wa.latest} cm. If you have been logging food and training consistently, the guide says take 100-150 kcal off or add about 1,000 steps a day, not both.`, 'goal');
   }
 
   const h = snap.habits;

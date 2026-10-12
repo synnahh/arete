@@ -102,6 +102,14 @@ export const GUIDE_SKIN = [
 ];
 export const GUIDE_SKIN_PROFILE = { type: 'sensitive', concerns: ['redness'], avoid: 'fragrance, retinal, salicylic acid' };
 
+// ── Daily habits the guide asks for (sections 4 and 12) ──────────────────────
+export const GUIDE_HABITS = [
+  { name: 'Weigh in (morning, before food)', icon: '⚖️' },
+  { name: "Log last night's sleep (1 minute)", icon: '😴' },
+  { name: 'Interdental clean (floss or brush)', icon: '🦷' },
+  { name: 'Brush your tongue gently', icon: '🪥' },
+].map(h => ({ ...h, frequency: 'daily', streak: 0, lastCompleted: '', history: [], best: 0, source: GUIDE_ID }));
+
 // ── Reference note ───────────────────────────────────────────────────────────
 export const GUIDE_NOTE = {
   title: `Guide: ${GUIDE_TITLE}`,
@@ -163,7 +171,7 @@ export const GUIDE_NOTE = {
  *  - kept: what was left alone because you already have it, as plain phrases
  *  - problems: guide exercises that are not in the exercise database (nothing is guessed)
  */
-export function buildGuideImport({ library = [], programs = [], savedMeals = [], supplements = [], skinSteps = [], skinProfile = null, notes = [] } = {}) {
+export function buildGuideImport({ library = [], programs = [], savedMeals = [], supplements = [], skinSteps = [], skinProfile = null, notes = [], habits = [] } = {}) {
   const kept = [];
   const problems = [];
 
@@ -207,6 +215,9 @@ export function buildGuideImport({ library = [], programs = [], savedMeals = [],
   const haveSupp = new Set(supplements.map(s => lc(s.name)));
   const supps = GUIDE_SUPPLEMENTS.filter(s => { if (haveSupp.has(lc(s.name))) { kept.push(`Supplement "${s.name}" already there`); return false; } return true; });
 
+  const haveHabit = new Set(habits.map(h => lc(h.name)));
+  const newHabits = GUIDE_HABITS.filter(h => { if (haveHabit.has(lc(h.name))) { kept.push(`Habit "${h.name}" already there`); return false; } return true; });
+
   const haveStep = new Set(skinSteps.map(s => lc(s.name)));
   const steps = GUIDE_SKIN.filter(([n]) => { if (haveStep.has(lc(n))) { kept.push(`Skin step "${n}" already there`); return false; } return true; }).map(([n, when]) => newStep(n, when));
 
@@ -216,7 +227,7 @@ export function buildGuideImport({ library = [], programs = [], savedMeals = [],
   const note = notes.some(n => lc(n.title) === lc(GUIDE_NOTE.title)) ? null : GUIDE_NOTE;
   if (!note) kept.push('The guide reference note already exists');
 
-  return { exercises, programs: newPrograms, meals, supplements: supps, skinSteps: steps, skinProfile: hasProfile ? null : GUIDE_SKIN_PROFILE, note, kept, problems };
+  return { exercises, programs: newPrograms, meals, supplements: supps, skinSteps: steps, habits: newHabits, skinProfile: hasProfile ? null : GUIDE_SKIN_PROFILE, note, kept, problems };
 }
 
 /** One-line counts for the review panel. */
@@ -227,6 +238,7 @@ export function summarise(plan) {
   if (plan.meals.length) out.push(`${plan.meals.length} saved meals`);
   if (plan.supplements.length) out.push(`${plan.supplements.length} supplements`);
   if (plan.skinSteps.length) out.push(`${plan.skinSteps.length} skin steps`);
+  if (plan.habits?.length) out.push(`${plan.habits.length} daily habits`);
   if (plan.note) out.push('1 reference note');
   return out;
 }

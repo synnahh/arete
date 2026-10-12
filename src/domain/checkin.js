@@ -58,8 +58,11 @@ export function previousCheckIn(body = [], date) {
 }
 
 /** A body_metrics row for a check-in, or null when the weight is not a plausible number. */
-export function checkInRow({ date, weight }) {
+export function checkInRow({ date, weight, waist = null }) {
   const w = Number(weight);
   if (!(w > 20 && w < 400) || !/^\d{4}-\d{2}-\d{2}$/.test(String(date))) return null;
-  return { date, weight: r1(w), source: 'check-in' };
+  const row = { date, weight: r1(w), source: 'check-in' };
+  const c = Number(waist);
+  if (waist !== '' && waist != null && c >= 40 && c <= 200) row.waist = r1(c);   // cm, optional
+  return row;
 }
