@@ -1,6 +1,18 @@
 # Arete (was VALERIE) — Handover for the next agent
 
-# LATEST (2026-10-12): read this first, it supersedes parts of START HERE below
+# LATEST (2026-10-13): the app is now a gym and looks app. Read this first.
+
+- **Navigation (`src/nav/groups.js`):** six groups, ids `home`, `train`, `eat` (label Fuel), `look`, `results` (label Progress), `settings` (label Profile). Phone bar: Home, Train, Fuel, Look, Progress; Profile/Settings behind the gear. Tasks, calendar, notes, lists, focus, finance, portfolio, vault, mind and the old Plan/Coach front pages are OUT of the menus (their saved data is untouched and their files still exist as dead code); every old id aliases to Home. Never reuse a group id as a screen id.
+- **Home (`components/HomeScreen.jsx`, `domain/homeLayout.js`):** one component for phone and desktop. Default cards (Rob's poll): calories and protein left, weight and goal progress, streak, skin routine, water, sleep and readiness. Opt-in under Customise: today's workout, next moves, steps, coach updates, recap, overall. Saved as `settings.home.sections`.
+- **Offline-safe saving:** `supabase/writeQueue.js` + `useCollection.js` (rows get client-made UUIDs, queued in localStorage `arete_write_queue`, flushed on reconnect with backoff), `supabase/docQueue.js` (documents and settings, `arete_doc_queue`; the launch fetch no longer overwrites a document with a waiting edit). `SyncBanner` shows offline/syncing. Verified with tests and in a browser against a stand-in; NOT against real Supabase.
+- **PWA:** `registerType: 'prompt'` (UpdatePrompt banner, never auto-reloads), manifest cleaned, `LaunchSplash` on every launch, `virtual:pwa-register` aliased to a stub in non-PWA builds (`vite.config.js`).
+- **Face ID:** offered once per device (`faceIdOffered`), reason shown on failure, switch in Settings > Security. The iOS passkey sheet is how web apps get Face ID; unverified on a real phone.
+- **Splits:** 16 templates in `domain/splits.js`; guide split in one tap (`GuideSplit`); coverage, fills and swaps (`domain/splitCoach.js`).
+- **Security/deps:** the unused Firebase SDK and `src/firebase/` were removed; `npm audit --omit=dev` reports 0.
+- **Audit:** `docs/audit-2026-10-13.md` (findings, checklist, roadmap, verification). Next on the roadmap: URL routing/back button, Playwright journeys, lazy-loaded screens, Sentry DSN, accessibility pass, delete dead screens.
+- **Still needs Rob:** deploy `dist` to Netlify; real-iPhone checks (Face ID, install, offline); the accounts steps in `docs/health-ingest-checklist.md`; the branded food pack (Open Food Facts dump, awaiting his yes).
+
+# (older) LATEST (2026-10-12): read this first, it supersedes parts of START HERE below
 
 **Rob's standing decisions:** this is a personal app that will never be published. No onboarding, no paywall, no demo data. The coach asks its first questions itself (Goal HQ intake). Rob will upload his complete fitness and looks improvement guide; it is to be copied into the app's data so he does not type it (plan and folder: `docs/reference/guide/README.md`; the guide is NOT in the repo yet, so nothing from it has been imported).
 

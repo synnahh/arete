@@ -80,7 +80,6 @@ export default defineConfig(async () => ({
       output: {
         // Split vendor libs into their own chunk
         manualChunks: (id) => {
-          if (id.includes('node_modules/firebase')) return 'vendor-firebase';
           if (id.includes('node_modules/react') || id.includes('node_modules/react-dom')) return 'vendor-react';
           if (id.includes('node_modules/@tauri-apps')) return 'vendor-tauri';
 
