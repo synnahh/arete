@@ -17,7 +17,6 @@ import { useSleepSchedule }    from './hooks/useSleepSchedule.js';
 import { useNotifications }    from './hooks/useNotifications.js';
 import { useCoachReminders }   from './hooks/useCoachReminders.js';
 import { useCoachEngine }      from './hooks/useCoachEngine.js';
-import Onboarding                from './onboarding/Onboarding.jsx';
 import PinGate                   from './components/PinGate.jsx';
 import LoadingScreen              from './components/LoadingScreen.jsx';
 import SignIn                    from './components/SignIn.jsx';
@@ -167,7 +166,7 @@ class TabErrorBoundary extends Component {
 }
 
 export default function App() {
-  const [onboarded,     setOnboarded]     = useState(null); // null = loading
+  const [ready,         setReady]         = useState(false); // settings loaded
   const [activeTab,     setActiveTab]     = useState(DEFAULT_SCREEN);
   const [settings,      setSettings]      = useState(null);
   const [paletteOpen,   setPaletteOpen]   = useState(false);
@@ -291,10 +290,9 @@ export default function App() {
     return () => window.removeEventListener('keydown', handler);
   }, [paletteOpen]);
 
-  //  On mount: load settings, apply theme, check onboarding flag
+  //  On mount: load settings and apply the theme. (A personal app: no onboarding.)
   useEffect(() => {
-    const isOnboarded = DEV_VIEW || storage.get(STORAGE_KEYS.ONBOARDED, false);
-    setOnboarded(isOnboarded);
+    setReady(true);
 
     function applyAndSet(s) {
       s = stripLegacyClaudeKeys(s);
@@ -360,19 +358,8 @@ export default function App() {
   }
 
   //  Loading state (settings loading)
-  if (onboarded === null) {
+  if (!ready) {
     return <LoadingScreen message="Loading your data" />;
-  }
-
-  //  Onboarding (name personalisation — runs once after first sign-in)
-  if (!onboarded) {
-    return (
-      <Onboarding onComplete={(data) => {
-        setSettings(data);
-        applyTheme(data.theme || 'obsidian');
-        setOnboarded(true);
-      }} />
-    );
   }
 
   // ── Mobile PWA shell — renders instead of desktop layout on phones/tablets ──
