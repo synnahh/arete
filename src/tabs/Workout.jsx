@@ -833,12 +833,13 @@ function WorkoutCalendar({ workoutLogs }) {
 // ROOT — Workout Tab
 // """""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
 const SUB_NAV = [
-  { id: 'session',  label: 'Session',        icon: 'focus' },
-  { id: 'overload', label: 'Overload Coach', icon: 'trending' },
-  { id: 'splits',   label: 'Split Planner',  icon: 'plan' },
-  { id: 'exercises',label: 'Exercises',      icon: 'workout' },
-  { id: 'muscles',  label: 'Muscle Ranking', icon: 'activity' },
-  { id: 'calendar', label: 'Calendar',       icon: 'calendar' },
+  { id: 'session',  label: 'Session',   icon: 'focus' },
+  { id: 'splits',   label: 'Split',     icon: 'plan' },
+  { id: 'exercises',label: 'Exercises', icon: 'workout' },
+  { id: 'muscles',  label: 'Muscles',   icon: 'activity' },
+  { id: 'calendar', label: 'History',   icon: 'calendar' },
+  // 'overload' (the old Overload Coach logger) is no longer in the menu: Session now suggests each
+  // weight itself. Its code stays in this file.
 ];
 
 // Muscles a lift trains (drives Muscle Ranking and Look).
