@@ -82,28 +82,6 @@ function Section({ title, children, action }) {
 }
 
 // ── Default exercise library ───────────────────────────────────────────────────
-export const DEFAULT_OVERLOAD_EXERCISES = [
-  // Push
-  { id:'bp',  name:'Bench Press',         gym:'both',       day:'push', bodyweight:false, startingWeight:40, repsMin:6, repsMax:8,  increment:2.5 },
-  { id:'ohp', name:'Overhead Press',      gym:'both',       day:'push', bodyweight:false, startingWeight:30, repsMin:6, repsMax:8,  increment:2.5 },
-  { id:'dip', name:'Dips',                gym:'both',       day:'push', bodyweight:true,  startingWeight:0,  repsMin:6, repsMax:10, increment:0   },
-  { id:'ppe', name:'Push Press',          gym:'commercial', day:'push', bodyweight:false, startingWeight:35, repsMin:5, repsMax:8,  increment:2.5 },
-  { id:'dbp', name:'DB Shoulder Press',   gym:'both',       day:'push', bodyweight:false, startingWeight:16, repsMin:8, repsMax:12, increment:2   },
-  // Pull
-  { id:'dl',  name:'Deadlift',            gym:'both',       day:'pull', bodyweight:false, startingWeight:60, repsMin:4, repsMax:6,  increment:5   },
-  { id:'pu',  name:'Pull-ups',            gym:'both',       day:'pull', bodyweight:true,  startingWeight:0,  repsMin:5, repsMax:8,  increment:0   },
-  { id:'br',  name:'Barbell Row',         gym:'both',       day:'pull', bodyweight:false, startingWeight:40, repsMin:6, repsMax:8,  increment:2.5 },
-  { id:'lr',  name:'Lat Pulldown',        gym:'commercial', day:'pull', bodyweight:false, startingWeight:50, repsMin:8, repsMax:12, increment:5   },
-  { id:'fc',  name:'Face Pulls',          gym:'commercial', day:'pull', bodyweight:false, startingWeight:20, repsMin:12,repsMax:15, increment:2.5 },
-  // Legs
-  { id:'sq',  name:'Barbell Squat',       gym:'both',       day:'legs', bodyweight:false, startingWeight:60, repsMin:5, repsMax:8,  increment:2.5 },
-  { id:'rdl', name:'Romanian Deadlift',   gym:'both',       day:'legs', bodyweight:false, startingWeight:50, repsMin:8, repsMax:10, increment:2.5 },
-  { id:'lp',  name:'Leg Press',           gym:'commercial', day:'legs', bodyweight:false, startingWeight:80, repsMin:8, repsMax:12, increment:10  },
-  { id:'lg',  name:'Leg Curl',            gym:'commercial', day:'legs', bodyweight:false, startingWeight:40, repsMin:8, repsMax:12, increment:5   },
-  { id:'lu',  name:'Walking Lunges',      gym:'both',       day:'legs', bodyweight:true,  startingWeight:0,  repsMin:10,repsMax:14, increment:0   },
-  { id:'crf', name:'Calf Raises',         gym:'both',       day:'legs', bodyweight:false, startingWeight:20, repsMin:12,repsMax:15, increment:5   },
-];
-
 export const DEFAULT_SPLITS = { push: 'Push', pull: 'Pull', legs: 'Legs' };
 
 // ── Progression logic ────────────────────────────────────────────────────────
@@ -378,7 +356,7 @@ title="Rename splits">✎</button>
 // """""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
 // 2. EXERCISES LIBRARY
 // """""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
-function ExercisesLibrary({ exercises, saveExercises, usingSamples = false }) {
+function ExercisesLibrary({ exercises, saveExercises }) {
   const [filter, setFilter]   = useState('all');
   const [showAdd, setShowAdd] = useState(false);
   const [editing, setEditing] = useState(null);
@@ -405,13 +383,6 @@ function ExercisesLibrary({ exercises, saveExercises, usingSamples = false }) {
     <Section title="Exercise Library" action={
       <button onClick={() => setShowAdd(true)} style={{ ...btnPrimary, fontSize: 11 }}>+ Add exercise</button>
     }>
-      {usingSamples && (
-        <div role="status" style={{ marginBottom: 14, padding: '12px 14px', borderRadius: 12, border: '0.5px solid #e8a13a', display: 'flex', alignItems: 'center', gap: 10, flexWrap: 'wrap', fontSize: 13, color: 'var(--text-primary)' }}>
-          <span style={{ flex: 1, minWidth: 200 }}>These are sample exercises. Keep and edit them, or clear them and build your own from the exercise database.</span>
-          <button onClick={() => saveExercises([...exercises])} style={{ ...btnGhost, fontSize: 12 }}>Keep these</button>
-          <button onClick={() => saveExercises([])} style={{ ...btnPrimary, fontSize: 12 }}>Clear all</button>
-        </div>
-      )}
       <ExerciseSuggest exercises={exercises} saveExercises={saveExercises} />
       <ExerciseBrowser exercises={exercises} saveExercises={saveExercises} />
       {/* Filter row */}
@@ -880,8 +851,7 @@ export function useTrainData() {
   const { data: storedSplitNames, save: saveSplitNamesDoc } = useDocument('split_names',        STORAGE_KEYS.SPLIT_NAMES,        DEFAULT_SPLITS);
   const { items: programs, add: addProgram, update: updateProgram, remove: removeProgram } = useCollection('programs', STORAGE_KEYS.PROGRAMS);
 
-  const usingSamples = !Array.isArray(storedExercises);   // never saved: the sample list is shown until you edit or clear it
-  const exercises  = usingSamples ? DEFAULT_OVERLOAD_EXERCISES : storedExercises;
+  const exercises  = Array.isArray(storedExercises) ? storedExercises : [];
   const splitNames = storedSplitNames?.push ? storedSplitNames : { ...DEFAULT_SPLITS };
 
   // Today's split type from active program
@@ -891,7 +861,7 @@ export function useTrainData() {
 
   return {
     workoutLogs, addWorkoutLog, updateWorkoutLog, removeWorkoutLog,
-    exercises, saveExercisesDoc, splitNames, saveSplitNamesDoc, usingSamples,
+    exercises, saveExercisesDoc, splitNames, saveSplitNamesDoc,
     programs, addProgram, updateProgram, removeProgram, todaySplitType, activeProgram,
   };
 }
@@ -911,7 +881,7 @@ export default function WorkoutTab({ settings }) {
   const [sub, setSub] = useState('session');
   const {
     workoutLogs, addWorkoutLog, updateWorkoutLog, removeWorkoutLog,
-    exercises, saveExercisesDoc, splitNames, saveSplitNamesDoc, usingSamples,
+    exercises, saveExercisesDoc, splitNames, saveSplitNamesDoc,
     programs, addProgram, updateProgram, removeProgram, todaySplitType, activeProgram,
   } = useTrainData();
 
@@ -940,7 +910,7 @@ export default function WorkoutTab({ settings }) {
         {sub === 'session'   && <TrainSession exercises={exercises} workoutLogs={workoutLogs} addWorkoutLog={addWorkoutLog} updateWorkoutLog={updateWorkoutLog} removeWorkoutLog={removeWorkoutLog} splitNames={splitNames} todaySplitType={todaySplitType} program={activeProgram} updateProgram={updateProgram} progression={computeProgression} musclesFor={musclesFor} />}
         {sub === 'overload'  && <OverloadCoach workoutLogs={workoutLogs} addWorkoutLog={addWorkoutLog} exercises={exercises} saveExercises={saveExercisesDoc} splitNames={splitNames} saveSplitNames={saveSplitNamesDoc} todaySplitType={todaySplitType} />}
         {sub === 'splits'    && <SplitBuilder programs={programs} addProgram={addProgram} updateProgram={updateProgram} removeProgram={removeProgram} exercises={exercises} workoutLogs={workoutLogs} />}
-        {sub === 'exercises' && <ExercisesLibrary exercises={exercises} saveExercises={saveExercisesDoc} usingSamples={usingSamples} />}
+        {sub === 'exercises' && <ExercisesLibrary exercises={exercises} saveExercises={saveExercisesDoc} />}
         {sub === 'muscles'   && <MuscleRanking workoutLogs={workoutLogs} settings={settings} />}
         {sub === 'calendar'  && <WorkoutCalendar workoutLogs={workoutLogs} />}
       </div>

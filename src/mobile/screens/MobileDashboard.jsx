@@ -5,7 +5,6 @@ import { getGreeting } from '../../utils/time.js';
 import { useCollection }  from '../../supabase/useCollection.js';
 import { useDocument }    from '../../supabase/useDocument.js';
 import { getXP, getRank, TIER_CONFIG, TIER_THRESHOLDS } from '../../utils/xp.js';
-import { DEFAULT_OVERLOAD_EXERCISES } from '../../tabs/Workout.jsx';
 import DayRing from '../../components/DayRing.jsx';
 import { toLocalDateKey } from '../../utils/localDate.js';
 import { useTasks } from '../../hooks/useTasks.js';
@@ -178,7 +177,7 @@ const SPLIT_COLOURS = { push:'#e25d7a', pull:'#4a9eff', legs:'#f4a642', rest:'rg
 function TodayWorkoutCard({ onTabChange }) {
   const { items: programs = [] } = useCollection('programs', STORAGE_KEYS.PROGRAMS);
   const { data: storedEx }       = useDocument('overload_exercises', STORAGE_KEYS.OVERLOAD_EXERCISES, null);
-  const exercises = (Array.isArray(storedEx) && storedEx.length) ? storedEx : DEFAULT_OVERLOAD_EXERCISES;
+  const exercises = Array.isArray(storedEx) ? storedEx : [];
 
   const todayKey  = DAY_KEYS[new Date().getDay()];
   const active    = programs.find(p => p.isActive) ?? null;

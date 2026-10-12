@@ -148,18 +148,6 @@ function StatCard({ label, value, unit, colour = 'var(--accent)', ring, children
 }
 
 // ═══════════════════════════════════════════════════════════════════════════════
-// ── Demo data shown when nothing is logged ────────────────────────────────────
-const DEMO_SLEEP = { date:'demo', efficiency:82, duration:445, bedTime:'22:45', wakeTime:'07:00',
-  stages:{ deep:62, rem:88, core:228, awake:67 } };
-const DEMO_NUTRITION = { calories:1650, protein:95, carbs:182, fat:54, meals:[
-  { id:'d1', name:'Oats + banana', calories:380, protein:12, carbs:68, fat:6,  time:'07:30' },
-  { id:'d2', name:'Chicken & rice', calories:620, protein:52, carbs:72, fat:11, time:'12:45' },
-  { id:'d3', name:'Protein shake',  calories:220, protein:28, carbs:14, fat:5,  time:'15:00' },
-  { id:'d4', name:'Greek yoghurt',  calories:130, protein:13, carbs:9,  fat:4,  time:'16:30' },
-  { id:'d5', name:'Steak & veg',    calories:300, protein:38, carbs:19, fat:8,  time:'19:00' },
-]};
-const DEMO_BODY = { weight:82.4, bodyFat:14.8, muscle:68.2 };
-const DEMO_WATER = 1850;
 
 // 1. OVERVIEW — dense command centre
 // ═══════════════════════════════════════════════════════════════════════════════
@@ -192,17 +180,16 @@ function Overview({ habits, waterLogs, nutritionLogs, sleepData, settings, suppl
   const ahConnected = appleHealth?.connected ?? false;
   const ahLastSync  = appleHealth?.lastSync ?? null;
 
-  const useDemo    = !rawLastSleep && rawWater === 0 && todayCal === 0 && !ah;
-  const lastSleep  = rawLastSleep ?? ah?.sleep ?? (useDemo ? DEMO_SLEEP : null);
-  const todayWater = rawWater   > 0 ? rawWater    : useDemo ? DEMO_WATER    : 0;
-  const todayCal2  = todayCal   > 0 ? todayCal    : useDemo ? DEMO_NUTRITION.calories : 0;
-  const todayProt  = todayProtein > 0 ? todayProtein : useDemo ? DEMO_NUTRITION.protein  : 0;
-  const todayCarbs = rawCarbs   > 0 ? rawCarbs    : useDemo ? DEMO_NUTRITION.carbs    : 0;
-  const todayFat   = rawFat     > 0 ? rawFat      : useDemo ? DEMO_NUTRITION.fat      : 0;
-  const todayMeals = todayNut?.meals?.length ? todayNut.meals : useDemo ? DEMO_NUTRITION.meals : [];
-  const todayHabits = todayHabitsRaw.total > 0 ? todayHabitsRaw : useDemo ? {done:3,total:5} : todayHabitsRaw;
-  const todaySupps  = todaySuppsRaw.total  > 0 ? todaySuppsRaw  : useDemo ? {done:4,total:6} : todaySuppsRaw;
-  const latestBody  = latestBodyRaw ?? (ah ? { weight: ah.weight, bodyFat: ah.bodyFat } : null) ?? (useDemo ? DEMO_BODY : null);
+  const lastSleep  = rawLastSleep ?? ah?.sleep ?? null;
+  const todayWater = rawWater;
+  const todayCal2  = todayCal;
+  const todayProt  = todayProtein;
+  const todayCarbs = rawCarbs;
+  const todayFat   = rawFat;
+  const todayMeals = todayNut?.meals?.length ? todayNut.meals : [];
+  const todayHabits = todayHabitsRaw;
+  const todaySupps  = todaySuppsRaw;
+  const latestBody  = latestBodyRaw ?? (ah ? { weight: ah.weight, bodyFat: ah.bodyFat } : null);
 
   // Apple Health extras shown in Overview
   const ahSteps      = ah?.steps       ?? null;
@@ -254,12 +241,6 @@ function Overview({ habits, waterLogs, nutritionLogs, sleepData, settings, suppl
   return (
     <Section title="Overview">
       <div style={{display:'flex',flexDirection:'column',gap:22}}>
-
-        {useDemo && (
-          <div style={{padding:'8px 14px',borderRadius:10,background:'rgba(74,158,255,0.07)',border:'0.5px solid rgba(74,158,255,0.2)',fontSize:11,color:'rgba(74,158,255,0.7)'}}>
-            = Showing demo data  log your first entry to see real stats
-          </div>
-        )}
 
         {/*  Apple Health sync badge  */}
         {ahConnected && (
@@ -374,10 +355,10 @@ function Overview({ habits, waterLogs, nutritionLogs, sleepData, settings, suppl
           <div style={{flex:'1 1 0',minWidth:0,padding:'14px 16px',background:'rgba(255,255,255,0.03)',borderRadius:12,border:`0.5px solid ${todayStims.caffeine>caffLimit*0.9?'rgba(244,166,66,0.4)':'rgba(255,255,255,0.07)'}`}}>
             <div style={{fontSize:10.5,fontWeight:700,letterSpacing:'0.16em',textTransform:'uppercase',color:'var(--text-muted)',fontFamily:'ui-monospace,monospace',marginBottom:7}}>Caffeine</div>
             <div style={{display:'flex',alignItems:'baseline',gap:4}}>
-              <span style={{fontSize:20,fontWeight:600,color:todayStims.caffeine>caffLimit*0.9?'#f4a642':'rgba(255,255,255,0.85)',fontVariantNumeric:'tabular-nums'}}>{useDemo?180:todayStims.caffeine}</span>
+              <span style={{fontSize:20,fontWeight:600,color:todayStims.caffeine>caffLimit*0.9?'#f4a642':'rgba(255,255,255,0.85)',fontVariantNumeric:'tabular-nums'}}>{todayStims.caffeine}</span>
               <span style={{fontSize:10.5,color:'var(--text-muted)'}}>/{caffLimit}mg</span>
             </div>
-            <Bar value={useDemo?180:todayStims.caffeine} max={caffLimit} colour={todayStims.caffeine>caffLimit*0.9?'#f4a642':'#4a9eff'}/>
+            <Bar value={todayStims.caffeine} max={caffLimit} colour={todayStims.caffeine>caffLimit*0.9?'#f4a642':'#4a9eff'}/>
           </div>
           {(todayStims.nicotine>0)&&(
             <div style={{flex:'1 1 0',minWidth:0,padding:'14px 16px',background:'rgba(255,255,255,0.03)',borderRadius:12,border:'0.5px solid rgba(255,255,255,0.07)'}}>
@@ -1286,23 +1267,12 @@ function Body({ bodyMetrics, addBodyMetric, settings }) {
   useEffect(() => { if (measuresDoc) setMeasures(measuresDoc); }, [measuresDoc]);
 
   const rawSorted = useMemo(()=>[...(bodyMetrics||[])].sort((a,b)=>(b.date??'').localeCompare(a.date??'')),[bodyMetrics]);
-  const useBodyDemo = rawSorted.length === 0;
-
-  const DEMO_BODY_METRICS = useMemo(() => [
-    { date:'2026-06-02', weight:82.4, bodyFat:14.8, muscle:68.2, notes:'Demo data' },
-    { date:'2026-05-26', weight:82.8, bodyFat:15.1, muscle:67.9 },
-    { date:'2026-05-19', weight:83.2, bodyFat:15.4, muscle:67.6 },
-    { date:'2026-05-12', weight:83.6, bodyFat:15.7, muscle:67.3 },
-    { date:'2026-05-05', weight:84.0, bodyFat:16.0, muscle:67.0 },
-    { date:'2026-04-28', weight:84.5, bodyFat:16.3, muscle:66.8 },
-  ], []);
-
-  const sorted = useBodyDemo ? DEMO_BODY_METRICS : rawSorted;
+  const sorted = rawSorted;
   const latest = sorted[0];
   const weightData = useMemo(()=>sorted.slice(0,30).reverse().map(m=>({value:parseFloat(m.weight)||0,label:m.date?m.date.slice(5):''})),[sorted]);
 
   // Weight coach: smoothed trend + weekly rate + pace against the Coach goal (real data only)
-  const coach = useMemo(() => (useBodyDemo ? null : weightCoach(rawSorted, settings?.coachGoal?.targets?.weeklyRateKg ?? null, settings?.coachGoal?.targetWeightKg ?? null, todayStr())), [useBodyDemo, rawSorted, settings?.coachGoal]);
+  const coach = useMemo(() => (rawSorted.length === 0 ? null : weightCoach(rawSorted, settings?.coachGoal?.targets?.weeklyRateKg ?? null, settings?.coachGoal?.targetWeightKg ?? null, todayStr())), [rawSorted, settings?.coachGoal]);
 
   const saveMeasures = (m) => { setMeasures(m); saveMeasuresDoc(m); };
   const MEASURE_FIELDS = [
@@ -1334,11 +1304,6 @@ function Body({ bodyMetrics, addBodyMetric, settings }) {
       {/* ── Weight tab ── */}
       {bodyTab==='weight'&&(
         <>
-          {useBodyDemo && (
-            <div style={{padding:'8px 14px',borderRadius:10,background:'rgba(74,158,255,0.07)',border:'0.5px solid rgba(74,158,255,0.2)',fontSize:11,color:'rgba(74,158,255,0.7)',marginBottom:12}}>
-              = Showing demo data  tap + Log to start tracking your real metrics
-            </div>
-          )}
           {/* Log form */}
           {adding&&(
             <GlassCard style={{marginBottom:12}}>
