@@ -10,6 +10,8 @@ import {
   dayTarget, setDayTarget,
 } from '../domain/splits.js';
 import { EXPERIENCE } from '../domain/intake.js';
+import SplitCoverage from './SplitCoverage.jsx';
+import { swapOptions, swapInDay, dayMuscles } from '../domain/splitCoach.js';
 import { toLocalDateKey } from '../utils/localDate.js';
 import { label } from './ui.js';
 
@@ -19,7 +21,7 @@ const field = { minHeight: 38, borderRadius: 10, padding: '0 12px', border: '0.5
 const toast = (message, undo) => window.dispatchEvent(new CustomEvent('valerie:toast', { detail: { message, type: 'success', undo } }));
 const STATUS = { none: ['Not planned', 'var(--text-secondary)'], low: ['Low', '#e8a13a'], ok: ['In range', '#4caf7d'], high: ['High', '#e25d7a'] };
 
-export default function SplitBuilder({ programs, addProgram, updateProgram, removeProgram, exercises, workoutLogs = [] }) {
+export default function SplitBuilder({ programs, addProgram, updateProgram, removeProgram, exercises, workoutLogs = [], saveExercises = null }) {
   const active = programs.find(p => p.isActive) ?? null;
   const todayKey = dayKeyFromDate();
   const [editing, setEditing] = useState(null);
@@ -152,6 +154,7 @@ export default function SplitBuilder({ programs, addProgram, updateProgram, remo
               {!isRest(day) && (
                 <>
                   <input value={day.label ?? ''} onChange={e => saveDay(editing, { ...materialize(day, exercises), label: e.target.value })} placeholder="Name, e.g. Upper body" aria-label="Day name" style={field} />
+                  {inDay.length > 0 && <div style={{ fontSize: 12.5, color: 'var(--text-secondary)' }}>Hits: {dayMuscles(day, exercises).join(' · ')}. The three boxes are sets, then reps from and to.</div>}
                   {inDay.length === 0 && <div style={{ fontSize: 13, color: 'var(--text-secondary)' }}>No exercises yet. Add some from your library below.</div>}
                   <ul style={{ margin: 0, padding: 0, listStyle: 'none', display: 'flex', flexDirection: 'column', gap: 6 }}>
                     {inDay.map((ex, i) => (
@@ -162,6 +165,22 @@ export default function SplitBuilder({ programs, addProgram, updateProgram, remo
                             onChange={e => saveDay(editing, setDayTarget(materialize(day, exercises), ex.id, { [k]: e.target.value }))}
                             style={{ ...field, width: 56, minHeight: 34, padding: '0 6px', textAlign: 'center', fontSize: 14 }} />
                         ))}
+                        {saveExercises && (() => {
+                          const o = swapOptions(ex, day, exercises);
+                          if (!o.guide.length && !o.sameMuscle.length) return null;
+                          return (
+                            <select aria-label={`Swap ${ex.name}`} value="" onChange={async (e) => {
+                              const r = swapInDay(day, ex.id, e.target.value, exercises);
+                              if (!r) return;
+                              if (r.entry) await saveExercises([...exercises, r.entry]);
+                              saveDay(editing, r.day);
+                            }} style={{ ...field, width: 96, minHeight: 34, padding: '0 6px', fontSize: 13 }}>
+                              <option value="">Swap…</option>
+                              {o.guide.length > 0 && <optgroup label="Your guide's option">{o.guide.map(n => <option key={n} value={n}>{n}</option>)}</optgroup>}
+                              {o.sameMuscle.length > 0 && <optgroup label="Same muscle">{o.sameMuscle.map(n => <option key={n} value={n}>{n}</option>)}</optgroup>}
+                            </select>
+                          );
+                        })()}
                         <button type="button" aria-label={`Move ${ex.name} up`} disabled={i === 0} onClick={() => saveDay(editing, moveInDay(day, exercises, ex.id, -1))} style={{ ...btn(false), minWidth: 36, padding: 0, opacity: i === 0 ? 0.4 : 1 }}>↑</button>
                         <button type="button" aria-label={`Move ${ex.name} down`} disabled={i === inDay.length - 1} onClick={() => saveDay(editing, moveInDay(day, exercises, ex.id, 1))} style={{ ...btn(false), minWidth: 36, padding: 0, opacity: i === inDay.length - 1 ? 0.4 : 1 }}>↓</button>
                         <button type="button" aria-label={`Remove ${ex.name}`} onClick={() => saveDay(editing, removeFromDay(day, exercises, ex.id))} style={{ ...btn(false), minWidth: 36, padding: 0, color: '#e25d7a' }}>×</button>
@@ -180,6 +199,8 @@ export default function SplitBuilder({ programs, addProgram, updateProgram, remo
               )}
             </section>
           )}
+
+          {saveExercises && <SplitCoverage program={active} exercises={exercises} saveExercises={saveExercises} updateProgram={updateProgram} />}
 
           <section style={card} aria-label="Weekly volume">
             <div style={label}>Weekly sets per muscle</div>
