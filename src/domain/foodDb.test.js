@@ -84,3 +84,49 @@ describe('pinned staples', () => {
     expect(searchIndex(generic, 'milk')[0].name).toMatch(/^Milk, whole/);
   });
 });
+
+describe('Australian branded pack', async () => {
+  const { existsSync, readFileSync: read } = await import('node:fs');
+  const path = new URL('../data/foods/branded-au.json', import.meta.url);
+  const has = existsSync(path);
+  const rows = has ? JSON.parse(read(path, 'utf8')) : [];
+  const brandedIndex = buildIndex('branded', rows);
+
+  it.runIf(has)('has thousands of products with real brands and sane numbers', () => {
+    expect(rows.length).toBeGreaterThan(5000);
+    for (const r of rows.slice(0, 3000)) {
+      const [name, brand, kcal, p, c, f] = r;
+      expect(name && brand).toBeTruthy();
+      expect(kcal).toBeGreaterThanOrEqual(0); expect(kcal).toBeLessThanOrEqual(900);
+      expect(p + c + f).toBeLessThanOrEqual(105);
+      expect(r).toHaveLength(12);
+    }
+  });
+  it.runIf(has)('finds Australian brands by brand or product name, ahead of generic foods', () => {
+    const all = [...brandedIndex, ...generic];
+    expect(searchIndex(all, 'chobani yoghurt', 5)[0].brand.toLowerCase()).toBe('chobani');
+    expect(searchIndex(all, 'tim tam', 3)[0].brand).toContain('Arnott');
+    expect(searchIndex(all, 'coles mince', 3).some(e => e.brand === 'Coles')).toBe(true);
+    expect(searchIndex(all, 'sanitarium peanut butter', 3)[0].brand).toBe('Sanitarium');
+  });
+  it.runIf(has)('gives a branded product its serving as the default amount', () => {
+    const withServing = brandedIndex.find(e => e.servingGrams > 0);
+    const f = dbFood(withServing);
+    expect(f.defaultAmount).toBe(withServing.servingGrams);
+    expect(f.name.startsWith(withServing.brand)).toBe(true);
+  });
+});
+
+describe('list keys and names', () => {
+  it('two products with the same brand and name get different keys', () => {
+    const idx = buildIndex('branded', [
+      ['Tim Tam', "Arnott's", 485, 3.9, 65.9, 22.1, 0, 0, 0, '', 0, '9310072000011'],
+      ['Tim Tam', "Arnott's", 525, 4, 60, 28, 0, 0, 0, '18 g', 18, '9310072000028'],
+    ]);
+    expect(dbFood(idx[0]).key).not.toBe(dbFood(idx[1]).key);
+  });
+  it('does not repeat the brand when the product name already starts with it', () => {
+    const idx = buildIndex('branded', [['Chobani greek yoghurt', 'Chobani', 56, 8, 4, 0.2, 0, 4, 40, '', 0, '9300000000099']]);
+    expect(dbFood(idx[0]).name).toBe('Chobani greek yoghurt');
+  });
+});

@@ -255,7 +255,7 @@ export default function FoodLogger({ onLog, onClose }) {
         })}
       </ul>
 
-      {query.trim().length >= 2 && db.ready && <div style={{ fontSize: 11.5, color: 'var(--text-muted)' }}>{db.count.toLocaleString('en-AU')} foods on this device{db.branded ? `, ${db.branded.toLocaleString('en-AU')} of them branded` : ''}{searching ? ' · checking online for more…' : ''}</div>}
+      {query.trim().length >= 2 && db.ready && <div style={{ fontSize: 11.5, color: 'var(--text-muted)' }}>{db.count.toLocaleString('en-AU')} foods on this device{db.branded ? `, ${db.branded.toLocaleString('en-AU')} of them branded (Open Food Facts, ODbL)` : ''}{searching ? ' · checking online for more…' : ''}</div>}
       {searching && !db.ready && <div role="status" style={{ fontSize: 13, color: 'var(--text-secondary)' }}>Searching the food database…</div>}
       {offline && bundled.length === 0 && <div role="status" style={{ fontSize: 13, color: '#e8a13a' }}>Could not reach the food database. Your own foods still work.</div>}
       {empty && <div style={{ fontSize: 14, color: 'var(--text-secondary)' }}>Nothing found for "{query.trim()}".</div>}

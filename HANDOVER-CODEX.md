@@ -10,7 +10,8 @@
 - **Splits:** 16 templates in `domain/splits.js`; guide split in one tap (`GuideSplit`); coverage, fills and swaps (`domain/splitCoach.js`).
 - **Security/deps:** the unused Firebase SDK and `src/firebase/` were removed; `npm audit --omit=dev` reports 0.
 - **Audit:** `docs/audit-2026-10-13.md` (findings, checklist, roadmap, verification). Next on the roadmap: URL routing/back button, Playwright journeys, lazy-loaded screens, Sentry DSN, accessibility pass, delete dead screens.
-- **Still needs Rob:** deploy `dist` to Netlify; real-iPhone checks (Face ID, install, offline); the accounts steps in `docs/health-ingest-checklist.md`; the branded food pack (Open Food Facts dump, awaiting his yes).
+- **Food database (2026-10-13):** `src/data/foods/generic.json` (8,000 USDA foods) and `branded-au.json` (10,877 Australian packaged products from the Open Food Facts export, ODbL; credit shown on the food search screen). Search/ranking in `domain/foodDb.js` (staples pinned for plain words, branded wins ties, Australian synonyms), loaded lazily by `hooks/useFoodDb.js`. The branded pack was built by a one-off filter script (tagged Australia, name + brand, complete kcal/protein/carbs/fat, numbers that add up); README in `src/data/foods/`. The 1.27 GB source file was deleted after use.
+- **Still needs Rob:** deploy `dist` to Netlify; real-iPhone checks (Face ID, install, offline); the accounts steps in `docs/health-ingest-checklist.md`; (the branded food pack is done).
 
 # (older) LATEST (2026-10-12): read this first, it supersedes parts of START HERE below
 

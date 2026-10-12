@@ -84,6 +84,9 @@ export const STAPLES = {
   almond: ['Nuts, almonds'], whey: ['Beverages, Whey protein powder isolate', 'Beverages, Protein powder whey based'],
 };
 
+// Searches where you almost always mean a packaged product: the plain food is only a small nudge there.
+const SOFT_PINS = new Set(['yoghurt', 'greek yoghurt', 'bread', 'peanut butter', 'whey', 'cheese', 'pasta', 'butter']);
+
 const PLAIN = ['raw', 'fluid', 'whole', 'plain', 'fresh'];
 const ODD = ['dried', 'dehydrated', 'powder', 'imitation', 'substitute', 'canned', 'frozen', 'buttermilk'];
 const EXOTIC = ['sheep', 'goat', 'human', 'buffalo', 'camel', 'mare', 'horse', 'whale', 'seal', 'moose', 'elk', 'caribou', 'duck', 'goose', 'emu', 'ostrich', 'quail', 'turtle', 'alligator'];
@@ -123,12 +126,12 @@ export function searchIndex(index, query, limit = 12) {
       for (const w of ODD) if (e.tokens.has(w) && !words.includes(w)) s -= 5;
       for (const w of EXOTIC) if (e.tokens.has(w) && !words.includes(w)) s -= 9;
     }
-    if (e.kind === 'branded') s += 60;       // branded products lead whenever one matches
+    if (e.kind === 'branded') s += 25;       // a packaged product wins a tie, but a plain food still beats a loose word match (Banana Milk for "banana")
     if (e.kind === 'generic') {
       if (NOISE.test(e.name) || BABY.test(e.name)) s -= 25;
       if (/\braw\b/i.test(e.name)) s += 4;
     }
-    if (pins.length) { const at = pins.findIndex(p => name.startsWith(p)); if (at >= 0 && e.kind === 'generic') s += 40 - at * 4; }
+    if (pins.length) { const at = pins.findIndex(p => name.startsWith(p)); if (at >= 0 && e.kind === 'generic') s += (SOFT_PINS.has(q) ? 12 : 70) - at * 4; }
     scored.push({ e, s });
   }
   return scored.sort((a, b) => b.s - a.s || a.e.name.localeCompare(b.e.name)).slice(0, limit).map(x => x.e);
@@ -142,7 +145,8 @@ export function prettyName(name) {
 
 /** An index entry as a loggable food (the shape src/domain/foodLogger.js expects). */
 export function dbFood(e) {
-  const display = e.brand ? `${e.brand} ${e.name}` : prettyName(e.name);
+  // Packaged products read "Brand Product", unless the product name already starts with the brand.
+  const display = e.brand ? (norm(e.name).startsWith(norm(e.brand)) ? e.name : `${e.brand} ${e.name}`) : prettyName(e.name);
   const portions = e.kind === 'branded'
     ? (e.servingGrams > 0 ? [{ label: `1 serving${e.serving ? ` (${e.serving})` : ''}`, grams: e.servingGrams }] : [])
     : e.portions;
@@ -150,7 +154,8 @@ export function dbFood(e) {
     ? `${Math.round(e.per100.calories)} kcal / 100 g${e.servingGrams ? ` · ${Math.round(e.per100.calories * e.servingGrams / 100)} kcal a serving` : ''}`
     : `${Math.round(e.per100.calories)} kcal / 100 g${e.category ? ` · ${e.category}` : ''}`;
   return {
-    key: `${e.kind === 'branded' ? 'brand' : 'usda'}:${norm(e.brand + ' ' + e.name)}`, kind: 'db', name: display,
+    // The barcode keeps two products with the same brand and name apart (they get different list keys).
+    key: `${e.kind === 'branded' ? 'brand' : 'usda'}:${norm(e.brand + ' ' + e.name)}:${e.barcode || Math.round(e.per100.calories)}`, kind: 'db', name: display,
     amountKind: 'grams', unit: 'g', defaultAmount: portions[0]?.grams ?? 100,
     per100: { ...e.per100, micros: {} }, sub, source: { name: display, per100: e.per100, brand: e.brand || null, barcode: e.barcode || null },
     portions, ingredients: [], brand: e.brand || null,

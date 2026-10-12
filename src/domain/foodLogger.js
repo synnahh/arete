@@ -110,8 +110,14 @@ export function quickPicks(foods = [], limit = 8) {
 
 /** Local matches first, then database results that are not the same food. */
 export function mergeResults(local = [], remote = [], limit = 14) {
-  const seen = new Set(local.map(f => norm(f.name)));
-  const extra = remote.filter(f => !seen.has(norm(f.name)));
+  const names = new Set(local.map(f => norm(f.name)));
+  const keys = new Set(local.map(f => f.key));
+  const extra = [];
+  for (const f of remote) {
+    if (names.has(norm(f.name)) || keys.has(f.key)) continue;     // already shown, or the same product listed twice
+    keys.add(f.key);
+    extra.push(f);
+  }
   return [...local, ...extra].slice(0, limit);
 }
 

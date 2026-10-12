@@ -107,3 +107,13 @@ describe('entryFor', () => {
     expect(defaultSection(new Date(2026, 9, 11, 19, 0))).toBe('dinner');
   });
 });
+
+describe('merged results never repeat a list key', () => {
+  it('drops a product the online search lists twice, and one already shown', async () => {
+    const { mergeResults } = await import('./foodLogger.js');
+    const f = (name, key) => ({ name, key });
+    const out = mergeResults([f('Tim Tam', 'brand:a')], [f('Tim Tam', 'db:tim tam'), f('Kit Kat', 'db:kit kat'), f('Kit Kat', 'db:kit kat')], 10);
+    expect(out.map(x => x.name)).toEqual(['Tim Tam', 'Kit Kat']);
+    expect(new Set(out.map(x => x.key)).size).toBe(out.length);
+  });
+});
