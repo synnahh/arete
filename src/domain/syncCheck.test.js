@@ -18,3 +18,13 @@ describe('sync check', () => {
     expect(readPing(null, 'a', 0)).toBeNull();
   });
 });
+
+describe('health data freshness', () => {
+  it('is fresh for today and yesterday, stale after, none when nothing has arrived', async () => {
+    const { healthStatus } = await import('./syncCheck.js');
+    expect(healthStatus('2026-10-12', '2026-10-12')).toEqual({ state: 'fresh', days: 0 });
+    expect(healthStatus('2026-10-11', '2026-10-12').state).toBe('fresh');
+    expect(healthStatus('2026-10-09', '2026-10-12')).toEqual({ state: 'stale', days: 3 });
+    expect(healthStatus(null, '2026-10-12').state).toBe('none');
+  });
+});

@@ -9,7 +9,9 @@ import { useDocument } from '../supabase/useDocument.js';
 import { storage, STORAGE_KEYS } from '../utils/storage.js';
 import { isTauri, isMobile } from '../utils/platform.js';
 import { label } from './ui.js';
-import { CHECKED, compareCount, readPing } from '../domain/syncCheck.js';
+import { CHECKED, compareCount, readPing, healthStatus } from '../domain/syncCheck.js';
+import { useAppleHealth } from '../hooks/useAppleHealth.js';
+import { toLocalDateKey } from '../utils/localDate.js';
 
 const KEY_OF = {
   workout_logs: STORAGE_KEYS.WORKOUT_LOGS, nutrition_logs: STORAGE_KEYS.MACROS, body_metrics: STORAGE_KEYS.BODY, water_logs: STORAGE_KEYS.WATER,
@@ -34,6 +36,7 @@ const deviceName = () => (isTauri() ? 'Desktop app' : isMobile() ? 'Phone' : 'Br
 
 export default function SyncCheck() {
   const ping = useDocument('sync_ping', 'valerie_sync_ping', null);
+  const health = useAppleHealth();
   const me = useRef(readDeviceId());
   const [now, setNow] = useState(Date.now());
   const [arrival, setArrival] = useState(null);       // { from, ms } when another device's ping lands here
@@ -46,6 +49,7 @@ export default function SyncCheck() {
   useEffect(() => { const t = setInterval(() => setNow(Date.now()), 1000); return () => clearInterval(t); }, []);
 
   const p = readPing(ping.data, me.current, now);
+  const hs = healthStatus(health.lastSync, toLocalDateKey(new Date(now)));
   useEffect(() => {
     const raw = ping.data;
     if (!raw?.at || raw.deviceId === me.current || lastSeen.current === raw.at) return;
@@ -98,6 +102,14 @@ export default function SyncCheck() {
         </div>
       )}
       {!p && <div style={small}>Press Send on one device, then watch this screen on the other. It should appear by itself within a second or two.</div>}
+
+      <div role="status" style={{ ...small, color: hs.state === 'stale' ? '#e8a13a' : 'var(--text-secondary)' }}>
+        {hs.state === 'none'
+          ? 'Health data (scale, Fitbit Air, iPhone): nothing has arrived yet. See docs/health-ingest-checklist.md.'
+          : hs.state === 'fresh'
+            ? `Health data: arrived ${hs.days === 0 ? 'today' : 'yesterday'}${health.data?.steps != null ? `, ${Math.round(health.data.steps).toLocaleString('en-AU')} steps` : ''}.`
+            : `Health data: nothing for ${hs.days} days (last ${health.lastSync}). Open Health Auto Export on the iPhone and tap sync.`}
+      </div>
 
       {rows && (
         <ul style={{ margin: 0, padding: 0, listStyle: 'none', display: 'flex', flexDirection: 'column', gap: 4 }}>

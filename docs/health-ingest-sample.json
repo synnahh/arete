@@ -1,0 +1,43 @@
+{
+  "data": {
+    "metrics": [
+      {
+        "name": "step_count",
+        "units": "count",
+        "data": [
+          { "date": "2026-01-15 08:00:00 +1000", "qty": 2400, "source": "TEST" },
+          { "date": "2026-01-15 13:00:00 +1000", "qty": 3100, "source": "TEST" }
+        ]
+      },
+      {
+        "name": "weight_body_mass",
+        "units": "kg",
+        "data": [{ "date": "2026-01-15 07:15:10 +1000", "qty": 71.2, "source": "TEST" }]
+      },
+      {
+        "name": "body_fat_percentage",
+        "units": "%",
+        "data": [{ "date": "2026-01-15 07:15:40 +1000", "qty": 19.4, "source": "TEST" }]
+      },
+      {
+        "name": "heart_rate",
+        "units": "count/min",
+        "data": [{ "date": "2026-01-15 12:00:00 +1000", "Min": 52, "Avg": 68, "Max": 121, "source": "TEST" }]
+      },
+      {
+        "name": "sleep_analysis",
+        "units": "hr",
+        "data": [
+          {
+            "date": "2026-01-15 00:00:00 +1000",
+            "sleepStart": "2026-01-14 23:40:00 +1000",
+            "sleepEnd": "2026-01-15 07:05:00 +1000",
+            "asleep": 6.9,
+            "inBed": 7.4,
+            "source": "TEST"
+          }
+        ]
+      }
+    ]
+  }
+}

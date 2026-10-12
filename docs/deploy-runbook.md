@@ -55,6 +55,8 @@ Set `VITE_SUPABASE_URL=https://jwzgxcqapxaomuenleyt.supabase.co` and `VITE_SUPAB
 
 ## Health sync (Apple Health and the Eufy scale)
 
+**The full step-by-step checklist, with every command and iPhone setting, is `docs/health-ingest-checklist.md`. The notes below are the short version.**
+
 Eufy has no public API, so the route is EufyLife -> Apple Health -> Health Auto Export -> `health-ingest`.
 
 1. Supabase SQL Editor: run `supabase/health_sync.sql`.

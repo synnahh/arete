@@ -25,3 +25,16 @@ export function readPing(ping, deviceId, nowMs) {
   if (!Number.isFinite(sent)) return null;
   return { from: String(ping.device), own: ping.deviceId === deviceId, ageSeconds: Math.max(0, Math.round((nowMs - sent) / 1000)), sentMs: sent, count: Number(ping.count) || 1 };
 }
+
+/**
+ * Has Apple Health data (Eufy scale, Fitbit Air, iPhone) reached the app lately?
+ * lastSync is the newest day a health row exists for, as 'YYYY-MM-DD'.
+ */
+export function healthStatus(lastSync, today) {
+  const a = /^(\d{4})-(\d{2})-(\d{2})/.exec(String(lastSync || ''));
+  const b = /^(\d{4})-(\d{2})-(\d{2})/.exec(String(today || ''));
+  if (!a || !b) return { state: 'none', days: null };
+  const day = (m) => Date.UTC(+m[1], +m[2] - 1, +m[3]) / 86400000;
+  const days = Math.max(0, Math.round(day(b) - day(a)));
+  return { state: days <= 1 ? 'fresh' : 'stale', days };
+}
