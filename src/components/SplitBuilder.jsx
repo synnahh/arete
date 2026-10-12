@@ -11,6 +11,7 @@ import {
 } from '../domain/splits.js';
 import { EXPERIENCE } from '../domain/intake.js';
 import SplitCoverage from './SplitCoverage.jsx';
+import GuideSplit from './GuideSplit.jsx';
 import { swapOptions, swapInDay, dayMuscles } from '../domain/splitCoach.js';
 import { searchExercises } from '../domain/exerciseDb.js';
 import { freshEntries } from '../domain/exercisePick.js';
@@ -95,6 +96,8 @@ export default function SplitBuilder({ programs, addProgram, updateProgram, remo
   return (
     <div style={{ display: 'flex', flexDirection: 'column', gap: 14, padding: '20px clamp(14px, 3vw, 28px) 32px', maxWidth: 980, margin: '0 auto', width: '100%', boxSizing: 'border-box', overflowY: 'auto', height: '100%' }}>
       <h1 style={{ margin: 0, fontFamily: 'var(--font-display)', fontSize: 22, fontWeight: 600, color: 'var(--text-primary)', letterSpacing: '0.04em' }}>Your split</h1>
+
+      <GuideSplit programs={programs} exercises={exercises} saveExercises={saveExercises} addProgram={addProgram} updateProgram={updateProgram} />
 
       <section style={card} aria-label="Programs">
         <div style={label}>Programs</div>

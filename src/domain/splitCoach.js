@@ -10,6 +10,7 @@
 import { EXERCISE_DB, findExercise, toLibraryEntry } from './exerciseDb.js';
 import { musclesForExercise } from './muscles.js';
 import { WEEK, isRest, dayExercises, withDayTargets, materialize, setDayTarget } from './splits.js';
+import { buildGuideImport } from './guideImport.js';
 
 export const GROUPS = [
   ['chest', 'Chest'], ['back', 'Back and lats'], ['shoulders', 'Shoulders'], ['traps', 'Traps'],
@@ -208,3 +209,32 @@ export function dayMuscles(day, library = []) {
   }
   return seen;
 }
+
+// ── The guide's split in one step ────────────────────────────────────────────
+
+/**
+ * Everything needed to put the 25 Sep guide's training week into the app: new library entries, the
+ * programs to add (with the guide's own sets and reps), and which one starts active. With `fill`,
+ * the muscle gaps (forearms, traps, glutes) are filled on the 5-day week; those are Arete's
+ * additions, not the guide's, and are listed in `added`.
+ *  start 'five'    the 5-day frame-priority week is active now
+ *  start 'reentry' the 2-week, 3-day re-entry block is active now (the guide's own starting point)
+ * Programs you already have by the same name are not added again.
+ */
+export function planGuideSplit({ library = [], programs = [], start = 'five', fill = true } = {}) {
+  const base = buildGuideImport({ library, programs });
+  let lib = [...library, ...base.exercises];
+  const out = base.programs.map(p => ({ ...p, days: { ...p.days } }));
+  const five = out.find(p => /frame-priority/i.test(p.name));
+  const added = [];
+  if (five && fill) {
+    const fills = suggestFills(five, lib);
+    const r = applyFills(five, lib, fills);
+    five.days = r.days;
+    lib = [...lib, ...r.newEntries];
+    for (const f of fills) added.push(`${f.name} (${f.dayLabel})`);
+  }
+  for (const p of out) p.isActive = start === 'five' ? /frame-priority/i.test(p.name) : /re-entry/i.test(p.name);
+  return { library: lib, programs: out, newExercises: lib.length - library.length, added, problems: base.problems };
+}
+

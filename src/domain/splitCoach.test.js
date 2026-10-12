@@ -91,3 +91,31 @@ describe('what a day hits', () => {
     expect(dayMuscles(five.days.tue, library)).toEqual(expect.arrayContaining(['Quads', 'Hamstrings', 'Calves', 'Abs']));
   });
 });
+
+describe('the guide split in one step', () => {
+  it('builds both programs, the 5-day active, with the gaps filled and listed', async () => {
+    const { planGuideSplit } = await import('./splitCoach.js');
+    const r = planGuideSplit({ library: [], programs: [], start: 'five', fill: true });
+    expect(r.programs.map(p => p.isActive)).toEqual([false, true]);
+    expect(r.newExercises).toBeGreaterThanOrEqual(26);
+    expect(r.added.length).toBeGreaterThan(0);
+    expect(r.added.join(' ')).toMatch(/Shrug|Wrist Curl|Hammer Curl/);
+    const five = r.programs.find(p => /frame-priority/i.test(p.name));
+    expect(coverage(five, r.library).every(x => x.status === 'ok')).toBe(true);
+  });
+  it('can start with the re-entry block, and leave the guide exactly as written without fills', async () => {
+    const { planGuideSplit } = await import('./splitCoach.js');
+    const r = planGuideSplit({ library: [], programs: [], start: 'reentry', fill: false });
+    expect(r.programs.map(p => p.isActive)).toEqual([true, false]);
+    expect(r.added).toEqual([]);
+    const five = r.programs[1];
+    expect(Object.values(five.days).filter(d => d.splitType !== 'rest').map(d => d.exerciseIds.length)).toEqual([8, 6, 8, 6, 8]);
+  });
+  it('does not add a program you already have', async () => {
+    const { planGuideSplit } = await import('./splitCoach.js');
+    const first = planGuideSplit({ library: [], programs: [] });
+    const again = planGuideSplit({ library: first.library, programs: first.programs });
+    expect(again.programs).toEqual([]);
+    expect(again.newExercises).toBe(0);
+  });
+});
