@@ -18,7 +18,7 @@ import StrengthCard from '../components/StrengthCard.jsx';
 import { useRecovery } from '../hooks/useRecovery.js';
 import { useSettingsValue } from '../hooks/useSettingsValue.js';
 import { cleanTrainPrefs, effortOptions, effortLabel, ownRest } from '../domain/trainPrefs.js';
-import { demoUrl } from '../domain/exerciseDb.js';
+import ExerciseDemo from '../components/ExerciseDemo.jsx';
 import { WEEK, dayExercises, withDayTargets, materialize, sessionChoices, sessionDayKey, dayKeyFromDate } from '../domain/splits.js';
 
 const today = () => toLocalDateKey(new Date());
@@ -196,6 +196,7 @@ function ExerciseTweaks({ ex, onEdit }) {
 function ExerciseCard({ ex, prog, rows, onChange, onTick, onRate, onAddSet, onRemoveSet, prs, compact, history, sessions = [], rec = null, eq, alternatives = [], onReplace, prefs, onEdit = null }) {
   const doneSets = rows.filter(r => r.done);
   const [showChart, setShowChart] = useState(false);
+  const [showDemo, setShowDemo] = useState(false);
   const [swapping, setSwapping] = useState(false);
   const barbell = !ex.bodyweight && isBarbell(ex.name);
   const workKg = Number(rows[0]?.weight) || prog.nextWeight;
@@ -207,7 +208,7 @@ function ExerciseCard({ ex, prog, rows, onChange, onTick, onRate, onAddSet, onRe
       background: 'var(--bg-panel)', border: '0.5px solid var(--card-border)',
     }}>
       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'baseline', gap: 10 }}>
-        <span style={{ fontSize: 17, fontWeight: 600, color: 'var(--text-primary)' }}>{ex.name}{demoUrl(ex.name) && <a href={demoUrl(ex.name)} target="_blank" rel="noopener noreferrer" aria-label={`How to do ${ex.name} (opens a video search)`} style={{ marginLeft: 10, fontSize: 12, fontWeight: 500, color: 'var(--tab-accent)' }}>Demo</a>}</span>
+        <span style={{ fontSize: 17, fontWeight: 600, color: 'var(--text-primary)' }}>{ex.name}<button type="button" aria-expanded={showDemo} aria-label={`How to do ${ex.name}`} onClick={() => setShowDemo(v => !v)} style={{ marginLeft: 10, minHeight: 28, padding: '0 10px', borderRadius: 999, cursor: 'pointer', fontFamily: 'inherit', fontSize: 12, fontWeight: 500, border: '0.5px solid var(--tab-accent)', background: showDemo ? 'color-mix(in srgb, var(--tab-accent) 14%, transparent)' : 'transparent', color: 'var(--tab-accent)' }}>{showDemo ? 'Hide demo' : 'Demo'}</button></span>
         <span className="val-num" style={{ fontSize: 12, color: 'var(--text-secondary)' }}>{doneSets.length}/{rows.length} sets</span>
       </div>
       {onReplace && doneSets.length === 0 && (
@@ -224,6 +225,7 @@ function ExerciseCard({ ex, prog, rows, onChange, onTick, onRate, onAddSet, onRe
           )}
         </div>
       )}
+      {showDemo && <ExerciseDemo name={ex.name} />}
       {rec && <div style={{ fontSize: 13, color: 'var(--text-secondary)' }}>{rec.text}</div>}
       {ex.note && <div style={{ fontSize: 13, color: 'var(--text-primary)', fontStyle: 'italic' }}>{ex.note}</div>}
       <div className="val-num" style={{ fontSize: 12, color: 'var(--text-secondary)' }}>

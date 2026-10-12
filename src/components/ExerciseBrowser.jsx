@@ -4,6 +4,7 @@ import { useMemo, useState } from 'react';
 import { searchExercises, DB_MUSCLES, DB_EQUIPMENT, toLibraryEntry } from '../domain/exerciseDb.js';
 import { freshEntries } from '../domain/exercisePick.js';
 import { label } from './ui.js';
+import ExerciseDemo from './ExerciseDemo.jsx';
 
 const chip = (on) => ({
   minHeight: 32, padding: '0 12px', borderRadius: 999, cursor: 'pointer', fontFamily: 'inherit', fontSize: 12.5, fontWeight: on ? 600 : 500, textTransform: 'capitalize',
@@ -16,6 +17,7 @@ export default function ExerciseBrowser({ exercises, saveExercises }) {
   const [muscle, setMuscle] = useState(null);
   const [equipment, setEquipment] = useState(null);
   const [added, setAdded] = useState(null);
+  const [demoId, setDemoId] = useState(null);
 
   const results = useMemo(() => (open ? searchExercises(q, { muscle, equipment, limit: 30 }) : []), [open, q, muscle, equipment]);
   const have = useMemo(() => new Set(exercises.map(e => String(e.name).trim().toLowerCase())), [exercises]);
@@ -58,6 +60,8 @@ export default function ExerciseBrowser({ exercises, saveExercises }) {
                         {ex.muscle}{ex.helpers.length ? ` + ${ex.helpers.join(', ')}` : ''} · {ex.equipment} · {ex.kind}
                       </div>
                       <div style={{ fontSize: 12.5, color: 'var(--text-secondary)', marginTop: 2 }}>{ex.cue}</div>
+                      <button type="button" aria-expanded={demoId === ex.id} onClick={() => setDemoId(demoId === ex.id ? null : ex.id)} style={{ marginTop: 6, minHeight: 30, padding: '0 12px', borderRadius: 999, cursor: 'pointer', fontFamily: 'inherit', fontSize: 12.5, border: '0.5px solid var(--card-border)', background: 'transparent', color: 'var(--text-secondary)' }}>{demoId === ex.id ? 'Hide demo' : 'Demo'}</button>
+                      {demoId === ex.id && <div style={{ marginTop: 8 }}><ExerciseDemo name={ex.name} /></div>}
                     </div>
                     <button type="button" disabled={owned} onClick={() => add(ex)} style={{ flexShrink: 0, minHeight: 34, padding: '0 12px', borderRadius: 10, border: 'none', cursor: owned ? 'default' : 'pointer', opacity: owned ? 0.5 : 1, fontWeight: 600, fontSize: 12.5, background: 'var(--accent)', color: '#fff' }}>
                       {owned ? 'In library' : 'Add'}
