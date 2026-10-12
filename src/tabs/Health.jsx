@@ -1736,14 +1736,10 @@ function Sleep({ sleepData, settings }) {
     setTimeout(() => setSchedSaved(false), 2000);
   };
 
-  const DEMO = !latest && [
-    { date:'2026-05-29', duration:402, efficiency:82, stages:{ deep:62, rem:88, core:198, awake:54 }, bedTime:'22:45', wakeTime:'06:12' },
-    { date:'2026-05-28', duration:445, efficiency:89, stages:{ deep:78, rem:95, core:228, awake:44 }, bedTime:'22:30', wakeTime:'07:05' },
-  ];
-  const display = latest ? sorted : DEMO || [];
+  const display = latest ? sorted : [];
   const displayLatest = display[display.length - 1] || display[0];
 
-  const chartData = [...(DEMO || last14)].map(n => ({
+  const chartData = [...last14].map(n => ({
     value: Math.round((n.duration || 0) / 60 * 10) / 10,
     label: (n.date ?? '').slice(5),
     colour: n.efficiency >= 85 ? '#4caf7d' : n.efficiency >= 75 ? '#f4a642' : '#e55a5a',
@@ -1760,7 +1756,7 @@ function Sleep({ sleepData, settings }) {
           background: 'rgba(74,158,255,0.08)', border: '0.5px solid rgba(74,158,255,0.25)',
           fontSize: 11.5, color: '#4a9eff',
         }}>
-          = Live sleep data syncs from Apple Health on iPhone. Showing demo data below.
+          No sleep logged yet. Log a night above, or it fills in by itself once your scale and tracker sync through Apple Health.
         </div>
       )}
 
