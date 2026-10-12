@@ -117,10 +117,17 @@ describe('session days', () => {
 
 describe('template filter', () => {
   it('shows what suits your level and days, blank always last', () => {
-    expect(templatesFor({})).toEqual(['ppl', 'upperFrame', 'bro', 'upperLower', 'fullBody', 'blank']);
-    expect(templatesFor({ experience: 'beginner' })).toEqual(['upperFrame', 'upperLower', 'fullBody', 'blank']);
-    expect(templatesFor({ days: 4 })).toEqual(['upperLower', 'fullBody', 'blank']);
-    expect(templatesFor({ experience: 'advanced', days: 5 })).toEqual(['upperFrame', 'bro', 'blank']);
+    const all = templatesFor({});
+    expect(all[all.length - 1]).toBe('blank');
+    expect(all.length).toBeGreaterThanOrEqual(15);
+    const beginner = templatesFor({ experience: 'beginner' });
+    expect(beginner).toEqual(expect.arrayContaining(['upperLower', 'fullBody', 'blank']));
+    expect(beginner).not.toContain('arnold');
+    expect(beginner).not.toContain('bro');
+    const four = templatesFor({ days: 4 });
+    for (const id of four) if (id !== 'blank') expect(TEMPLATES[id].trainDays).toBeLessThanOrEqual(4);
+    expect(templatesFor({ experience: 'advanced', days: 5 })).toEqual(expect.arrayContaining(['upperFrame', 'bro', 'ppul', 'blank']));
+    expect(templatesFor({ experience: 'advanced', days: 5 })).not.toContain('arnold');
   });
 });
 

@@ -197,6 +197,58 @@ export const TEMPLATES = {
     thu: { label: 'Shoulders', muscles: ['shoulders', 'forearms'] },
     fri: { label: 'Arms', muscles: ['biceps', 'triceps', 'forearms'] },
   } },
+  fullBody2: { label: 'Full body (2 days)', note: '2 days: the whole body each time. The minimum that still works.', trainDays: 2, levels: ['beginner', 'intermediate'], days: {
+    mon: { label: 'Full body A', muscles: ['quads', 'chest', 'back', 'shoulders', 'hamstrings'] },
+    thu: { label: 'Full body B', muscles: ['glutes', 'back', 'chest', 'biceps', 'triceps'] },
+  } },
+  ulFull3: { label: 'Upper / Lower / Full', note: '3 days: upper, lower, then everything. A good fit for a busy week.', trainDays: 3, levels: ['beginner', 'intermediate'], days: {
+    mon: { label: 'Upper', muscles: ['chest', 'back', 'shoulders', 'biceps', 'triceps'] },
+    wed: { label: 'Lower', muscles: ['quads', 'hamstrings', 'glutes', 'calves'] },
+    fri: { label: 'Full body', muscles: ['chest', 'back', 'quads', 'shoulders', 'hamstrings'] },
+  } },
+  ppl3: { label: 'Push / Pull / Legs (3 days)', note: '3 days: push, pull and legs once each.', trainDays: 3, levels: ['beginner', 'intermediate', 'advanced'], days: {
+    mon: { label: 'Push', muscles: ['chest', 'shoulders', 'triceps'] },
+    wed: { label: 'Pull', muscles: ['back', 'biceps', 'forearms'] },
+    fri: { label: 'Legs', muscles: ['quads', 'hamstrings', 'glutes', 'calves'] },
+  } },
+  strengthAB: { label: 'Strength A / B', note: '3 days: two alternating full-body sessions built on the big lifts.', trainDays: 3, levels: ['beginner', 'intermediate'], days: {
+    mon: { label: 'Strength A', muscles: ['quads', 'chest', 'back', 'triceps'] },
+    wed: { label: 'Strength B', muscles: ['hamstrings', 'shoulders', 'back', 'biceps'] },
+    fri: { label: 'Strength A', muscles: ['quads', 'chest', 'back', 'triceps'] },
+  } },
+  fullBody4: { label: 'Full body (4 days)', note: '4 days: whole body each time, lighter sessions, more often.', trainDays: 4, levels: ['beginner', 'intermediate'], days: {
+    mon: { label: 'Full body A', muscles: ['quads', 'chest', 'back', 'shoulders'] },
+    tue: { label: 'Full body B', muscles: ['hamstrings', 'back', 'chest', 'biceps', 'triceps'] },
+    thu: { label: 'Full body C', muscles: ['glutes', 'chest', 'back', 'shoulders', 'calves'] },
+    fri: { label: 'Full body D', muscles: ['quads', 'back', 'chest', 'biceps', 'triceps'] },
+  } },
+  torsoLimbs: { label: 'Torso / Limbs', note: '4 days: chest, back and shoulders one day; arms and legs the next.', trainDays: 4, levels: ['intermediate', 'advanced'], days: {
+    mon: { label: 'Torso', muscles: ['chest', 'back', 'shoulders'] },
+    tue: { label: 'Limbs', muscles: ['quads', 'hamstrings', 'biceps', 'triceps', 'calves'] },
+    thu: { label: 'Torso', muscles: ['back', 'chest', 'shoulders'] },
+    fri: { label: 'Limbs', muscles: ['hamstrings', 'quads', 'triceps', 'biceps', 'calves'] },
+  } },
+  phul: { label: 'Power / Hypertrophy (PHUL)', note: '4 days: heavy upper and lower, then lighter higher-rep upper and lower.', trainDays: 4, levels: ['intermediate', 'advanced'], days: {
+    mon: { label: 'Upper power', muscles: ['chest', 'back', 'shoulders', 'biceps', 'triceps'] },
+    tue: { label: 'Lower power', muscles: ['quads', 'hamstrings', 'glutes', 'calves'] },
+    thu: { label: 'Upper hypertrophy', muscles: ['chest', 'back', 'shoulders', 'biceps', 'triceps'] },
+    fri: { label: 'Lower hypertrophy', muscles: ['quads', 'hamstrings', 'glutes', 'calves'] },
+  } },
+  ppul: { label: 'Push / Pull / Legs / Upper / Lower', note: '5 days: PPL, then an upper and a lower day. Each muscle about twice a week.', trainDays: 5, levels: ['intermediate', 'advanced'], days: {
+    mon: { label: 'Push', muscles: ['chest', 'shoulders', 'triceps'] },
+    tue: { label: 'Pull', muscles: ['back', 'biceps', 'forearms'] },
+    wed: { label: 'Legs', muscles: ['quads', 'hamstrings', 'glutes', 'calves'] },
+    fri: { label: 'Upper', muscles: ['chest', 'back', 'shoulders', 'biceps', 'triceps'] },
+    sat: { label: 'Lower', muscles: ['quads', 'hamstrings', 'glutes', 'calves'] },
+  } },
+  arnold: { label: 'Arnold split', note: '6 days: chest and back, shoulders and arms, legs, twice. High volume for experienced lifters.', trainDays: 6, levels: ['advanced'], days: {
+    mon: { label: 'Chest and back', muscles: ['chest', 'back'] },
+    tue: { label: 'Shoulders and arms', muscles: ['shoulders', 'biceps', 'triceps'] },
+    wed: { label: 'Legs', muscles: ['quads', 'hamstrings', 'glutes', 'calves'] },
+    thu: { label: 'Chest and back', muscles: ['chest', 'back'] },
+    fri: { label: 'Shoulders and arms', muscles: ['shoulders', 'biceps', 'triceps'] },
+    sat: { label: 'Legs', muscles: ['quads', 'hamstrings', 'glutes', 'calves'] },
+  } },
 };
 
 /**

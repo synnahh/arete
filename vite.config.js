@@ -2,6 +2,7 @@ import { defineConfig } from "vite";
 import react from "@vitejs/plugin-react";
 import { VitePWA } from "vite-plugin-pwa";
 import { readFileSync } from "fs";
+import { fileURLToPath } from "url";
 
 const host     = process.env.TAURI_DEV_HOST;
 const isPWA    = process.env.BUILD_TARGET === "pwa";
@@ -13,12 +14,14 @@ export default defineConfig(async () => ({
 
     // PWA plugin — only active when building for Firebase Hosting
     ...(isPWA ? [VitePWA({
-      registerType: "autoUpdate",
+      registerType: "prompt",       // a new version waits for you to tap Reload, so it never replaces the app under unsaved work
       includeAssets: ["assets/icon-192.png", "assets/icon-512.png"],
       manifest: {
         name: "Arete",
         short_name: "Arete",
-        description: "Your personal AI assistant — health, tasks, finance & focus",
+        id: "/",
+        description: "Arete: your training, nutrition, skin and looks, in one place",
+        categories: ["health", "fitness", "lifestyle"],
         theme_color: "#080808",
         background_color: "#080808",
         display: "standalone",
@@ -30,13 +33,19 @@ export default defineConfig(async () => ({
             src: "/assets/icon-192.png",
             sizes: "192x192",
             type: "image/png",
-            purpose: "any maskable",
+            purpose: "any",
           },
           {
             src: "/assets/icon-512.png",
             sizes: "512x512",
             type: "image/png",
-            purpose: "any maskable",
+            purpose: "any",
+          },
+          {
+            src: "/assets/icon-512.png",
+            sizes: "512x512",
+            type: "image/png",
+            purpose: "maskable",
           },
         ],
       },
@@ -104,6 +113,11 @@ export default defineConfig(async () => ({
   define: {
     __BUILD_TARGET__:  JSON.stringify(isPWA ? "pwa" : "tauri"),
     __APP_VERSION__:   JSON.stringify(pkg.version),
+  },
+
+  // Builds without a service worker (Tauri desktop, dev server) get a no-op stand-in for the PWA register module.
+  resolve: {
+    alias: isPWA ? {} : { "virtual:pwa-register": fileURLToPath(new URL("./src/utils/pwaRegisterStub.js", import.meta.url)) },
   },
 
   clearScreen: false,

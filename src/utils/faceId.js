@@ -6,6 +6,7 @@
 
 const KEY = 'arete_faceid_cred';
 const DECLINED = 'arete_faceid_declined';
+const OFFERED = 'arete_faceid_offered';
 
 const read = (k) => { try { return localStorage.getItem(k); } catch { return null; } };
 const write = (k, v) => { try { v == null ? localStorage.removeItem(k) : localStorage.setItem(k, v); } catch { /* storage blocked */ } };
@@ -29,8 +30,11 @@ export async function biometricAvailable() {
 
 export const faceIdEnabled = () => !!read(KEY);
 export const faceIdDeclined = () => read(DECLINED) === '1';
+/** The PIN screen offers Face ID once per device, whatever happens. After that it lives in Settings > Security. */
+export const faceIdOffered = () => read(OFFERED) === '1';
+export const markFaceIdOffered = () => write(OFFERED, '1');
 export const declineFaceId = () => write(DECLINED, '1');
-export const forgetFaceId = () => { write(KEY, null); write(DECLINED, null); };
+export const forgetFaceId = () => { write(KEY, null); write(DECLINED, null); write(OFFERED, '1'); };   // turning it off never makes the gate ask again
 
 /** Plain-words reason for a failed attempt, from the error the browser raised. */
 export function explainFaceIdError(e, label = 'Face ID') {

@@ -6,6 +6,7 @@
 import { supabase } from '../supabase/supabase.js';
 import { storage, STORAGE_KEYS } from './storage.js';
 import { settingsForSync, stripLegacyClaudeKeys } from './settingsSecurity.js';
+import { hasPendingDoc, flushDocs } from '../supabase/docQueue.js';
 
 const stable = (v) => JSON.stringify(v, (_k, x) => (x && typeof x === 'object' && !Array.isArray(x)
   ? Object.fromEntries(Object.keys(x).sort().map(k => [k, x[k]])) : x));
@@ -30,6 +31,7 @@ export function startSettingsSync(userId, onApplied) {
   let alive = true;
   const apply = (remote) => {
     if (!alive) return;
+    if (hasPendingDoc('settings')) { flushDocs(); return; }   // a change made offline is newer than what the server has
     const merged = mergeRemoteSettings(storage.get(STORAGE_KEYS.SETTINGS, {}), remote);
     if (!merged) return;
     storage.set(STORAGE_KEYS.SETTINGS, merged);

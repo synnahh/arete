@@ -282,12 +282,20 @@ html[data-tab-colours="per-tab"][data-group="plan"]    { --tab-accent: #6FA8F2; 
 html[data-tab-colours="per-tab"][data-group="coach"]   { --tab-accent: #F2784B; }
 html[data-tab-colours="per-tab"][data-group="mind"]    { --tab-accent: #A98FF2; }
 html[data-tab-colours="per-tab"][data-group="finance"] { --tab-accent: #52CC9C; }
+html[data-tab-colours="per-tab"][data-group="train"]   { --tab-accent: #F2784B; }
+html[data-tab-colours="per-tab"][data-group="eat"]     { --tab-accent: #52CC9C; }
+html[data-tab-colours="per-tab"][data-group="look"]    { --tab-accent: #A98FF2; }
+html[data-tab-colours="per-tab"][data-group="results"] { --tab-accent: #6FA8F2; }
 html[data-theme="arctic"] { --on-tab-accent: #ffffff; }
 html[data-theme="arctic"][data-tab-colours="per-tab"][data-group="home"]    { --tab-accent: #9A6B1F; }
 html[data-theme="arctic"][data-tab-colours="per-tab"][data-group="plan"]    { --tab-accent: #2F6FC4; }
 html[data-theme="arctic"][data-tab-colours="per-tab"][data-group="coach"]   { --tab-accent: #C24E22; }
 html[data-theme="arctic"][data-tab-colours="per-tab"][data-group="mind"]    { --tab-accent: #6B4FCB; }
 html[data-theme="arctic"][data-tab-colours="per-tab"][data-group="finance"] { --tab-accent: #1F8A5F; }
+html[data-theme="arctic"][data-tab-colours="per-tab"][data-group="train"]   { --tab-accent: #C24E22; }
+html[data-theme="arctic"][data-tab-colours="per-tab"][data-group="eat"]     { --tab-accent: #1F8A5F; }
+html[data-theme="arctic"][data-tab-colours="per-tab"][data-group="look"]    { --tab-accent: #6B4FCB; }
+html[data-theme="arctic"][data-tab-colours="per-tab"][data-group="results"] { --tab-accent: #2F6FC4; }
 
 /* Screen titles use the display face; live numbers use tabular mono. */
 h1, h2, .val-title { font-family: var(--font-display); letter-spacing: 0.02em; }
@@ -509,9 +517,10 @@ html[data-motion="reduced"] .bg-animated::before { animation: none !important; }
 :root {
   --grp-home: var(--accent-solid); --grp-plan: var(--accent-solid); --grp-coach: var(--accent-solid);
   --grp-mind: var(--accent-solid); --grp-finance: var(--accent-solid); --grp-settings: var(--accent-solid);
+  --grp-train: var(--accent-solid); --grp-eat: var(--accent-solid); --grp-look: var(--accent-solid); --grp-results: var(--accent-solid);
 }
-html[data-tab-colours="per-tab"] { --grp-home: #D8B26E; --grp-plan: #6FA8F2; --grp-coach: #F2784B; --grp-mind: #A98FF2; --grp-finance: #52CC9C; }
-html[data-theme="arctic"][data-tab-colours="per-tab"] { --grp-home: #9A6B1F; --grp-plan: #2F6FC4; --grp-coach: #C24E22; --grp-mind: #6B4FCB; --grp-finance: #1F8A5F; }
+html[data-tab-colours="per-tab"] { --grp-home: #D8B26E; --grp-plan: #6FA8F2; --grp-coach: #F2784B; --grp-mind: #A98FF2; --grp-finance: #52CC9C; --grp-train: #F2784B; --grp-eat: #52CC9C; --grp-look: #A98FF2; --grp-results: #6FA8F2; }
+html[data-theme="arctic"][data-tab-colours="per-tab"] { --grp-home: #9A6B1F; --grp-plan: #2F6FC4; --grp-coach: #C24E22; --grp-mind: #6B4FCB; --grp-finance: #1F8A5F; --grp-train: #C24E22; --grp-eat: #1F8A5F; --grp-look: #6B4FCB; --grp-results: #2F6FC4; }
 .dock {
   position: fixed; left: 50%; bottom: 14px; z-index: 800; transform: translateX(-50%);
   display: flex; align-items: center; gap: 4px; padding: 7px 9px; border-radius: 22px;
@@ -531,6 +540,8 @@ html[data-theme="arctic"][data-tab-colours="per-tab"] { --grp-home: #9A6B1F; --g
 .dock-item[data-tint="home"] { --t: var(--grp-home); } .dock-item[data-tint="plan"] { --t: var(--grp-plan); }
 .dock-item[data-tint="coach"] { --t: var(--grp-coach); } .dock-item[data-tint="mind"] { --t: var(--grp-mind); }
 .dock-item[data-tint="finance"] { --t: var(--grp-finance); } .dock-item[data-tint="settings"] { --t: var(--grp-settings); }
+.dock-item[data-tint="train"] { --t: var(--grp-train); } .dock-item[data-tint="eat"] { --t: var(--grp-eat); }
+.dock-item[data-tint="look"] { --t: var(--grp-look); } .dock-item[data-tint="results"] { --t: var(--grp-results); }
 .dock-item:hover, .dock-item:focus-visible { transform: translateY(-4px) scale(1.1); color: var(--t); outline: none; }
 .dock-item:focus-visible { box-shadow: 0 0 0 2px var(--t); }
 .dock-item.is-active { color: var(--t); background: color-mix(in srgb, var(--t) 16%, transparent); }

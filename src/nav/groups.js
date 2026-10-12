@@ -1,36 +1,38 @@
-// groups.js — Arete navigation: five groups laid over Valerie's existing screens.
+// groups.js — Arete navigation: six groups for a gym and looks app (Home, Train, Fuel, Look, Progress, Profile).
 //
 // Screen ids are unchanged ('workout', 'tasks', ...), so AI navigate actions,
 // the command palette, nudges, hidden-tab settings and saved sidebar order all
 // keep working. A group is only a way of showing those screens together.
 
 export const GROUPS = [
-  { id: 'home',     label: 'Home',     desc: 'Today at a glance',                 screens: ['dashboard'] },
-  { id: 'plan',     label: 'Plan',     desc: 'Tasks · Calendar · Routines · Supplies · Notes', screens: ['agenda', 'tasks', 'calendar', 'routines', 'focus', 'progress', 'essentials', 'places', 'notes', 'lists'] },
-  { id: 'coach',    label: 'Coach',    desc: 'Goal · Train · Fuel · Recover · Look · Body · Habits', screens: ['coachtoday', 'goal', 'workout', 'fuel', 'recover', 'lm', 'body', 'habits', 'style', 'insights'] },
-  { id: 'finance',  label: 'Finance',  desc: 'Money · Portfolio',                 screens: ['moneytoday', 'finance', 'portfolio'] },
-  { id: 'settings', label: 'Settings', desc: 'Profile · Settings · Vault',                  screens: ['profile', 'settings', 'vault'] },
+  { id: 'home',     label: 'Home',     desc: 'Today at a glance',                          screens: ['dashboard'] },
+  { id: 'train',    label: 'Train',    desc: 'Your session, split and exercises',      screens: ['workout'] },
+  { id: 'eat',      label: 'Fuel',     desc: 'Meals, water, supplements and supplies',     screens: ['fuel', 'essentials'] },
+  { id: 'look',     label: 'Look',     desc: 'Skin, hair, grooming and style',             screens: ['lm', 'style'] },
+  { id: 'results',  label: 'Progress', desc: 'Weight, photos, goal, sleep, habits',        screens: ['body', 'goal', 'recover', 'habits', 'insights'] },
+  { id: 'settings', label: 'Profile',  desc: 'Profile and settings',                        screens: ['profile', 'settings'] },
 ];
 
 // Section labels inside a group. Screens keep their ids; only the label changes.
 export const SCREEN_LABELS = {
   dashboard: 'Today',
-  agenda: 'Agenda', coachtoday: 'Today', moneytoday: 'Overview', mindtoday: 'Today',      tasks: 'Tasks',        calendar: 'Calendar',  routines: 'Routines', focus: 'Focus',
-  progress: 'Progress',  essentials: 'Supplies', places: 'Places',
-  goal: 'Goal HQ',       workout: 'Train',      fuel: 'Fuel',         recover: 'Recover',
-  lm: 'Look',            body: 'Body',          habits: 'Habits',     style: 'Style',     insights: 'Insights',
-  notes: 'Notes',        lists: 'Lists',
-  finance: 'Money',      portfolio: 'Portfolio',
-  profile: 'Profile',    settings: 'Settings',  vault: 'Vault',
+  workout: 'Train', essentials: 'Supplies', fuel: 'Fuel', lm: 'Look', style: 'Style',
+  body: 'Body', goal: 'Goal', recover: 'Sleep', habits: 'Habits', insights: 'Insights',
+  profile: 'Profile', settings: 'Settings',
 };
 
 export const DEFAULT_SCREEN = 'dashboard';
 
-// Old ids that now open a newer screen. Health was split across Coach;
-// its overview lives on Goal HQ.
-// The assistant screen was removed; old links open Home.
-// The Mind tab was removed (its Notes and Lists moved to Plan); old Mind links open Notes.
-export const SCREEN_ALIASES = { health: 'goal', assistant: 'dashboard', mind: 'notes', mindtoday: 'notes' };
+// Old ids that now open a newer screen. This is a gym and looks app: tasks, calendar, notes, money,
+// focus and the mind screens were taken out of the menus (their saved data is untouched). Any old
+// link, notification or saved "last screen" for them opens Home instead of a blank page.
+export const SCREEN_ALIASES = {
+  health: 'goal', assistant: 'dashboard',
+  coachtoday: 'dashboard', agenda: 'dashboard', tasks: 'dashboard', calendar: 'dashboard', routines: 'dashboard', focus: 'dashboard',
+  progress: 'dashboard', places: 'dashboard', notes: 'dashboard', lists: 'dashboard',
+  finance: 'dashboard', moneytoday: 'dashboard', portfolio: 'dashboard', vault: 'dashboard', mind: 'dashboard', mindtoday: 'dashboard',
+  plan: 'dashboard', coach: 'workout',
+};
 
 // Settings can never be hidden, or there would be no way to unhide anything.
 const NEVER_HIDDEN = new Set(['settings']);

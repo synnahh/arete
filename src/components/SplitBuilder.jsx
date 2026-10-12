@@ -132,7 +132,7 @@ export default function SplitBuilder({ programs, addProgram, updateProgram, remo
               <div role="group" aria-label="Template" style={{ display: 'flex', gap: 6, flexWrap: 'wrap' }}>
                 {choices.map(id => {
                   const t = TEMPLATES[id];
-                  return <button key={id} type="button" aria-pressed={template === id} onClick={() => setTemplate(id)} style={{ ...btn(false), borderColor: template === id ? 'var(--accent)' : undefined, color: template === id ? 'var(--accent)' : undefined }}>{t.label}</button>;
+                  return <button key={id} type="button" aria-pressed={template === id} onClick={() => setTemplate(id)} style={{ ...btn(false), borderColor: template === id ? 'var(--accent)' : undefined, color: template === id ? 'var(--accent)' : undefined }}>{t.label}{t.trainDays ? ' - ' + t.trainDays + ' days' : ''}</button>;
                 })}
               </div>
               <div style={{ fontSize: 12.5, color: 'var(--text-secondary)' }}>{TEMPLATES[template].note}{TEMPLATES[template].levels.length < 3 ? ` Best for ${TEMPLATES[template].levels.join(' and ')}.` : ''} The days are filled from the exercises in your library, and every day stays editable.</div>

@@ -46,3 +46,17 @@ describe('Face ID enable', () => {
     expect(f.explainFaceIdError({ name: 'WeirdError' })).toMatch(/WeirdError/);
   });
 });
+
+describe('Face ID is offered once per device', () => {
+  it('after it has been offered the gate never asks again, even after turning it off', async () => {
+    setup(async () => ({ rawId: new Uint8Array([1]).buffer }));
+    const f = await import('./faceId.js');
+    expect(f.faceIdOffered()).toBe(false);
+    f.markFaceIdOffered();
+    expect(f.faceIdOffered()).toBe(true);
+    await f.enableFaceIdDetailed();
+    f.forgetFaceId();
+    expect(f.faceIdEnabled()).toBe(false);
+    expect(f.faceIdOffered()).toBe(true);
+  });
+});

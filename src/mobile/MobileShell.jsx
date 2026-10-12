@@ -5,26 +5,20 @@ import { usePeakState }       from '../hooks/usePeakState.js';
 import { useNotifications }   from '../hooks/useNotifications.js';
 import { requestPushPermission, pushPermissionStatus, registerFCMToken } from '../utils/pushNotifications.js';
 import { isInstalledPWA }     from '../utils/platform.js';
-import MobileDashboard  from './screens/MobileDashboard.jsx';
 import MobileHealth     from './screens/MobileHealth.jsx';
-import { TasksScreen, PlaceholderScreen } from './screens/MobileMore.jsx';
-import MobileNotes from './screens/MobileNotes.jsx';
+import { PlaceholderScreen } from './screens/MobileMore.jsx';
+import Essentials       from '../tabs/Essentials.jsx';
+import HomeScreen       from '../components/HomeScreen.jsx';
 import Profile from '../tabs/Profile.jsx';
 import WorkoutTab from '../tabs/Workout.jsx';
 import MobileLM         from './screens/MobileLM.jsx';
 import GoalHQ           from '../tabs/GoalHQ.jsx';
-import MobileFinance    from './screens/MobileFinance.jsx';
 import MobileSettings   from './screens/MobileSettings.jsx';
-import MobileMind       from './screens/MobileMind.jsx';
-import MobilePortfolio  from './screens/MobilePortfolio.jsx';
 import MobileHabits     from './screens/MobileHabits.jsx';
 import Toaster          from '../components/Toaster.jsx';
+import SyncBanner       from '../components/SyncBanner.jsx';
 import MobileStyle      from './screens/MobileStyle.jsx';
 import Insights         from '../tabs/Insights.jsx';
-import PlanToday        from '../tabs/PlanToday.jsx';
-import CoachToday       from '../tabs/CoachToday.jsx';
-import MoneyToday       from '../tabs/MoneyToday.jsx';
-import MindToday        from '../tabs/MindToday.jsx';
 import { haptics, installTapHaptics } from './utils/haptics.js';
 import { storage, STORAGE_KEYS } from '../utils/storage.js';
 import SectionBar      from '../components/SectionBar.jsx';
@@ -32,7 +26,7 @@ import { groupOf, groupScreens, resolveTarget, DEFAULT_SCREEN, SCREEN_LABELS } f
 import { setActiveGroup, backgroundClass } from '../styles/appearance.js';
 import { getTimeOfDay } from '../utils/time.js';
 
-//  Bottom bar: Home · Plan · Coach · Finance · Mind
+//  Bottom bar: Home · Train · Fuel · Look · Progress
 // Settings opens from the gear in the section row. Screen ids are unchanged;
 // see src/nav/groups.js.
 const stroke = (active) => ({ stroke: 'currentColor', strokeWidth: active ? 2 : 1.5 });
@@ -49,20 +43,9 @@ const BAR = [
     ),
   },
   {
-    id: 'plan',
-    label: 'Plan',
-    icon: (active) => (
-      <svg width="22" height="22" viewBox="0 0 24 24" fill="none" aria-hidden="true">
-        <rect x="3.5" y="5" width="17" height="15.5" rx="2.5"
-          {...stroke(active)} fill={active ? 'currentColor' : 'none'} fillOpacity={active ? 0.12 : 0} />
-        <path d="M3.5 10h17M8 3v4M16 3v4" {...stroke(active)} strokeLinecap="round"/>
-      </svg>
-    ),
-  },
-  {
-    id: 'coach',
-    label: 'Coach',
-    // Same bar-and-plates mark as the desktop sidebar's Coach group.
+    id: 'train',
+    label: 'Train',
+    // Bar and plates.
     icon: (active) => (
       <svg width="22" height="22" viewBox="0 0 24 24" fill="none" aria-hidden="true">
         <path d="M7 7v10M17 7v10M4 9.5v5M20 9.5v5M7 12h10" {...stroke(active)} strokeLinecap="round" />
@@ -70,14 +53,35 @@ const BAR = [
     ),
   },
   {
-    id: 'finance',
-    label: 'Finance',
+    id: 'eat',
+    label: 'Fuel',
+    // An apple with a leaf.
     icon: (active) => (
       <svg width="22" height="22" viewBox="0 0 24 24" fill="none" aria-hidden="true">
-        <rect x="2" y="5" width="20" height="14" rx="3"
-          {...stroke(active)} fill={active ? 'currentColor' : 'none'} fillOpacity={active ? 0.1 : 0} />
-        <path d="M2 10h20" {...stroke(active)} />
-        <path d="M6 15h3M15 15h3" {...stroke(active)} strokeLinecap="round" />
+        <path d="M12 8.2c-1.6-1.4-5.5-1.3-6.5 2.1-1 3.5 1.3 8.7 4 9.7 1 .4 1.6-.2 2.5-.2s1.5.6 2.5.2c2.7-1 5-6.2 4-9.7-1-3.4-4.9-3.5-6.5-2.1z"
+          {...stroke(active)} fill={active ? 'currentColor' : 'none'} fillOpacity={active ? 0.15 : 0} strokeLinejoin="round" />
+        <path d="M12 8.2c0-2 1-3.4 2.8-4.2" {...stroke(active)} strokeLinecap="round" />
+      </svg>
+    ),
+  },
+  {
+    id: 'look',
+    label: 'Look',
+    // An eye.
+    icon: (active) => (
+      <svg width="22" height="22" viewBox="0 0 24 24" fill="none" aria-hidden="true">
+        <path d="M2.5 12S6 6 12 6s9.5 6 9.5 6-3.5 6-9.5 6-9.5-6-9.5-6z" {...stroke(active)} strokeLinejoin="round" />
+        <circle cx="12" cy="12" r="2.8" {...stroke(active)} fill={active ? 'currentColor' : 'none'} fillOpacity={active ? 0.2 : 0} />
+      </svg>
+    ),
+  },
+  {
+    id: 'results',
+    label: 'Progress',
+    // Rising columns.
+    icon: (active) => (
+      <svg width="22" height="22" viewBox="0 0 24 24" fill="none" aria-hidden="true">
+        <path d="M4 19.5h16M6.5 16v-4M11 16V8M15.5 16v-6M20 16V5" {...stroke(active)} strokeLinecap="round" />
       </svg>
     ),
   },
@@ -124,25 +128,17 @@ function usePullToRefresh(scrollRef, onRefresh) {
 //  Screens available on the phone, by screen id. Screens without a mobile
 //  version yet keep the existing "available on desktop" placeholder.
 const MOBILE_SCREENS = {
-  dashboard: (p) => <MobileDashboard {...p} />,
-  tasks:     ()  => <TasksScreen />,
-  notes:     ()  => <MobileNotes />,
+  dashboard: (p) => <HomeScreen {...p} compact />,
   goal:      (p) => <GoalHQ {...p} compact overview={<MobileHealth {...p} tabs={['Overview']} title={null} />} />,
   workout:   (p) => <WorkoutTab settings={p.settings} compact />,
   fuel:      (p) => <MobileHealth {...p} tabs={['Nutrition', 'Water']} title={null} />,
+  essentials:()  => <Essentials />,
   recover:   (p) => <MobileHealth {...p} tabs={['Sleep']} title={null} />,
   body:      (p) => <MobileHealth {...p} tabs={['Body']} title={null} />,
   habits:    ()  => <MobileHabits />,
   style:     (p) => <MobileStyle {...p} />,
   insights:  ()  => <Insights />,
-  mindtoday: (p) => <MindToday compact onTabChange={p.onTabChange} />,
-  moneytoday:(p) => <MoneyToday compact onTabChange={p.onTabChange} />,
-  coachtoday:(p) => <CoachToday compact onTabChange={p.onTabChange} />,
-  agenda:    (p) => <PlanToday compact onTabChange={p.onTabChange} />,
   lm:        ()  => <MobileLM />,
-  mind:      (p) => <MobileMind {...p} />,
-  finance:   (p) => <MobileFinance {...p} />,
-  portfolio: (p) => <MobilePortfolio {...p} />,
   profile:   (p) => <Profile settings={p.settings} />,
   settings:  (p) => <MobileSettings {...p} />,
 };
@@ -227,6 +223,8 @@ export default function MobileShell({ settings, onSettingsChange }) {
           to { transform: rotate(360deg); }
         }
       `}</style>
+
+      <SyncBanner />
 
       {/*  Section row: this group's screens + Settings  */}
       <div style={{ display: 'flex', alignItems: 'center', flexShrink: 0 }}>

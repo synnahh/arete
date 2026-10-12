@@ -16,27 +16,17 @@ const toast = (message, type = 'success') =>
 function buildStaticCommands(onTabChange) {
   return [
     // Navigation
-    { id: 'nav-dashboard',  label: 'Go to Dashboard',   category: 'Navigate', icon: 'home', action: () => onTabChange('dashboard')  },
-    { id: 'nav-tasks',      label: 'Go to Tasks',       category: 'Navigate', icon: 'tasks',  action: () => onTabChange('tasks')      },
-    { id: 'nav-calendar',   label: 'Go to Calendar',    category: 'Navigate', icon: 'calendar', action: () => onTabChange('calendar')   },
-    { id: 'nav-notes',      label: 'Go to Notes',       category: 'Navigate', icon: 'notes', action: () => onTabChange('notes')      },
-    { id: 'nav-health',     label: 'Go to Coach',       category: 'Navigate', icon: 'coach', action: () => onTabChange('coach')      },
-    { id: 'nav-goal',       label: 'Go to Goal HQ',     category: 'Navigate', icon: 'goal', action: () => onTabChange('goal')       },
-    { id: 'nav-finance',    label: 'Go to Finance',     category: 'Navigate', icon: 'finance', action: () => onTabChange('finance')    },
-    { id: 'nav-progress',   label: 'Go to Progress',    category: 'Navigate', icon: 'progress', action: () => onTabChange('progress')   },
-    { id: 'nav-style',      label: 'Go to Style',       category: 'Navigate', icon: 'style', action: () => onTabChange('style')      },
+    { id: 'nav-home',       label: 'Go to Home',        category: 'Navigate', icon: 'home', action: () => onTabChange('dashboard')  },
+    { id: 'nav-train',      label: 'Go to Train',       category: 'Navigate', icon: 'coach', action: () => onTabChange('train')      },
+    { id: 'nav-fuel',       label: 'Go to Fuel',        category: 'Navigate', icon: 'water', action: () => onTabChange('eat')        },
+    { id: 'nav-look',       label: 'Go to Look',        category: 'Navigate', icon: 'style', action: () => onTabChange('look')       },
+    { id: 'nav-progress',   label: 'Go to Progress',    category: 'Navigate', icon: 'progress', action: () => onTabChange('results') },
+    { id: 'nav-goal',       label: 'Go to Goal',        category: 'Navigate', icon: 'goal', action: () => onTabChange('goal')       },
     { id: 'nav-essentials', label: 'Go to Supplies',    category: 'Navigate', icon: 'essentials', action: () => onTabChange('essentials') },
-    { id: 'nav-lists',      label: 'Go to Lists',       category: 'Navigate', icon: 'lists', action: () => onTabChange('lists')      },
-    { id: 'nav-focus',      label: 'Go to Focus',       category: 'Navigate', icon: 'focus', action: () => onTabChange('focus')      },
-    { id: 'nav-vault',      label: 'Go to Vault',       category: 'Navigate', icon: 'vault', action: () => onTabChange('vault')      },
     { id: 'nav-settings',   label: 'Go to Settings',    category: 'Navigate', icon: 'settings', action: () => onTabChange('settings')  },
 
     // Actions
-    { id: 'action-focus',   label: 'Start focus session',     category: 'Action', icon: 'focus', action: () => onTabChange('focus')                                                                  },
-    { id: 'action-mood',    label: 'Log mood',                category: 'Action', icon: 'mood', action: () => { onTabChange('progress'); }                                                          },
-    { id: 'action-water',   label: 'Log water',               category: 'Action', icon: 'water', action: () => { onTabChange(screenForHealthSection('water')); }                                                          },
-    { id: 'action-weekly',  label: 'Weekly Review (whole life)', category: 'Action', icon: 'review', action: () => window.dispatchEvent(new CustomEvent('valerie:weekly-review')) },
-    { id: 'action-today',   label: "Today — everything due today", category: 'Action', icon: 'today', action: () => window.dispatchEvent(new CustomEvent('valerie:today')) },
+    { id: 'action-water',   label: 'Log water',               category: 'Action', icon: 'water', action: () => { onTabChange(screenForHealthSection('water')); } },
 
     // Data backup / restore
     { id: 'data-export', label: 'Export all data (backup)', category: 'Data', icon: 'download', action: () => { const n = exportBackup(); toast(`Backup downloaded — ${n} keys saved`); } },

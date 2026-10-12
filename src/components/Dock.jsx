@@ -5,6 +5,7 @@
 import { useMemo, useState } from 'react';
 import { useNextMoves } from '../hooks/useNextMoves.js';
 import { groupOf } from '../nav/groups.js';
+import { useSyncState } from '../hooks/useSyncState.js';
 
 // 24x24 line glyphs. Each is a single path string so it can sit in <path d>.
 export const GREEK_GLYPHS = {
@@ -18,6 +19,14 @@ export const GREEK_GLYPHS = {
   mind:    'M7 4v8a5 5 0 0 0 10 0V4 M6 5.5h12 M10 5.5v10 M12 5.5v10 M14 5.5v10 M9 20h6 M12 17v3',
   // Coin: rim, inner ring, and the letter A.
   finance: 'M12 3.5a8.5 8.5 0 1 0 0 17 8.5 8.5 0 1 0 0-17z M12 6.5a5.5 5.5 0 1 0 0 11 5.5 5.5 0 1 0 0-11z M9.5 15l2.5-6 2.5 6 M10.4 13h3.2',
+  // Laurel again for training: the winner's wreath.
+  train:   'M12 20.5C7 20 4 15.5 5.5 7.5 M12 20.5C17 20 20 15.5 18.5 7.5 M9 19.6Q8.8 17 6.3 16.2Q6.5 18.8 9 19.6z M15 19.6Q15.2 17 17.7 16.2Q17.5 18.8 15 19.6z M6.7 17.4Q6.5 14.8 4 14Q4.2 16.6 6.7 17.4z M17.3 17.4Q17.5 14.8 20 14Q19.8 16.6 17.3 17.4z',
+  // Amphora: food and drink.
+  eat:     'M9 3.5h6 M10 3.5v3.2C7.5 8 6.5 10 6.5 12.5c0 3.5 2.5 6 5.5 6s5.5-2.5 5.5-6c0-2.5-1-4.5-3.5-5.8V3.5 M9 20.5h6',
+  // Eye: how you look.
+  look:    'M2.5 12S6 6 12 6s9.5 6 9.5 6-3.5 6-9.5 6-9.5-6-9.5-6z M12 9.2a2.8 2.8 0 1 0 0 5.6 2.8 2.8 0 1 0 0-5.6z',
+  // Rising columns: progress.
+  results: 'M4 19.5h16 M6.5 16v-4 M11 16V8 M15.5 16v-6 M20 16V5',
   // Meander (Greek key) spiral.
   settings: 'M4 20V4h16v16H8V8h8v8',
 };
@@ -41,8 +50,9 @@ function Item({ id, label, desc, active, onClick, glyph, tint, due = 0 }) {
 
 function Status({ internetOnline, synced }) {
   const [open, setOpen] = useState(false);
-  const colour = !internetOnline ? '#e55a5a' : synced ? '#4caf7d' : '#f4a642';
-  const text = !internetOnline ? 'Offline' : synced ? 'Online · synced' : 'Online · connecting';
+  const { pending } = useSyncState();
+  const colour = !internetOnline ? '#e55a5a' : pending > 0 ? '#f4a642' : synced ? '#4caf7d' : '#f4a642';
+  const text = !internetOnline ? `Offline${pending ? ` · ${pending} change${pending === 1 ? '' : 's'} saved here, waiting` : ''}` : pending > 0 ? `Online · syncing ${pending} change${pending === 1 ? '' : 's'}` : synced ? 'Online · synced' : 'Online · connecting';
   return (
     <button type="button" className="dock-status" aria-label={`Connection: ${text}`}
       onMouseEnter={() => setOpen(true)} onMouseLeave={() => setOpen(false)} onFocus={() => setOpen(true)} onBlur={() => setOpen(false)}>

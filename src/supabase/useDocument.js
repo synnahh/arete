@@ -7,6 +7,8 @@
 import { useState, useEffect, useCallback, useRef } from 'react';
 import { supabase, getUserId } from './supabase.js';
 import { storage } from '../utils/storage.js';
+import { queueDoc, hasPendingDoc, flushDocs } from './docQueue.js';
+import { isRetryable } from './writeQueue.js';
 
 const toast = (message) => {
   try {
@@ -40,6 +42,8 @@ export function useDocument(docId, storageKey, defaultValue = null) {
       if (!alive) return;
       if (error) {
         console.warn(`[useDocument/${docId}] fetch failed:`, error.message);
+      } else if (hasPendingDoc(docId)) {
+        flushDocs();                       // an edit made offline is newer than the server copy: send it, do not overwrite it
       } else if (rows?.value) {
         setData(rows.value);
         storage.set(storageKey, rows.value);
@@ -80,13 +84,20 @@ export function useDocument(docId, storageKey, defaultValue = null) {
       return false;
     }
 
-    const { error } = await supabase
-      .from('user_meta')
-      .upsert({ user_id: userId, key: docId, value: newData }, { onConflict: 'user_id,key' });
+    let res;
+    try {
+      res = await supabase.from('user_meta').upsert({ user_id: userId, key: docId, value: newData }, { onConflict: 'user_id,key' });
+    } catch (e) { res = { error: { message: String(e?.message || e) }, status: 0 }; }
 
-    if (error) {
-      console.error(`[VALERIE data] save failed on "${docId}":`, error.message);
-      toast(`⚠️ Couldn't sync "${docId}" — ${error.message}`);
+    if (res?.error) {
+      // No signal: keep the newest value and send it when the connection is back, rather than lose it.
+      if (isRetryable(res)) {
+        queueDoc(docId, newData);
+        window.dispatchEvent(new CustomEvent('valerie:toast', { detail: { message: 'Saved on this phone. It will sync when you are back online.', type: 'info' } }));
+        return true;
+      }
+      console.error(`[VALERIE data] save failed on "${docId}":`, res.error.message);
+      toast(`⚠️ Couldn't sync "${docId}" — ${res.error.message}`);
       return false;
     }
     return true;

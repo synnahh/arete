@@ -3,7 +3,7 @@
 import { useState, useEffect, useCallback, useRef } from 'react';
 import AreteLogo from './AreteLogo.jsx';
 import { applyTheme } from '../styles/themes.js';
-import { biometricAvailable, biometricLabel, faceIdEnabled, faceIdDeclined, declineFaceId, enableFaceIdDetailed, unlockWithFaceId, forgetFaceId } from '../utils/faceId.js';
+import { biometricAvailable, biometricLabel, faceIdEnabled, faceIdOffered, markFaceIdOffered, enableFaceIdDetailed, unlockWithFaceId, forgetFaceId } from '../utils/faceId.js';
 
 applyTheme('obsidian');
 
@@ -41,7 +41,7 @@ export default function PinGate({ onUnlock }) {
   useEffect(() => {
     if (entry.length < LEN) return;
     if (entry === PIN) {
-      if (bioReady && !faceIdEnabled() && !faceIdDeclined()) setOffer(true);
+      if (bioReady && !faceIdEnabled() && !faceIdOffered()) { markFaceIdOffered(); setOffer(true); }   // asked once, then never again
       else onUnlock();
     } else {
       setError(true);
@@ -158,7 +158,8 @@ export default function PinGate({ onUnlock }) {
               style={{ ...linkSx, fontSize: 15, padding: '12px 28px', border: '0.5px solid rgba(167,139,250,0.6)', borderRadius: 12 }}
             >{offerError ? `Try ${label} again` : `Turn on ${label}`}</button>
             {offerError && <div role="alert" style={{ maxWidth: 280, textAlign: 'center', fontSize: 12.5, lineHeight: 1.45, color: '#e8a13a' }}>{offerError}</div>}
-            <button onClick={() => { if (!offerError) declineFaceId(); onUnlock(); }} style={linkSx}>{offerError ? 'Skip for now' : 'Not now'}</button>
+            <button onClick={() => onUnlock()} style={linkSx}>{offerError ? 'Skip' : 'Not now'}</button>
+            <div style={{ maxWidth: 280, textAlign: 'center', fontSize: 11.5, lineHeight: 1.45, color: 'var(--text-muted)' }}>This is the only time Arete asks. You can turn it on later in Settings &gt; Security.</div>
           </div>
         )}
       </div>

@@ -22,46 +22,24 @@ import PinGate                   from './components/PinGate.jsx';
 import LoadingScreen              from './components/LoadingScreen.jsx';
 import SignIn                    from './components/SignIn.jsx';
 import Sidebar                   from './components/Sidebar.jsx';
-import QuickCapture              from './components/QuickCapture.jsx';
 import CommandPalette            from './components/CommandPalette.jsx';
 import SectionBar                from './components/SectionBar.jsx';
 import { groupOf, groupScreens, resolveTarget, DEFAULT_SCREEN } from './nav/groups.js';
 
 // ─── Tab imports ──────────────────────────────────────────────────────────────
-import Dashboard  from './tabs/Dashboard.jsx';
-import Tasks      from './tabs/Tasks.jsx';
-import Calendar   from './tabs/Calendar.jsx';
-import Notes      from './tabs/Notes.jsx';
 import { Goal, Fuel, Recover, Body, Habits } from './tabs/Coach.jsx';
 import Workout    from './tabs/Workout.jsx';
-import Finance    from './tabs/Finance.jsx';
-import Portfolio  from './tabs/Portfolio.jsx';
-import Progress   from './tabs/Progress.jsx';
 import Style      from './tabs/Style.jsx';
+import HomeScreen  from './components/HomeScreen.jsx';
 import Essentials from './tabs/Essentials.jsx';
-import Lists      from './tabs/Lists.jsx';
-import Focus      from './tabs/Focus.jsx';
-import Vault      from './tabs/Vault.jsx';
 import Settings   from './tabs/Settings.jsx';
 import Profile    from './tabs/Profile.jsx';
-import Places     from './tabs/Places.jsx';
-import Routines   from './tabs/Routines.jsx';
-import Mind       from './tabs/Mind.jsx';
 import Insights   from './tabs/Insights.jsx';
-import PlanToday  from './tabs/PlanToday.jsx';
-import CoachToday from './tabs/CoachToday.jsx';
-import MoneyToday from './tabs/MoneyToday.jsx';
-import MindToday  from './tabs/MindToday.jsx';
 import LM         from './tabs/LM.jsx';
 import NudgeStack from './components/NudgeStack.jsx';
-import WeeklyReview from './components/WeeklyReview.jsx';
-import TodayView from './components/TodayView.jsx';
 
 const TAB_MAP = {
-  dashboard:  Dashboard,
-  tasks:      Tasks,
-  calendar:   Calendar,
-  notes:      Notes,
+  dashboard:  HomeScreen,
   goal:       Goal,
   workout:    Workout,
   fuel:       Fuel,
@@ -69,24 +47,11 @@ const TAB_MAP = {
   body:       Body,
   habits:     Habits,
   insights:   Insights,
-  agenda:     PlanToday,
-  coachtoday: CoachToday,
-  moneytoday: MoneyToday,
-  mindtoday:  MindToday,
-  finance:    Finance,
-  portfolio:  Portfolio,
-  progress:   Progress,
   style:      Style,
   essentials: Essentials,
-  lists:      Lists,
-  focus:      Focus,
-  vault:      Vault,
   settings:   Settings,
   profile:    Profile,
-  routines:   Routines,
-  mind:       Mind,
   lm:         LM,
-  places:     Places,
 };
 
 // ─── Tab-level error boundary ─────────────────────────────────────────────────
@@ -391,7 +356,7 @@ export default function App() {
   }
 
   // ── Main app shell ────────────────────────────────────────────────────────
-  const ActiveTab = TAB_MAP[activeTab] || Dashboard;
+  const ActiveTab = TAB_MAP[activeTab] || HomeScreen;
   const activeGroup = groupOf(activeTab);
   const sectionScreens = groupScreens(activeGroup.id, {
     hidden: settings?.hiddenTabs ?? [],
@@ -444,8 +409,6 @@ export default function App() {
           </TabErrorBoundary>
         </div>
 
-        {/* Quick Capture — floats above all content */}
-        <QuickCapture />
       </main>
 
       {/* Ctrl+K Command Palette — renders above everything */}
@@ -458,8 +421,6 @@ export default function App() {
       {/* Proactive nudges + whole-life Weekly Review + unified Today view */}
       {/* Home already lists these as Next moves; elsewhere they float bottom right. */}
       {activeTab !== 'dashboard' && <NudgeStack onTabChange={goTo} />}
-      <WeeklyReview />
-      <TodayView onTabChange={goTo} />
 
       {/* Sleep dim overlay — fades in as bedtime approaches. Max 80% opacity (never fully black). */}
       {dimLevel > 0 && (

@@ -2,6 +2,9 @@ import React from "react";
 import ReactDOM from "react-dom/client";
 import * as Sentry from "@sentry/react";
 import App from "./App";
+import LaunchSplash from "./components/LaunchSplash.jsx";
+import UpdatePrompt from "./components/UpdatePrompt.jsx";
+import { startPwaUpdates } from "./utils/pwaUpdate.js";
 import "./styles/globals.css";
 
 // ── Sentry error monitoring ────────────────────────────────────────────────────
@@ -31,6 +34,9 @@ if (import.meta.env.VITE_SENTRY_DSN) {
   });
 }
 
+// A new version waits for a tap instead of swapping the app under you (PWA builds only).
+if (typeof __BUILD_TARGET__ !== 'undefined' && __BUILD_TARGET__ === 'pwa') startPwaUpdates();
+
 // ── Root error boundary — Sentry-aware ────────────────────────────────────────
 const SentryErrorBoundary = Sentry.ErrorBoundary || (({ children }) => children);
 
@@ -59,6 +65,8 @@ ReactDOM.createRoot(document.getElementById("root")).render(
       }
     >
       <App />
+      <LaunchSplash />
+      <UpdatePrompt />
     </SentryErrorBoundary>
   </React.StrictMode>,
 );
