@@ -14,6 +14,9 @@ const toB64 = (buf) => btoa(String.fromCharCode(...new Uint8Array(buf)));
 const fromB64 = (s) => Uint8Array.from(atob(s), c => c.charCodeAt(0));
 const challenge = () => crypto.getRandomValues(new Uint8Array(32));
 
+/** One line that explains the iOS wording, shown next to the Face ID switch. */
+export const PASSKEY_NOTE = 'iPhone shows its Face ID sheet as a "passkey" for Arete. It is only used to unlock this app on this device, never to sign in anywhere. It appears in Settings > Passwords, where you can delete it.';
+
 export const biometricLabel = () =>
   (typeof navigator !== 'undefined' && /iPhone|iPad|iPod/.test(navigator.userAgent)) ? 'Face ID' : 'biometric unlock';
 
@@ -49,7 +52,7 @@ export async function enableFaceIdDetailed() {
       publicKey: {
         challenge: challenge(),
         rp: { name: 'Arete', id: location.hostname },
-        user: { id: crypto.getRandomValues(new Uint8Array(16)), name: 'arete-owner', displayName: 'Arete' },
+        user: { id: crypto.getRandomValues(new Uint8Array(16)), name: 'Arete app lock', displayName: 'Arete app lock' },   // iOS shows this name in its passkey sheet
         pubKeyCredParams: [{ type: 'public-key', alg: -7 }, { type: 'public-key', alg: -257 }],
         authenticatorSelection: { authenticatorAttachment: 'platform', userVerification: 'required', residentKey: 'discouraged' },
         timeout: 60000,
