@@ -7,12 +7,13 @@ import { useHealthData } from '../hooks/useHealthData.js';
 import { STORAGE_KEYS } from '../utils/storage.js';
 import { toLocalDateKey } from '../utils/localDate.js';
 import { updateSettings } from '../utils/settingsStore.js';
+import CoachIntake from '../components/CoachIntake.jsx';
 import GoalEta from '../components/GoalEta.jsx';
 import CoachUpdates from '../components/CoachUpdates.jsx';
 import { cycleFor, todaysTargets, scheduledTrainingDaysPerWeek } from '../utils/todaysTargets.js';
 import { cycleTargets } from '../domain/goals.js';
 import {
-  GOAL_TEMPLATES, TEMPLATE_IDS, computeTargets, estimateMaintenance,
+  GOAL_TEMPLATES, TEMPLATE_IDS, computeTargets, estimateMaintenance, PACES, paceRows,
   adaptiveMaintenance, makeGoal, settingsForGoal,
 } from '../domain/goals.js';
 import { weightCoach } from '../domain/weight.js';
@@ -89,15 +90,17 @@ function GoalEditor({ settings, latestWeight, adaptive, onDone, onCancel }) {
   const suggested = adaptive?.kcal ?? estimateMaintenance(Number(weight));
   const [maint, setMaint]       = useState('');
   const [targetWeight, setTargetWeight] = useState(current?.targetWeightKg ? String(current.targetWeightKg) : '');
+  const [pace, setPace]         = useState(current?.pace && PACES[current.pace] ? current.pace : 'normal');
   const maintenanceKcal = Number(maint) || suggested || 0;
   const maintenanceSource = maint ? 'manual' : adaptive ? 'adaptive' : 'estimate';
-  const targets = computeTargets(template, { weightKg: Number(weight), maintenanceKcal });
+  const targets = computeTargets(template, { weightKg: Number(weight), maintenanceKcal, paceFactor: template === 'recomp' ? 1 : PACES[pace].factor });
   const t = GOAL_TEMPLATES[template];
 
   function lockIn() {
     const goal = makeGoal({
       template, customText: custom ? customText : '', weightKg: Number(weight),
       maintenanceKcal, maintenanceSource, startedOn: toLocalDateKey(new Date()), targetWeightKg: Number(targetWeight) || null,
+      pace: template === 'recomp' ? 'normal' : pace,
     });
     if (!goal) return;
     updateSettings(settingsForGoal(goal, settings?.macros));
@@ -135,6 +138,27 @@ function GoalEditor({ settings, latestWeight, adaptive, onDone, onCancel }) {
           <span style={{ fontSize: 13, color: 'var(--text-secondary)', lineHeight: 1.4 }}>Your own goal, in your words</span>
         </button>
       </div>
+
+      {template !== 'recomp' && Number(weight) > 0 && (
+        <div role="group" aria-label="Speed" style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
+          <span style={label}>Speed</span>
+          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(130px, 1fr))', gap: 8 }}>
+            {paceRows(template, Number(weight)).map(r => {
+              const on = pace === r.id;
+              return (
+                <button key={r.id} type="button" aria-pressed={on} onClick={() => setPace(r.id)}
+                  style={{ textAlign: 'left', padding: '10px 12px', borderRadius: 12, cursor: 'pointer', fontFamily: 'inherit', minHeight: 62,
+                    background: on ? 'color-mix(in srgb, var(--tab-accent) 12%, var(--bg-panel))' : 'var(--bg-panel)',
+                    border: `1px solid ${on ? 'var(--tab-accent)' : 'var(--card-border)'}` }}>
+                  <div style={{ fontSize: 14, fontWeight: 700, color: on ? 'var(--tab-accent)' : 'var(--text-primary)' }}>{r.label}</div>
+                  <div className="val-num" style={{ fontSize: 12.5, color: 'var(--text-secondary)' }}>{r.weeklyRateKg > 0 ? '+' : ''}{r.weeklyRateKg} kg a week</div>
+                  <div style={{ fontSize: 11.5, color: r.discouraged ? '#e8a13a' : r.recommended ? '#4caf7d' : 'var(--text-muted)' }}>{r.note}</div>
+                </button>
+              );
+            })}
+          </div>
+        </div>
+      )}
 
       {custom && (
         <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(240px, 1fr))', gap: 12 }}>
@@ -304,6 +328,7 @@ function GoalCard({ goal, settings, latestWeight, coach, adaptive, onChange }) {
 
 export default function GoalHQ({ settings, overview = null, compact = false }) {
   const [editing, setEditing] = useState(false);
+  const [intakeOpen, setIntakeOpen] = useState(() => !settings?.coachIntake);   // the coach asks first until you have answered
   const { latestWeight } = useHealthData();
   const { items: bodyMetrics = [] }   = useCollection('body_metrics',   STORAGE_KEYS.BODY);
   const { items: nutritionLogs = [] } = useCollection('nutrition_logs', STORAGE_KEYS.MACROS);
@@ -325,13 +350,22 @@ export default function GoalHQ({ settings, overview = null, compact = false }) {
           </span>
         </div>
 
-        {showEditor
+        {intakeOpen
+          ? <CoachIntake settings={settings} onDone={() => setIntakeOpen(false)} />
+          : (
+            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 12, flexWrap: 'wrap', padding: '12px 16px', borderRadius: 14, border: '0.5px solid var(--card-border)', background: 'var(--bg-panel)' }}>
+              <span style={{ fontSize: 14, color: 'var(--text-secondary)' }}>Coach intake done{settings?.coachIntake?.doneOn ? ' on ' + settings.coachIntake.doneOn : ''}. Redo it when your goal, days or equipment change.</span>
+              <button type="button" onClick={() => setIntakeOpen(true)} style={{ minHeight: 40, padding: '0 16px', borderRadius: 10, border: '0.5px solid var(--card-border)', background: 'transparent', color: 'var(--text-primary)', fontFamily: 'inherit', fontSize: 14, fontWeight: 600, cursor: 'pointer' }}>Redo intake</button>
+            </div>
+          )}
+
+        {!intakeOpen && (showEditor
           ? <GoalEditor settings={settings} latestWeight={latestWeight} adaptive={adaptive}
               onDone={() => setEditing(false)} onCancel={goal ? () => setEditing(false) : null} />
-          : <GoalCard goal={goal} settings={settings} latestWeight={latestWeight} coach={coach} adaptive={adaptive} onChange={() => setEditing(true)} />}
+          : <GoalCard goal={goal} settings={settings} latestWeight={latestWeight} coach={coach} adaptive={adaptive} onChange={() => setEditing(true)} />)}
       </div>
 
-      {overview && !showEditor && <div style={{ minHeight: 480 }}>{overview}</div>}
+      {overview && !showEditor && !intakeOpen && <div style={{ minHeight: 480 }}>{overview}</div>}
     </div>
   );
 }
