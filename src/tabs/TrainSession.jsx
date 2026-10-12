@@ -322,7 +322,7 @@ function ExerciseCard({ ex, prog, rows, onChange, onTick, onRate, onAddSet, onRe
 //  Session
 export default function TrainSession({
   exercises, workoutLogs, addWorkoutLog, updateWorkoutLog, removeWorkoutLog,
-  splitNames, todaySplitType, progression, musclesFor, compact = false, program = null, updateProgram = null, saveExercises = null,
+  splitNames, todaySplitType, progression, musclesFor, compact = false, program = null, updateProgram = null, saveExercises = null, onEditProgram = null,
 }) {
   const date = today();
   const [gym, setGymState] = useState(() => readPref('valerie_train_gym', 'home'));
@@ -578,6 +578,11 @@ export default function TrainSession({
           ))}
         </div>
 
+        {onEditProgram && (
+          <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>
+            <button type="button" onClick={onEditProgram} style={pill(false)}>{program ? 'Edit this program' : 'Create a program'}</button>
+          </div>
+        )}
         <TrainPrefsPanel prefs={prefs} />
 
         {todays.some(e => !e.bodyweight && isBarbell(e.name)) && <EquipmentSettings key={equipment.plates.join(',')} eq={equipment} />}

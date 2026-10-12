@@ -10,7 +10,7 @@ import MobileHealth     from './screens/MobileHealth.jsx';
 import { TasksScreen, PlaceholderScreen } from './screens/MobileMore.jsx';
 import MobileNotes from './screens/MobileNotes.jsx';
 import Profile from '../tabs/Profile.jsx';
-import { TrainSessionScreen } from '../tabs/Workout.jsx';
+import WorkoutTab from '../tabs/Workout.jsx';
 import MobileLM         from './screens/MobileLM.jsx';
 import GoalHQ           from '../tabs/GoalHQ.jsx';
 import MobileFinance    from './screens/MobileFinance.jsx';
@@ -128,7 +128,7 @@ const MOBILE_SCREENS = {
   tasks:     ()  => <TasksScreen />,
   notes:     ()  => <MobileNotes />,
   goal:      (p) => <GoalHQ {...p} compact overview={<MobileHealth {...p} tabs={['Overview']} title={null} />} />,
-  workout:   ()  => <TrainSessionScreen compact />,
+  workout:   (p) => <WorkoutTab settings={p.settings} compact />,
   fuel:      (p) => <MobileHealth {...p} tabs={['Nutrition', 'Water']} title={null} />,
   recover:   (p) => <MobileHealth {...p} tabs={['Sleep']} title={null} />,
   body:      (p) => <MobileHealth {...p} tabs={['Body']} title={null} />,

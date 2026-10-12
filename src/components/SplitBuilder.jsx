@@ -155,8 +155,8 @@ export default function SplitBuilder({ programs, addProgram, updateProgram, remo
                   {inDay.length === 0 && <div style={{ fontSize: 13, color: 'var(--text-secondary)' }}>No exercises yet. Add some from your library below.</div>}
                   <ul style={{ margin: 0, padding: 0, listStyle: 'none', display: 'flex', flexDirection: 'column', gap: 6 }}>
                     {inDay.map((ex, i) => (
-                      <li key={ex.id} style={{ display: 'flex', alignItems: 'center', gap: 6, padding: '6px 10px', borderRadius: 10, border: '0.5px solid var(--card-border)' }}>
-                        <span style={{ flex: 1, minWidth: 0, fontSize: 14, color: 'var(--text-primary)', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{ex.name}</span>
+                      <li key={ex.id} style={{ display: 'flex', alignItems: 'center', flexWrap: 'wrap', gap: 6, padding: '6px 10px', borderRadius: 10, border: '0.5px solid var(--card-border)' }}>
+                        <span style={{ flex: '1 1 160px', minWidth: 0, fontSize: 14, color: 'var(--text-primary)', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{ex.name}</span>
                         {[['sets', 'Sets', 'sets'], ['repsMin', 'Min', 'min reps'], ['repsMax', 'Max', 'max reps']].map(([k, ph, aria]) => (
                           <input key={k} type="number" inputMode="numeric" min="1" placeholder={ph} aria-label={`${ex.name} ${aria}`} value={dayTarget(day, ex.id)[k] ?? ''}
                             onChange={e => saveDay(editing, setDayTarget(materialize(day, exercises), ex.id, { [k]: e.target.value }))}

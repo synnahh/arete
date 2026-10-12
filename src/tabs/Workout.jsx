@@ -877,7 +877,7 @@ export function TrainSessionScreen({ compact = true }) {
   );
 }
 
-export default function WorkoutTab({ settings }) {
+export default function WorkoutTab({ settings, compact = false }) {
   const [sub, setSub] = useState('session');
   const {
     workoutLogs, addWorkoutLog, updateWorkoutLog, removeWorkoutLog,
@@ -886,9 +886,21 @@ export default function WorkoutTab({ settings }) {
   } = useTrainData();
 
   return (
-    <div style={{ display: 'flex', height: '100%', overflow: 'hidden' }}>
-      {/* Left sub-nav */}
-      <div style={{ width: 176, flexShrink: 0, borderRight: '0.5px solid var(--sidebar-divider)', display: 'flex', flexDirection: 'column', padding: '16px 0', gap: 2, overflowY: 'auto' }}>
+    <div style={{ display: 'flex', flexDirection: compact ? 'column' : 'row', height: '100%', overflow: 'hidden' }}>
+      {/* Sub-nav: a column on desktop, a scrolling chip row on the phone */}
+      {compact && (
+        <div role="tablist" aria-label="Train sections" style={{ display: 'flex', gap: 8, overflowX: 'auto', padding: '10px 14px', flexShrink: 0, borderBottom: '0.5px solid var(--sidebar-divider)', WebkitOverflowScrolling: 'touch' }}>
+          {SUB_NAV.map(s => (
+            <button key={s.id} role="tab" aria-selected={sub === s.id} onClick={() => setSub(s.id)} style={{
+              flexShrink: 0, minHeight: 40, padding: '0 16px', borderRadius: 999, cursor: 'pointer', fontFamily: 'inherit', fontSize: 14, whiteSpace: 'nowrap',
+              border: `0.5px solid ${sub === s.id ? 'var(--tab-accent)' : 'var(--card-border)'}`, fontWeight: sub === s.id ? 600 : 500,
+              background: sub === s.id ? 'color-mix(in srgb, var(--tab-accent) 14%, transparent)' : 'transparent',
+              color: sub === s.id ? 'var(--tab-accent)' : 'var(--text-secondary)',
+            }}>{s.label}</button>
+          ))}
+        </div>
+      )}
+      {!compact && <div style={{ width: 176, flexShrink: 0, borderRight: '0.5px solid var(--sidebar-divider)', display: 'flex', flexDirection: 'column', padding: '16px 0', gap: 2, overflowY: 'auto' }}>
         {SUB_NAV.map(s => (
           <button key={s.id} onClick={() => setSub(s.id)} style={{
             display: 'flex', alignItems: 'center', gap: 10, minHeight: 36, whiteSpace: 'nowrap',
@@ -903,11 +915,11 @@ export default function WorkoutTab({ settings }) {
             {s.label}
           </button>
         ))}
-      </div>
+      </div>}
 
       {/* Content */}
       <div style={{ flex: 1, overflow: 'hidden' }}>
-        {sub === 'session'   && <TrainSession exercises={exercises} workoutLogs={workoutLogs} addWorkoutLog={addWorkoutLog} updateWorkoutLog={updateWorkoutLog} removeWorkoutLog={removeWorkoutLog} splitNames={splitNames} todaySplitType={todaySplitType} program={activeProgram} updateProgram={updateProgram} saveExercises={saveExercisesDoc} progression={computeProgression} musclesFor={musclesFor} />}
+        {sub === 'session'   && <TrainSession exercises={exercises} workoutLogs={workoutLogs} addWorkoutLog={addWorkoutLog} updateWorkoutLog={updateWorkoutLog} removeWorkoutLog={removeWorkoutLog} splitNames={splitNames} todaySplitType={todaySplitType} program={activeProgram} updateProgram={updateProgram} saveExercises={saveExercisesDoc} progression={computeProgression} musclesFor={musclesFor} compact={compact} onEditProgram={() => setSub('splits')} />}
         {sub === 'overload'  && <OverloadCoach workoutLogs={workoutLogs} addWorkoutLog={addWorkoutLog} exercises={exercises} saveExercises={saveExercisesDoc} splitNames={splitNames} saveSplitNames={saveSplitNamesDoc} todaySplitType={todaySplitType} />}
         {sub === 'splits'    && <SplitBuilder programs={programs} addProgram={addProgram} updateProgram={updateProgram} removeProgram={removeProgram} exercises={exercises} workoutLogs={workoutLogs} />}
         {sub === 'exercises' && <ExercisesLibrary exercises={exercises} saveExercises={saveExercisesDoc} />}
