@@ -32,6 +32,25 @@ export const KCAL_PER_KG = 7700;
 
 const round = (n, step) => Math.round(n / step) * step;
 
+// How hard to push the template's calorie change. 1 is the template as written.
+// Aggressive is offered but flagged: it is hard to hold and costs muscle.
+export const PACES = {
+  slow:       { label: 'Slow',       factor: 0.6,  note: 'Easiest to stick to' },
+  normal:     { label: 'Normal',     factor: 1,    note: 'Recommended', recommended: true },
+  fast:       { label: 'Fast',       factor: 1.25, note: 'Needs good adherence' },
+  aggressive: { label: 'Aggressive', factor: 1.5,  note: 'Not recommended', discouraged: true },
+};
+export const MIN_KCAL = 1300;   // targets never go below this whatever the pace
+
+/** The weekly change in kg each pace gives for a template at a bodyweight (negative = loss). */
+export function paceRows(templateId, weightKg) {
+  const t = GOAL_TEMPLATES[templateId];
+  if (!t || !(weightKg > 0)) return [];
+  return Object.entries(PACES).map(([id, p]) => ({
+    id, ...p, weeklyRateKg: +((weightKg * t.weeklyRatePct * p.factor) / 100).toFixed(2),
+  }));
+}
+
 /**
  * Rough maintenance when nothing better is known: bodyweight × 32 kcal
  * (moderately active). Always labelled an estimate in the UI.
@@ -42,18 +61,18 @@ export function estimateMaintenance(weightKg) {
 }
 
 /** Daily targets for a template at a bodyweight and maintenance. */
-export function computeTargets(templateId, { weightKg, maintenanceKcal } = {}) {
+export function computeTargets(templateId, { weightKg, maintenanceKcal, paceFactor = 1 } = {}) {
   const t = GOAL_TEMPLATES[templateId];
   if (!t || !(weightKg > 0) || !(maintenanceKcal > 0)) return null;
-  const kcal    = round(maintenanceKcal * (1 + t.energyDelta), 10);
+  const kcal    = Math.max(MIN_KCAL, round(maintenanceKcal * (1 + t.energyDelta * paceFactor), 10));
   const protein = round(weightKg * t.proteinPerKg, 5);
   // Fat floor: at least 20% of energy, whichever is higher.
   const fat     = round(Math.max(weightKg * t.fatPerKg, (kcal * 0.2) / 9), 5);
   const carbs   = Math.max(0, round((kcal - protein * 4 - fat * 9) / 4, 5));
   return {
     kcal, protein, fat, carbs,
-    weeklyRatePct: t.weeklyRatePct,
-    weeklyRateKg: +((weightKg * t.weeklyRatePct) / 100).toFixed(2),
+    weeklyRatePct: +(t.weeklyRatePct * paceFactor).toFixed(3),
+    weeklyRateKg: +((weightKg * t.weeklyRatePct * paceFactor) / 100).toFixed(2),
   };
 }
 
@@ -112,11 +131,12 @@ export function adaptiveMaintenance(weights = [], intakes = [], { minDays = 14, 
 }
 
 /** A goal record ready to store in settings.coachGoal. */
-export function makeGoal({ template, customText = '', weightKg, maintenanceKcal, maintenanceSource = 'estimate', startedOn, targetWeightKg = null }) {
-  const targets = computeTargets(template, { weightKg, maintenanceKcal });
+export function makeGoal({ template, customText = '', weightKg, maintenanceKcal, maintenanceSource = 'estimate', startedOn, targetWeightKg = null, pace = 'normal' }) {
+  const paceFactor = PACES[pace]?.factor ?? 1;
+  const targets = computeTargets(template, { weightKg, maintenanceKcal, paceFactor });
   if (!targets) return null;
   return {
-    template, customText: customText.trim(), startedOn,
+    template, customText: customText.trim(), startedOn, pace: PACES[pace] ? pace : 'normal',
     startWeightKg: weightKg, maintenanceKcal, maintenanceSource, targets,
     ...(Number(targetWeightKg) > 0 ? { targetWeightKg: Number(targetWeightKg) } : {}),
   };
