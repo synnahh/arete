@@ -101,6 +101,7 @@ export function recommendedSets(ex, { goal = null, experience = null, compound =
   if (goal === 'bulk' || goal === 'recomp') sets += isCompound ? 0 : 1;
   if (goal === 'strength') sets = isCompound ? Math.min(5, sets + 1) : 2;
   sets = Math.max(2, Math.min(5, sets));
+  if (Number(ex?.plannedSets) >= 1 && Number(ex.plannedSets) <= 8) sets = Math.round(Number(ex.plannedSets));   // your program's own number wins
   const lo = Number(ex?.repsMin) || 8, hi = Number(ex?.repsMax) || Math.max(lo, 10);
   return { sets, repsMin: lo, repsMax: hi, text: `Recommended number of sets: ${sets}. Aim for ${lo === hi ? lo : `${lo}-${hi}`} repetitions per set.` };
 }

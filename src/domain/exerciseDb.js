@@ -17,6 +17,7 @@ Decline Bench Press|chest|triceps|barbell|compound|Slight decline, lower to the 
 Close-Grip Bench Press|triceps|chest,shoulders|barbell|compound|Hands just inside shoulder width, elbows tucked, press through the triceps.
 DB Bench Press|chest|triceps,shoulders|dumbbell|compound|Lower until the elbows are just below the bench, press the dumbbells together at the top.
 Incline DB Press|chest|shoulders,triceps|dumbbell|compound|Bench at 30 degrees, control the lowering, do not clang the weights.
+Low-Incline Neutral-Grip DB Press|chest|shoulders,triceps|dumbbell|compound|Bench at 15 to 30 degrees, palms facing each other, elbows slightly tucked, no forced deep stretch.
 Decline DB Press|chest|triceps|dumbbell|compound|Slight decline, press in an arc over the lower chest.
 Chest Press Machine|chest|triceps,shoulders|machine|compound|Seat so the handles line up with mid-chest, push without shrugging.
 Incline Chest Press Machine|chest|shoulders,triceps|machine|compound|Handles at upper chest height, shoulder blades back.
@@ -45,6 +46,7 @@ Handstand Push-up|shoulders|triceps|bodyweight|compound|Against a wall, lower un
 Triceps Pushdown|triceps||cable|isolation|Elbows pinned to the sides, extend fully, control the way up.
 Rope Pushdown|triceps||cable|isolation|Split the rope at the bottom, elbows stay by your ribs.
 Overhead Triceps Extension|triceps||dumbbell|isolation|Elbows pointing up, lower behind the head, extend fully.
+Triceps Press Machine|triceps||machine|isolation|Elbows by the ribs, press down to full extension, control the way up.
 Cable Overhead Triceps Extension|triceps||cable|isolation|Face away from the stack, elbows forward, stretch and extend.
 Skull Crushers|triceps||barbell|isolation|Lower the bar toward the forehead with fixed elbows, extend.
 Triceps Kickback|triceps||dumbbell|isolation|Upper arm parallel to the floor, straighten the elbow, squeeze.
@@ -93,6 +95,7 @@ Leg Extension|quads||machine|isolation|Pause and squeeze at the top, lower slowl
 Walking Lunges|quads|glutes,hamstrings|dumbbell|compound|Long step, back knee near the floor, push through the front heel.
 Reverse Lunge|quads|glutes|dumbbell|compound|Step back, vertical shin at the bottom, drive through the front foot.
 Bulgarian Split Squat|quads|glutes|dumbbell|compound|Rear foot on a bench, lower straight down, front foot flat.
+Split Squat|quads|glutes|dumbbell|compound|Staggered stance, lower straight down, front foot flat, hold a support if needed.
 Step-ups|quads|glutes|dumbbell|compound|Whole foot on the box, drive up with the front leg only.
 Sissy Squat|quads||bodyweight|isolation|Lean back with the knees forward, advanced quad isolation.
 Wall Sit|quads|glutes|bodyweight|isolation|Thighs parallel to the floor, back flat on the wall.
@@ -124,6 +127,7 @@ Crunch|abs||bodyweight|isolation|Curl the ribs toward the pelvis, lower with con
 Cable Crunch|abs||cable|isolation|Kneel and curl the spine down, hips stay still.
 Hanging Leg Raise|abs||bar|isolation|Hang from the bar, raise the legs with no swinging, tuck the pelvis.
 Hanging Knee Raise|abs||bar|isolation|Easier than straight legs, curl the pelvis up.
+Reverse Crunch|abs||bodyweight|isolation|Lie flat, curl the knees toward the chest and lift the hips a little, lower slowly.
 Ab Wheel Rollout|abs|shoulders|bodyweight|isolation|Brace, roll out only as far as you can keep the back flat.
 Russian Twist|abs||bodyweight|isolation|Lean back slightly, rotate from the ribs, not the arms.
 Bicycle Crunch|abs||bodyweight|isolation|Slow alternating elbow to opposite knee.

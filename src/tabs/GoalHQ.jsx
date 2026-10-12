@@ -8,6 +8,7 @@ import { STORAGE_KEYS } from '../utils/storage.js';
 import { toLocalDateKey } from '../utils/localDate.js';
 import { updateSettings } from '../utils/settingsStore.js';
 import CoachIntake from '../components/CoachIntake.jsx';
+import GuideImport from '../components/GuideImport.jsx';
 import CustomGoalFields, { fieldsFromPreset } from '../components/CustomGoalFields.jsx';
 import { baseTemplateFor } from '../domain/intake.js';
 import WeeklyCheckIn from '../components/WeeklyCheckIn.jsx';
@@ -362,6 +363,7 @@ export default function GoalHQ({ settings, overview = null, compact = false }) {
           : <GoalCard goal={goal} settings={settings} latestWeight={latestWeight} coach={coach} adaptive={adaptive} onChange={() => setEditing(true)} />)}
 
         {!intakeOpen && !showEditor && goal && <WeeklyCheckIn goal={goal} />}
+        <GuideImport settings={settings} />
       </div>
 
       {overview && !showEditor && !intakeOpen && <div style={{ minHeight: 480 }}>{overview}</div>}

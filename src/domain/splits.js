@@ -27,6 +27,25 @@ export function dayExercises(day, library = []) {
   return LEGACY.includes(day.splitType) ? library.filter(e => e.day === day.splitType) : [];
 }
 
+/**
+ * The exercises of a day with the day's own targets laid over them. A program day may carry
+ * `targets: { [exerciseId]: { sets, repsMin, repsMax } }` (the same lift can be 3 x 8-12 on
+ * one day and 2 x 10-15 on another). Days without it come back unchanged.
+ */
+export function withDayTargets(exercises, day) {
+  const t = day?.targets;
+  if (!t || typeof t !== 'object') return exercises;
+  return exercises.map(e => {
+    const x = t[e.id];
+    if (!x) return e;
+    const out = { ...e };
+    if (Number(x.repsMin) > 0) out.repsMin = Number(x.repsMin);
+    if (Number(x.repsMax) > 0) out.repsMax = Number(x.repsMax);
+    if (Number(x.sets) > 0) out.plannedSets = Math.round(Number(x.sets));
+    return out;
+  });
+}
+
 /** A day with its exercise list written out, so it can be edited by id. */
 export function materialize(day, library = []) {
   return { ...day, exerciseIds: dayExercises(day, library).map(e => e.id) };
@@ -53,7 +72,7 @@ export function setDayKind(day, workout, label) {
 export function weekPlan(program, library = []) {
   return WEEK.map(key => {
     const day = program?.days?.[key] ?? { splitType: 'rest', label: 'Rest' };
-    return { key, label: day.label || (isRest(day) ? 'Rest' : 'Workout'), rest: isRest(day), exercises: dayExercises(day, library) };
+    return { key, label: day.label || (isRest(day) ? 'Rest' : 'Workout'), rest: isRest(day), exercises: withDayTargets(dayExercises(day, library), day) };
   });
 }
 
@@ -66,7 +85,7 @@ export function plannedSets(program, library = [], setsPerExercise = SETS_DEFAUL
   const sets = Object.fromEntries(MUSCLE_IDS.map(m => [m, 0]));
   for (const { exercises } of weekPlan(program, library)) {
     for (const ex of exercises) {
-      musclesForExercise(ex).forEach((m, i) => { if (m in sets) sets[m] += i === 0 ? setsPerExercise : setsPerExercise / 2; });
+      musclesForExercise(ex).forEach((m, i) => { if (m in sets) { const n = ex.plannedSets ?? setsPerExercise; sets[m] += i === 0 ? n : n / 2; } });
     }
   }
   return sets;

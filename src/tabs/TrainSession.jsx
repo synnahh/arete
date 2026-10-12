@@ -16,7 +16,7 @@ import { storage, STORAGE_KEYS } from '../utils/storage.js';
 import LiftChart from '../components/LiftChart.jsx';
 import StrengthCard from '../components/StrengthCard.jsx';
 import { useRecovery } from '../hooks/useRecovery.js';
-import { WEEK, dayExercises, materialize, sessionChoices, sessionDayKey, dayKeyFromDate } from '../domain/splits.js';
+import { WEEK, dayExercises, withDayTargets, materialize, sessionChoices, sessionDayKey, dayKeyFromDate } from '../domain/splits.js';
 
 const today = () => toLocalDateKey(new Date());
 const fmt = (s) => `${Math.floor(s / 60)}:${String(Math.max(0, s) % 60).padStart(2, '0')}`;
@@ -309,9 +309,9 @@ export default function TrainSession({
   const todays = useMemo(() => {
     const gymOk = (e) => e.gym === gym || e.gym === 'both';
     const base = (program && WEEK.includes(day)
-      ? dayExercises(program.days?.[day], exercises).filter(gymOk)
+      ? withDayTargets(dayExercises(program.days?.[day], exercises).filter(gymOk), program.days?.[day])
       : exercises.filter(e => gymOk(e) && e.day === day)).filter(e => !hiddenIds.includes(e.id));
-    const extra = exercises.filter(e => extraIds.includes(e.id) && !base.includes(e));
+    const extra = exercises.filter(e => extraIds.includes(e.id) && !base.some(b => b.id === e.id));
     return [...base, ...extra];
   }, [exercises, gym, day, extraIds, hiddenIds, program]);
 
@@ -319,7 +319,7 @@ export default function TrainSession({
   // With a program the swap is saved into that day, so next week has it too.
   const alternativesFor = (ex) => {
     const m = musclesFor(ex)?.[0];
-    return exercises.filter(e => e.id !== ex.id && !todays.includes(e) && (e.gym === gym || e.gym === 'both') && musclesFor(e)?.[0] === m);
+    return exercises.filter(e => e.id !== ex.id && !todays.some(t => t.id === e.id) && (e.gym === gym || e.gym === 'both') && musclesFor(e)?.[0] === m);
   };
   const replaceExercise = async (oldEx, newEx) => {
     setHiddenIds(h => [...h, oldEx.id]);
@@ -480,7 +480,7 @@ export default function TrainSession({
   const allDone = todays.flatMap(ex => (plan[ex.id] ?? []).filter(r => r.done).map(r => ({ weight: Number(r.weight) || 0, reps: Number(r.reps) || 0 })));
   const prCount = Object.values(prs).reduce((s, m) => s + Object.values(m).filter(Boolean).length, 0);
   const minutes = sessionStartedAt ? Math.round((Date.now() - sessionStartedAt) / 60000) : 0;
-  const others = exercises.filter(e => !todays.includes(e));
+  const others = exercises.filter(e => !todays.some(t => t.id === e.id));
 
   return (
     <div style={{ height: '100%', overflowY: 'auto' }}>
