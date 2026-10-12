@@ -67,6 +67,27 @@ export function setDayTarget(day, id, patch) {
   return out;
 }
 
+const clone = (d) => JSON.parse(JSON.stringify(d));
+const REST = { splitType: 'rest', label: 'Rest' };
+
+/** Move a day to another weekday. The two days swap places, so nothing is lost (a rest day just moves the other way). */
+export function moveDay(days, from, to) {
+  if (!WEEK.includes(from) || !WEEK.includes(to) || from === to) return days;
+  const out = { ...days };
+  out[to] = clone(days[from] ?? REST);
+  out[from] = clone(days[to] ?? REST);
+  return out;
+}
+
+/** Copy a day onto another weekday, replacing whatever was there. */
+export function copyDay(days, from, to) {
+  if (!WEEK.includes(from) || !WEEK.includes(to) || from === to) return days;
+  return { ...days, [to]: clone(days[from] ?? REST) };
+}
+
+/** How many days a week the program trains. */
+export const trainingDays = (program) => WEEK.filter(k => !isRest(program?.days?.[k])).length;
+
 /** A day with its exercise list written out, so it can be edited by id. */
 export function materialize(day, library = []) {
   return { ...day, exerciseIds: dayExercises(day, library).map(e => e.id) };

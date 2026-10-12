@@ -143,3 +143,35 @@ describe('day targets', () => {
     expect(dayTarget(setDayTarget(day, 'a', { sets: 99 }), 'a')).toEqual({});
   });
 });
+
+describe('moving and copying days', () => {
+  const days = {
+    mon: { splitType: 'custom', label: 'Upper A', exerciseIds: ['a'], targets: { a: { sets: 3 } } },
+    tue: { splitType: 'rest', label: 'Rest' },
+    wed: { splitType: 'custom', label: 'Lower', exerciseIds: ['b'] },
+  };
+  it('moving swaps the two days and loses nothing', async () => {
+    const { moveDay } = await import('./splits.js');
+    const r = moveDay(days, 'mon', 'tue');
+    expect(r.tue.label).toBe('Upper A');
+    expect(r.tue.targets.a.sets).toBe(3);
+    expect(r.mon.splitType).toBe('rest');
+    const r2 = moveDay(days, 'mon', 'wed');
+    expect(r2.mon.label).toBe('Lower');
+    expect(r2.wed.label).toBe('Upper A');
+  });
+  it('copying replaces the target with an independent copy', async () => {
+    const { copyDay } = await import('./splits.js');
+    const r = copyDay(days, 'mon', 'wed');
+    expect(r.wed.label).toBe('Upper A');
+    r.wed.exerciseIds.push('z');
+    expect(days.mon.exerciseIds).toEqual(['a']);
+    expect(r.mon.label).toBe('Upper A');
+  });
+  it('ignores nonsense weekdays', async () => {
+    const { moveDay, copyDay, trainingDays } = await import('./splits.js');
+    expect(moveDay(days, 'mon', 'xyz')).toBe(days);
+    expect(copyDay(days, 'mon', 'mon')).toBe(days);
+    expect(trainingDays({ days })).toBe(2);
+  });
+});

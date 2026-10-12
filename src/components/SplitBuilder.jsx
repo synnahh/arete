@@ -7,11 +7,14 @@ import { useEffect, useMemo, useState } from 'react';
 import {
   WEEK, WEEK_LABEL, TEMPLATES, isRest, dayExercises, addToDay, removeFromDay, moveInDay, setDayKind, materialize,
   buildFromTemplate, plannedSets, doneSets, volumeRows, dayKeyFromDate, SETS_BAND, templatesFor,
-  dayTarget, setDayTarget,
+  dayTarget, setDayTarget, moveDay, copyDay, trainingDays,
 } from '../domain/splits.js';
 import { EXPERIENCE } from '../domain/intake.js';
 import SplitCoverage from './SplitCoverage.jsx';
 import { swapOptions, swapInDay, dayMuscles } from '../domain/splitCoach.js';
+import { searchExercises } from '../domain/exerciseDb.js';
+import { freshEntries } from '../domain/exercisePick.js';
+import { toLibraryEntry } from '../domain/exerciseDb.js';
 import { toLocalDateKey } from '../utils/localDate.js';
 import { label } from './ui.js';
 
@@ -22,7 +25,8 @@ const toast = (message, undo) => window.dispatchEvent(new CustomEvent('valerie:t
 const STATUS = { none: ['Not planned', 'var(--text-secondary)'], low: ['Low', '#e8a13a'], ok: ['In range', '#4caf7d'], high: ['High', '#e25d7a'] };
 
 export default function SplitBuilder({ programs, addProgram, updateProgram, removeProgram, exercises, workoutLogs = [], saveExercises = null }) {
-  const active = programs.find(p => p.isActive) ?? null;
+  const [viewId, setViewId] = useState(null);   // the program being edited (any of them, not only the active one)
+  const active = programs.find(p => p.id === viewId) ?? programs.find(p => p.isActive) ?? programs[0] ?? null;
   const todayKey = dayKeyFromDate();
   const [editing, setEditing] = useState(null);
   const [naming, setNaming] = useState(null);       // program id being renamed
@@ -31,6 +35,7 @@ export default function SplitBuilder({ programs, addProgram, updateProgram, remo
   const [template, setTemplate] = useState('ppl');
   const [newName, setNewName] = useState('');
   const [pick, setPick] = useState('');
+  const [q, setQ] = useState('');                // search the exercise database from inside a day
   const [level, setLevel] = useState(null);    // experience filter for starting weeks
   const [maxDays, setMaxDays] = useState(null);
 
@@ -71,6 +76,21 @@ export default function SplitBuilder({ programs, addProgram, updateProgram, remo
   const day = editing && active ? (active.days?.[editing] ?? { splitType: 'rest', label: 'Rest' }) : null;
   const inDay = day ? dayExercises(day, exercises) : [];
   const available = day ? exercises.filter(e => !inDay.some(x => x.id === e.id)) : [];
+  const dbResults = q.trim().length >= 2 ? searchExercises(q, { limit: 6 }) : [];
+
+  const addFromDb = async (ex) => {
+    const mine = exercises.find(e => String(e.name).trim().toLowerCase() === ex.name.toLowerCase());
+    let lib = exercises, id = mine?.id;
+    if (!mine) {
+      const entry = freshEntries([toLibraryEntry(ex)], exercises)[0];
+      lib = [...exercises, entry]; id = entry.id;
+      await saveExercises(lib);
+    }
+    if (day && !inDay.some(e => e.id === id)) saveDay(editing, addToDay(day, lib, id));
+    setQ('');
+  };
+  const moveTo = (to) => { if (!to) return; updateProgram(active.id, { days: moveDay(active.days, editing, to) }); setEditing(to); };
+  const copyTo = (to) => { if (!to) return; updateProgram(active.id, { days: copyDay(active.days, editing, to) }); };
 
   return (
     <div style={{ display: 'flex', flexDirection: 'column', gap: 14, padding: '20px clamp(14px, 3vw, 28px) 32px', maxWidth: 980, margin: '0 auto', width: '100%', boxSizing: 'border-box', overflowY: 'auto', height: '100%' }}>
@@ -86,6 +106,7 @@ export default function SplitBuilder({ programs, addProgram, updateProgram, remo
               : <button type="button" onClick={() => { setNaming(p.id); setDraftName(p.name); }} title="Rename" style={{ flex: 1, minWidth: 120, textAlign: 'left', background: 'none', border: 'none', cursor: 'text', fontFamily: 'inherit', fontSize: 14, fontWeight: p.isActive ? 700 : 500, color: p.isActive ? 'var(--accent)' : 'var(--text-primary)', padding: 0 }}>{p.name}</button>}
             <button type="button" aria-pressed={!!p.favourite} aria-label={p.favourite ? `Unstar ${p.name}` : `Star ${p.name}`} onClick={() => updateProgram(p.id, { favourite: !p.favourite })} style={{ width: 40, height: 40, background: 'none', border: 'none', cursor: 'pointer', fontSize: 18, color: p.favourite ? '#e8a13a' : 'var(--text-secondary)' }}>{p.favourite ? '★' : '☆'}</button>
             {p.isActive ? <span style={{ fontSize: 11, letterSpacing: '0.08em', color: 'var(--accent)' }}>ACTIVE</span> : <button type="button" onClick={() => makeActive(p.id)} style={btn(false)}>Make active</button>}
+            {active?.id === p.id ? <span style={{ fontSize: 11, letterSpacing: '0.08em', color: 'var(--text-secondary)' }}>EDITING</span> : <button type="button" onClick={() => { setViewId(p.id); setEditing(null); }} style={btn(false)}>Edit</button>}
             <button type="button" onClick={() => duplicate(p)} style={btn(false)}>Copy</button>
             <button type="button" onClick={() => remove(p)} aria-label={`Delete ${p.name}`} style={{ ...btn(false), color: '#e25d7a', borderColor: 'rgba(226,93,122,0.4)' }}>Delete</button>
           </div>
@@ -124,7 +145,7 @@ export default function SplitBuilder({ programs, addProgram, updateProgram, remo
       {active && (
         <>
           <section style={card} aria-label="Week">
-            <div style={label}>{active.name}: your week</div>
+            <div style={label}>{active.name}: your week · {trainingDays(active)} training day{trainingDays(active) === 1 ? '' : 's'}{active.isActive ? '' : ' · not active'}</div>
             <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(96px, 1fr))', gap: 8 }}>
               {WEEK.map(k => {
                 const d = active.days?.[k] ?? { splitType: 'rest', label: 'Rest' };
@@ -154,6 +175,16 @@ export default function SplitBuilder({ programs, addProgram, updateProgram, remo
               {!isRest(day) && (
                 <>
                   <input value={day.label ?? ''} onChange={e => saveDay(editing, { ...materialize(day, exercises), label: e.target.value })} placeholder="Name, e.g. Upper body" aria-label="Day name" style={field} />
+                  <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>
+                    <select aria-label="Move this day to" value="" onChange={e => moveTo(e.target.value)} style={{ ...field, flex: 1, minWidth: 130, minHeight: 40 }}>
+                      <option value="">Move this day to…</option>
+                      {WEEK.filter(k => k !== editing).map(k => <option key={k} value={k}>{WEEK_LABEL[k]}{isRest(active.days?.[k]) ? ' (rest day)' : ' (swap with it)'}</option>)}
+                    </select>
+                    <select aria-label="Copy this day to" value="" onChange={e => copyTo(e.target.value)} style={{ ...field, flex: 1, minWidth: 130, minHeight: 40 }}>
+                      <option value="">Copy this day to…</option>
+                      {WEEK.filter(k => k !== editing).map(k => <option key={k} value={k}>{WEEK_LABEL[k]}{isRest(active.days?.[k]) ? '' : ' (replaces it)'}</option>)}
+                    </select>
+                  </div>
                   {inDay.length > 0 && <div style={{ fontSize: 12.5, color: 'var(--text-secondary)' }}>Hits: {dayMuscles(day, exercises).join(' · ')}. The three boxes are sets, then reps from and to.</div>}
                   {inDay.length === 0 && <div style={{ fontSize: 13, color: 'var(--text-secondary)' }}>No exercises yet. Add some from your library below.</div>}
                   <ul style={{ margin: 0, padding: 0, listStyle: 'none', display: 'flex', flexDirection: 'column', gap: 6 }}>
@@ -194,7 +225,17 @@ export default function SplitBuilder({ programs, addProgram, updateProgram, remo
                     </select>
                     <button type="button" disabled={!pick} onClick={() => { saveDay(editing, addToDay(day, exercises, pick)); setPick(''); }} style={{ ...btn(true), opacity: pick ? 1 : 0.5 }}>Add</button>
                   </div>
-                  <div style={{ fontSize: 12, color: 'var(--text-secondary)' }}>Need something else? Search the exercise database in Exercises and add it to your library, then pick it here.</div>
+                  {saveExercises ? (
+                    <div style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
+                      <input value={q} onChange={e => setQ(e.target.value)} placeholder="Or search all exercises (e.g. shrug, split squat)" aria-label="Search the exercise database" style={field} />
+                      {dbResults.map(ex => (
+                        <button key={ex.id} type="button" onClick={() => addFromDb(ex)} style={{ ...btn(false), textAlign: 'left', minHeight: 40 }}>
+                          Add {ex.name} <span style={{ color: 'var(--text-secondary)', textTransform: 'capitalize' }}>· {ex.muscle} · {ex.equipment}</span>
+                        </button>
+                      ))}
+                      {q.trim().length >= 2 && dbResults.length === 0 && <div style={{ fontSize: 12.5, color: 'var(--text-secondary)' }}>Nothing in the database matches that.</div>}
+                    </div>
+                  ) : <div style={{ fontSize: 12, color: 'var(--text-secondary)' }}>Need something else? Search the exercise database in Exercises and add it to your library, then pick it here.</div>}
                 </>
               )}
             </section>
