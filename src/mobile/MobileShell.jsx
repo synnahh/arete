@@ -9,6 +9,7 @@ import MobileDashboard  from './screens/MobileDashboard.jsx';
 import MobileHealth     from './screens/MobileHealth.jsx';
 import { TasksScreen, PlaceholderScreen } from './screens/MobileMore.jsx';
 import MobileNotes from './screens/MobileNotes.jsx';
+import Profile from '../tabs/Profile.jsx';
 import { TrainSessionScreen } from '../tabs/Workout.jsx';
 import MobileLM         from './screens/MobileLM.jsx';
 import GoalHQ           from '../tabs/GoalHQ.jsx';
@@ -142,6 +143,7 @@ const MOBILE_SCREENS = {
   mind:      (p) => <MobileMind {...p} />,
   finance:   (p) => <MobileFinance {...p} />,
   portfolio: (p) => <MobilePortfolio {...p} />,
+  profile:   (p) => <Profile settings={p.settings} />,
   settings:  (p) => <MobileSettings {...p} />,
 };
 // Screens that exist on desktop only.

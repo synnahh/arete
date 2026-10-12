@@ -9,7 +9,7 @@ export const GROUPS = [
   { id: 'plan',     label: 'Plan',     desc: 'Tasks · Calendar · Routines · Supplies · Notes', screens: ['agenda', 'tasks', 'calendar', 'routines', 'focus', 'progress', 'essentials', 'places', 'notes', 'lists'] },
   { id: 'coach',    label: 'Coach',    desc: 'Goal · Train · Fuel · Recover · Look · Body · Habits', screens: ['coachtoday', 'goal', 'workout', 'fuel', 'recover', 'lm', 'body', 'habits', 'style', 'insights'] },
   { id: 'finance',  label: 'Finance',  desc: 'Money · Portfolio',                 screens: ['moneytoday', 'finance', 'portfolio'] },
-  { id: 'settings', label: 'Settings', desc: 'Settings · Vault',                  screens: ['settings', 'vault'] },
+  { id: 'settings', label: 'Settings', desc: 'Profile · Settings · Vault',                  screens: ['profile', 'settings', 'vault'] },
 ];
 
 // Section labels inside a group. Screens keep their ids; only the label changes.
@@ -21,7 +21,7 @@ export const SCREEN_LABELS = {
   lm: 'Look',            body: 'Body',          habits: 'Habits',     style: 'Style',     insights: 'Insights',
   notes: 'Notes',        lists: 'Lists',
   finance: 'Money',      portfolio: 'Portfolio',
-  settings: 'Settings',  vault: 'Vault',
+  profile: 'Profile',    settings: 'Settings',  vault: 'Vault',
 };
 
 export const DEFAULT_SCREEN = 'dashboard';

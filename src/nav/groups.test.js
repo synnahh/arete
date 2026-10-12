@@ -47,7 +47,7 @@ describe('groups', () => {
 describe('groupScreens', () => {
   it('drops hidden screens but never Settings', () => {
     expect(groupScreens('coach', { hidden: ['style', 'body'] })).toEqual(['coachtoday', 'goal', 'workout', 'fuel', 'recover', 'lm', 'habits', 'insights']);
-    expect(groupScreens('settings', { hidden: ['settings', 'vault'] })).toEqual(['settings']);
+    expect(groupScreens('settings', { hidden: ['settings', 'vault'] })).toEqual(['profile', 'settings']);
   });
 
   it('follows the saved sidebar order, unknown ids last in default order', () => {

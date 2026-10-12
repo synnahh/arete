@@ -42,6 +42,7 @@ import Lists      from './tabs/Lists.jsx';
 import Focus      from './tabs/Focus.jsx';
 import Vault      from './tabs/Vault.jsx';
 import Settings   from './tabs/Settings.jsx';
+import Profile    from './tabs/Profile.jsx';
 import Places     from './tabs/Places.jsx';
 import Routines   from './tabs/Routines.jsx';
 import Mind       from './tabs/Mind.jsx';
@@ -80,6 +81,7 @@ const TAB_MAP = {
   focus:      Focus,
   vault:      Vault,
   settings:   Settings,
+  profile:    Profile,
   routines:   Routines,
   mind:       Mind,
   lm:         LM,
