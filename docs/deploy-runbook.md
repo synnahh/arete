@@ -62,3 +62,10 @@ Eufy has no public API, so the route is EufyLife -> Apple Health -> Health Auto 
 3. Deploy `health-ingest` with JWT verification **off** (the phone app cannot sign in): `supabase functions deploy health-ingest --no-verify-jwt`, or turn "Verify JWT" off for it in the dashboard.
 4. On the iPhone: EufyLife > turn on Apple Health sharing. Health Auto Export > Automations > REST API: URL `https://<project>.supabase.co/functions/v1/health-ingest`, POST, JSON v2, header `x-health-token: <the secret>`, date range Today, summarize data on.
 5. Check: `curl -X POST <url> -H "x-health-token: <secret>" -d '{}'` returns `{"ok":true,"days":0,...}`. A wrong token returns 401.
+
+### Fitbit Air (added 2026-10-12)
+Route: Fitbit Air -> Google Health app -> Apple Health -> Health Auto Export -> `health-ingest` (the same pipe as the Eufy scale). Google Health 5.05 and later writes steps, distance, heart rate, sleep and exercise to Apple Health (HRV is not passed on). In Google Health: Profile or Connections > Apps and services > Apple Health, and sign in with the same Google account the Fitbit uses. In Health Auto Export, add the Fitbit-sourced metrics to the same REST automation. The direct Google Health API (`health.googleapis.com/v4`) is NOT used: Google is not onboarding new projects, all its scopes are restricted, and a testing-mode OAuth app loses its refresh token every 7 days. The legacy Fitbit Web API is switched off on 2026-10-30.
+
+### Checking sync between devices
+Profile > Sync check on both devices: Send test ping on one and watch the other receive it without a refresh (it shows the delay); Compare with the cloud lists row counts per kind of data against what this device holds. Settings and documents (exercise library, steps, skin steps) now follow changes live as well as the collections.
+

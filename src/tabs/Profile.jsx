@@ -11,6 +11,7 @@ import { weekStrip, profileStats, goalDay } from '../domain/profileStats.js';
 import { ageFrom } from '../domain/intake.js';
 import { GOAL_TEMPLATES } from '../domain/goals.js';
 import { label } from '../components/ui.js';
+import SyncCheck from '../components/SyncCheck.jsx';
 
 const card = { padding: 18, borderRadius: 16, background: 'var(--bg-panel)', border: '0.5px solid var(--card-border)', display: 'flex', flexDirection: 'column', gap: 14 };
 const field = { width: '100%', boxSizing: 'border-box', minHeight: 46, borderRadius: 12, padding: '0 14px', border: '0.5px solid var(--card-border)', background: 'var(--bg-base)', color: 'var(--text-primary)', fontFamily: 'inherit', fontSize: 16 };
@@ -90,6 +91,7 @@ export default function Profile({ settings = {} }) {
           <button type="button" onClick={save} style={{ minHeight: 48, borderRadius: 12, border: 'none', background: 'var(--accent)', color: 'var(--bg-base)', fontSize: 15, fontWeight: 700, fontFamily: 'inherit', cursor: 'pointer' }}>{saved ? 'Saved' : 'Save'}</button>
           <div style={{ fontSize: 12.5, color: 'var(--text-secondary)' }}>Birth date, sex and height are used to work out your calorie needs. Your weight comes from your weigh-ins.</div>
         </section>
+        <SyncCheck />
       </div>
     </div>
   );

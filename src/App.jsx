@@ -3,7 +3,8 @@ import { Icon as LineIcon } from './components/icons.jsx';
 import { isMobile } from './utils/platform.js';
 import { handleSpotifyCallback }    from './utils/spotify.js';
 import { storage, STORAGE_KEYS }    from './utils/storage.js';
-import { supabase }                 from './supabase/supabase.js';
+import { supabase, getUserId }       from './supabase/supabase.js';
+import { startSettingsSync }       from './utils/settingsSync.js';
 import MobileShell                  from './mobile/MobileShell.jsx';
 import Toaster                      from './components/Toaster.jsx';
 import { applyTheme }            from './styles/themes.js';
@@ -330,6 +331,18 @@ export default function App() {
       window.removeEventListener('unhandledrejection', onRejection);
     };
   }, []);
+
+  // ── Settings follow you between devices: a change on one reaches the others live ──
+  useEffect(() => {
+    if (DEV_VIEW || hasSession !== true) return undefined;
+    let stop = () => {};
+    let alive = true;
+    getUserId().then((uid) => {
+      if (!alive || !uid) return;
+      stop = startSettingsSync(uid, (merged) => window.dispatchEvent(new CustomEvent('valerie:settings-changed', { detail: merged })));
+    });
+    return () => { alive = false; stop(); };
+  }, [hasSession, DEV_VIEW]);
 
   // ── Live settings sync — update state when Settings tab saves changes ──────
   useEffect(() => {
