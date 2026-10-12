@@ -53,6 +53,7 @@ import { supabase, getUserIdSync, signOut as supabaseSignOut, getAuthUser } from
 import { currencySymbol as currencySym } from '../utils/currency.js';
 import { toLocalDateKey } from '../utils/localDate.js';
 import { updateSettings } from '../utils/settingsStore.js';
+import FaceIdSetting from '../components/FaceIdSetting.jsx';
 
 // ─── Sections ────────────────────────────────────────────────────────────────
 const SECTIONS = [
@@ -1904,6 +1905,8 @@ export function SecuritySection({ settings, onSave }) {
   return (
     <div>
       <SectionTitle>Security <SavedBadge show={saved} /></SectionTitle>
+
+      <FaceIdSetting />
 
       {/* ── Access code ── */}
       <div style={{ marginBottom: 28, padding: '18px 20px', borderRadius: 12, border: '0.5px solid var(--card-border)', background: 'var(--hover-bg)' }}>
