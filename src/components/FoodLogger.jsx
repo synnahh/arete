@@ -9,6 +9,8 @@ import { useDocument } from '../supabase/useDocument.js';
 import { useFoodLibrary } from '../hooks/useFoodLibrary.js';
 import { STORAGE_KEYS } from '../utils/storage.js';
 import { toLocalDateKey } from '../utils/localDate.js';
+import { useFoodDb } from '../hooks/useFoodDb.js';
+import { portionChips } from '../domain/foodDb.js';
 import { searchFoods, lookupBarcode, startBarcodeScan, canScanBarcodes, decodeBarcodeFromFile } from '../utils/openFoodFacts.js';
 import { recentFoods, SECTIONS } from '../domain/foods.js';
 import {
@@ -56,7 +58,10 @@ export default function FoodLogger({ onLog, onClose }) {
   }), [lib.favourites, lib.customFoods, nutritionLogs, savedMeals, today]);
 
   const local = useMemo(() => searchLocal(query, owned, query.trim() ? 8 : 10), [query, owned]);
-  const rows = useMemo(() => (query.trim() ? mergeResults(local, remote) : local), [query, local, remote]);
+  const db = useFoodDb(step === 'search');
+  // The bundled database answers at once, with no network: branded products first, then everyday foods.
+  const bundled = useMemo(() => (query.trim().length >= 2 ? db.search(query, 10).map(f => ({ ...f })) : []), [db, query]);
+  const rows = useMemo(() => (query.trim() ? mergeResults(mergeResults(local, bundled, 16), remote, 18) : local), [query, local, bundled, remote]);
 
   // Database search, a moment after you stop typing. Your own foods show instantly.
   useEffect(() => {
@@ -147,6 +152,13 @@ export default function FoodLogger({ onLog, onClose }) {
           <input type="number" inputMode="decimal" min="0" value={amount} onChange={e => setAmount(e.target.value)} aria-label="Amount" style={{ ...input, flex: 1, fontSize: 20, fontWeight: 700, textAlign: 'center' }} />
           <span style={{ minWidth: 70, fontSize: 15, color: 'var(--text-secondary)' }}>{unitLabel}</span>
         </div>
+        {portionChips(food).length > 0 && (
+          <div role="group" aria-label="Portions" style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>
+            {portionChips(food).map(p => (
+              <button key={p.label} type="button" aria-pressed={amt === p.grams} onClick={() => setAmount(String(p.grams))} style={chip(amt === p.grams)}>{p.label} · {fmt(p.grams)} g</button>
+            ))}
+          </div>
+        )}
         <div role="group" aria-label="Quick amounts" style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>
           {amountChips(food, memory[food.name.toLowerCase().replace(/[^a-z0-9 ]+/g, ' ').replace(/\s+/g, ' ').trim()]).map(c => (
             <button key={c} type="button" aria-pressed={amt === c} onClick={() => setAmount(String(c))} style={chip(amt === c)}>{fmt(c)}{food.amountKind === 'grams' ? ' g' : ''}</button>
@@ -206,7 +218,7 @@ export default function FoodLogger({ onLog, onClose }) {
   }
 
   // ── Search (the front door) ──
-  const empty = query.trim().length > 0 && !searching && rows.length === 0;
+  const empty = query.trim().length > 0 && !searching && db.ready && rows.length === 0;
   return (
     <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
       <div style={{ display: 'flex', gap: 8 }}>
@@ -243,8 +255,9 @@ export default function FoodLogger({ onLog, onClose }) {
         })}
       </ul>
 
-      {searching && <div role="status" style={{ fontSize: 13, color: 'var(--text-secondary)' }}>Searching the food database…</div>}
-      {offline && <div role="status" style={{ fontSize: 13, color: '#e8a13a' }}>Could not reach the food database. Your own foods still work.</div>}
+      {query.trim().length >= 2 && db.ready && <div style={{ fontSize: 11.5, color: 'var(--text-muted)' }}>{db.count.toLocaleString('en-AU')} foods on this device{db.branded ? `, ${db.branded.toLocaleString('en-AU')} of them branded` : ''}{searching ? ' · checking online for more…' : ''}</div>}
+      {searching && !db.ready && <div role="status" style={{ fontSize: 13, color: 'var(--text-secondary)' }}>Searching the food database…</div>}
+      {offline && bundled.length === 0 && <div role="status" style={{ fontSize: 13, color: '#e8a13a' }}>Could not reach the food database. Your own foods still work.</div>}
       {empty && <div style={{ fontSize: 14, color: 'var(--text-secondary)' }}>Nothing found for "{query.trim()}".</div>}
 
       <button type="button" onClick={() => { setQuick(q => ({ ...q, name: query.trim() })); setStep('quick'); }} style={{ ...ghost, minHeight: 44, fontSize: 14 }}>
