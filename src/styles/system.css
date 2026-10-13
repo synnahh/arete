@@ -243,6 +243,31 @@ html[data-motion="reduced"] { --dur-1: 90ms; --dur-2: 140ms; --dur-3: 180ms; --d
 @keyframes ui-glow { 0% { box-shadow: 0 0 0 0 color-mix(in srgb, var(--tab-accent) 55%, transparent); } 100% { box-shadow: 0 0 0 14px transparent; } }
 .ui-glow { animation: ui-glow 900ms var(--ease-out) 1; }
 
+/* ── Barcode scanner (components/BarcodeScanner.jsx): full screen, always dark ── */
+.scan-screen { position: fixed; inset: 0; z-index: 1000; background: #05070a; color: #fff; display: flex; flex-direction: column; overflow: hidden;
+  animation: ui-fade var(--dur-2) var(--ease-out) backwards; }
+.scan-video { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: cover; opacity: 0.9; }
+.scan-top { position: relative; z-index: 2; display: flex; align-items: center; justify-content: space-between; gap: 8px;
+  padding: calc(8px + env(safe-area-inset-top)) 8px 8px; background: linear-gradient(#000c, transparent); }
+.scan-back { width: 44px; height: 44px; border: none; background: none; color: #fff; cursor: pointer; display: flex; align-items: center; justify-content: center; border-radius: 50%; -webkit-tap-highlight-color: transparent; }
+.scan-back:focus-visible, .scan-actions button:focus-visible, .scan-type button:focus-visible { outline: 2px solid #22d3ee; outline-offset: 2px; }
+.scan-title { margin: 0; font-family: var(--font-display); font-size: 20px; font-weight: 600; letter-spacing: 0.02em; color: #fff; }
+.scan-stage { position: relative; z-index: 1; flex: 1; display: flex; align-items: center; justify-content: center; min-height: 0; }
+.scan-frame { position: relative; border-radius: 10px; box-shadow: 0 0 0 100vmax rgba(0, 0, 0, 0.62); }
+.scan-beam { position: absolute; left: 4%; right: 4%; top: 6%; height: 2px; border-radius: 2px; will-change: transform;
+  animation: scan-sweep 2.2s ease-in-out infinite alternate; }
+.scan-beam.is-still { animation: none; top: 50%; }
+@keyframes scan-sweep { from { transform: translateY(0); } to { transform: translateY(calc(min(78vw, 320px) * 0.88)); } }
+.scan-bottom { position: relative; z-index: 2; display: flex; flex-direction: column; gap: 12px; padding: 16px 16px calc(18px + env(safe-area-inset-bottom)); background: linear-gradient(transparent, #000c 40%); }
+.scan-msg { text-align: center; font-size: 14px; line-height: 1.45; min-height: 20px; }
+.scan-actions { display: flex; gap: 8px; justify-content: center; flex-wrap: wrap; }
+.scan-actions button, .scan-type button { min-height: 44px; padding: 0 16px; border-radius: 999px; border: 0.5px solid rgba(255,255,255,0.28); background: rgba(255,255,255,0.1); color: #fff; font: inherit; font-size: 14px; font-weight: 550; cursor: pointer; -webkit-tap-highlight-color: transparent; }
+.scan-actions button[aria-pressed="true"] { background: rgba(34, 211, 238, 0.22); border-color: #22d3ee; }
+.scan-type { display: flex; gap: 8px; }
+.scan-type input { flex: 1; min-width: 0; height: 44px; padding: 0 14px; border-radius: 12px; border: 0.5px solid rgba(255,255,255,0.28); background: rgba(0,0,0,0.55); color: #fff; font: inherit; font-size: 16px; letter-spacing: 0.08em; }
+.scan-type button:disabled { opacity: 0.5; }
+@media (prefers-reduced-motion: reduce) { .scan-beam { animation: none; top: 50%; } }
+
 /* Rest timer dock: fixed above the phone tab bar, or above the desktop dock. */
 .rest-dock { position: fixed; z-index: 120; left: 12px; right: 12px; bottom: calc(78px + env(safe-area-inset-bottom, 0px)); margin: 0 auto; max-width: 560px; box-sizing: border-box; }
 @media (min-width: 900px) { .rest-dock { bottom: 88px; } }

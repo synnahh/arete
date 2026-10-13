@@ -110,6 +110,9 @@ if (typeof document !== 'undefined') {
   document.addEventListener('visibilitychange', () => { if (document.hidden) releaseCameraNow(); });
 }
 
+/** The live camera track while a scan is running (for the torch), or null. */
+export const cameraTrack = () => cam.stream?.getVideoTracks?.()[0] ?? null;
+
 /**
  * Read a barcode from a photo (an <input type="file" capture> result). The phone's own
  * camera sheet takes the picture, so there is no web camera permission at all.

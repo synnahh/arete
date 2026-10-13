@@ -3,7 +3,7 @@
 // it at the amount you used last time in one tap; tapping the row lets you change the
 // amount first. Scan a barcode or add a food by hand from the same place.
 // Rules: src/domain/foodLogger.js. Used in a sheet on the phone and a dialog on desktop.
-import { useEffect, useMemo, useRef, useState } from 'react';
+import { useDeferredValue, useEffect, useMemo, useRef, useState } from 'react';
 import { useCollection } from '../supabase/useCollection.js';
 import { useDocument } from '../supabase/useDocument.js';
 import { useFoodLibrary } from '../hooks/useFoodLibrary.js';
@@ -11,7 +11,8 @@ import { STORAGE_KEYS } from '../utils/storage.js';
 import { toLocalDateKey } from '../utils/localDate.js';
 import { useFoodDb } from '../hooks/useFoodDb.js';
 import { portionChips } from '../domain/foodDb.js';
-import { searchFoods, lookupBarcode, startBarcodeScan, canScanBarcodes, decodeBarcodeFromFile } from '../utils/openFoodFacts.js';
+import { searchFoods, lookupBarcode, canScanBarcodes } from '../utils/openFoodFacts.js';
+import BarcodeScanner from './BarcodeScanner.jsx';
 import { recentFoods, SECTIONS } from '../domain/foods.js';
 import {
   localFoods, remoteFood, searchLocal, mergeResults, macrosFor, amountChips, startAmount, entryFor, quickFoodEntry, remember, defaultSection,
@@ -42,13 +43,9 @@ export default function FoodLogger({ onLog, onClose }) {
   const [amount, setAmount] = useState('');
   const [section, setSection] = useState(() => defaultSection());
   const [quick, setQuick] = useState({ name: '', calories: '', protein: '', carbs: '', fat: '' });
-  const [scanMsg, setScanMsg] = useState('');
   const [busy, setBusy] = useState(false);
   const [loggedCount, setLoggedCount] = useState(0);
-  const videoRef = useRef(null);
-  const stopRef = useRef(null);
   const inputRef = useRef(null);
-  const photoRef = useRef(null);
 
   const owned = useMemo(() => localFoods({
     favourites: lib.favourites,
@@ -57,11 +54,14 @@ export default function FoodLogger({ onLog, onClose }) {
     savedMeals,
   }), [lib.favourites, lib.customFoods, nutritionLogs, savedMeals, today]);
 
-  const local = useMemo(() => searchLocal(query, owned, query.trim() ? 8 : 10), [query, owned]);
+  // The box updates at once; the results list catches up a moment later and never blocks a keystroke
+  // (searching ~19,000 foods and redrawing rows on every key made typing laggy on a phone).
+  const dq = useDeferredValue(query);
+  const local = useMemo(() => searchLocal(dq, owned, dq.trim() ? 8 : 10), [dq, owned]);
   const db = useFoodDb(step === 'search');
   // The bundled database answers at once, with no network: branded products first, then everyday foods.
-  const bundled = useMemo(() => (query.trim().length >= 2 ? db.search(query, 10).map(f => ({ ...f })) : []), [db, query]);
-  const rows = useMemo(() => (query.trim() ? mergeResults(mergeResults(local, bundled, 16), remote, 18) : local), [query, local, bundled, remote]);
+  const bundled = useMemo(() => (dq.trim().length >= 2 ? db.search(dq, 10).map(f => ({ ...f })) : []), [db, dq]);
+  const rows = useMemo(() => (dq.trim() ? mergeResults(mergeResults(local, bundled, 16), remote, 18) : local), [dq, local, bundled, remote]);
 
   // Database search, a moment after you stop typing. Your own foods show instantly.
   useEffect(() => {
@@ -78,7 +78,6 @@ export default function FoodLogger({ onLog, onClose }) {
     return () => { alive = false; clearTimeout(t); };
   }, [query]);
 
-  useEffect(() => () => stopRef.current?.(), []);
   useEffect(() => { if (step === 'search') inputRef.current?.focus(); }, [step]);
 
   const pick = (f) => { setFood(f); setAmount(String(startAmount(f, memory))); setStep('amount'); };
@@ -98,31 +97,11 @@ export default function FoodLogger({ onLog, onClose }) {
 
   const quickLog = (f) => save(entryFor(f, startAmount(f, memory), { section }), f, startAmount(f, memory), true);
 
-  const startScan = () => {
-    setScanMsg(''); setStep('scan');
-    // wait a tick so the <video> exists
-    setTimeout(() => {
-      stopRef.current = startBarcodeScan(videoRef.current, {
-        onDetect: async (code) => {
-          stopRef.current = null;
-          try { pick(remoteFood(await lookupBarcode(code))); }
-          catch { setScanMsg(`No product found for ${code}. Try searching by name, or add it by hand.`); }
-        },
-        onError: (e) => setScanMsg(e?.name === 'NotAllowedError' ? 'The camera is blocked for this app. Use Take a photo below, or type the name.' : (e?.message || 'Could not open the camera. Use Take a photo below, or type the name.')),
-      });
-    }, 50);
-  };
-  const stopScan = () => { stopRef.current?.(); stopRef.current = null; };
-
-  // A photo of the barcode from the phone's own camera sheet: no web camera permission.
-  const onBarcodePhoto = async (e) => {
-    const file = e.target.files?.[0];
-    e.target.value = '';
-    if (!file) return;
-    stopScan();
-    setScanMsg('Reading the barcode…');
-    try { pick(remoteFood(await lookupBarcode(await decodeBarcodeFromFile(file)))); }
-    catch { setScanMsg('Could not read a barcode from that photo, or the product is not in the database. Try again closer, or search by name.'); }
+  // The scanner is its own full-screen view; a found product goes straight to the amount step.
+  const scanCode = async (code) => {
+    try { pick(remoteFood(await lookupBarcode(code))); }
+    catch { return `No product found for ${code}. Try another angle, type the number, or search by name.`; }
+    return undefined;
   };
 
   const amt = parseFloat(amount);
@@ -199,23 +178,7 @@ export default function FoodLogger({ onLog, onClose }) {
   }
 
   // ── Scan ──
-  if (step === 'scan') {
-    return (
-      <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
-        <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-          <button type="button" onClick={() => { stopScan(); setStep('search'); }} aria-label="Back to search" style={{ ...ghost, minHeight: 44, minWidth: 44, padding: 0 }}>‹</button>
-          <div style={{ fontSize: 17, fontWeight: 700, color: 'var(--text-primary)' }}>Scan a barcode</div>
-        </div>
-        <div style={{ borderRadius: 14, overflow: 'hidden', background: '#000', position: 'relative' }}>
-          <video ref={videoRef} muted playsInline aria-label="Camera preview" style={{ width: '100%', height: 260, objectFit: 'cover', display: 'block' }} />
-          <div aria-hidden="true" style={{ position: 'absolute', inset: '32% 12%', border: '2px solid rgba(255,255,255,0.7)', borderRadius: 12 }} />
-        </div>
-        <div role="status" style={{ fontSize: 13.5, color: scanMsg ? '#e8a13a' : 'var(--text-secondary)', textAlign: 'center' }}>{scanMsg || 'Hold the barcode inside the box, steady and well lit.'}</div>
-        <input ref={photoRef} type="file" accept="image/*" capture="environment" onChange={onBarcodePhoto} aria-label="Barcode photo" style={{ display: 'none' }} />
-        <button type="button" onClick={() => photoRef.current?.click()} style={{ ...ghost, minHeight: 44, fontSize: 14 }}>Take a photo instead (no camera permission)</button>
-      </div>
-    );
-  }
+  if (step === 'scan') return <BarcodeScanner title="Scan Barcode" onClose={() => setStep('search')} onCode={scanCode} />;
 
   // ── Search (the front door) ──
   const empty = query.trim().length > 0 && !searching && db.ready && rows.length === 0;
@@ -223,7 +186,7 @@ export default function FoodLogger({ onLog, onClose }) {
     <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
       <div style={{ display: 'flex', gap: 8 }}>
         <input ref={inputRef} type="search" value={query} onChange={e => setQuery(e.target.value)} placeholder="Search foods, or type what you ate" aria-label="Search foods" style={{ ...input, flex: 1 }} />
-        {canScanBarcodes() && <button type="button" onClick={startScan} aria-label="Scan a barcode" style={{ ...ghost, minWidth: 52, padding: 0 }}>
+        {canScanBarcodes() && <button type="button" onClick={() => setStep('scan')} aria-label="Scan a barcode" style={{ ...ghost, minWidth: 52, padding: 0 }}>
           <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" aria-hidden="true"><path d="M4 7V5a1 1 0 0 1 1-1h2M17 4h2a1 1 0 0 1 1 1v2M20 17v2a1 1 0 0 1-1 1h-2M7 20H5a1 1 0 0 1-1-1v-2M8 8v8M11 8v8M14 8v8M17 8v8" /></svg>
         </button>}
       </div>

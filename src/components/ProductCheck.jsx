@@ -6,7 +6,8 @@ import { useRef, useState } from 'react';
 import { checkProduct, TAG_LABELS } from '../domain/skin.js';
 import { scoreProduct, BAND_LABEL, SKIN_TYPES, SKIN_CONCERNS, CONCERN_LABEL } from '../domain/skinScore.js';
 import { isBarcode, lookupBeautyProduct } from '../utils/openBeautyFacts.js';
-import { startBarcodeScan, canScanBarcodes } from '../utils/openFoodFacts.js';
+import { canScanBarcodes } from '../utils/openFoodFacts.js';
+import BarcodeScanner from './BarcodeScanner.jsx';
 import { label } from './ui.js';
 
 const input = { width: '100%', boxSizing: 'border-box', minHeight: 44, padding: '0 12px', borderRadius: 10, background: 'var(--input-bg)', border: '0.5px solid var(--input-border)', color: 'var(--text-primary)', fontFamily: 'inherit', fontSize: 14 };
@@ -36,8 +37,6 @@ export default function ProductCheck({ steps, onAdd, skinProfile = {}, onSkinPro
   const [busy, setBusy] = useState(false);
   const [scanning, setScanning] = useState(false);
   const [track, setTrack] = useState(true);
-  const videoRef = useRef(null);
-  const stopRef = useRef(null);
   const canScan = canScanBarcodes();
 
   const result = name.trim() || ingredients.trim() ? checkProduct({ name, ingredients }, steps) : null;
@@ -61,14 +60,7 @@ export default function ProductCheck({ steps, onAdd, skinProfile = {}, onSkinPro
     finally { setBusy(false); }
   }
 
-  function stopScan() { stopRef.current?.(); stopRef.current = null; setScanning(false); }
-  function scan() {
-    setStatus(''); setScanning(true);
-    stopRef.current = startBarcodeScan(videoRef.current, {
-      onDetect: (c) => { stopScan(); setCode(c); lookup(c); },
-      onError: (e) => { setScanning(false); setStatus(e.message || 'Could not start the camera. Type the barcode instead.'); },
-    });
-  }
+  function scan() { setStatus(''); setScanning(true); }
 
   async function add(when) {
     if (!name.trim()) { setStatus('Give the product a name first.'); return; }
@@ -81,7 +73,7 @@ export default function ProductCheck({ steps, onAdd, skinProfile = {}, onSkinPro
 
   return (
     <div style={{ padding: 18, borderRadius: 16, background: 'var(--bg-panel)', border: '0.5px solid var(--card-border)', display: 'flex', flexDirection: 'column', gap: 12 }}>
-      <button type="button" aria-expanded={open} onClick={() => { setOpen(o => !o); if (open) stopScan(); }}
+      <button type="button" aria-expanded={open} onClick={() => { setOpen(o => !o); if (open) setScanning(false); }}
         style={{ ...label, background: 'none', border: 'none', padding: 0, cursor: 'pointer', textAlign: 'left', minHeight: 32 }}>
         Check a product {open ? '▾' : '▸'}
       </button>
@@ -104,9 +96,9 @@ export default function ProductCheck({ steps, onAdd, skinProfile = {}, onSkinPro
             <input aria-label="Barcode number" inputMode="numeric" placeholder="Barcode number" value={code} onChange={e => setCode(e.target.value)}
               onKeyDown={e => { if (e.key === 'Enter' && isBarcode(code)) lookup(); }} style={{ ...input, flex: 1, minWidth: 160 }} />
             <button type="button" onClick={() => lookup()} disabled={busy || !isBarcode(code)} style={{ ...btn(false), opacity: isBarcode(code) ? 1 : 0.5 }}>Look up</button>
-            {canScan && <button type="button" onClick={scanning ? stopScan : scan} style={btn(false)}>{scanning ? 'Stop' : 'Scan'}</button>}
+            {canScan && <button type="button" onClick={scan} style={btn(false)}>Scan</button>}
           </div>
-          {scanning && <video ref={videoRef} muted playsInline aria-label="Camera preview" style={{ width: '100%', maxHeight: 220, borderRadius: 12, background: '#000', objectFit: 'cover' }} />}
+          {scanning && <BarcodeScanner title="Scan product" onClose={() => setScanning(false)} onCode={(c) => { setScanning(false); setCode(c); lookup(c); }} />}
           <input aria-label="Product name" placeholder="Product name" value={name} onChange={e => setName(e.target.value)} style={input} />
           <textarea aria-label="Ingredients" placeholder="Paste the ingredients from the label (INCI list)" rows={3} value={ingredients}
             onChange={e => setIngredients(e.target.value)} style={{ ...input, padding: 12, resize: 'vertical' }} />
