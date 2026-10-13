@@ -101,7 +101,8 @@ export function SlidingTabs({ items, value, onChange, label, mode = 'tabs', boxe
     setThumb({ x: el.offsetLeft, w: el.offsetWidth, h: el.offsetHeight, y: el.offsetTop });
   }, [value]);
 
-  useLayoutEffect(() => { measure(); }, [measure, items.length]);
+  const labels = items.map(t => `${t.id}:${typeof t.label === 'string' ? t.label : ''}`).join('|');
+  useLayoutEffect(() => { measure(); }, [measure, labels]);
   useEffect(() => {
     if (!wrap.current || typeof ResizeObserver === 'undefined') return undefined;
     const ro = new ResizeObserver(() => measure());

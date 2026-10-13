@@ -40,9 +40,14 @@ export default function Toaster({ phone = false }) {
     return () => window.removeEventListener('valerie:toast', handler);
   }, []);
 
+  // Once per toast: an Undo tap racing the timeout must not drop the toast after it too.
+  const goingFor = useRef(null);
   const next = () => {
+    const id = queue[0]?._id;
+    if (id == null || goingFor.current === id) return;
+    goingFor.current = id;
     setLeaving(true);
-    setTimeout(() => { setQueue(q => q.slice(1)); setLeaving(false); setPaused(false); }, LEAVE_MS);
+    setTimeout(() => { setQueue(q => (q[0]?._id === id ? q.slice(1) : q)); setLeaving(false); setPaused(false); }, LEAVE_MS);
   };
 
   // A plain toast that is showing gives way at once to a newer one.
