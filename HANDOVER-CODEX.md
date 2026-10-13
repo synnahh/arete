@@ -1,5 +1,13 @@
 # Arete (was VALERIE) — Handover for the next agent
 
+# LATEST (2026-10-14): desktop fixes, split inputs, Home Metrics
+
+- **Desktop New food / Build recipe:** the forms rendered as cards far down the Nutrition page, so the buttons looked dead. They now open in a centred dialog (`Motion.jsx` `Sheet`, new `wide` prop, `.ui-sheet.is-wide` in `system.css`) in `tabs/Health.jsx`. Phone already used a bottom sheet (checked: opens, buttons not covered). Saving was NOT verified: dev view has no session, so `useCollection.add` reports "Not signed in".
+- **Home scroll on desktop:** `main` is `overflow:hidden`, so `HomeScreen` now owns a scroll container when not `compact`.
+- **Split Planner:** sets/min/max boxes (`TargetInput` in `SplitBuilder.jsx`) keep your typing and save on blur/Enter, so "10" in Max is no longer judged against Min after the "1" (that reset Min to 1). Labelled columns, previous/next day arrows, and the editor opens on today's (or the first) training day.
+- **Metrics on Home** (`components/MetricsCard.jsx`, `domain/metrics.js`, `hooks/useHealthHistory.js`, section id `metrics`, default on, full width): tiles per metric with latest value, change vs the previous 7 days, 14-day sparkline, age of reading. Sources: `health_sync` rows, `body_metrics`, `sleep_data`. Any metric Health Auto Export sends that has no field of its own is stored by `healthMap.js` under `days[day].more[name] = {v,u}` (sum for distance/flights/time-type names, average otherwise) and shows as an "Other" tile on its own; `health-ingest/index.ts` merges `more` per name. **Needs a redeploy of `health-ingest`** (not deployed yet at all). Anyone who already saved a Home layout must switch Metrics on under Customise.
+- **Verified:** 788 tests pass, `build` and `build:pwa` pass, no dev bypass in `dist`. In the browser (desktop 1280, phone 375): dialogs open, Home scrolls at 500 px high, Metrics tiles render from seeded body/sleep data, split Min 8 / Max 10 typed key by key survives. NOT verified: real Supabase, real health data, a real phone.
+
 # LATEST (2026-10-13, later): UI and motion upgrade, Muscle Ranking v2, Home in the middle
 
 - **Bar order:** `BAR_ORDER` in `nav/groups.js` = Train, Fuel, Home, Look, Progress (phone bar and desktop dock; `inBarOrder`). `GROUPS` keeps Home first because `groupOf()` falls back to `GROUPS[0]`.

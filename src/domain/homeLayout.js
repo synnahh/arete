@@ -12,6 +12,7 @@ export const HOME_SECTIONS = [
   { id: 'skin',     label: 'Skin routine',              hint: 'Tick off morning and night steps', on: true },
   { id: 'water',    label: 'Water',                     hint: 'One-tap glasses against your goal', on: true },
   { id: 'sleep',    label: 'Sleep and readiness',       hint: 'Last night and how ready you are', on: true },
+  { id: 'metrics',  label: 'Metrics',                   hint: 'Steps, heart, sleep, body: every reading, automatically', on: true },
   { id: 'workout',  label: "Today's workout",           hint: 'What you train today, with Start', on: false },
   { id: 'moves',    label: 'Next moves',                hint: 'The few things to do right now', on: false },
   { id: 'steps',    label: 'Steps',                     hint: 'Today and your 7-day average', on: false },

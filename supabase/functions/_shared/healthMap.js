@@ -86,6 +86,21 @@ export function mapHealthExport(payload) {
   avgMetric('respiratory_rate', 'respiratoryRate', 1);
   avgMetric('blood_oxygen_saturation', 'bloodOxygen', 1, (s) => num(s.qty), percent);
 
+  // Every other numeric metric (distance, flights, exercise minutes, VO2 max, wrist temperature,
+  // anything the Fitbit or the scale adds later) is kept per day under `more`, so the Home metrics
+  // card shows it without a code change. Totals that add up through a day are summed, the rest averaged.
+  const HANDLED = new Set(['step_count', 'active_energy', 'resting_heart_rate', 'heart_rate_variability', 'respiratory_rate',
+    'blood_oxygen_saturation', 'heart_rate', 'weight_body_mass', 'body_mass', 'body_fat_percentage', 'sleep_analysis']);
+  const CUMULATIVE = /distance|flights|exercise_time|stand_time|basal_energy|daylight|move_time|swimming_stroke|calories_burned/;
+  for (const [name, m] of Object.entries(byName)) {
+    if (HANDLED.has(name) || !/^[a-z0-9_]{1,60}$/i.test(name)) continue;
+    const vals = perDay(m.data, (s) => num(s.qty ?? s.Avg ?? s.avg));
+    for (const [day, xs] of Object.entries(vals)) {
+      const v = CUMULATIVE.test(name) ? xs.reduce((a, b) => a + b, 0) : avg(xs);
+      ((days[day] ||= {}).more ||= {})[name] = { v: round(v, 2), u: typeof m.units === 'string' ? m.units.slice(0, 16) : '' };
+    }
+  }
+
   const hr = byName.heart_rate;
   if (hr) {
     const rows = {};

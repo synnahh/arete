@@ -2,8 +2,8 @@ import { describe, it, expect } from 'vitest';
 import { HOME_SECTIONS, DEFAULT_HOME, cleanHome, setSection, moveSection, calorieStatus, waterStatus, weightStatus } from './homeLayout.js';
 
 describe('Home layout', () => {
-  it('shows exactly the six things Rob picked by default, in order', () => {
-    expect(DEFAULT_HOME).toEqual(['calories', 'weight', 'streak', 'skin', 'water', 'sleep']);
+  it('shows the six things Rob picked by default, in order, then the metrics area', () => {
+    expect(DEFAULT_HOME).toEqual(['calories', 'weight', 'streak', 'skin', 'water', 'sleep', 'metrics']);
   });
   it('keeps every other section available but off', () => {
     const off = HOME_SECTIONS.filter(s => !s.on).map(s => s.id);

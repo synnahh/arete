@@ -50,6 +50,10 @@ Deno.serve(async (req) => {
     const old = new Map((existing || []).map((r: { sync_date: string; data: Record<string, unknown> }) => [r.sync_date, r.data || {}]));
     const rows = dayKeys.map((d) => {
       const merged: Record<string, unknown> = { ...(old.get(d) || {}), ...days[d] };
+      // `more` holds the metrics without a field of their own: merge per name, never drop one a push did not repeat.
+      const oldMore = (old.get(d) as Record<string, unknown> | undefined)?.more;
+      const newMore = (days[d] as Record<string, unknown>).more;
+      if (oldMore || newMore) merged.more = { ...(oldMore as object || {}), ...(newMore as object || {}) };
       for (const k of KEEP_HIGHER) {
         const prev = Number((old.get(d) as Record<string, unknown> | undefined)?.[k]);
         if (Number.isFinite(prev) && prev > Number(merged[k] ?? 0)) merged[k] = prev;
