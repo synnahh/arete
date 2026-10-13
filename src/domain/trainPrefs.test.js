@@ -9,8 +9,8 @@ describe('train preferences', () => {
     expect(cleanTrainPrefs({ effort: 'bogus', defaultSets: 99 })).toEqual(TRAIN_DEFAULTS);
   });
   it('keeps valid choices', () => {
-    expect(cleanTrainPrefs({ effort: 'rir', warmups: false, plates: false, autoRest: false, defaultSets: 4 }))
-      .toEqual({ effort: 'rir', warmups: false, plates: false, autoRest: false, defaultSets: 4 });
+    expect(cleanTrainPrefs({ effort: 'rir', warmups: false, plates: false, autoRest: false, defaultSets: 4, restSound: true, restVibrate: false }))
+      .toEqual({ effort: 'rir', warmups: false, plates: false, autoRest: false, defaultSets: 4, restSound: true, restVibrate: false });
   });
   it('the same stored value shows as reps left in RIR mode', () => {
     expect(effortOptions('rpe').map(o => o.text)).toEqual(['6', '7', '8', '9', '10']);

@@ -1,0 +1,274 @@
+/* ════════════════════════════════════════════════════════════════════════════
+   ARETE DESIGN + MOTION SYSTEM (v3)
+   One set of tokens and component classes for every screen. Builds on the v2.1
+   motion tokens in globals.css (which stay for older screens) and on the theme
+   variables (--bg-*, --card-*, --text-*, --tab-accent), so all six themes and
+   the light Arctic theme work unchanged.
+
+   Motion rules
+   - transform and opacity only, except the collapse (grid rows) and progress
+     fills, which animate one property on one element.
+   - Durations: instant 100ms (press), fast 160ms (state), base 240ms
+     (component), slow 380ms (layout), sheet 420ms.
+   - Curves: --ease-out to settle, --ease-emph for things entering, --ease-exit
+     for things leaving, --spring for small confirmations (one gentle overshoot).
+   - Everything is switched off by prefers-reduced-motion and Settings > Motion
+     (the kill switch in globals.css), and shortened by data-motion="reduced".
+   ════════════════════════════════════════════════════════════════════════════ */
+:root {
+  --dur-instant: 100ms;
+  --dur-1: 160ms;
+  --dur-2: 240ms;
+  --dur-3: 380ms;
+  --dur-sheet: 420ms;
+  --dur-chart: 700ms;
+  --stagger: 35ms;
+  --ease-emph: cubic-bezier(0.2, 0, 0, 1);
+  --ease-exit: cubic-bezier(0.4, 0, 1, 1);
+  --spring: cubic-bezier(0.34, 1.4, 0.64, 1);
+
+  /* Radii: small controls, cards, sheets. */
+  --r-xs: 8px;
+  --r-sm: 11px;
+  --r-md: 16px;
+  --r-lg: 22px;
+  --r-pill: 999px;
+
+  /* Spacing scale (4-pt). */
+  --s-1: 4px; --s-2: 8px; --s-3: 12px; --s-4: 16px; --s-5: 20px; --s-6: 24px; --s-8: 32px;
+
+  /* Elevation: surfaces get lighter as they rise; shadows stay soft and dark. */
+  --surface-0: var(--bg-base);
+  --surface-1: var(--bg-panel);
+  --surface-2: color-mix(in srgb, var(--bg-panel) 92%, var(--text-primary) 8%);
+  --surface-3: color-mix(in srgb, var(--bg-panel) 86%, var(--text-primary) 14%);
+  --hairline: var(--card-border);
+  --shadow-1: 0 1px 2px rgba(0, 0, 0, 0.28);
+  --shadow-2: 0 6px 18px rgba(0, 0, 0, 0.32), 0 1px 2px rgba(0, 0, 0, 0.24);
+  --shadow-3: 0 18px 48px rgba(0, 0, 0, 0.45), 0 2px 6px rgba(0, 0, 0, 0.3);
+  --inner-top: inset 0 1px 0 rgba(255, 255, 255, 0.05);
+
+  /* Semantic states. */
+  --ok: #4caf7d;
+  --warn: #e8a13a;
+  --bad: #e25d7a;
+  --info: #5b9cf6;
+
+  --focus-ring: 0 0 0 2px var(--bg-base), 0 0 0 4px var(--tab-accent);
+  --accent-soft: color-mix(in srgb, var(--tab-accent) 14%, transparent);
+  --accent-line: color-mix(in srgb, var(--tab-accent) 55%, transparent);
+}
+html[data-theme="arctic"] {
+  --shadow-1: 0 1px 2px rgba(20, 30, 50, 0.08);
+  --shadow-2: 0 6px 18px rgba(20, 30, 50, 0.1), 0 1px 2px rgba(20, 30, 50, 0.06);
+  --shadow-3: 0 18px 48px rgba(20, 30, 50, 0.16), 0 2px 6px rgba(20, 30, 50, 0.08);
+  --inner-top: inset 0 1px 0 rgba(255, 255, 255, 0.6);
+  --surface-2: color-mix(in srgb, var(--bg-panel) 96%, #000 4%);
+  --surface-3: color-mix(in srgb, var(--bg-panel) 92%, #000 8%);
+}
+html[data-motion="reduced"] { --dur-1: 90ms; --dur-2: 140ms; --dur-3: 180ms; --dur-sheet: 200ms; --dur-chart: 200ms; --stagger: 0ms; }
+
+/* ── Typography ──────────────────────────────────────────────────────────── */
+.t-display { font-family: var(--font-display); font-weight: 600; letter-spacing: 0.02em; line-height: 1.1; color: var(--text-primary); }
+.t-title   { font-size: 17px; font-weight: 600; line-height: 1.25; color: var(--text-primary); }
+.t-body    { font-size: 14px; line-height: 1.5; color: var(--text-secondary); }
+.t-caption { font-family: var(--font-mono); font-size: 10.5px; letter-spacing: 0.14em; text-transform: uppercase; color: var(--text-secondary); }
+.t-num     { font-family: var(--font-mono); font-variant-numeric: tabular-nums; letter-spacing: -0.01em; }
+
+/* ── Cards ───────────────────────────────────────────────────────────────── */
+.ui-card {
+  position: relative; border-radius: var(--r-md); background: var(--surface-1);
+  border: 0.5px solid var(--hairline); box-shadow: var(--shadow-1), var(--inner-top);
+  transition: border-color var(--dur-1) var(--ease-out), box-shadow var(--dur-2) var(--ease-out), transform var(--dur-1) var(--ease-out), opacity var(--dur-2) var(--ease-out);
+}
+.ui-card.is-interactive { cursor: pointer; }
+@media (hover: hover) and (pointer: fine) {
+  .ui-card.is-interactive:hover { border-color: var(--card-hover-border); box-shadow: var(--shadow-2), var(--inner-top); transform: translateY(-1px); }
+}
+.ui-card.is-interactive:active { transform: scale(0.99); transition-duration: var(--dur-instant); }
+.ui-card.is-focus { border-color: var(--accent-line); box-shadow: 0 0 0 1px var(--accent-line), 0 10px 30px color-mix(in srgb, var(--tab-accent) 10%, transparent), var(--inner-top); }
+.ui-card.is-done { opacity: 0.72; }
+
+/* ── Buttons ─────────────────────────────────────────────────────────────── */
+.ui-btn {
+  -webkit-appearance: none; appearance: none; display: inline-flex; align-items: center; justify-content: center; gap: 8px;
+  min-height: 44px; padding: 0 18px; border-radius: var(--r-pill); border: 0.5px solid var(--hairline);
+  background: transparent; color: var(--text-primary); font: inherit; font-size: 14px; font-weight: 600; cursor: pointer;
+  transition: transform var(--dur-1) var(--spring), background-color var(--dur-1) var(--ease-out), border-color var(--dur-1) var(--ease-out), color var(--dur-1) var(--ease-out), opacity var(--dur-1) var(--ease-out);
+  -webkit-tap-highlight-color: transparent; white-space: nowrap;
+}
+.ui-btn:focus-visible { outline: none; box-shadow: var(--focus-ring); }
+.ui-btn:active:not(:disabled) { transform: scale(0.96); transition-duration: var(--dur-instant); }
+.ui-btn:disabled { opacity: 0.4; cursor: not-allowed; }
+.ui-btn.is-primary { background: var(--tab-accent); color: var(--on-tab-accent); border-color: transparent; box-shadow: 0 6px 18px color-mix(in srgb, var(--tab-accent) 28%, transparent); }
+.ui-btn.is-soft { background: var(--accent-soft); color: var(--tab-accent); border-color: var(--accent-line); }
+.ui-btn.is-quiet { border-color: transparent; color: var(--text-secondary); }
+.ui-btn.is-danger { color: var(--bad); border-color: color-mix(in srgb, var(--bad) 40%, transparent); }
+.ui-btn.is-sm { min-height: 36px; padding: 0 14px; font-size: 13px; font-weight: 500; }
+.ui-btn.is-icon { width: 44px; padding: 0; }
+.ui-btn.is-block { width: 100%; }
+@media (hover: hover) and (pointer: fine) {
+  .ui-btn:not(.is-primary):not(:disabled):hover { background: var(--hover-bg); border-color: var(--card-hover-border); }
+  .ui-btn.is-primary:not(:disabled):hover { filter: brightness(1.06); }
+}
+
+/* ── Chips and segmented controls with a sliding indicator ───────────────── */
+.ui-tabs { position: relative; display: flex; gap: 4px; align-items: center; isolation: isolate; }
+.ui-tabs.is-boxed { padding: 3px; border-radius: var(--r-pill); background: var(--hover-bg); border: 0.5px solid var(--hairline); }
+.ui-tab {
+  position: relative; z-index: 1; flex-shrink: 0; min-height: 36px; padding: 0 14px; border-radius: var(--r-pill);
+  border: none; background: transparent; color: var(--text-secondary); font: inherit; font-size: 13px; font-weight: 500;
+  cursor: pointer; white-space: nowrap; transition: color var(--dur-2) var(--ease-out); -webkit-tap-highlight-color: transparent;
+}
+.ui-tab[aria-selected="true"], .ui-tab[aria-current="page"], .ui-tab[aria-pressed="true"] { color: var(--tab-accent); font-weight: 600; }
+.ui-tab:focus-visible { outline: none; box-shadow: var(--focus-ring); }
+.ui-tabs.is-boxed .ui-tab { flex: 1; }
+.ui-tabs-thumb {
+  position: absolute; z-index: 0; top: 0; left: 0; height: 100%; border-radius: var(--r-pill);
+  background: var(--accent-soft); border: 0.5px solid var(--accent-line); pointer-events: none;
+  transition: transform var(--dur-3) var(--ease-emph), width var(--dur-3) var(--ease-emph), opacity var(--dur-1) var(--ease-out);
+  will-change: transform, width;
+}
+.ui-tabs.is-boxed .ui-tabs-thumb { background: var(--surface-3); border-color: var(--hairline); box-shadow: var(--shadow-1); }
+.ui-tabs.is-boxed .ui-tab[aria-selected="true"], .ui-tabs.is-boxed .ui-tab[aria-pressed="true"] { color: var(--text-primary); }
+.ui-tabs.is-scroll { overflow-x: auto; scrollbar-width: none; -webkit-overflow-scrolling: touch; }
+.ui-tabs.is-scroll::-webkit-scrollbar { display: none; }
+
+/* Plain chips (filters, choices) that are not one-of-many tabs. */
+.ui-chip {
+  display: inline-flex; align-items: center; gap: 6px; min-height: 36px; padding: 0 14px; border-radius: var(--r-pill);
+  border: 0.5px solid var(--hairline); background: transparent; color: var(--text-secondary); font: inherit; font-size: 13px; font-weight: 500;
+  cursor: pointer; transition: background-color var(--dur-1) var(--ease-out), color var(--dur-1) var(--ease-out), border-color var(--dur-1) var(--ease-out), transform var(--dur-1) var(--spring);
+  -webkit-tap-highlight-color: transparent; white-space: nowrap;
+}
+.ui-chip[aria-pressed="true"] { background: var(--accent-soft); border-color: var(--accent-line); color: var(--tab-accent); font-weight: 600; }
+.ui-chip:active { transform: scale(0.95); transition-duration: var(--dur-instant); }
+.ui-chip:focus-visible { outline: none; box-shadow: var(--focus-ring); }
+
+/* ── Collapse: smooth height without measuring (grid 0fr -> 1fr) ─────────── */
+.ui-collapse { display: grid; grid-template-rows: 0fr; transition: grid-template-rows var(--dur-3) var(--ease-emph), opacity var(--dur-2) var(--ease-out); opacity: 0; }
+.ui-collapse > .ui-collapse-inner { min-height: 0; overflow: hidden; }
+.ui-collapse.is-open { grid-template-rows: 1fr; opacity: 1; }
+
+/* Chevron that turns when its section opens. */
+.ui-chev { display: inline-block; transition: transform var(--dur-2) var(--ease-emph); }
+[aria-expanded="true"] > .ui-chev, .ui-chev.is-open { transform: rotate(180deg); }
+
+/* ── Entrances ───────────────────────────────────────────────────────────── */
+@keyframes ui-enter   { from { opacity: 0; transform: translate3d(0, 8px, 0); } to { opacity: 1; transform: none; } }
+@keyframes ui-enter-x { from { opacity: 0; transform: translate3d(12px, 0, 0); } to { opacity: 1; transform: none; } }
+@keyframes ui-scale   { from { opacity: 0; transform: scale(0.96); } to { opacity: 1; transform: none; } }
+@keyframes ui-leave   { from { opacity: 1; transform: none; } to { opacity: 0; transform: translate3d(0, 6px, 0) scale(0.98); } }
+.ui-enter  { animation: ui-enter var(--dur-3) var(--ease-emph) backwards; animation-delay: calc(var(--i, 0) * var(--stagger)); }
+.ui-scale  { animation: ui-scale var(--dur-2) var(--ease-emph) backwards; }
+.ui-leave  { animation: ui-leave var(--dur-1) var(--ease-exit) both; pointer-events: none; }
+
+/* A list row that appears or goes (sets, foods, items): height + fade. */
+@keyframes ui-row-in  { from { opacity: 0; transform: translate3d(0, -6px, 0); } to { opacity: 1; transform: none; } }
+.ui-row-in  { animation: ui-row-in var(--dur-2) var(--ease-emph) backwards; }
+
+/* ── Check: the tick draws itself ───────────────────────────────────────── */
+.ui-check { display: inline-flex; align-items: center; justify-content: center; border-radius: var(--r-pill); }
+.ui-check path { stroke-dasharray: 24; stroke-dashoffset: 24; transition: stroke-dashoffset var(--dur-2) var(--ease-out) 40ms; }
+.ui-check.is-on path { stroke-dashoffset: 0; }
+@keyframes ui-draw-tick { from { stroke-dashoffset: 24; } to { stroke-dashoffset: 0; } }
+.ui-check.ui-confirm path { stroke-dasharray: 24; animation: ui-draw-tick var(--dur-2) var(--ease-out) 60ms both; }
+@keyframes ui-confirm { 0% { transform: scale(1); } 35% { transform: scale(1.18); } 100% { transform: scale(1); } }
+.ui-confirm { animation: ui-confirm var(--dur-3) var(--spring); }
+@keyframes ui-ripple { from { opacity: 0.45; transform: scale(0.6); } to { opacity: 0; transform: scale(1.9); } }
+.ui-ripple { position: absolute; inset: 0; border-radius: inherit; background: var(--tab-accent); pointer-events: none; animation: ui-ripple 520ms var(--ease-out) both; }
+
+/* ── Progress ────────────────────────────────────────────────────────────── */
+.ui-bar { position: relative; height: 4px; border-radius: var(--r-pill); background: var(--active-bg); overflow: hidden; }
+.ui-bar > span { position: absolute; inset: 0; transform-origin: left center; border-radius: inherit; background: var(--tab-accent); transition: transform var(--dur-chart) var(--ease-emph); }
+.ui-ring-track { stroke: var(--active-bg); }
+.ui-ring-value { transition: stroke-dashoffset var(--dur-chart) var(--ease-emph), stroke var(--dur-2) var(--ease-out); }
+
+/* Chart lines draw themselves (set pathLength="1" on the path); points and areas fade in after. */
+@keyframes ui-draw { from { stroke-dashoffset: 1; } to { stroke-dashoffset: 0; } }
+.ui-draw { stroke-dasharray: 1; animation: ui-draw var(--dur-chart) var(--ease-emph) backwards; }
+@keyframes ui-fade { from { opacity: 0; } to { opacity: 1; } }
+.ui-fade-late { animation: ui-fade var(--dur-2) var(--ease-out) calc(var(--dur-chart) * 0.6) backwards; }
+/* Chart bars rise from the baseline, a few milliseconds apart. */
+@keyframes ui-grow { from { transform: scaleY(0); } to { transform: none; } }
+.ui-grow { transform-box: fill-box; transform-origin: 50% 100%; animation: ui-grow var(--dur-3) var(--ease-emph) backwards; animation-delay: calc(var(--i, 0) * 12ms); }
+
+/* ── Skeletons ───────────────────────────────────────────────────────────── */
+.ui-skel { border-radius: var(--r-xs); background: linear-gradient(100deg, var(--hover-bg) 30%, var(--active-bg) 50%, var(--hover-bg) 70%); background-size: 200% 100%; animation: val-shimmer 1.4s ease-in-out infinite; }
+.ui-skel-swap { animation: ui-enter var(--dur-2) var(--ease-emph) backwards; }
+
+/* ── Sheets and dialogs ──────────────────────────────────────────────────── */
+.ui-backdrop { position: fixed; inset: 0; z-index: 900; background: rgba(0, 0, 0, 0.55); -webkit-backdrop-filter: blur(4px); backdrop-filter: blur(4px); animation: sheet-fade var(--dur-2) var(--ease-out) both; }
+.ui-backdrop.is-leaving { animation: ui-fade-out var(--dur-2) var(--ease-exit) both; }
+@keyframes ui-fade-out { to { opacity: 0; } }
+.ui-sheet {
+  position: fixed; z-index: 901; left: 0; right: 0; bottom: 0; max-height: 88dvh; overflow-y: auto;
+  border-radius: var(--r-lg) var(--r-lg) 0 0; background: var(--surface-1); border-top: 0.5px solid var(--hairline);
+  box-shadow: var(--shadow-3); padding: 10px 20px calc(24px + env(safe-area-inset-bottom));
+  animation: sheet-up var(--dur-sheet) var(--ease-emph) both; overscroll-behavior: contain;
+}
+.ui-sheet.is-leaving { animation: ui-sheet-down var(--dur-2) var(--ease-exit) both; }
+@keyframes ui-sheet-down { to { transform: translateY(100%); } }
+.ui-sheet-grip { width: 38px; height: 5px; border-radius: 3px; background: var(--card-hover-border); margin: 0 auto 14px; }
+@media (min-width: 720px) {
+  .ui-sheet { left: 50%; right: auto; bottom: auto; top: 50%; width: min(480px, calc(100vw - 48px)); border-radius: var(--r-lg); border: 0.5px solid var(--hairline); padding: 22px 24px; transform: translate(-50%, -50%); animation: ui-dialog-in var(--dur-2) var(--ease-emph) both; }
+  .ui-sheet.is-leaving { animation: ui-dialog-out var(--dur-1) var(--ease-exit) both; }
+  .ui-sheet-grip { display: none; }
+}
+@keyframes ui-dialog-in  { from { opacity: 0; transform: translate(-50%, -48%) scale(0.97); } to { opacity: 1; transform: translate(-50%, -50%); } }
+@keyframes ui-dialog-out { to { opacity: 0; transform: translate(-50%, -49%) scale(0.98); } }
+
+/* ── Toasts ──────────────────────────────────────────────────────────────── */
+@keyframes ui-toast-in  { from { opacity: 0; transform: translate(-50%, 14px) scale(0.96); } to { opacity: 1; transform: translate(-50%, 0); } }
+@keyframes ui-toast-out { to { opacity: 0; transform: translate(-50%, 8px) scale(0.97); } }
+@keyframes ui-toast-timer { from { transform: scaleX(1); } to { transform: scaleX(0); } }
+.ui-toast { animation: ui-toast-in var(--dur-3) var(--ease-emph) both; }
+.ui-toast.is-leaving { animation: ui-toast-out var(--dur-2) var(--ease-exit) both; }
+.ui-toast-timer { position: absolute; left: 12px; right: 12px; bottom: 0; height: 2px; border-radius: 2px; background: var(--tab-accent); transform-origin: left; opacity: 0.6; animation-name: ui-toast-timer; animation-timing-function: linear; animation-fill-mode: both; }
+
+/* ── Inputs ──────────────────────────────────────────────────────────────── */
+.ui-input {
+  width: 100%; min-width: 0; box-sizing: border-box; height: 44px; padding: 0 12px; border-radius: var(--r-sm);
+  background: var(--input-bg); border: 0.5px solid var(--input-border); color: var(--text-primary); font: inherit; font-size: 15px;
+  transition: border-color var(--dur-1) var(--ease-out), box-shadow var(--dur-1) var(--ease-out), background-color var(--dur-1) var(--ease-out);
+}
+.ui-input:focus { outline: none; border-color: var(--accent-line); box-shadow: 0 0 0 3px var(--accent-soft); }
+.ui-input:disabled { opacity: 0.7; }
+
+/* ── Number tick: a value that just changed nudges up ───────────────────── */
+@keyframes ui-tick { 0% { transform: translateY(35%); opacity: 0.2; } 100% { transform: none; opacity: 1; } }
+.ui-tick { display: inline-block; animation: ui-tick var(--dur-2) var(--ease-emph); }
+
+/* ── PR / success glow, used once per moment ────────────────────────────── */
+@keyframes ui-glow { 0% { box-shadow: 0 0 0 0 color-mix(in srgb, var(--tab-accent) 55%, transparent); } 100% { box-shadow: 0 0 0 14px transparent; } }
+.ui-glow { animation: ui-glow 900ms var(--ease-out) 1; }
+
+/* Rest timer dock: fixed above the phone tab bar, or above the desktop dock. */
+.rest-dock { position: fixed; z-index: 120; left: 12px; right: 12px; bottom: calc(78px + env(safe-area-inset-bottom, 0px)); margin: 0 auto; max-width: 560px; box-sizing: border-box; }
+@media (min-width: 900px) { .rest-dock { bottom: 88px; } }
+/* Rest timer: the digits breathe in the last ten seconds. */
+@keyframes rest-low { 0%, 100% { opacity: 1; } 50% { opacity: 0.55; } }
+.rest-low { animation: rest-low 1s ease-in-out infinite; }
+
+/* ── Phone tab bar ───────────────────────────────────────────────────────── */
+.m-tabbar { position: fixed; left: 0; right: 0; bottom: 0; z-index: 100; display: flex; align-items: stretch;
+  height: calc(68px + env(safe-area-inset-bottom)); padding: 0 6px env(safe-area-inset-bottom);
+  background: color-mix(in srgb, var(--bg-sidebar) 86%, transparent); border-top: 0.5px solid var(--hairline);
+  -webkit-backdrop-filter: blur(22px) saturate(1.4); backdrop-filter: blur(22px) saturate(1.4); isolation: isolate; }
+.m-tab { position: relative; z-index: 1; flex: 1; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 3px;
+  min-height: 64px; background: none; border: none; cursor: pointer; padding: 0; color: var(--text-muted);
+  transition: color var(--dur-2) var(--ease-out); -webkit-tap-highlight-color: transparent; }
+.m-tab[aria-current="page"] { color: var(--tab-accent); }
+.m-tab .m-tab-icon { display: flex; transition: transform var(--dur-3) var(--spring); }
+.m-tab[aria-current="page"] .m-tab-icon { transform: translateY(-1px) scale(1.08); }
+.m-tab-label { font-size: 10.5px; font-weight: 500; letter-spacing: 0.02em; }
+.m-tab[aria-current="page"] .m-tab-label { font-weight: 650; }
+.m-tab:focus-visible { outline: none; box-shadow: inset 0 0 0 2px var(--tab-accent); border-radius: 14px; }
+.m-tab-slot { position: absolute; z-index: 0; left: 6px; top: 0; height: 64px; pointer-events: none;
+  transition: transform var(--dur-3) var(--ease-emph), opacity var(--dur-2) var(--ease-out); will-change: transform; }
+.m-tab-thumb { position: absolute; top: 9px; left: 50%; width: 58px; height: 30px; margin-left: -29px; border-radius: 15px; background: var(--accent-soft); }
+/* Home, in the middle, is the anchor: a solid disc that lifts slightly. */
+.m-tab.is-home .m-tab-icon { width: 44px; height: 44px; margin-top: -10px; border-radius: 50%; align-items: center; justify-content: center;
+  background: var(--surface-2); border: 0.5px solid var(--hairline); box-shadow: var(--shadow-2); color: var(--text-secondary); }
+.m-tab.is-home[aria-current="page"] .m-tab-icon { background: var(--tab-accent); color: var(--on-tab-accent); border-color: transparent; box-shadow: 0 8px 22px color-mix(in srgb, var(--tab-accent) 35%, transparent); transform: translateY(-2px); }
+.m-tab.is-home .m-tab-label { margin-top: -1px; }

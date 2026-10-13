@@ -36,8 +36,9 @@ export default function WeightChart({ series, days = 60 }) {
         </g>
       ))}
       {pts.map(p => <circle key={p.date} cx={geo.x(p.date)} cy={geo.y(p.weight)} r="2.6" fill="var(--text-secondary)" opacity="0.55" />)}
-      <path d={geo.line} fill="none" stroke="var(--tab-accent)" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" />
-      <circle cx={geo.x(last.date)} cy={geo.y(last.trend)} r="4.5" fill="var(--tab-accent)" />
+      {/* Keyed by the data (not the width), so the trend redraws when the range changes but not on resize. */}
+      <path key={`${pts.length}:${pts[0].date}:${last.date}`} className="ui-draw" pathLength="1" d={geo.line} fill="none" stroke="var(--tab-accent)" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" />
+      <circle key={`end:${last.date}`} className="ui-fade-late" cx={geo.x(last.date)} cy={geo.y(last.trend)} r="4.5" fill="var(--tab-accent)" />
       <text x={PAD.l} y={H - 6} fontSize="11" fill="var(--text-secondary)" style={{ fontFamily: 'var(--font-mono)' }}>{pts[0].date.slice(5)}</text>
       <text x={W - PAD.r} y={H - 6} textAnchor="end" fontSize="11" fill="var(--text-secondary)" style={{ fontFamily: 'var(--font-mono)' }}>{last.date.slice(5)}</text>
     </svg>

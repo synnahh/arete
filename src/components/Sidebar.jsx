@@ -2,7 +2,7 @@ import { useEffect } from 'react';
 import { storage, STORAGE_KEYS } from '../utils/storage.js';
 import { supabase, getUserId } from '../supabase/supabase.js';
 import Dock from './Dock.jsx';
-import { GROUPS, groupScreens, groupOf, ALL_SCREENS, SCREEN_LABELS } from '../nav/groups.js';
+import { GROUPS, groupScreens, groupOf, ALL_SCREENS, SCREEN_LABELS, inBarOrder } from '../nav/groups.js';
 
 // ─── All reorderable tabs in default order ────────────────────────────────────
 // Every screen, labelled by group (Settings uses this for hiding and ordering).
@@ -39,7 +39,7 @@ export default function Sidebar({ activeGroup, onGroupClick, internetOnline, fir
   }, []); // eslint-disable-line react-hooks/exhaustive-deps
 
   const visible = (g) => groupScreens(g.id, { hidden: hiddenTabs }).length > 0;
-  const mainGroups   = GROUPS.filter(g => g.id !== 'settings' && visible(g));
+  const mainGroups   = inBarOrder(GROUPS.filter(g => g.id !== 'settings' && visible(g)));
   const settingsTab  = GROUPS.find(g => g.id === 'settings');
 
   return (

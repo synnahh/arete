@@ -3,6 +3,12 @@
 //  sets as a ghost); one tap on ✓ logs a set, starts the rest timer and
 //  checks for a PR. Logic: src/domain/training.js. Data: workout_logs rows,
 //  one per exercise per day, same shape every other screen already reads.
+//
+//  Layout: a live summary at the top (sets, volume, time, PRs, a ring for the whole session);
+//  the exercise you are on is highlighted and its next set is marked, with one-tap weight and
+//  rep nudges; finished exercises fold into one line; settings live in a sheet behind the gear.
+//  Typed-but-unlogged values and the start time survive a refresh (domain/sessionDraft.js); the
+//  rest timer survives too (components/RestTimer.jsx).
 import { useCallback, useEffect, useMemo, useRef, useState, Fragment } from 'react';
 import { toLocalDateKey } from '../utils/localDate.js';
 import {
@@ -20,17 +26,15 @@ import { useSettingsValue } from '../hooks/useSettingsValue.js';
 import { cleanTrainPrefs, effortOptions, effortLabel, ownRest } from '../domain/trainPrefs.js';
 import ExerciseDemo from '../components/ExerciseDemo.jsx';
 import { WEEK, dayExercises, withDayTargets, materialize, sessionChoices, sessionDayKey, dayKeyFromDate } from '../domain/splits.js';
+import { startRest, stopRest } from '../components/RestTimer.jsx';   // the timer itself is mounted once by each app shell
+import { AnimatedNumber, Collapse, ProgressBar, ProgressRing, Sheet, SlidingTabs, haptic as softHaptic } from '../components/Motion.jsx';
+import { loadDraft, saveDraft, markStarted, clearDraft, applyDraft } from '../domain/sessionDraft.js';
+import { haptics } from '../mobile/utils/haptics.js';
 
 const today = () => toLocalDateKey(new Date());
-const fmt = (s) => `${Math.floor(s / 60)}:${String(Math.max(0, s) % 60).padStart(2, '0')}`;
-const haptic = (ms = 15) => { try { navigator.vibrate?.(ms); } catch {} };
-const toast = (message, type = 'success') =>
-  window.dispatchEvent(new CustomEvent('valerie:toast', { detail: { message, type } }));
+const toast = (message, type = 'success', undo = null) =>
+  window.dispatchEvent(new CustomEvent('valerie:toast', { detail: { message, type, ...(undo ? { undo } : {}) } }));
 
-// Per-viewer conveniences that survive switching tabs.
-let restUntil = 0;
-let restTotal = 0;
-let sessionStartedAt = null;
 const readPref = (k, d) => { try { return localStorage.getItem(k) ?? d; } catch { return d; } };
 const writePref = (k, v) => { try { localStorage.setItem(k, v); } catch {} };
 
@@ -39,94 +43,51 @@ const label = {
   textTransform: 'uppercase', color: 'var(--text-secondary)',
 };
 const numInput = {
-  width: '100%', minWidth: 0, boxSizing: 'border-box', height: 38, padding: '0 8px', borderRadius: 9,
+  width: '100%', minWidth: 0, boxSizing: 'border-box', height: 42, padding: '0 6px', borderRadius: 10,
   background: 'var(--input-bg)', border: '0.5px solid var(--input-border)', color: 'var(--text-primary)',
-  fontFamily: 'var(--font-mono)', fontSize: 15, textAlign: 'center',
+  fontFamily: 'var(--font-mono)', fontSize: 16, textAlign: 'center',
+  transition: 'border-color var(--dur-1) var(--ease-out), box-shadow var(--dur-1) var(--ease-out), opacity var(--dur-2) var(--ease-out)',
 };
-const pill = (on) => ({
-  minHeight: 36, padding: '0 14px', borderRadius: 999, cursor: 'pointer', fontFamily: 'inherit', fontSize: 13,
-  border: `0.5px solid ${on ? 'var(--tab-accent)' : 'var(--card-border)'}`,
-  background: on ? 'color-mix(in srgb, var(--tab-accent) 14%, transparent)' : 'transparent',
-  color: on ? 'var(--tab-accent)' : 'var(--text-secondary)', fontWeight: on ? 600 : 500,
-});
-const ACTION_COLOUR = { 'ADD WEIGHT': '#4caf7d', HOLD: 'var(--text-secondary)', 'DROP WEIGHT': '#e25d7a', DELOAD: '#e8a13a', 'FIRST SET': 'var(--tab-accent)' };
+const ACTION_COLOUR = { 'ADD WEIGHT': 'var(--ok)', HOLD: 'var(--text-secondary)', 'DROP WEIGHT': 'var(--bad)', DELOAD: 'var(--warn)', 'FIRST SET': 'var(--tab-accent)' };
+const GRID = '26px minmax(0,1fr) 74px 60px 44px';
 
-//  Rest timer
-function RestTimer({ onDone }) {
-  const [, tick] = useState(0);
-  const active = restUntil > Date.now();
-  // Ticks only while a rest is running; idle costs nothing.
-  useEffect(() => {
-    if (!active) return undefined;
-    const t = setInterval(() => {
-      if (restUntil && Date.now() >= restUntil) {
-        restUntil = 0;
-        haptic([120, 60, 120]);
-        onDone();
-      }
-      tick(n => n + 1);
-    }, 250);
-    return () => clearInterval(t);
-  }, [active, onDone]);
-
-  if (!restUntil) return null;
-  const left = Math.ceil((restUntil - Date.now()) / 1000);
-  const pct = restTotal ? Math.max(0, left / restTotal) : 0;
-  const adjust = (d) => { restUntil = Math.max(Date.now() + 1000, restUntil + d * 1000); restTotal = Math.max(restTotal + d, 1); tick(n => n + 1); };
-
-  return (
-    <div role="timer" aria-live="off" style={{
-      position: 'sticky', bottom: 0, zIndex: 5, display: 'flex', alignItems: 'center', gap: 12,
-      padding: '10px 14px', margin: '0 -4px', borderRadius: 14,
-      background: 'var(--bg-sidebar)', border: '0.5px solid var(--card-border)',
-      boxShadow: '0 -6px 24px rgba(0,0,0,0.35)',
-    }}>
-      <svg width="34" height="34" viewBox="0 0 34 34" aria-hidden="true">
-        <circle cx="17" cy="17" r="14" fill="none" stroke="var(--card-border)" strokeWidth="3.5" />
-        <circle cx="17" cy="17" r="14" fill="none" stroke="var(--tab-accent)" strokeWidth="3.5" strokeLinecap="round"
-          strokeDasharray="88" strokeDashoffset={88 * (1 - pct)} transform="rotate(-90 17 17)" />
-      </svg>
-      <div style={{ display: 'flex', flexDirection: 'column', flex: 1 }}>
-        <span style={label}>Rest</span>
-        <span className="val-num" style={{ fontSize: 22, fontWeight: 500, lineHeight: 1.1 }}>{fmt(left)}</span>
-      </div>
-      <button type="button" onClick={() => adjust(-15)} style={pill(false)} aria-label="Rest 15 seconds less">−15</button>
-      <button type="button" onClick={() => adjust(15)} style={pill(false)} aria-label="Rest 15 seconds more">+15</button>
-      <button type="button" onClick={() => { restUntil = 0; tick(n => n + 1); }} style={pill(true)}>Skip</button>
-    </div>
-  );
-}
+const Glyph = ({ d, size = 18, w = 2 }) => (
+  <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={w} strokeLinecap="round" strokeLinejoin="round" aria-hidden="true"><path d={d} /></svg>
+);
+const GEAR = 'M12 15a3 3 0 1 0 0-6 3 3 0 0 0 0 6z M19.4 15a1.7 1.7 0 0 0 .3 1.8l.1.1a2 2 0 1 1-2.8 2.8l-.1-.1a1.7 1.7 0 0 0-1.8-.3 1.7 1.7 0 0 0-1 1.5V21a2 2 0 1 1-4 0v-.1a1.7 1.7 0 0 0-1.1-1.5 1.7 1.7 0 0 0-1.8.3l-.1.1a2 2 0 1 1-2.8-2.8l.1-.1a1.7 1.7 0 0 0 .3-1.8 1.7 1.7 0 0 0-1.5-1H3a2 2 0 1 1 0-4h.1a1.7 1.7 0 0 0 1.5-1.1 1.7 1.7 0 0 0-.3-1.8l-.1-.1a2 2 0 1 1 2.8-2.8l.1.1a1.7 1.7 0 0 0 1.8.3H9a1.7 1.7 0 0 0 1-1.5V3a2 2 0 1 1 4 0v.1a1.7 1.7 0 0 0 1 1.5 1.7 1.7 0 0 0 1.8-.3l.1-.1a2 2 0 1 1 2.8 2.8l-.1.1a1.7 1.7 0 0 0-.3 1.8V9a1.7 1.7 0 0 0 1.5 1H21a2 2 0 1 1 0 4h-.1a1.7 1.7 0 0 0-1.5 1z';
+const TICK = 'M5 12.5 10 17l9-10';
+const CHEV = 'M6 9l6 6 6-6';
 
 // How Train behaves for you. Saved in settings.train; every choice defaults to the old behaviour.
 function TrainPrefsPanel({ prefs }) {
   const set = (patch) => updateSettings({ train: { ...prefs, ...patch } });
   const toggle = (key, text) => (
-    <button key={key} type="button" aria-pressed={prefs[key]} onClick={() => set({ [key]: !prefs[key] })} style={pill(prefs[key])}>{text}: {prefs[key] ? 'on' : 'off'}</button>
+    <button key={key} type="button" className="ui-chip" aria-pressed={prefs[key]} onClick={() => set({ [key]: !prefs[key] })}>{text}</button>
   );
   return (
-    <details style={{ fontSize: 13, color: 'var(--text-secondary)' }}>
-      <summary style={{ cursor: 'pointer', minHeight: 32, display: 'flex', alignItems: 'center' }}>Customise Train</summary>
-      <div style={{ display: 'flex', flexDirection: 'column', gap: 10, paddingTop: 8 }}>
-        <div role="group" aria-label="Effort scale" style={{ display: 'flex', alignItems: 'center', gap: 6, flexWrap: 'wrap' }}>
-          <span style={label}>Effort</span>
-          {[['rpe', 'How hard (RPE)'], ['rir', 'Reps left (RIR)'], ['off', 'Off']].map(([v, text]) => (
-            <button key={v} type="button" aria-pressed={prefs.effort === v} onClick={() => set({ effort: v })} style={pill(prefs.effort === v)}>{text}</button>
-          ))}
-        </div>
+    <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
+      <div style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
+        <span style={label}>Effort after each set</span>
+        <SlidingTabs mode="toggle" boxed label="Effort scale" value={prefs.effort} onChange={v => set({ effort: v })}
+          items={[{ id: 'rpe', label: 'How hard (RPE)' }, { id: 'rir', label: 'Reps left' }, { id: 'off', label: 'Off' }]} />
+      </div>
+      <div style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
+        <span style={label}>Show and do</span>
         <div style={{ display: 'flex', gap: 6, flexWrap: 'wrap' }}>
-          {toggle('autoRest', 'Start rest timer on a set')}
+          {toggle('autoRest', 'Rest timer on each set')}
+          {toggle('restVibrate', 'Buzz at rest end')}
+          {toggle('restSound', 'Tone at rest end')}
           {toggle('warmups', 'Warm-up ramp')}
           {toggle('plates', 'Plate breakdown')}
         </div>
-        <div role="group" aria-label="Default sets" style={{ display: 'flex', alignItems: 'center', gap: 6, flexWrap: 'wrap' }}>
-          <span style={label}>Sets</span>
-          {[[null, 'Auto'], [2, '2'], [3, '3'], [4, '4'], [5, '5']].map(([v, text]) => (
-            <button key={text} type="button" aria-pressed={prefs.defaultSets === v} onClick={() => set({ defaultSets: v })} style={pill(prefs.defaultSets === v)}>{text}</button>
-          ))}
-          <span style={{ fontSize: 12 }}>Your program's own sets still win.</span>
-        </div>
+        <span style={{ fontSize: 12, color: 'var(--text-muted)', lineHeight: 1.45 }}>The buzz works on Android; iPhone web apps cannot vibrate. Cues play only while the app is open, but the timer stays right if you leave and come back.</span>
       </div>
-    </details>
+      <div style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
+        <span style={label}>Default sets (your program's own sets still win)</span>
+        <SlidingTabs mode="toggle" boxed label="Default sets" value={prefs.defaultSets ?? 'auto'} onChange={v => set({ defaultSets: v === 'auto' ? null : v })}
+          items={[{ id: 'auto', label: 'Auto' }, { id: 2, label: '2' }, { id: 3, label: '3' }, { id: 4, label: '4' }, { id: 5, label: '5' }]} />
+      </div>
+    </div>
   );
 }
 
@@ -149,22 +110,19 @@ function EquipmentSettings({ eq }) {
   const [text, setText] = useState(eq.plates.join(', '));
   const save = () => { const p = parsePlates(text); if (p) updateSettings({ platesKg: p }); else setText(eq.plates.join(', ')); };
   return (
-    <details style={{ fontSize: 13, color: 'var(--text-secondary)' }}>
-      <summary style={{ cursor: 'pointer', minHeight: 32, display: 'flex', alignItems: 'center' }}>Bar {eq.bar} kg · plates {eq.plates.join(' ')}</summary>
-      <div style={{ display: 'flex', gap: 10, flexWrap: 'wrap', alignItems: 'flex-end', paddingTop: 8 }}>
-        <label style={{ display: 'flex', flexDirection: 'column', gap: 4 }}>
-          <span style={label}>Bar (kg)</span>
-          <select value={eq.bar} onChange={e => updateSettings({ barKg: Number(e.target.value) })} style={{ ...numInput, width: 96, textAlign: 'left' }}>
-            {[10, 15, 20, 25].map(b => <option key={b} value={b}>{b} kg</option>)}
-          </select>
-        </label>
-        <label style={{ display: 'flex', flexDirection: 'column', gap: 4, flex: 1, minWidth: 200 }}>
-          <span style={label}>Plates you own (kg, per side)</span>
-          <input value={text} onChange={e => setText(e.target.value)} onBlur={save} onKeyDown={e => { if (e.key === 'Enter') save(); }}
-            aria-label="Plates you own in kilograms" style={{ ...numInput, textAlign: 'left' }} />
-        </label>
-      </div>
-    </details>
+    <div style={{ display: 'flex', gap: 10, flexWrap: 'wrap', alignItems: 'flex-end' }}>
+      <label style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
+        <span style={label}>Bar</span>
+        <select value={eq.bar} onChange={e => updateSettings({ barKg: Number(e.target.value) })} className="ui-input" style={{ width: 100, height: 44 }}>
+          {[10, 15, 20, 25].map(b => <option key={b} value={b}>{b} kg</option>)}
+        </select>
+      </label>
+      <label style={{ display: 'flex', flexDirection: 'column', gap: 6, flex: 1, minWidth: 180 }}>
+        <span style={label}>Plates you own (kg, per side)</span>
+        <input value={text} onChange={e => setText(e.target.value)} onBlur={save} onKeyDown={e => { if (e.key === 'Enter') save(); }}
+          aria-label="Plates you own in kilograms" className="ui-input" />
+      </label>
+    </div>
   );
 }
 
@@ -173,151 +131,239 @@ function ExerciseTweaks({ ex, onEdit }) {
   const [note, setNote] = useState(ex.note || '');
   const rest = ownRest(ex);
   return (
-    <details style={{ fontSize: 13, color: 'var(--text-secondary)' }}>
-      <summary style={{ cursor: 'pointer', minHeight: 32, display: 'flex', alignItems: 'center' }}>Customise this exercise{rest || ex.note ? ' ·' : ''}{rest ? ` rest ${rest}s` : ''}{ex.note ? ' · note' : ''}</summary>
-      <div style={{ display: 'flex', flexDirection: 'column', gap: 10, paddingTop: 8 }}>
-        <label style={{ display: 'flex', flexDirection: 'column', gap: 4 }}>
-          <span style={label}>Note (seat setting, grip, a cue)</span>
-          <input value={note} maxLength={140} onChange={e => setNote(e.target.value)} onBlur={() => note !== (ex.note || '') && onEdit({ note: note.trim() || null })}
-            onKeyDown={e => { if (e.key === 'Enter') e.currentTarget.blur(); }} aria-label={`Note for ${ex.name}`} style={{ ...numInput, textAlign: 'left' }} />
-        </label>
-        <div role="group" aria-label={`Rest time for ${ex.name}`} style={{ display: 'flex', alignItems: 'center', gap: 6, flexWrap: 'wrap' }}>
-          <span style={label}>Rest</span>
+    <div style={{ display: 'flex', flexDirection: 'column', gap: 10, paddingTop: 4 }}>
+      <label style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
+        <span style={label}>Note (seat setting, grip, a cue)</span>
+        <input value={note} maxLength={140} onChange={e => setNote(e.target.value)} onBlur={() => note !== (ex.note || '') && onEdit({ note: note.trim() || null })}
+          onKeyDown={e => { if (e.key === 'Enter') e.currentTarget.blur(); }} aria-label={`Note for ${ex.name}`} className="ui-input" />
+      </label>
+      <div style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
+        <span style={label}>Rest for this exercise</span>
+        <div role="group" aria-label={`Rest time for ${ex.name}`} style={{ display: 'flex', gap: 6, flexWrap: 'wrap' }}>
           {[[null, 'Session'], [45, '45 s'], [60, '60 s'], [90, '90 s'], [120, '2 min'], [180, '3 min']].map(([v, text]) => (
-            <button key={text} type="button" aria-pressed={rest === v} onClick={() => onEdit({ restSeconds: v })} style={pill(rest === v)}>{text}</button>
+            <button key={text} type="button" className="ui-chip" aria-pressed={rest === v} onClick={() => onEdit({ restSeconds: v })}>{text}</button>
           ))}
         </div>
       </div>
-    </details>
+    </div>
   );
 }
 
-//  One exercise card
-function ExerciseCard({ ex, prog, rows, onChange, onTick, onRate, onAddSet, onRemoveSet, prs, compact, history, sessions = [], rec = null, eq, alternatives = [], onReplace, prefs, onEdit = null }) {
+// The check button: the tick draws itself, the button pops once and a ring ripples out.
+function SetCheck({ done, justDone, onClick, label: aria }) {
+  return (
+    <button type="button" onClick={onClick} aria-pressed={done} aria-label={aria}
+      className={`ui-check${done ? ' is-on' : ''}${justDone ? ' ui-confirm' : ''}`}
+      style={{
+        position: 'relative', width: 44, height: 44, cursor: 'pointer', border: done ? '1.5px solid transparent' : '1.5px solid var(--card-hover-border)',
+        background: done ? 'var(--tab-accent)' : 'transparent', color: done ? 'var(--on-tab-accent)' : 'var(--text-muted)',
+        transition: 'background-color var(--dur-1) var(--ease-out), border-color var(--dur-1) var(--ease-out), color var(--dur-1) var(--ease-out)',
+      }}>
+      {justDone && <span className="ui-ripple" aria-hidden="true" />}
+      <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.8" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true"
+        style={{ position: 'relative' }}><path d={TICK} style={done ? undefined : { strokeDashoffset: 0, opacity: 0.35 }} /></svg>
+    </button>
+  );
+}
+
+//  One exercise card. stage: 'current' (the one you are on), 'done' (all sets logged) or 'next'.
+function ExerciseCard({ ex, prog, rows, onChange, onTick, onRate, onAddSet, onRemoveSet, prs, compact, history, sessions = [], rec = null, eq, alternatives = [], onReplace, prefs, onEdit = null, stage = 'next', index = 0 }) {
   const doneSets = rows.filter(r => r.done);
-  const [showChart, setShowChart] = useState(false);
-  const [showDemo, setShowDemo] = useState(false);
-  const [swapping, setSwapping] = useState(false);
+  const [panel, setPanel] = useState(null);          // 'demo' | 'swap' | 'history' | 'tweak'
+  const [openDone, setOpenDone] = useState(false);
+  const [glow, setGlow] = useState(false);
   const barbell = !ex.bodyweight && isBarbell(ex.name);
   const workKg = Number(rows[0]?.weight) || prog.nextWeight;
   const plates = barbell ? platesFor(workKg, { bar: eq.bar, plates: eq.plates }) : null;
   const warmups = barbell ? warmupSets(workKg, { bar: eq.bar }) : [];
+  const nextIdx = rows.findIndex(r => !r.done);
+  const step = Number(ex.increment) || 2.5;
+  const folded = stage === 'done' && !openDone;
+  const prCount = Object.values(prs).filter(Boolean).length;
+  const toggle = (p) => setPanel(v => (v === p ? null : p));
+
+  // A PR lights the card once.
+  const prKey = Object.entries(prs).filter(([, v]) => v).map(([k]) => k).join(',');
+  useEffect(() => { if (!prKey) return undefined; setGlow(true); const t = setTimeout(() => setGlow(false), 950); return () => clearTimeout(t); }, [prKey]);
+
+  const nudge = (i, field, delta) => {
+    const cur = Number(rows[i]?.[field]) || 0;
+    const next = Math.max(0, +(cur + delta).toFixed(2));
+    onChange(i, { [field]: String(next) });
+  };
+
   return (
-    <section aria-label={ex.name} style={{
-      display: 'flex', flexDirection: 'column', gap: 10, padding: compact ? 14 : 16, borderRadius: 16,
-      background: 'var(--bg-panel)', border: '0.5px solid var(--card-border)',
-    }}>
-      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'baseline', gap: 10 }}>
-        <span style={{ fontSize: 17, fontWeight: 600, color: 'var(--text-primary)' }}>{ex.name}<button type="button" aria-expanded={showDemo} aria-label={`How to do ${ex.name}`} onClick={() => setShowDemo(v => !v)} style={{ marginLeft: 10, minHeight: 28, padding: '0 10px', borderRadius: 999, cursor: 'pointer', fontFamily: 'inherit', fontSize: 12, fontWeight: 500, border: '0.5px solid var(--tab-accent)', background: showDemo ? 'color-mix(in srgb, var(--tab-accent) 14%, transparent)' : 'transparent', color: 'var(--tab-accent)' }}>{showDemo ? 'Hide demo' : 'Demo'}</button></span>
-        <span className="val-num" style={{ fontSize: 12, color: 'var(--text-secondary)' }}>{doneSets.length}/{rows.length} sets</span>
+    <section aria-label={`${ex.name}${stage === 'current' ? ', current exercise' : stage === 'done' ? ', done' : ''}`}
+      className={`ui-card ui-enter${stage === 'current' ? ' is-focus' : ''}${glow ? ' ui-glow' : ''}`}
+      style={{ '--i': Math.min(index, 6), display: 'flex', flexDirection: 'column', gap: folded ? 0 : 12, padding: compact ? 14 : 18,
+        opacity: stage === 'next' ? 0.94 : 1 }}>
+
+      {/* Header: name, progress, actions */}
+      <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
+        {stage === 'done' ? (
+          <span className="ui-check is-on ui-scale" aria-hidden="true" style={{ width: 30, height: 30, flexShrink: 0, background: 'color-mix(in srgb, var(--ok) 18%, transparent)', color: 'var(--ok)' }}>
+            <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round"><path d={TICK} /></svg>
+          </span>
+        ) : (
+          <ProgressRing value={rows.length ? doneSets.length / rows.length : 0} size={30} stroke={3}>
+            <span className="t-num" style={{ fontSize: 10.5, fontWeight: 650, color: 'var(--text-secondary)' }}>{index + 1}</span>
+          </ProgressRing>
+        )}
+        <div style={{ flex: 1, minWidth: 0 }}>
+          <div style={{ fontSize: stage === 'current' ? 18 : 16, fontWeight: 650, color: 'var(--text-primary)', lineHeight: 1.25, transition: 'font-size var(--dur-2) var(--ease-out)' }}>{ex.name}</div>
+          <div className="t-num" style={{ fontSize: 12, color: 'var(--text-secondary)', marginTop: 2 }}>
+            {folded
+              ? `${doneSets.length} sets · ${volume(doneSets.map(r => ({ weight: Number(r.weight) || 0, reps: Number(r.reps) || 0 }))).toLocaleString()} kg${prCount ? ` · ${prCount} PR` : ''}`
+              : <>{ex.bodyweight ? 'BW' : `${prog.nextWeight} kg`} × {ex.repsMin}–{ex.repsMax} · <span style={{ color: ACTION_COLOUR[prog.action] ?? 'var(--text-secondary)', fontWeight: 600 }}>{prog.action}</span></>}
+          </div>
+        </div>
+        {stage === 'done'
+          ? <button type="button" className="ui-btn is-sm is-quiet is-icon" aria-expanded={openDone} aria-label={openDone ? `Fold ${ex.name}` : `Show ${ex.name} sets`} onClick={() => setOpenDone(v => !v)}><span className={`ui-chev${openDone ? ' is-open' : ''}`}><Glyph d={CHEV} /></span></button>
+          : <span className="t-num" style={{ fontSize: 12, color: 'var(--text-secondary)', flexShrink: 0 }}>{doneSets.length}/{rows.length}</span>}
       </div>
-      {onReplace && doneSets.length === 0 && (
-        <div>
-          <button type="button" aria-expanded={swapping} onClick={() => setSwapping(s => !s)} style={{ background: 'none', border: 'none', padding: 0, minHeight: 28, cursor: 'pointer', fontFamily: 'inherit', fontSize: 12.5, color: 'var(--accent)' }}>Replace</button>
-          {swapping && (
-            <div style={{ display: 'flex', flexDirection: 'column', gap: 6, marginTop: 6 }}>
+
+      <Collapse open={!folded}>
+        <div style={{ display: 'flex', flexDirection: 'column', gap: 12, paddingTop: stage === 'done' ? 12 : 0 }}>
+          {rows.length > 0 && <ProgressBar value={doneSets.length / rows.length} height={3} label={`${doneSets.length} of ${rows.length} sets done`} />}
+
+          {/* Small actions: one panel open at a time, opening smoothly */}
+          <div style={{ display: 'flex', gap: 6, flexWrap: 'wrap' }}>
+            <button type="button" className="ui-chip" aria-expanded={panel === 'demo'} aria-pressed={panel === 'demo'} onClick={() => toggle('demo')}>Demo</button>
+            {(history.length > 0 || sessions.length > 0) && <button type="button" className="ui-chip" aria-expanded={panel === 'history'} aria-pressed={panel === 'history'} onClick={() => toggle('history')}>History</button>}
+            {onReplace && doneSets.length === 0 && <button type="button" className="ui-chip" aria-expanded={panel === 'swap'} aria-pressed={panel === 'swap'} onClick={() => toggle('swap')}>Replace</button>}
+            {onEdit && <button type="button" className="ui-chip" aria-expanded={panel === 'tweak'} aria-pressed={panel === 'tweak'} onClick={() => toggle('tweak')}>Note and rest{ownRest(ex) || ex.note ? ' ·' : ''}</button>}
+          </div>
+          {/* Panels sit in one wrapper with no gap, so closed ones take no space at all. */}
+          <div style={{ display: 'flex', flexDirection: 'column', margin: panel ? 0 : '-12px 0 0' }}>
+          <Collapse open={panel === 'demo'}>{panel === 'demo' && <ExerciseDemo name={ex.name} />}</Collapse>
+          <Collapse open={panel === 'history'}>{panel === 'history' && <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}><LiftChart history={history} /><LiftSessions sessions={sessions} /></div>}</Collapse>
+          <Collapse open={panel === 'swap'}>
+            <div style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
               {alternatives.length === 0
-                ? <div style={{ fontSize: 12.5, color: 'var(--text-secondary)' }}>No other exercise in your library trains the same muscle. Add one from the exercise database in Exercises.</div>
+                ? <div style={{ fontSize: 13, color: 'var(--text-secondary)' }}>No other exercise in your library trains the same muscle. Add one from the exercise database in Exercises.</div>
                 : alternatives.slice(0, 6).map(a => (
-                  <button key={a.id} type="button" onClick={() => { setSwapping(false); onReplace(a); }} style={{ textAlign: 'left', minHeight: 38, padding: '0 12px', borderRadius: 10, border: '0.5px solid var(--card-border)', background: 'transparent', color: 'var(--text-primary)', fontFamily: 'inherit', fontSize: 14, cursor: 'pointer' }}>{a.name}</button>
+                  <button key={a.id} type="button" className="ui-btn is-sm" onClick={() => { setPanel(null); onReplace(a); }} style={{ justifyContent: 'flex-start' }}>{a.name}</button>
                 ))}
             </div>
-          )}
-        </div>
-      )}
-      {showDemo && <ExerciseDemo name={ex.name} />}
-      {rec && <div style={{ fontSize: 13, color: 'var(--text-secondary)' }}>{rec.text}</div>}
-      {ex.note && <div style={{ fontSize: 13, color: 'var(--text-primary)', fontStyle: 'italic' }}>{ex.note}</div>}
-      <div className="val-num" style={{ fontSize: 12, color: 'var(--text-secondary)' }}>
-        TARGET {ex.bodyweight ? 'BW' : `${prog.nextWeight} kg`} × {ex.repsMin}–{ex.repsMax} ·{' '}
-        <span style={{ color: ACTION_COLOUR[prog.action] ?? 'var(--text-secondary)', fontWeight: 600 }}>{prog.action}</span>
-        {prog.plateau?.status && prog.plateau.status !== 'none' && (
-          <span style={{ marginLeft: 8, padding: '1px 8px', borderRadius: 999, fontSize: 11, fontWeight: 700, letterSpacing: '0.08em', color: '#e8a13a', border: '0.5px solid #e8a13a' }}>
-            {prog.plateau.status === 'regressing' ? 'SLIDING' : 'STALLED'} {prog.plateau.sessions}
-          </span>
-        )}
-      </div>
-      {prog.hint && prog.action !== 'FIRST SET' && (
-        <div style={{ fontSize: 12.5, lineHeight: 1.45, color: 'var(--text-secondary)' }}>{prog.hint}</div>
-      )}
+          </Collapse>
+          <Collapse open={panel === 'tweak'}>{onEdit && <ExerciseTweaks key={`${ex.id}:${ex.note || ''}`} ex={ex} onEdit={onEdit} />}</Collapse>
+          </div>
 
-      {barbell && ((prefs.plates && plates) || (prefs.warmups && warmups.length > 0)) && (
-        <div className="val-num" style={{ fontSize: 12, lineHeight: 1.6, color: 'var(--text-secondary)' }}>
-          {prefs.plates && plates && workKg > eq.bar && (
-            <div>Per side for {plates.total} kg: {plates.perSide.length ? plates.perSide.join(' + ') : 'bar only'}{plates.short > 0 ? ` (${plates.short} kg short)` : ''}</div>
+          {rec && <div style={{ fontSize: 13, color: 'var(--text-secondary)', lineHeight: 1.45 }}>{rec.text}</div>}
+          {ex.note && <div style={{ fontSize: 13, color: 'var(--text-primary)', fontStyle: 'italic' }}>{ex.note}</div>}
+          {prog.plateau?.status && prog.plateau.status !== 'none' && (
+            <span style={{ alignSelf: 'flex-start', padding: '2px 9px', borderRadius: 999, fontSize: 11, fontWeight: 700, letterSpacing: '0.08em', color: 'var(--warn)', border: '0.5px solid var(--warn)' }}>
+              {prog.plateau.status === 'regressing' ? 'SLIDING' : 'STALLED'} {prog.plateau.sessions}
+            </span>
           )}
-          {prefs.warmups && warmups.length > 0 && <div>Warm-up: {warmups.map(w => `${w.weight}×${w.reps}`).join(' · ')}</div>}
-        </div>
-      )}
+          {prog.hint && prog.action !== 'FIRST SET' && stage === 'current' && (
+            <div style={{ fontSize: 12.5, lineHeight: 1.45, color: 'var(--text-secondary)' }}>{prog.hint}</div>
+          )}
 
-      <div role="table" aria-label={`${ex.name} sets`} style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
-        <div role="row" style={{ display: 'grid', gridTemplateColumns: '28px minmax(0,1fr) 76px 64px 40px', gap: 8, alignItems: 'center', ...label, fontSize: 10.5 }}>
-          <span role="columnheader">Set</span><span role="columnheader">Previous</span>
-          <span role="columnheader" style={{ textAlign: 'center' }}>kg</span><span role="columnheader" style={{ textAlign: 'center' }}>Reps</span>
-          <span role="columnheader" aria-label="Done" />
-        </div>
-        {rows.map((r, i) => {
-          const pr = prs[i];
-          return (
-            <Fragment key={i}>
-            <div role="row" style={{
-              display: 'grid', gridTemplateColumns: '28px minmax(0,1fr) 76px 64px 40px', gap: 8, alignItems: 'center',
-              padding: '4px 6px', margin: '0 -6px', borderRadius: 10,
-              background: r.done ? 'color-mix(in srgb, var(--tab-accent) 10%, transparent)' : 'transparent',
-            }}>
-              <span className="val-num" style={{ fontSize: 14, color: r.done ? 'var(--tab-accent)' : 'var(--text-secondary)' }}>{i + 1}</span>
-              <span className="val-num" style={{ fontSize: 13, color: 'var(--text-secondary)', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
-                {r.prev ? `${ex.bodyweight ? 'BW' : r.prev.weight} × ${r.prev.reps}` : '—'}
-                {pr && <span className="val-pop" style={{ marginLeft: 6, padding: '1px 6px', borderRadius: 999, fontSize: 11, fontWeight: 700, letterSpacing: '0.08em', background: 'var(--tab-accent)', color: 'var(--on-tab-accent)' }}>PR</span>}
-              </span>
-              <input aria-label={`Set ${i + 1} weight`} inputMode="decimal" disabled={ex.bodyweight || r.done} value={ex.bodyweight ? 'BW' : r.weight}
-                onFocus={e => e.target.select()} onChange={e => onChange(i, { weight: e.target.value })} style={{ ...numInput, opacity: r.done ? 0.75 : 1 }} />
-              <input aria-label={`Set ${i + 1} reps`} inputMode="numeric" disabled={r.done} value={r.reps}
-                onFocus={e => e.target.select()} onChange={e => onChange(i, { reps: e.target.value })} style={{ ...numInput, opacity: r.done ? 0.75 : 1 }} />
-              <button type="button" onClick={() => onTick(i)} aria-pressed={r.done}
-                aria-label={r.done ? `Undo set ${i + 1}` : `Log set ${i + 1}`}
-                className={r.justDone ? 'val-signature val-rep-kick' : undefined}
-                style={{
-                  width: 38, height: 38, borderRadius: 999, cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center',
-                  border: r.done ? 'none' : '1.5px solid var(--card-border)',
-                  background: r.done ? 'var(--tab-accent)' : 'transparent', color: r.done ? 'var(--on-tab-accent)' : 'var(--text-secondary)',
-                }}>
-                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.6" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true"><path d="M5 12.5 10 17l9-10" /></svg>
-              </button>
+          {barbell && ((prefs.plates && plates) || (prefs.warmups && warmups.length > 0)) && stage !== 'done' && (
+            <div className="t-num" style={{ fontSize: 12, lineHeight: 1.6, color: 'var(--text-secondary)', padding: '8px 10px', borderRadius: 10, background: 'var(--hover-bg)' }}>
+              {prefs.plates && plates && workKg > eq.bar && (
+                <div>Per side for {plates.total} kg: <span style={{ color: 'var(--text-primary)' }}>{plates.perSide.length ? plates.perSide.join(' + ') : 'bar only'}</span>{plates.short > 0 ? ` (${plates.short} kg short)` : ''}</div>
+              )}
+              {prefs.warmups && warmups.length > 0 && <div>Warm-up: {warmups.map(w => `${w.weight}×${w.reps}`).join(' · ')}</div>}
             </div>
-            {r.done && prefs.effort !== 'off' && (
-              <div role="group" aria-label={`Set ${i + 1} effort`} style={{ display: 'flex', alignItems: 'center', gap: 4, padding: '0 6px 4px 36px', margin: '-2px 0 2px', flexWrap: 'wrap' }}>
-                <span style={{ fontSize: 11.5, color: 'var(--text-muted)', marginRight: 4 }} title={prefs.effort === 'rir' ? 'Reps in reserve: 0 means nothing left in the tank' : 'Rate of perceived exertion: 10 means nothing left in the tank'}>{effortLabel(prefs.effort)}</span>
-                {effortOptions(prefs.effort).map(({ rpe: v, text }) => {
-                  const on = validRpe(r.rpe) === v;
-                  return (
-                    <button key={v} type="button" aria-pressed={on} aria-label={prefs.effort === 'rir' ? `${text} reps left` : `RPE ${v}`} onClick={() => onRate(i, v)} style={{
-                      minWidth: 32, height: 28, borderRadius: 999, cursor: 'pointer', fontFamily: 'inherit', fontSize: 12.5, WebkitTapHighlightColor: 'transparent',
-                      border: `0.5px solid ${on ? 'var(--tab-accent)' : 'var(--card-border)'}`, fontWeight: on ? 700 : 500,
-                      background: on ? 'var(--tab-accent)' : 'transparent', color: on ? 'var(--on-tab-accent)' : 'var(--text-secondary)',
-                    }}>{text}</button>
-                  );
-                })}
-              </div>
+          )}
+
+          {/* Sets */}
+          <div role="table" aria-label={`${ex.name} sets`} style={{ display: 'flex', flexDirection: 'column', gap: 4 }}>
+            <div role="row" style={{ display: 'grid', gridTemplateColumns: GRID, gap: 8, alignItems: 'center', ...label, fontSize: 10 }}>
+              <span role="columnheader">Set</span><span role="columnheader">Last time</span>
+              <span role="columnheader" style={{ textAlign: 'center' }}>kg</span><span role="columnheader" style={{ textAlign: 'center' }}>Reps</span>
+              <span role="columnheader" aria-label="Done" />
+            </div>
+            {rows.map((r, i) => {
+              const pr = prs[i];
+              const isNext = i === nextIdx && stage !== 'done';
+              return (
+                <Fragment key={i}>
+                  <div role="row" className={r.isNew ? 'ui-row-in' : undefined} aria-current={isNext ? 'step' : undefined} style={{
+                    display: 'grid', gridTemplateColumns: GRID, gap: 8, alignItems: 'center',
+                    padding: '5px 6px', margin: '0 -6px', borderRadius: 12, position: 'relative',
+                    background: r.done ? 'color-mix(in srgb, var(--tab-accent) 9%, transparent)' : isNext ? 'var(--hover-bg)' : 'transparent',
+                    boxShadow: isNext ? 'inset 0 0 0 1px var(--accent-line)' : 'none',
+                    transition: 'background-color var(--dur-2) var(--ease-out), box-shadow var(--dur-2) var(--ease-out)',
+                  }}>
+                    <span className="t-num" style={{ fontSize: 14, fontWeight: isNext ? 700 : 500, color: r.done || isNext ? 'var(--tab-accent)' : 'var(--text-muted)', textAlign: 'center' }}>{i + 1}</span>
+                    <span className="t-num" style={{ fontSize: 13, color: 'var(--text-secondary)', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
+                      {pr
+                        ? <span className="val-pop" style={{ display: 'inline-block', padding: '2px 8px', borderRadius: 999, fontSize: 10.5, fontWeight: 800, letterSpacing: '0.08em', background: 'var(--tab-accent)', color: 'var(--on-tab-accent)' }} title={r.prev ? `Last time ${r.prev.weight} × ${r.prev.reps}` : undefined}>NEW PR</span>
+                        : r.prev ? `${ex.bodyweight ? 'BW' : r.prev.weight} × ${r.prev.reps}` : '—'}
+                    </span>
+                    <input aria-label={`Set ${i + 1} weight`} inputMode="decimal" disabled={ex.bodyweight || r.done} value={ex.bodyweight ? 'BW' : r.weight}
+                      onFocus={e => e.target.select()} onChange={e => onChange(i, { weight: e.target.value })} className="ui-input"
+                      style={{ ...numInput, opacity: r.done ? 0.7 : 1, ...(isNext ? { borderColor: 'var(--accent-line)' } : {}) }} />
+                    <input aria-label={`Set ${i + 1} reps`} inputMode="numeric" disabled={r.done} value={r.reps}
+                      onFocus={e => e.target.select()} onChange={e => onChange(i, { reps: e.target.value })} className="ui-input"
+                      style={{ ...numInput, opacity: r.done ? 0.7 : 1, ...(isNext ? { borderColor: 'var(--accent-line)' } : {}) }} />
+                    <SetCheck done={r.done} justDone={r.justDone} onClick={() => onTick(i)} label={r.done ? `Undo set ${i + 1}` : `Log set ${i + 1}`} />
+                  </div>
+                  {/* One-tap nudges for the set you are about to do: no keyboard needed. */}
+                  {isNext && (
+                    <div className="ui-row-in" role="group" aria-label={`Adjust set ${i + 1}`} style={{ display: 'grid', gridTemplateColumns: ex.bodyweight ? '1fr 1fr' : 'repeat(4, 1fr)', gap: 6, padding: '2px 0 4px' }}>
+                      {!ex.bodyweight && <button type="button" className="ui-btn is-sm" onClick={() => nudge(i, 'weight', -step)} aria-label={`${step} kg less`}>−{step} kg</button>}
+                      {!ex.bodyweight && <button type="button" className="ui-btn is-sm" onClick={() => nudge(i, 'weight', step)} aria-label={`${step} kg more`}>+{step} kg</button>}
+                      <button type="button" className="ui-btn is-sm" onClick={() => nudge(i, 'reps', -1)} aria-label="One rep less">−1 rep</button>
+                      <button type="button" className="ui-btn is-sm" onClick={() => nudge(i, 'reps', 1)} aria-label="One rep more">+1 rep</button>
+                    </div>
+                  )}
+                  {r.done && prefs.effort !== 'off' && (
+                    <div role="group" aria-label={`Set ${i + 1} effort`} className="ui-row-in" style={{ display: 'flex', alignItems: 'center', gap: 4, padding: '0 0 4px 34px', flexWrap: 'wrap' }}>
+                      <span style={{ fontSize: 11.5, color: 'var(--text-muted)', marginRight: 4 }} title={prefs.effort === 'rir' ? 'Reps in reserve: 0 means nothing left in the tank' : 'Rate of perceived exertion: 10 means nothing left in the tank'}>{effortLabel(prefs.effort)}</span>
+                      {effortOptions(prefs.effort).map(({ rpe: v, text }) => {
+                        const on = validRpe(r.rpe) === v;
+                        return (
+                          <button key={v} type="button" className="ui-chip" aria-pressed={on} aria-label={prefs.effort === 'rir' ? `${text} reps left` : `RPE ${v}`} onClick={() => onRate(i, v)}
+                            style={{ minHeight: 30, minWidth: 34, padding: '0 8px', justifyContent: 'center', fontSize: 12.5 }}>{text}</button>
+                        );
+                      })}
+                    </div>
+                  )}
+                </Fragment>
+              );
+            })}
+          </div>
+
+          <div style={{ display: 'flex', gap: 8 }}>
+            <button type="button" className="ui-btn is-sm" onClick={onAddSet}>+ Add set</button>
+            {rows.length > 1 && !rows[rows.length - 1].done && (
+              <button type="button" className="ui-btn is-sm is-quiet" onClick={onRemoveSet}>Remove set</button>
             )}
-            </Fragment>
-          );
-        })}
-      </div>
-
-      {onEdit && <ExerciseTweaks key={`${ex.id}:${ex.note || ''}`} ex={ex} onEdit={onEdit} />}
-
-      <div style={{ display: 'flex', gap: 8 }}>
-        <button type="button" onClick={onAddSet} style={pill(false)}>+ Add set</button>
-        {rows.length > 1 && !rows[rows.length - 1].done && (
-          <button type="button" onClick={onRemoveSet} style={pill(false)}>Remove set</button>
-        )}
-        {(history.length > 0 || sessions.length > 0) && (
-          <button type="button" aria-expanded={showChart} onClick={() => setShowChart(v => !v)} style={{ ...pill(showChart), marginLeft: 'auto' }}>History</button>
-        )}
-      </div>
-      {showChart && (<><LiftChart history={history} /><LiftSessions sessions={sessions} /></>)}
+          </div>
+        </div>
+      </Collapse>
     </section>
+  );
+}
+
+// Live minutes since the first set, updated each minute (not every frame).
+function useMinutes(startedAt) {
+  const [now, setNow] = useState(Date.now());
+  useEffect(() => {
+    if (!startedAt) return undefined;
+    const t = setInterval(() => setNow(Date.now()), 30000);
+    const v = () => setNow(Date.now());
+    document.addEventListener('visibilitychange', v);
+    return () => { clearInterval(t); document.removeEventListener('visibilitychange', v); };
+  }, [startedAt]);
+  return startedAt ? Math.max(0, Math.round((now - startedAt) / 60000)) : 0;
+}
+
+// 1,250 -> "1.25k" once a number gets wide; the finish sheet shows it in full.
+const short = (n) => (n >= 10000 ? `${(n / 1000).toFixed(1)}k` : n >= 1000 ? `${(n / 1000).toFixed(2).replace(/0$/, '')}k` : String(Math.round(n)));
+
+function Stat({ value, unit, label: text, format, size = 19 }) {
+  return (
+    <div style={{ display: 'flex', flexDirection: 'column', gap: 2, minWidth: 0 }}>
+      <span className="t-num" style={{ fontSize: size, fontWeight: 600, color: 'var(--text-primary)', lineHeight: 1.1, whiteSpace: 'nowrap' }}>
+        <AnimatedNumber value={value} duration={500} format={format} />{unit && <span style={{ fontSize: 12, color: 'var(--text-muted)', marginLeft: 2 }}>{unit}</span>}
+      </span>
+      <span className="t-caption" style={{ fontSize: 9.5 }}>{text}</span>
+    </div>
   );
 }
 
@@ -358,9 +404,12 @@ export default function TrainSession({
   // repairs to confirmed state (not another optimistic snapshot).
   const confirmedRows = useRef({});
   const mutationRevision = useRef({});
+  const draft = useRef(loadDraft(date));
+  const [startedAt, setStartedAt] = useState(() => draft.current.startedAt);
+  const [settingsOpen, setSettingsOpen] = useState(false);
+  const [finishOpen, setFinishOpen] = useState(false);
 
   const setGym = (g) => { setGymState(g); writePref('valerie_train_gym', g); };
-  const onRestDone = useCallback(() => toast('Rest done — next set'), []);
 
   const recovery = useRecovery();
   const equipment = useEquipment();
@@ -384,19 +433,20 @@ export default function TrainSession({
   }, [exercises, gym, day, extraIds, hiddenIds, program]);
 
   // Swap an exercise for another that trains the same muscle (equipment busy, joint sore).
-  // With a program the swap is saved into that day, so next week has it too.
+  // With a program the swap is saved into that day, so next week has it too. Undo puts it back.
   const alternativesFor = (ex) => {
     const m = musclesFor(ex)?.[0];
     return exercises.filter(e => e.id !== ex.id && !todays.some(t => t.id === e.id) && (e.gym === gym || e.gym === 'both') && musclesFor(e)?.[0] === m);
   };
-  const replaceExercise = async (oldEx, newEx) => {
-    setHiddenIds(h => [...h, oldEx.id]);
-    setExtraIds(ids => [...ids, newEx.id]);
+  const replaceExercise = async (oldEx, newEx, { quiet = false } = {}) => {
+    setHiddenIds(h => [...h.filter(x => x !== newEx.id), oldEx.id]);
+    setExtraIds(ids => [...ids.filter(x => x !== oldEx.id), newEx.id]);
     const d = program?.days?.[day];
     if (program && updateProgram && d && WEEK.includes(day)) {
       const ids = materialize(d, exercises).exerciseIds.map(x => (x === oldEx.id ? newEx.id : x));
       await updateProgram(program.id, { days: { ...program.days, [day]: { ...d, exerciseIds: ids } } });
     }
+    if (!quiet) toast(`${newEx.name} in for ${oldEx.name}`, 'success', () => replaceExercise(newEx, oldEx, { quiet: true }));
   };
 
   // What we pre-filled for each exercise (weight x reps per row), so a later change of
@@ -412,7 +462,7 @@ export default function TrainSession({
       for (const ex of todays) {
         if (next[ex.id]) continue;
         const prog = applyReadiness(progression(ex, workoutLogs.filter(l => l.date < date)), recovery);
-        const rows = plannedRows(ex, prog, previousSets(workoutLogs, ex.name, date), recommendedSets(ex, recPrefs).sets);
+        let rows = plannedRows(ex, prog, previousSets(workoutLogs, ex.name, date), recommendedSets(ex, recPrefs).sets);
         const existing = todaysLog(workoutLogs, ex.name, date);
         if (existing) {
           rowIds.current[ex.id] = existing.id;
@@ -423,12 +473,18 @@ export default function TrainSession({
         }
         confirmedRows.current[ex.id] = rows.map(r => ({ ...r, justDone: false }));
         if (!existing) autoPlan.current[ex.id] = sig(rows);
+        // Typed-but-unlogged values from before a refresh come back on top.
+        const drafted = draft.current.rows[ex.id];
+        if (drafted) { const withDraft = applyDraft(rows, drafted); if (sig(withDraft) !== sig(rows) || withDraft.length !== rows.length) { rows = withDraft; delete autoPlan.current[ex.id]; } }
         next[ex.id] = rows;
         changed = true;
       }
       return changed ? next : prev;
     });
   }, [todays, workoutLogs, date, progression, setPlan]);
+
+  // Keep the draft current (cheap: a few hundred bytes).
+  useEffect(() => { saveDraft(date, plan, startedAt); draft.current = loadDraft(date); }, [plan, date, startedAt]);
 
   // Sleep logged (or loaded) after the screen opened: refresh pre-filled rows the
   // lifter has not touched, so a low-readiness hold is not missed. Never overwrites
@@ -484,6 +540,14 @@ export default function TrainSession({
     return queue.current[ex.id];
   }
 
+  // What comes after this set: the next set of this lift, or the next lift.
+  const nextLabel = (ex, rows) => {
+    const i = rows.findIndex(r => !r.done);
+    if (i >= 0) return `${ex.name}, set ${i + 1}`;
+    const after = todays.find(t => t.id !== ex.id && (planRef.current[t.id] ?? []).some(r => !r.done));
+    return after ? after.name : null;
+  };
+
   async function tick(ex, i) {
     const rows = planRef.current[ex.id];
     const row = rows[i];
@@ -491,22 +555,19 @@ export default function TrainSession({
     if (!undo && !ex.bodyweight && !(Number(row.weight) >= 0 && row.weight !== '')) return;
     if (!undo && !(Number(row.reps) > 0)) return;
 
-    const nextRows = rows.map((r, j) => j === i ? { ...r, done: !undo, justDone: !undo } : { ...r, justDone: false });
+    const nextRows = rows.map((r, j) => j === i ? { ...r, done: !undo, justDone: !undo, isNew: false } : { ...r, justDone: false, isNew: false });
     const revision = (mutationRevision.current[ex.id] ?? 0) + 1;
     mutationRevision.current[ex.id] = revision;
-    setRows(ex.id, () => nextRows);
-    haptic();
+    setRows(ex.id, () => nextRows);   // the tap itself buzzes (installTapHaptics); a PR adds a stronger one below
 
     let pr = null;
     if (!undo) {
       const history = bests(logsRef.current, ex.name, { excludeDate: date });
       const todaySets = rows.filter((r, j) => r.done && j !== i).map(r => ({ weight: Number(r.weight) || 0, reps: Number(r.reps) || 0 }));
       pr = detectPR({ weight: Number(row.weight) || 0, reps: Number(row.reps) }, { history, todaySets });
-      if (!sessionStartedAt) sessionStartedAt = Date.now();
-      if (prefs.autoRest) {
-        restTotal = restSeconds(ex, restPref);
-        restUntil = Date.now() + restTotal * 1000;
-      }
+      if (!startedAt) setStartedAt(markStarted(date));
+      const next = nextLabel(ex, nextRows);
+      if (prefs.autoRest && next) startRest(restSeconds(ex, restPref), next);
     }
     setPrs(p => ({ ...p, [ex.id]: { ...(p[ex.id] ?? {}), [i]: pr } }));
 
@@ -517,14 +578,13 @@ export default function TrainSession({
       if (mutationRevision.current[ex.id] !== revision) return;
       setRows(ex.id, () => (confirmedRows.current[ex.id] ?? []).map(r => ({ ...r, justDone: false })));
       setPrs(p => ({ ...p, [ex.id]: {} }));
-      restUntil = 0;
-      restTotal = 0;
+      stopRest();
       rerender(n => n + 1);
       return;
     }
     confirmedRows.current[ex.id] = nextRows.map(r => ({ ...r, justDone: false }));
     if (pr) {
-      haptic([30, 40, 60]);
+      haptics.success();
       toast(`New PR · ${ex.name} ${ex.bodyweight ? 'BW' : `${row.weight} kg`} × ${row.reps}`);
     }
     rerender(n => n + 1);
@@ -548,74 +608,123 @@ export default function TrainSession({
 
   // Session totals
   const allDone = todays.flatMap(ex => (plan[ex.id] ?? []).filter(r => r.done).map(r => ({ weight: Number(r.weight) || 0, reps: Number(r.reps) || 0 })));
-  const prCount = Object.values(prs).reduce((s, m) => s + Object.values(m).filter(Boolean).length, 0);
-  const minutes = sessionStartedAt ? Math.round((Date.now() - sessionStartedAt) / 60000) : 0;
+  const planned = todays.reduce((s, ex) => s + (plan[ex.id]?.length ?? 0), 0);
+  // Today's records, worked out from the logged sets (the same test a tick runs), so they survive
+  // a refresh; a tick's own result still wins for the set it just logged.
+  const savedPrs = useMemo(() => {
+    const out = {};
+    for (const ex of todays) {
+      const rows = plan[ex.id] ?? [];
+      if (!rows.some(r => r.done)) continue;
+      const history = bests(workoutLogs, ex.name, { excludeDate: date });
+      const before = [];
+      rows.forEach((r, i) => {
+        if (!r.done) return;
+        const set = { weight: Number(r.weight) || 0, reps: Number(r.reps) || 0 };
+        const pr = detectPR(set, { history, todaySets: before });
+        if (pr) (out[ex.id] ||= {})[i] = pr;
+        before.push(set);
+      });
+    }
+    return out;
+  }, [todays, plan, workoutLogs, date]);
+  const prsFor = (id) => ({ ...(savedPrs[id] ?? {}), ...(prs[id] ?? {}) });
+  const prCount = todays.reduce((s, ex) => s + Object.values(prsFor(ex.id)).filter(Boolean).length, 0);
+  const minutes = useMinutes(startedAt);
   const others = exercises.filter(e => !todays.some(t => t.id === e.id));
+  const vol = volume(allDone);
+  const complete = planned > 0 && allDone.length >= planned;
+  // Last time's volume for the same lifts, to compare on the finish sheet.
+  const lastVol = useMemo(() => todays.reduce((s, ex) => s + volume(previousSets(workoutLogs, ex.name, date)), 0), [todays, workoutLogs, date]);
+  // The current exercise: the first with a set still to do.
+  const currentId = todays.find(ex => (plan[ex.id] ?? []).some(r => !r.done))?.id ?? null;
+
+  const dayChoices = program ? sessionChoices(program, exercises).map(c => ({ id: c.key, label: c.label })) : ['push', 'pull', 'legs'].map(d => ({ id: d, label: splitNames[d] ?? d }));
+  const title = program && WEEK.includes(day) ? (program.days?.[day]?.label || 'Workout') : (splitNames[day] ?? day);
+
+  const finish = () => {
+    setFinishOpen(false);
+    stopRest();
+    clearDraft();
+    setStartedAt(null);
+    softHaptic([10, 40, 10]);
+    toast(`Workout saved · ${allDone.length} sets · ${vol.toLocaleString()} kg`);
+  };
 
   return (
-    <div style={{ height: '100%', overflowY: 'auto' }}>
-      <div style={{ display: 'flex', flexDirection: 'column', gap: 14, padding: compact ? 16 : '20px 28px 28px', maxWidth: 760, width: '100%', margin: '0 auto', boxSizing: 'border-box' }}>
-        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-end', gap: 12, flexWrap: 'wrap' }}>
-          <div style={{ display: 'flex', flexDirection: 'column', gap: 4 }}>
-            <h1 style={{ margin: 0, fontSize: compact ? 26 : 30, fontWeight: 700, color: 'var(--text-primary)' }}>{program && WEEK.includes(day) ? (program.days?.[day]?.label || 'Workout') : (splitNames[day] ?? day)}</h1>
-            <span className="val-num" style={{ fontSize: 12, color: 'var(--text-secondary)', letterSpacing: '0.06em' }}>
-              {allDone.length} SETS · {volume(allDone).toLocaleString()} KG{minutes ? ` · ${minutes} MIN` : ''}{prCount ? ` · ${prCount} PR${prCount > 1 ? 'S' : ''}` : ''}
-            </span>
-          </div>
-          <div style={{ display: 'flex', gap: 6, flexWrap: 'wrap' }}>
-            {(program ? sessionChoices(program, exercises).map(c => ({ id: c.key, label: c.label })) : ['push', 'pull', 'legs'].map(d => ({ id: d, label: splitNames[d] ?? d }))).map(c => (
-              <button key={c.id} type="button" aria-pressed={day === c.id} onClick={() => { setDay(c.id); setExtraIds([]); setHiddenIds([]); }} style={pill(day === c.id)}>{c.label}</button>
-            ))}
-            <button type="button" onClick={() => setGym(gym === 'home' ? 'commercial' : 'home')} style={pill(false)}
-              aria-label={`Gym: ${gym === 'home' ? 'Home' : 'Commercial'}. Switch`}>
-              {gym === 'home' ? 'Home gym' : 'Commercial'}
-            </button>
+    <div style={compact ? undefined : { height: '100%', overflowY: 'auto' }}>
+      <div style={{ display: 'flex', flexDirection: 'column', gap: 14, padding: compact ? '14px 16px 96px' : '20px 28px 110px', maxWidth: 760, width: '100%', margin: '0 auto', boxSizing: 'border-box' }}>
+        {/* Title and day */}
+        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: 12 }}>
+          <h1 key={title} className="ui-enter" style={{ margin: 0, fontSize: compact ? 26 : 30, fontWeight: 700, color: 'var(--text-primary)', minWidth: 0 }}>{title}</h1>
+          <div style={{ display: 'flex', gap: 6, flexShrink: 0 }}>
+            <button type="button" className="ui-btn is-sm" onClick={() => setGym(gym === 'home' ? 'commercial' : 'home')} aria-label={`Gym: ${gym === 'home' ? 'Home' : 'Commercial'}. Switch`}>{gym === 'home' ? 'Home gym' : 'Commercial'}</button>
+            <button type="button" className="ui-btn is-sm is-icon" onClick={() => setSettingsOpen(true)} aria-label="Session settings" style={{ width: 36 }}><Glyph d={GEAR} size={17} w={1.6} /></button>
           </div>
         </div>
-
-        <div role="group" aria-label="Rest time between sets" style={{ display: 'flex', alignItems: 'center', gap: 6, flexWrap: 'wrap' }}>
-          <span style={label}>Rest</span>
-          {[[0, 'Auto'], [60, '60 s'], [90, '90 s'], [120, '2 min'], [180, '3 min']].map(([v, text]) => (
-            <button key={v} type="button" aria-pressed={restPref === v} onClick={() => chooseRest(v)} style={pill(restPref === v)}>{text}</button>
-          ))}
-        </div>
-
-        {onEditProgram && (
-          <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>
-            <button type="button" onClick={onEditProgram} style={pill(false)}>{program ? 'Edit this program' : 'Create a program'}</button>
-          </div>
+        {dayChoices.length > 1 && (
+          <SlidingTabs label="Workout day" mode="toggle" scroll value={day} items={dayChoices}
+            onChange={(id) => { setDay(id); setExtraIds([]); setHiddenIds([]); }} />
         )}
-        <TrainPrefsPanel prefs={prefs} />
 
-        {todays.some(e => !e.bodyweight && isBarbell(e.name)) && <EquipmentSettings key={equipment.plates.join(',')} eq={equipment} />}
+        {/* Live summary */}
+        <div className="ui-card" style={{ position: 'sticky', top: compact ? 6 : 0, zIndex: 4, display: 'flex', alignItems: 'center', gap: 10, padding: '10px 12px',
+          background: 'color-mix(in srgb, var(--surface-1) 90%, transparent)', WebkitBackdropFilter: 'blur(16px)', backdropFilter: 'blur(16px)' }}>
+          <ProgressRing value={planned ? allDone.length / planned : 0} size={44} stroke={4} color={complete ? 'var(--ok)' : 'var(--tab-accent)'}
+            label={`${allDone.length} of ${planned} sets done`}>
+            <span className="t-num" style={{ fontSize: 11, fontWeight: 650, color: complete ? 'var(--ok)' : 'var(--text-primary)' }}>{planned ? Math.round((allDone.length / planned) * 100) : 0}%</span>
+          </ProgressRing>
+          <div style={{ flex: 1, minWidth: 0, display: 'grid', gridTemplateColumns: 'minmax(0, 0.8fr) minmax(0, 1.2fr) minmax(0, 1fr)', gap: 6 }}>
+            <Stat value={allDone.length} label={`of ${planned}`} size={compact ? 17 : 19} />
+            <Stat value={vol} unit="kg" label="Volume" format={short} size={compact ? 17 : 19} />
+            <Stat value={minutes} unit="m" label={prCount ? `${prCount} PR${prCount > 1 ? 's' : ''}` : 'Time'} size={compact ? 17 : 19} />
+          </div>
+          {allDone.length > 0 && <button type="button" className={`ui-btn is-sm${complete ? ' is-primary' : ' is-soft'}`} onClick={() => setFinishOpen(true)}>Finish</button>}
+        </div>
 
         {recovery.status === 'ok' && (
           <div role="status" style={{ display: 'flex', alignItems: 'center', gap: 10, fontSize: 13, lineHeight: 1.45, color: 'var(--text-secondary)' }}>
-            <span className="val-num" style={{ fontSize: 15, fontWeight: 600, color: recovery.band === 'push' ? '#4caf7d' : recovery.band === 'go-easy' ? '#e25d7a' : '#e8a13a' }}>{recovery.score}</span>
+            <span className="t-num" style={{ fontSize: 15, fontWeight: 600, color: recovery.band === 'push' ? 'var(--ok)' : recovery.band === 'go-easy' ? 'var(--bad)' : 'var(--warn)' }}>{recovery.score}</span>
             <span><strong style={{ color: 'var(--text-primary)' }}>{recovery.label}.</strong> {recovery.advice}</span>
           </div>
         )}
 
-        <StrengthCard logs={workoutLogs} />
-
         {stalled.length > 0 && (
-          <div role="status" style={{ padding: '10px 14px', borderRadius: 14, border: '0.5px solid #e8a13a', background: 'color-mix(in srgb, #e8a13a 8%, transparent)', fontSize: 13, lineHeight: 1.5, color: 'var(--text-primary)' }}>
-            <strong style={{ color: '#e8a13a' }}>{stalled.length === 1 ? '1 lift has stalled' : `${stalled.length} lifts have stalled`}.</strong>{' '}
+          <div role="status" style={{ padding: '10px 14px', borderRadius: 14, border: '0.5px solid color-mix(in srgb, var(--warn) 60%, transparent)', background: 'color-mix(in srgb, var(--warn) 8%, transparent)', fontSize: 13, lineHeight: 1.5, color: 'var(--text-primary)' }}>
+            <strong style={{ color: 'var(--warn)' }}>{stalled.length === 1 ? '1 lift has stalled' : `${stalled.length} lifts have stalled`}.</strong>{' '}
             {stalled.slice(0, 3).map(s => `${s.name} (${s.sessions} sessions${s.action === 'DELOAD' ? `, deload to ${s.nextWeight} kg` : ''})`).join('; ')}.
           </div>
         )}
 
-        {todays.length === 0 && (
-          <div style={{ fontSize: 14, color: 'var(--text-secondary)', padding: '24px 0' }}>
-            {program ? 'No exercises on this day for this gym. Edit the day in Split, or add one below.' : 'No exercises for this day and gym. Add some in Exercises, or add one below.'}
+        {complete && (
+          <div className="ui-card ui-scale" role="status" style={{ display: 'flex', alignItems: 'center', gap: 14, padding: 16, borderColor: 'color-mix(in srgb, var(--ok) 45%, transparent)' }}>
+            <span className="ui-check is-on ui-confirm" aria-hidden="true" style={{ width: 40, height: 40, flexShrink: 0, background: 'var(--ok)', color: '#0b1a12' }}>
+              <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round"><path d={TICK} /></svg>
+            </span>
+            <div style={{ flex: 1, minWidth: 0 }}>
+              <div style={{ fontSize: 15, fontWeight: 650, color: 'var(--text-primary)' }}>Every planned set is done</div>
+              <div style={{ fontSize: 13, color: 'var(--text-secondary)' }}>Add a set, or finish to see the summary.</div>
+            </div>
+            <button type="button" className="ui-btn is-sm is-primary" onClick={() => setFinishOpen(true)}>Finish</button>
           </div>
         )}
 
-        {todays.map(ex => plan[ex.id] && (
-          <ExerciseCard key={ex.id} ex={ex} prog={progFor(ex)} rows={plan[ex.id]} prs={prs[ex.id] ?? {}} compact={compact}
+        {todays.length === 0 && (
+          <div className="ui-card ui-enter" style={{ padding: '22px 18px', display: 'flex', flexDirection: 'column', gap: 12, alignItems: 'flex-start' }}>
+            <div style={{ fontSize: 15, fontWeight: 600, color: 'var(--text-primary)' }}>Nothing planned here</div>
+            <div style={{ fontSize: 14, color: 'var(--text-secondary)', lineHeight: 1.5 }}>
+              {program ? 'No exercises on this day for this gym. Edit the day in Split, or add one below.' : 'No exercises for this day and gym. Add some in Exercises, or add one below.'}
+            </div>
+            {onEditProgram && <button type="button" className="ui-btn is-sm is-soft" onClick={onEditProgram}>{program ? 'Edit this program' : 'Create a program'}</button>}
+          </div>
+        )}
+
+        {todays.map((ex, idx) => plan[ex.id] && (
+          <ExerciseCard key={ex.id} index={idx} ex={ex} prog={progFor(ex)} rows={plan[ex.id]} prs={prsFor(ex.id)} compact={compact}
+            stage={ex.id === currentId ? 'current' : (plan[ex.id].length && plan[ex.id].every(r => r.done)) ? 'done' : 'next'}
             onChange={(i, patch) => setRows(ex.id, rs => rs.map((r, j) => j === i ? { ...r, ...patch } : r))}
             onTick={(i) => tick(ex, i)} onRate={(i, v) => rate(ex, i, v)}
-            onAddSet={() => setRows(ex.id, rs => [...rs, { ...(rs[rs.length - 1] ?? { weight: 0, reps: ex.repsMin }), prev: null, done: false, justDone: false, rpe: '' }])}
+            onAddSet={() => setRows(ex.id, rs => [...rs.map(r => ({ ...r, isNew: false })), { ...(rs[rs.length - 1] ?? { weight: 0, reps: ex.repsMin }), prev: null, done: false, justDone: false, rpe: '', isNew: true }])}
             onRemoveSet={() => setRows(ex.id, rs => rs.slice(0, -1))} history={liftHistory(workoutLogs, ex.name)} sessions={sessionsOf(workoutLogs.filter(l => l.date < date), ex.name)} rec={recommendedSets(ex, recPrefs)} eq={equipment}
             alternatives={alternativesFor(ex)} onReplace={(n) => replaceExercise(ex, n)} prefs={prefs} onEdit={editExercise ? (patch) => editExercise(ex.id, patch) : null} />
         ))}
@@ -623,16 +732,64 @@ export default function TrainSession({
         {others.length > 0 && (
           <label style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
             <span style={label}>Add exercise</span>
-            <select value="" onChange={e => e.target.value && setExtraIds(ids => [...ids, e.target.value])}
-              style={{ ...numInput, textAlign: 'left', flex: 1, fontFamily: 'inherit' }}>
+            <select value="" onChange={e => e.target.value && setExtraIds(ids => [...ids, e.target.value])} className="ui-input" style={{ flex: 1, height: 44 }}>
               <option value="">Choose…</option>
               {others.map(e => <option key={e.id} value={e.id}>{e.name}</option>)}
             </select>
           </label>
         )}
 
-        <RestTimer onDone={onRestDone} />
+        <StrengthCard logs={workoutLogs} />
       </div>
+
+      {/* Settings: everything that used to sit above the workout */}
+      <Sheet open={settingsOpen} onClose={() => setSettingsOpen(false)} title="Session settings">
+        <div style={{ display: 'flex', flexDirection: 'column', gap: 18 }}>
+          <div style={{ fontSize: 18, fontWeight: 650, color: 'var(--text-primary)' }}>Session settings</div>
+          <div style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
+            <span style={label}>Rest between sets</span>
+            <SlidingTabs mode="toggle" boxed label="Rest time between sets" value={restPref} onChange={chooseRest}
+              items={[{ id: 0, label: 'Auto' }, { id: 60, label: '60 s' }, { id: 90, label: '90 s' }, { id: 120, label: '2 min' }, { id: 180, label: '3 min' }]} />
+          </div>
+          <TrainPrefsPanel prefs={prefs} />
+          {todays.some(e => !e.bodyweight && isBarbell(e.name)) && <EquipmentSettings key={equipment.plates.join(',')} eq={equipment} />}
+          {onEditProgram && <button type="button" className="ui-btn is-block" onClick={() => { setSettingsOpen(false); onEditProgram(); }}>{program ? 'Edit this program' : 'Create a program'}</button>}
+          <button type="button" className="ui-btn is-quiet is-block" onClick={() => setSettingsOpen(false)}>Done</button>
+        </div>
+      </Sheet>
+
+      {/* Finish: a summary. Every set is already saved as you tick it. */}
+      <Sheet open={finishOpen} onClose={() => setFinishOpen(false)} title="Workout summary">
+        <div style={{ display: 'flex', flexDirection: 'column', gap: 18, alignItems: 'stretch' }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: 14 }}>
+            <ProgressRing value={planned ? allDone.length / planned : 0} size={64} stroke={6} color={complete ? 'var(--ok)' : 'var(--tab-accent)'}>
+              <span className="t-num" style={{ fontSize: 15, fontWeight: 650, color: 'var(--text-primary)' }}>{allDone.length}</span>
+            </ProgressRing>
+            <div>
+              <div style={{ fontSize: 19, fontWeight: 700, color: 'var(--text-primary)' }}>{title}</div>
+              <div style={{ fontSize: 13, color: 'var(--text-secondary)' }}>{allDone.length} of {planned} planned sets · {minutes} min</div>
+            </div>
+          </div>
+          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, minmax(0, 1fr))', gap: 10 }}>
+            <div className="ui-card" style={{ padding: 12 }}><Stat value={vol} unit="kg" label="Volume" /></div>
+            <div className="ui-card" style={{ padding: 12 }}><Stat value={prCount} label="Records" /></div>
+            <div className="ui-card" style={{ padding: 12 }}><Stat value={todays.filter(ex => (plan[ex.id] ?? []).some(r => r.done)).length} label="Exercises" /></div>
+          </div>
+          {lastVol > 0 && (
+            <div style={{ fontSize: 14, color: 'var(--text-secondary)', lineHeight: 1.5 }}>
+              Last time these lifts moved <span className="t-num" style={{ color: 'var(--text-primary)' }}>{lastVol.toLocaleString()} kg</span>.{' '}
+              {vol >= lastVol
+                ? <strong style={{ color: 'var(--ok)' }}>Up {(vol - lastVol).toLocaleString()} kg.</strong>
+                : <span>{(lastVol - vol).toLocaleString()} kg to go to match it.</span>}
+            </div>
+          )}
+          <div style={{ fontSize: 12.5, color: 'var(--text-muted)' }}>Every set was saved the moment you ticked it. Finishing stops the timer and clears today's draft.</div>
+          <div style={{ display: 'flex', gap: 8 }}>
+            <button type="button" className="ui-btn" style={{ flex: 1 }} onClick={() => setFinishOpen(false)}>Keep training</button>
+            <button type="button" className="ui-btn is-primary" style={{ flex: 1 }} onClick={finish}>Finish workout</button>
+          </div>
+        </div>
+      </Sheet>
     </div>
   );
 }

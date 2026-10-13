@@ -20,9 +20,9 @@ export default function LiftChart({ history, label = 'Estimated max' }) {
   return (
     <div style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
       <svg viewBox={`0 0 ${W} ${H}`} role="img" aria-label={summary} style={{ width: '100%', height: 'auto', maxHeight: 130 }}>
-        <polyline points={points} fill="none" stroke="var(--tab-accent)" strokeWidth="2" strokeLinejoin="round" strokeLinecap="round" />
+        <polyline key={points} className="ui-draw" pathLength="1" points={points} fill="none" stroke="var(--tab-accent)" strokeWidth="2" strokeLinejoin="round" strokeLinecap="round" />
         {history.map((h, i) => (
-          <circle key={h.date} cx={x(i)} cy={y(h.e1rm)} r={i === bestIdx ? 4.5 : 2.5}
+          <circle key={h.date} className="ui-fade-late" cx={x(i)} cy={y(h.e1rm)} r={i === bestIdx ? 4.5 : 2.5}
             fill={i === bestIdx ? 'var(--tab-accent)' : 'var(--bg-panel)'} stroke="var(--tab-accent)" strokeWidth="1.5" />
         ))}
         <text x={x(bestIdx)} y={Math.max(9, y(hi) - 7)} fontSize="9" textAnchor={bestIdx > history.length * 0.8 ? 'end' : 'middle'} fill="var(--text-primary)" style={{ fontFamily: 'var(--font-mono)' }}>{hi}</text>

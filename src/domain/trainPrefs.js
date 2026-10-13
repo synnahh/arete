@@ -7,8 +7,10 @@
 //   plates       show the per-side plate breakdown on barbell lifts
 //   autoRest     start the rest timer when you tick a set
 //   defaultSets  number of sets to recommend when the program does not say (null = automatic)
+//   restSound    a short tone when a rest ends (off by default; only while the app is open)
+//   restVibrate  a buzz when a rest ends (Android; iPhone web apps have no vibration API)
 
-export const TRAIN_DEFAULTS = { effort: 'rpe', warmups: true, plates: true, autoRest: true, defaultSets: null };
+export const TRAIN_DEFAULTS = { effort: 'rpe', warmups: true, plates: true, autoRest: true, defaultSets: null, restSound: false, restVibrate: true };
 export const EFFORT_MODES = ['rpe', 'rir', 'off'];
 
 export function cleanTrainPrefs(raw) {
@@ -20,6 +22,8 @@ export function cleanTrainPrefs(raw) {
     plates: r.plates !== false,
     autoRest: r.autoRest !== false,
     defaultSets: n >= 1 && n <= 8 ? n : null,
+    restSound: r.restSound === true,
+    restVibrate: r.restVibrate !== false,
   };
 }
 

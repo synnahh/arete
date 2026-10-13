@@ -16,17 +16,18 @@ import GoalHQ           from '../tabs/GoalHQ.jsx';
 import MobileSettings   from './screens/MobileSettings.jsx';
 import MobileHabits     from './screens/MobileHabits.jsx';
 import Toaster          from '../components/Toaster.jsx';
+import RestTimer        from '../components/RestTimer.jsx';
 import SyncBanner       from '../components/SyncBanner.jsx';
 import MobileStyle      from './screens/MobileStyle.jsx';
 import Insights         from '../tabs/Insights.jsx';
 import { haptics, installTapHaptics } from './utils/haptics.js';
 import { storage, STORAGE_KEYS } from '../utils/storage.js';
 import SectionBar      from '../components/SectionBar.jsx';
-import { groupOf, groupScreens, resolveTarget, DEFAULT_SCREEN, SCREEN_LABELS } from '../nav/groups.js';
+import { groupOf, groupScreens, resolveTarget, DEFAULT_SCREEN, SCREEN_LABELS, BAR_ORDER } from '../nav/groups.js';
 import { setActiveGroup, backgroundClass } from '../styles/appearance.js';
 import { getTimeOfDay } from '../utils/time.js';
 
-//  Bottom bar: Home · Train · Fuel · Look · Progress
+//  Bottom bar: Train · Fuel · Home · Look · Progress (Home in the middle, see BAR_ORDER)
 // Settings opens from the gear in the section row. Screen ids are unchanged;
 // see src/nav/groups.js.
 const stroke = (active) => ({ stroke: 'currentColor', strokeWidth: active ? 2 : 1.5 });
@@ -85,7 +86,7 @@ const BAR = [
       </svg>
     ),
   },
-];
+].sort((a, b) => BAR_ORDER.indexOf(a.id) - BAR_ORDER.indexOf(b.id));   // Train · Fuel · Home · Look · Progress
 
 // ── Pull-to-refresh ────────────────────────────────────────────────────────────
 function usePullToRefresh(scrollRef, onRefresh) {
@@ -178,6 +179,8 @@ export default function MobileShell({ settings, onSettingsChange }) {
 
   useEffect(() => {
     setActiveGroup(groupOf(activeTab).id);
+    // A new screen starts at its top, not wherever the last one was scrolled to.
+    if (scrollRef.current) scrollRef.current.scrollTop = 0;
   }, [activeTab]);
 
   const navOpts = () => ({
@@ -282,48 +285,29 @@ export default function MobileShell({ settings, onSettingsChange }) {
       </div>
 
       <Toaster phone />
+      <RestTimer />
 
 
       {/* ── Bottom tab bar ── */}
-      <nav aria-label="Tabs" style={{
-        position: 'fixed', bottom: 0, left: 0, right: 0,
-        height: 'calc(72px + env(safe-area-inset-bottom))',
-        paddingBottom: 'env(safe-area-inset-bottom)',
-        background: 'var(--bg-sidebar)',
-        borderTop: '0.5px solid var(--card-border)',
-        display: 'flex', alignItems: 'stretch',
-        backdropFilter: 'blur(20px)',
-        WebkitBackdropFilter: 'blur(20px)',
-        zIndex: 100,
-      }}>
+      {/* Home sits in the middle as a raised disc; for the other tabs a soft pill slides across. */}
+      <nav aria-label="Tabs" className="m-tabbar">
+        {(() => {
+          const i = BAR.findIndex(t => t.id === activeGroup.id);
+          const show = i >= 0 && BAR[i].id !== 'home';
+          return (
+            <span className="m-tab-slot" aria-hidden="true"
+              style={{ width: `calc((100% - 12px) / ${BAR.length})`, transform: `translateX(${Math.max(0, i) * 100}%)`, opacity: show ? 1 : 0 }}>
+              <span className="m-tab-thumb" />
+            </span>
+          );
+        })()}
         {BAR.map(tab => {
           const active = activeGroup.id === tab.id;
           return (
-            <button
-              key={tab.id}
-              type="button"
-              aria-current={active ? 'page' : undefined}
-              onClick={() => switchTab(tab.id)}
-              style={{
-                flex: 1,
-                display: 'flex', flexDirection: 'column',
-                alignItems: 'center', justifyContent: 'center',
-                gap: 4,
-                background: 'none', border: 'none', cursor: 'pointer',
-                color: active ? 'var(--tab-accent)' : 'var(--text-muted)',
-                transition: 'color 0.15s ease',
-                WebkitTapHighlightColor: 'transparent',
-                minHeight: 72,
-              }}
-            >
-              {tab.icon(active)}
-              <span style={{
-                fontSize: 11, fontWeight: active ? 600 : 400,
-                letterSpacing: '0.02em',
-                color: active ? 'var(--tab-accent)' : 'var(--text-muted)',
-              }}>
-                {tab.label}
-              </span>
+            <button key={tab.id} type="button" className={`m-tab${tab.id === 'home' ? ' is-home' : ''}`}
+              aria-current={active ? 'page' : undefined} onClick={() => switchTab(tab.id)}>
+              <span className="m-tab-icon">{tab.icon(active)}</span>
+              <span className="m-tab-label">{tab.label}</span>
             </button>
           );
         })}

@@ -448,9 +448,12 @@ html:not([data-motion="reduced"])[data-group="mind"] .m-screen.val-fade-up { ani
 .val-rep-kick { animation: val-rep-kick 360ms var(--ease-spring); }
 
 /* ── Utility classes (set --d for per-item stagger delay) ───── */
-.val-fade-up   { opacity: 0; animation: val-fade-up  var(--dur-med)  var(--ease-out) forwards; animation-delay: var(--d, 0ms); }
-.val-fade-in   { opacity: 0; animation: val-fade-in  var(--dur-med)  ease forwards;            animation-delay: var(--d, 0ms); }
-.val-scale-in  { opacity: 0; animation: val-scale-in var(--dur-med)  var(--ease-out) forwards; animation-delay: var(--d, 0ms); }
+/* `backwards` holds the first frame during a stagger delay, then lets go when the animation ends:
+   no transform is left behind, because a leftover transform turns the wrapper into the box that
+   position:fixed children (sheets, the rest timer) are placed in. */
+.val-fade-up   { animation: val-fade-up  var(--dur-med)  var(--ease-out) backwards; animation-delay: var(--d, 0ms); }
+.val-fade-in   { animation: val-fade-in  var(--dur-med)  ease backwards;            animation-delay: var(--d, 0ms); }
+.val-scale-in  { animation: val-scale-in var(--dur-med)  var(--ease-out) backwards; animation-delay: var(--d, 0ms); }
 .val-pop       { animation: val-pop var(--dur-med) var(--ease-spring) forwards; }
 
 /* ── Hover lift for glass cards (desktop, pointer only) ─────── */

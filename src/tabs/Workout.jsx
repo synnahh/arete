@@ -7,7 +7,6 @@ import { useState, useEffect, useMemo, useCallback } from 'react';
 import { useCollection } from '../supabase/useCollection.js';
 import { useDocument }   from '../supabase/useDocument.js';
 import { STORAGE_KEYS }  from '../utils/storage.js';
-import { anteriorData, posteriorData } from '../components/bodyModel.js';
 import { toLocalDateKey } from '../utils/localDate.js';
 import TrainSession from './TrainSession.jsx';
 import { suggestNext } from '../domain/progression.js';
@@ -15,6 +14,8 @@ import SplitBuilder from '../components/SplitBuilder.jsx';
 import { EXERCISE_MUSCLES, MUSCLE_MAP, musclesForLog as getLogMuscles, musclesForExercise } from '../domain/muscles.js';
 import ExerciseSuggest from '../components/ExerciseSuggest.jsx';
 import ExerciseBrowser from '../components/ExerciseBrowser.jsx';
+import { SlidingTabs } from '../components/Motion.jsx';
+import MuscleRanking from '../components/MuscleRanking.jsx';
 
 // ── Helpers ───────────────────────────────────────────────────────────────────
 const todayStr = () => toLocalDateKey(new Date());
@@ -149,8 +150,8 @@ function ExerciseModal({ onClose, onSave, initial = null }) {
   };
 
   return (
-    <div style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.7)', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 400 }} onClick={onClose}>
-      <div onClick={e => e.stopPropagation()} style={{
+    <div className="sheet-backdrop" style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.6)', WebkitBackdropFilter: 'blur(4px)', backdropFilter: 'blur(4px)', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 400 }} onClick={onClose}>
+      <div role="dialog" aria-modal="true" aria-label={initial ? 'Edit exercise' : 'Add exercise'} className="ui-scale" onClick={e => e.stopPropagation()} style={{ boxShadow: 'var(--shadow-3)',
         background: 'var(--bg-panel)', border: '0.5px solid var(--card-border)',
         borderRadius: 16, padding: '24px 22px', width: 340, maxHeight: '90vh', overflowY: 'auto',
         display: 'flex', flexDirection: 'column', gap: 14,
@@ -449,174 +450,8 @@ const MUSCLES = [
   { id: 'glutes',     label: 'Glutes',      side: 'back',  x: 43,  y: 52, color: '#9b5de5' },
 ];
 
-// Slow progression — sessions are distinct days a muscle was trained (all-time).
-const RANK_LEVELS = [
-  { min: 0,  label: 'Untrained',    color: 'rgba(255,255,255,0.08)' },
-  { min: 1,  label: 'Beginner',     color: '#3b5bdb' },
-  { min: 8,  label: 'Developing',   color: '#4a9eff' },
-  { min: 20, label: 'Intermediate', color: '#4caf7d' },
-  { min: 40, label: 'Advanced',     color: '#f4a642' },
-  { min: 70, label: 'Elite',        color: '#e25d7a' },
-];
-const RANK_MAX = 70;  // sessions to reach Elite (drives progress bars)
+// Muscle Ranking lives in components/MuscleRanking.jsx (scores in domain/muscleScore.js).
 
-function getRankLevel(sessions) {
-  let level = RANK_LEVELS[0];
-  for (const r of RANK_LEVELS) { if (sessions >= r.min) level = r; }
-  return level;
-}
-
-// Sessions per muscle = number of distinct days that muscle was trained (all-time).
-function computeMuscleSessions(workoutLogs) {
-  const days = {};
-  MUSCLES.forEach(m => { days[m.id] = new Set(); });
-  (workoutLogs || []).forEach(log => {
-    if (!log.date) return;
-    getLogMuscles(log).forEach(mid => { if (days[mid]) days[mid].add(log.date); });
-  });
-  const counts = {};
-  MUSCLES.forEach(m => { counts[m.id] = days[m.id].size; });
-  return counts;
-}
-
-// Real anatomical figure rendered from vendored react-body-highlighter polygon
-// data (viewBox 0 0 100 200). Muscles are coloured by our rank system.
-const LIB_TO_MUSCLE = {
-  'chest': 'chest',
-  'front-deltoids': 'shoulders', 'back-deltoids': 'shoulders',
-  'biceps': 'biceps', 'triceps': 'triceps', 'forearm': 'forearms',
-  'trapezius': 'back', 'upper-back': 'back', 'lower-back': 'back',
-  'quadriceps': 'quads', 'hamstring': 'hamstrings', 'gluteal': 'glutes',
-  'calves': 'calves', 'left-soleus': 'calves', 'right-soleus': 'calves',
-};
-const BODY_FILL    = '#cfd4df';   // untracked anatomy (abs, neck, head, knees…)
-const UNTRAINED    = '#5a6072';   // tracked muscle, 0 sessions
-
-function BodySVG({ side, muscleSessions, large = false }) {
-  const modelData = side === 'back' ? posteriorData : anteriorData;
-
-  const fillFor = (slug) => {
-    const mid = LIB_TO_MUSCLE[slug];
-    if (!mid) return BODY_FILL;
-    const s = muscleSessions[mid] || 0;
-    return s === 0 ? UNTRAINED : getRankLevel(s).color;
-  };
-
-  return (
-    <svg viewBox="0 0 100 200"
-      style={{ width: '100%', maxWidth: large ? '100%' : 168, height: 'auto', display: 'block' }}>
-      {modelData.map((m, gi) =>
-        m.svgPoints.map((pts, i) => (
-          <polygon key={`${gi}-${i}`} points={pts}
-            fill={fillFor(m.muscle)}
-            stroke="rgba(0,0,0,0.28)" strokeWidth={0.3} strokeLinejoin="round"
-            style={{ transition: 'fill 0.4s ease' }} />
-        ))
-      )}
-    </svg>
-  );
-}
-
-function MuscleRanking({ workoutLogs, settings }) {
-  const [view, setView] = useState('front');
-  const muscleSessions = useMemo(() => computeMuscleSessions(workoutLogs), [workoutLogs]);
-  const bodyWeight = useMemo(() => {
-    const logs = workoutLogs.filter(l => l.bodyWeight).sort((a, b) => a.date?.localeCompare(b.date));
-    return logs.slice(-12).map(l => ({ date: l.date, w: l.bodyWeight }));
-  }, [workoutLogs]);
-
-  const frontMuscles = MUSCLES.filter(m => m.side === 'front');
-  const backMuscles  = MUSCLES.filter(m => m.side === 'back');
-
-  return (
-    <div style={{ height: '100%', overflowY: 'auto', padding: '20px 24px' }}>
-      <div style={{ fontSize: 13, fontWeight: 500, color: 'var(--text-primary)', marginBottom: 4 }}>Muscle Ranking</div>
-      <div style={{ fontSize: 11, color: 'var(--text-muted)', marginBottom: 20 }}>Ranks rise slowly as you log sets — every muscle each set hits is credited</div>
-
-      {/* Body map — one large figure with Front/Back toggle */}
-      <div style={{ display: 'flex', gap: 28, alignItems: 'center', justifyContent: 'center', marginBottom: 28, flexWrap: 'wrap' }}>
-        <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 14 }}>
-          {/* Front / Back toggle */}
-          <div style={{ display: 'flex', borderRadius: 9, overflow: 'hidden', border: '0.5px solid var(--card-border)' }}>
-            {['front', 'back'].map(s => (
-              <button key={s} onClick={() => setView(s)} style={{
-                padding: '6px 22px', border: 'none', cursor: 'pointer',
-                fontSize: 11, fontWeight: 600, letterSpacing: '0.08em', textTransform: 'uppercase',
-                background: view === s ? 'rgba(255,255,255,0.9)' : 'var(--card-fill)',
-                color: view === s ? '#111' : 'var(--text-secondary)', transition: 'all 0.12s',
-              }}>{s}</button>
-            ))}
-          </div>
-          {/* Big figure */}
-          <div style={{ width: 320, maxWidth: '78vw' }}>
-            <BodySVG side={view} muscleSessions={muscleSessions} large />
-          </div>
-        </div>
-
-        {/* Rank legend */}
-        <div style={{ display: 'flex', flexDirection: 'column', gap: 9 }}>
-          {RANK_LEVELS.map(r => (
-            <div key={r.label} style={{ display: 'flex', alignItems: 'center', gap: 9 }}>
-              <div style={{ width: 12, height: 12, borderRadius: '50%', background: r.color, flexShrink: 0 }} />
-              <span style={{ fontSize: 12, color: 'var(--text-secondary)' }}>{r.label}</span>
-            </div>
-          ))}
-        </div>
-      </div>
-
-      {/* Per-muscle table */}
-      <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 8, marginBottom: 28 }}>
-        {MUSCLES.map(m => {
-          const sessions = muscleSessions[m.id] || 0;
-          const rank = getRankLevel(sessions);
-          const pct = Math.min((sessions / RANK_MAX) * 100, 100);
-          return (
-            <div key={m.id} style={{
-              background: 'var(--hover-bg)', borderRadius: 10,
-              border: '0.5px solid var(--card-border)', padding: '10px 14px',
-            }}>
-              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'baseline', marginBottom: 6 }}>
-                <span style={{ fontSize: 12, fontWeight: 500, color: 'var(--text-primary)' }}>{m.label}</span>
-                <span style={{ fontSize: 11, color: rank.color, fontWeight: 600 }}>{rank.label}</span>
-              </div>
-              <div style={{ height: 3, background: 'rgba(255,255,255,0.06)', borderRadius: 2, overflow: 'hidden' }}>
-                <div style={{ height: '100%', width: `${pct}%`, background: rank.color, borderRadius: 2, transition: 'width 0.6s ease' }} />
-              </div>
-              <div style={{ fontSize: 11, color: 'var(--text-muted)', marginTop: 4 }}>{sessions} session{sessions !== 1 ? 's' : ''} logged</div>
-            </div>
-          );
-        })}
-      </div>
-
-      {/* Weight tracker */}
-      {bodyWeight.length > 0 && (
-        <div>
-          <div style={{ fontSize: 12, fontWeight: 500, color: 'var(--text-primary)', marginBottom: 12 }}>Body Weight</div>
-          <div style={{ background: 'var(--hover-bg)', borderRadius: 12, border: '0.5px solid var(--card-border)', padding: '14px 16px' }}>
-            <div style={{ display: 'flex', alignItems: 'flex-end', gap: 6, height: 60 }}>
-              {bodyWeight.map((d, i) => {
-                const vals = bodyWeight.map(x => x.w);
-                const min = Math.min(...vals), max = Math.max(...vals);
-                const range = max - min || 1;
-                const h = Math.max(8, ((d.w - min) / range) * 50 + 10);
-                return (
-                  <div key={i} style={{ flex: 1, display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 3 }}>
-                    <div style={{ fontSize: 10.5, color: 'var(--text-muted)' }}>{d.w}kg</div>
-                    <div style={{ width: '100%', height: h, background: 'rgba(91,156,246,0.4)', borderRadius: '3px 3px 0 0', border: '0.5px solid rgba(91,156,246,0.6)' }} />
-                  </div>
-                );
-              })}
-            </div>
-            <div style={{ display: 'flex', justifyContent: 'space-between', marginTop: 6 }}>
-              <span style={{ fontSize: 10.5, color: 'var(--text-muted)' }}>{bodyWeight[0]?.date?.slice(5)}</span>
-              <span style={{ fontSize: 10.5, color: 'var(--text-muted)' }}>{bodyWeight[bodyWeight.length - 1]?.date?.slice(5)}</span>
-            </div>
-          </div>
-        </div>
-      )}
-    </div>
-  );
-}
 
 // """""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
 // TRAINING CALENDAR
@@ -887,18 +722,13 @@ export default function WorkoutTab({ settings, compact = false }) {
   } = useTrainData();
 
   return (
-    <div style={{ display: 'flex', flexDirection: compact ? 'column' : 'row', height: '100%', overflow: 'hidden' }}>
+    // On the phone the shell scrolls the page, so nothing here may clip (that would also stop the
+    // session summary from sticking to the top).
+    <div style={{ display: 'flex', flexDirection: compact ? 'column' : 'row', height: compact ? 'auto' : '100%', overflow: compact ? 'visible' : 'hidden' }}>
       {/* Sub-nav: a column on desktop, a scrolling chip row on the phone */}
       {compact && (
-        <div role="tablist" aria-label="Train sections" style={{ display: 'flex', gap: 8, overflowX: 'auto', padding: '10px 14px', flexShrink: 0, borderBottom: '0.5px solid var(--sidebar-divider)', WebkitOverflowScrolling: 'touch' }}>
-          {SUB_NAV.map(s => (
-            <button key={s.id} role="tab" aria-selected={sub === s.id} onClick={() => setSub(s.id)} style={{
-              flexShrink: 0, minHeight: 40, padding: '0 16px', borderRadius: 999, cursor: 'pointer', fontFamily: 'inherit', fontSize: 14, whiteSpace: 'nowrap',
-              border: `0.5px solid ${sub === s.id ? 'var(--tab-accent)' : 'var(--card-border)'}`, fontWeight: sub === s.id ? 600 : 500,
-              background: sub === s.id ? 'color-mix(in srgb, var(--tab-accent) 14%, transparent)' : 'transparent',
-              color: sub === s.id ? 'var(--tab-accent)' : 'var(--text-secondary)',
-            }}>{s.label}</button>
-          ))}
+        <div style={{ padding: '8px 14px', flexShrink: 0, borderBottom: '0.5px solid var(--sidebar-divider)' }}>
+          <SlidingTabs label="Train sections" scroll size="lg" value={sub} onChange={setSub} items={SUB_NAV.map(s => ({ id: s.id, label: s.label }))} />
         </div>
       )}
       {!compact && <div style={{ width: 176, flexShrink: 0, borderRight: '0.5px solid var(--sidebar-divider)', display: 'flex', flexDirection: 'column', padding: '16px 0', gap: 2, overflowY: 'auto' }}>
@@ -919,7 +749,7 @@ export default function WorkoutTab({ settings, compact = false }) {
       </div>}
 
       {/* Content */}
-      <div style={{ flex: 1, overflow: 'hidden' }}>
+      <div style={{ flex: 1, overflow: compact ? 'visible' : 'hidden' }}>
         {sub === 'session'   && <TrainSession exercises={exercises} workoutLogs={workoutLogs} addWorkoutLog={addWorkoutLog} updateWorkoutLog={updateWorkoutLog} removeWorkoutLog={removeWorkoutLog} splitNames={splitNames} todaySplitType={todaySplitType} program={activeProgram} updateProgram={updateProgram} saveExercises={saveExercisesDoc} progression={computeProgression} musclesFor={musclesFor} compact={compact} onEditProgram={() => setSub('splits')} />}
         {sub === 'overload'  && <OverloadCoach workoutLogs={workoutLogs} addWorkoutLog={addWorkoutLog} exercises={exercises} saveExercises={saveExercisesDoc} splitNames={splitNames} saveSplitNames={saveSplitNamesDoc} todaySplitType={todaySplitType} />}
         {sub === 'splits'    && <SplitBuilder programs={programs} addProgram={addProgram} updateProgram={updateProgram} removeProgram={removeProgram} exercises={exercises} workoutLogs={workoutLogs} saveExercises={saveExercisesDoc} />}

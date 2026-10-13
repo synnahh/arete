@@ -6,6 +6,7 @@ import LaunchSplash from "./components/LaunchSplash.jsx";
 import UpdatePrompt from "./components/UpdatePrompt.jsx";
 import { startPwaUpdates } from "./utils/pwaUpdate.js";
 import "./styles/globals.css";
+import "./styles/system.css";
 
 // ── Sentry error monitoring ────────────────────────────────────────────────────
 // DSN is set via VITE_SENTRY_DSN in .env — add it to activate.

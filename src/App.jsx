@@ -7,6 +7,7 @@ import { supabase, getUserId }       from './supabase/supabase.js';
 import { startSettingsSync }       from './utils/settingsSync.js';
 import MobileShell                  from './mobile/MobileShell.jsx';
 import Toaster                      from './components/Toaster.jsx';
+import RestTimer                    from './components/RestTimer.jsx';
 import { applyTheme }            from './styles/themes.js';
 import { applyAppearance, setActiveGroup, backgroundClass } from './styles/appearance.js';
 import { stripLegacyClaudeKeys } from './utils/settingsSecurity.js';
@@ -443,6 +444,7 @@ export default function App() {
       )}
 
       <Toaster />
+      <RestTimer />
     </div>
   );
 }

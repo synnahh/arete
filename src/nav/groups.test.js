@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest';
-import { GROUPS, ALL_SCREENS, groupOf, groupScreens, resolveTarget, NAV_TARGETS, HEALTH_SECTIONS_BY_SCREEN, SCREEN_FOR_HEALTH_SECTION } from './groups.js';
+import { GROUPS, ALL_SCREENS, groupOf, groupScreens, resolveTarget, NAV_TARGETS, HEALTH_SECTIONS_BY_SCREEN, SCREEN_FOR_HEALTH_SECTION, BAR_ORDER, inBarOrder } from './groups.js';
 
 // Every screen the app has ever had. Old links, notifications and saved "last screen" values must
 // still open something real, never a blank page.
@@ -49,6 +49,11 @@ describe('groups', () => {
   it('has the six groups in order: Home, Train, Fuel, Look, Progress, Profile', () => {
     expect(GROUPS.map(g => g.id)).toEqual(['home', 'train', 'eat', 'look', 'results', 'settings']);
     expect(GROUPS.map(g => g.label)).toEqual(['Home', 'Train', 'Fuel', 'Look', 'Progress', 'Profile']);
+  });
+
+  it('puts Home in the middle of the bar, with Profile behind its own icon', () => {
+    expect(BAR_ORDER).toEqual(['train', 'eat', 'home', 'look', 'results']);
+    expect(inBarOrder(GROUPS).map(g => g.id)).toEqual(['train', 'eat', 'home', 'look', 'results', 'settings']);
   });
 
   it('maps screens to their group', () => {

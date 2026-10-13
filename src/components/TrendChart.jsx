@@ -47,11 +47,11 @@ export default function TrendChart({ points, kind = 'line', unit = '', digits = 
           </g>
         )}
         {kind === 'bar'
-          ? points.map(p => <rect key={p.date} x={geo.x(p.date) - geo.barW / 2} y={geo.y(p.value)} width={geo.barW} height={Math.max(1, geo.y(0) - geo.y(p.value))} rx="2" fill="var(--tab-accent)" opacity="0.9" />)
+          ? points.map((p, i) => <rect key={`${p.date}:${points.length}`} className="ui-grow" style={{ '--i': Math.min(i, 30) }} x={geo.x(p.date) - geo.barW / 2} y={geo.y(p.value)} width={geo.barW} height={Math.max(1, geo.y(0) - geo.y(p.value))} rx="2" fill="var(--tab-accent)" opacity="0.9" />)
           : (
             <>
-              {points.length > 1 && <path d={geo.line} fill="none" stroke="var(--tab-accent)" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" />}
-              {points.map(p => <circle key={p.date} cx={geo.x(p.date)} cy={geo.y(p.value)} r={points.length > 40 ? 1.8 : 3} fill="var(--tab-accent)" />)}
+              {points.length > 1 && <path key={`${points.length}:${points[0].date}:${last.date}`} className="ui-draw" pathLength="1" d={geo.line} fill="none" stroke="var(--tab-accent)" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" />}
+              {points.map(p => <circle key={`${p.date}:${points.length}`} className="ui-fade-late" cx={geo.x(p.date)} cy={geo.y(p.value)} r={points.length > 40 ? 1.8 : 3} fill="var(--tab-accent)" />)}
             </>
           )}
         <text x={PAD.l} y={H - 6} fontSize="11" fill="var(--text-secondary)" style={mono}>{points[0].date.slice(5)}</text>

@@ -13,6 +13,16 @@ export const GROUPS = [
   { id: 'settings', label: 'Profile',  desc: 'Profile and settings',                        screens: ['profile', 'settings'] },
 ];
 
+// Order of the phone tab bar and the desktop dock: Home sits in the middle, under the thumb.
+// GROUPS keeps Home first because groupOf() falls back to GROUPS[0] for unknown screens.
+export const BAR_ORDER = ['train', 'eat', 'home', 'look', 'results'];
+
+/** Groups in bar order (any group missing from BAR_ORDER keeps its place at the end). */
+export function inBarOrder(groups) {
+  const rank = (g) => { const i = BAR_ORDER.indexOf(g.id); return i < 0 ? BAR_ORDER.length : i; };
+  return [...groups].sort((a, b) => rank(a) - rank(b));
+}
+
 // Section labels inside a group. Screens keep their ids; only the label changes.
 export const SCREEN_LABELS = {
   dashboard: 'Today',
