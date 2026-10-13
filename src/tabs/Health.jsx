@@ -17,6 +17,7 @@ import { peekHealthSection, clearHealthSection, screenForHealthSection } from '.
 import RecipeBuilder from '../components/RecipeBuilder.jsx';
 import CustomFoodForm from '../components/CustomFoodForm.jsx';
 import StarButton from '../components/StarButton.jsx';
+import { Sheet as MotionSheet } from '../components/Motion.jsx';
 import { useFoodLibrary } from '../hooks/useFoodLibrary.js';
 import { customFoodEntry, favouriteEntry, servingText } from '../domain/customFoods.js';
 import { mealEntry, draftFromSaved, PORTIONS } from '../domain/recipes.js';
@@ -888,9 +889,9 @@ function Nutrition({ nutritionLogs, addNutritionLog, updateNutritionLog, setting
       <MicronutrientPanel micros={dailyMicros} />
 
       {/* Custom food: your own food, numbers for one serving */}
-      {foodDraft && (
-        <div style={{ ...cardSx, marginBottom: 16 }}>
-          <div style={{ fontSize: 13, fontWeight: 600, color: 'var(--text-primary)', marginBottom: 12 }}>{foodDraft.initial?.id ? 'Edit food' : 'New food'}</div>
+      <MotionSheet open={!!foodDraft} onClose={() => setFoodDraft(null)} title={foodDraft?.initial?.id ? 'Edit food' : 'New food'}>
+        {foodDraft && (<>
+          <div style={{ fontSize: 15, fontWeight: 600, color: 'var(--text-primary)', marginBottom: 12 }}>{foodDraft.initial?.id ? 'Edit food' : 'New food'}</div>
           <CustomFoodForm key={foodDraft.initial?.id || 'new'} initial={foodDraft.initial}
             onCancel={() => setFoodDraft(null)}
             onDelete={async (id) => { await lib.removeCustomFood(id); setFoodDraft(null); }}
@@ -898,13 +899,13 @@ function Nutrition({ nutritionLogs, addNutritionLog, updateNutritionLog, setting
               const ok = id ? await lib.updateCustomFood(id, row) : await lib.addCustomFood(row);
               if (ok) { setFoodDraft(null); window.dispatchEvent(new CustomEvent('valerie:toast', { detail: { message: id ? 'Food updated' : 'Food saved to My Foods', type: 'success' } })); }
             }} />
-        </div>
-      )}
+        </>)}
+      </MotionSheet>
 
       {/* Recipe builder: build a meal from ingredients, save or update it in My Meals */}
-      {recipeDraft && (
-        <div style={{ ...cardSx, marginBottom: 16 }}>
-          <div style={{ fontSize: 13, fontWeight: 600, color: 'var(--text-primary)', marginBottom: 12 }}>{recipeDraft.initial?.id ? 'Edit recipe' : 'Build a recipe'}</div>
+      <MotionSheet wide open={!!recipeDraft} onClose={() => setRecipeDraft(null)} title={recipeDraft?.initial?.id ? 'Edit recipe' : 'Build a recipe'}>
+        {recipeDraft && (<>
+          <div style={{ fontSize: 15, fontWeight: 600, color: 'var(--text-primary)', marginBottom: 12 }}>{recipeDraft.initial?.id ? 'Edit recipe' : 'Build a recipe'}</div>
           <RecipeBuilder key={recipeDraft.initial?.id || 'new'} initial={recipeDraft.initial} recent={frequent} foods={lib.customFoods}
             onCancel={() => setRecipeDraft(null)}
             onDelete={async (id) => { await removeSavedMeal(id); setRecipeDraft(null); }}
@@ -912,8 +913,8 @@ function Nutrition({ nutritionLogs, addNutritionLog, updateNutritionLog, setting
               const ok = id ? await updateSavedMeal(id, row) : await addSavedMeal(row);
               if (ok) { setRecipeDraft(null); window.dispatchEvent(new CustomEvent('valerie:toast', { detail: { message: id ? 'Recipe updated' : 'Recipe saved to My Meals', type: 'success' } })); }
             }} />
-        </div>
-      )}
+        </>)}
+      </MotionSheet>
 
       {/* Save meal form */}
       {showSaveMeal && (

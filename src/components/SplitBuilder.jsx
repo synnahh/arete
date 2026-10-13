@@ -25,6 +25,27 @@ const field = { minHeight: 38, borderRadius: 10, padding: '0 12px', border: '0.5
 const toast = (message, undo) => window.dispatchEvent(new CustomEvent('valerie:toast', { detail: { message, type: 'success', undo } }));
 const STATUS = { none: ['Not planned', 'var(--text-secondary)'], low: ['Low', '#e8a13a'], ok: ['In range', '#4caf7d'], high: ['High', '#e25d7a'] };
 
+// One sets / reps box. Keeps what you are typing as typed and saves when you leave the box (or press
+// Enter), so "10" in Max is never judged against Min after only the "1" has been typed.
+function TargetInput({ value, label: ariaLabel, title, onCommit }) {
+  const stored = value ?? '';
+  const [text, setText] = useState(String(stored));
+  const [focused, setFocused] = useState(false);
+  useEffect(() => { if (!focused) setText(String(stored)); }, [stored, focused]);
+  const commit = () => { setFocused(false); if (text !== String(stored)) onCommit(text); };
+  return (
+    <label style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 2 }}>
+      <span style={{ fontSize: 10.5, letterSpacing: '0.06em', color: 'var(--text-secondary)', textTransform: 'uppercase' }}>{title}</span>
+      <input type="text" inputMode="numeric" pattern="[0-9]*" aria-label={ariaLabel} value={text}
+        onFocus={e => { setFocused(true); e.target.select(); }}
+        onChange={e => setText(e.target.value.replace(/[^0-9]/g, '').slice(0, 3))}
+        onBlur={commit}
+        onKeyDown={e => { if (e.key === 'Enter') e.currentTarget.blur(); }}
+        style={{ ...field, width: 56, minHeight: 34, padding: '0 6px', textAlign: 'center', fontSize: 14 }} />
+    </label>
+  );
+}
+
 export default function SplitBuilder({ programs, addProgram, updateProgram, removeProgram, exercises, workoutLogs = [], saveExercises = null }) {
   const [viewId, setViewId] = useState(null);   // the program being edited (any of them, not only the active one)
   const active = programs.find(p => p.id === viewId) ?? programs.find(p => p.isActive) ?? programs[0] ?? null;
@@ -43,6 +64,14 @@ export default function SplitBuilder({ programs, addProgram, updateProgram, remo
   const planned = useMemo(() => plannedSets(active, exercises), [active, exercises]);
   const done = useMemo(() => doneSets(workoutLogs, toLocalDateKey(new Date())), [workoutLogs]);
   const rows = useMemo(() => volumeRows(planned, done), [planned, done]);
+
+  // Open on a training day (today if it is one) so the week is editable at once, not behind a tap.
+  useEffect(() => {
+    if (!active || editing) return;
+    const trains = (k) => !isRest(active.days?.[k] ?? { splitType: 'rest' });
+    const first = trains(todayKey) ? todayKey : WEEK.find(trains);
+    if (first) setEditing(first);
+  }, [active?.id]); // eslint-disable-line react-hooks/exhaustive-deps
 
   const choices = useMemo(() => templatesFor({ experience: level, days: maxDays }), [level, maxDays]);
   useEffect(() => { if (!choices.includes(template)) setTemplate(choices[0] || 'blank'); }, [choices, template]);
@@ -170,7 +199,11 @@ export default function SplitBuilder({ programs, addProgram, updateProgram, remo
 
           {editing && day && (
             <section style={card} aria-label={`Edit ${WEEK_LABEL[editing]}`}>
-              <div style={label}>{WEEK_LABEL[editing]}</div>
+              <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 8 }}>
+                <button type="button" onClick={() => setEditing(WEEK[(WEEK.indexOf(editing) + WEEK.length - 1) % WEEK.length])} aria-label="Previous day" style={{ ...btn(false), minWidth: 40, padding: 0 }}>‹</button>
+                <div style={label}>{WEEK_LABEL[editing]}</div>
+                <button type="button" onClick={() => setEditing(WEEK[(WEEK.indexOf(editing) + 1) % WEEK.length])} aria-label="Next day" style={{ ...btn(false), minWidth: 40, padding: 0 }}>›</button>
+              </div>
               <div role="group" aria-label="Day type" style={{ display: 'flex', gap: 6 }}>
                 <button type="button" aria-pressed={!isRest(day)} onClick={() => saveDay(editing, setDayKind(materialize(day, exercises), true, day.label === 'Rest' ? 'Workout' : day.label))} style={{ ...btn(false), borderColor: !isRest(day) ? 'var(--accent)' : undefined, color: !isRest(day) ? 'var(--accent)' : undefined }}>Workout</button>
                 <button type="button" aria-pressed={isRest(day)} onClick={() => saveDay(editing, setDayKind(day, false))} style={{ ...btn(false), borderColor: isRest(day) ? 'var(--accent)' : undefined, color: isRest(day) ? 'var(--accent)' : undefined }}>Rest</button>
@@ -188,16 +221,15 @@ export default function SplitBuilder({ programs, addProgram, updateProgram, remo
                       {WEEK.filter(k => k !== editing).map(k => <option key={k} value={k}>{WEEK_LABEL[k]}{isRest(active.days?.[k]) ? '' : ' (replaces it)'}</option>)}
                     </select>
                   </div>
-                  {inDay.length > 0 && <div style={{ fontSize: 12.5, color: 'var(--text-secondary)' }}>Hits: {dayMuscles(day, exercises).join(' · ')}. The three boxes are sets, then reps from and to.</div>}
+                  {inDay.length > 0 && <div style={{ fontSize: 12.5, color: 'var(--text-secondary)' }}>Hits: {dayMuscles(day, exercises).join(' · ')}. Set the sets and the rep range (min to max) for each exercise.</div>}
                   {inDay.length === 0 && <div style={{ fontSize: 13, color: 'var(--text-secondary)' }}>No exercises yet. Add some from your library below.</div>}
                   <ul style={{ margin: 0, padding: 0, listStyle: 'none', display: 'flex', flexDirection: 'column', gap: 6 }}>
                     {inDay.map((ex, i) => (
                       <li key={ex.id} style={{ display: 'flex', alignItems: 'center', flexWrap: 'wrap', gap: 6, padding: '6px 10px', borderRadius: 10, border: '0.5px solid var(--card-border)' }}>
                         <span style={{ flex: '1 1 160px', minWidth: 0, fontSize: 14, color: 'var(--text-primary)', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{ex.name}</span>
-                        {[['sets', 'Sets', 'sets'], ['repsMin', 'Min', 'min reps'], ['repsMax', 'Max', 'max reps']].map(([k, ph, aria]) => (
-                          <input key={k} type="number" inputMode="numeric" min="1" placeholder={ph} aria-label={`${ex.name} ${aria}`} value={dayTarget(day, ex.id)[k] ?? ''}
-                            onChange={e => saveDay(editing, setDayTarget(materialize(day, exercises), ex.id, { [k]: e.target.value }))}
-                            style={{ ...field, width: 56, minHeight: 34, padding: '0 6px', textAlign: 'center', fontSize: 14 }} />
+                        {[['sets', 'Sets', 'sets'], ['repsMin', 'Min', 'min reps'], ['repsMax', 'Max', 'max reps']].map(([k, title, aria]) => (
+                          <TargetInput key={k} title={title} label={`${ex.name} ${aria}`} value={dayTarget(day, ex.id)[k]}
+                            onCommit={(v) => saveDay(editing, setDayTarget(materialize(day, exercises), ex.id, { [k]: v }))} />
                         ))}
                         {saveExercises && (() => {
                           const o = swapOptions(ex, day, exercises);

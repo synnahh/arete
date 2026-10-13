@@ -23,6 +23,7 @@ import NextMoves from './NextMoves.jsx';
 import CoachUpdates from './CoachUpdates.jsx';
 import OverallCard from './OverallCard.jsx';
 import StepsCard from './StepsCard.jsx';
+import MetricsCard from './MetricsCard.jsx';
 import { HomeRecap, HomeStreak } from './HomeRecap.jsx';
 import { AnimatedNumber, Collapse, ProgressBar } from './Motion.jsx';
 
@@ -222,6 +223,7 @@ export default function HomeScreen({ settings, onTabChange, compact = false }) {
     skin:     <Skin compact={compact} go={go} />,
     water:    <Water settings={settings} compact={compact} />,
     sleep:    <ReadinessCard compact={compact} />,
+    metrics:  <MetricsCard compact={compact} />,
     workout:  <Workout compact={compact} go={go} />,
     moves:    <NextMoves onTabChange={onTabChange} compact={compact} />,
     steps:    <StepsCard />,
@@ -230,7 +232,12 @@ export default function HomeScreen({ settings, onTabChange, compact = false }) {
     overall:  <OverallCard compact={compact} />,
   };
 
+  // The desktop shell clips overflow (main is overflow:hidden), so Home owns its scrolling there.
+  // The phone shell scrolls the screen itself.
+  const frameStyle = compact ? undefined : { flex: 1, minHeight: 0, overflowY: 'auto', overflowX: 'hidden' };
+
   return (
+    <div style={frameStyle}>
     <div style={{ maxWidth: 1040, margin: '0 auto', padding: compact ? '8px 16px 24px' : '24px 28px 100px', display: 'flex', flexDirection: 'column', gap: 14, boxSizing: 'border-box' }}>
       <div style={{ display: 'flex', alignItems: 'baseline', justifyContent: 'space-between', gap: 12 }}>
         <h1 style={{ margin: 0, fontSize: compact ? 26 : 32, fontWeight: 700, color: 'var(--text-primary)', fontFamily: 'var(--font-display)' }}>{getGreeting()}{settings?.userName ? `, ${settings.userName}` : ''}</h1>
@@ -244,8 +251,9 @@ export default function HomeScreen({ settings, onTabChange, compact = false }) {
       )}
 
       <div style={{ display: 'grid', gridTemplateColumns: compact ? '1fr' : 'repeat(auto-fit, minmax(320px, 1fr))', gap: 14, alignItems: 'start' }}>
-        {ids.map((id, i) => <div key={id} className="ui-enter" style={{ '--i': i }}>{sections[id]}</div>)}
+        {ids.map((id, i) => <div key={id} className="ui-enter" style={{ '--i': i, ...(id === 'metrics' ? { gridColumn: '1 / -1' } : null) }}>{sections[id]}</div>)}
       </div>
+    </div>
     </div>
   );
 }

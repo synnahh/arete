@@ -212,7 +212,7 @@ export function usePresence(open, ms = 240) {
  * Bottom sheet on the phone, centred dialog on wide screens. Escape, the backdrop or dragging
  * the grip down closes it; focus moves in on open and back to where it was on close.
  */
-export function Sheet({ open, onClose, title, children, labelledBy }) {
+export function Sheet({ open, onClose, title, children, labelledBy, wide = false }) {
   const [mounted, leaving] = usePresence(open, 240);
   const panel = useRef(null);
   const back = useRef(null);
@@ -237,7 +237,7 @@ export function Sheet({ open, onClose, title, children, labelledBy }) {
     <>
       <div className={`ui-backdrop${leaving ? ' is-leaving' : ''}`} onClick={onClose} aria-hidden="true" />
       <div ref={panel} role="dialog" aria-modal="true" aria-label={labelledBy ? undefined : title} aria-labelledby={labelledBy}
-        className={`ui-sheet${leaving ? ' is-leaving' : ''}`}
+        className={`ui-sheet${wide ? ' is-wide' : ''}${leaving ? ' is-leaving' : ''}`}
         style={dy ? { transform: `translateY(${dy}px)`, transition: 'none', animation: 'none' } : undefined}>
         <div className="ui-sheet-grip" onTouchStart={start} onTouchMove={move} onTouchEnd={end} aria-hidden="true" style={{ touchAction: 'none', padding: '6px 0' }} />
         {children}
