@@ -239,8 +239,9 @@ export default function HomeScreen({ settings, onTabChange, compact = false }) {
   return (
     <div style={frameStyle}>
     <div style={{ maxWidth: 1040, margin: '0 auto', padding: compact ? '8px 16px 24px' : '24px 28px 100px', display: 'flex', flexDirection: 'column', gap: 14, boxSizing: 'border-box' }}>
-      <div style={{ display: 'flex', alignItems: 'baseline', justifyContent: 'space-between', gap: 12 }}>
-        <h1 style={{ margin: 0, fontSize: compact ? 26 : 32, fontWeight: 700, color: 'var(--text-primary)', fontFamily: 'var(--font-display)' }}>{getGreeting()}{settings?.userName ? `, ${settings.userName}` : ''}</h1>
+      <div aria-hidden="true" style={{ textAlign: 'center', fontFamily: 'var(--font-display)', fontWeight: 600, fontSize: compact ? 17 : 19, letterSpacing: '0.42em', paddingLeft: '0.42em', color: 'var(--tab-accent, var(--accent))', textTransform: 'uppercase' }}>Arete</div>
+      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 12 }}>
+        <h1 style={{ margin: 0, fontSize: compact ? 17 : 19, fontWeight: 500, color: 'var(--text-secondary)' }}>{getGreeting()}{settings?.userName ? `, ${settings.userName}` : ''}</h1>
         <button type="button" onClick={() => setEditing(e => !e)} aria-expanded={editing} className={`ui-btn is-sm${editing ? ' is-soft' : ''}`}>{editing ? 'Done' : 'Customise'}</button>
       </div>
 

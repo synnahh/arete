@@ -199,17 +199,11 @@ html, body, #root {
   -moz-osx-font-smoothing: grayscale;
 }
 
-/* ─── Scrollbar Styling ─────────────────────────────── */
-::-webkit-scrollbar { width: 4px; }
-::-webkit-scrollbar-track { background: transparent; }
-::-webkit-scrollbar-thumb {
-  background: var(--scrollbar-thumb);
-  border-radius: 2px;
-}
-::-webkit-scrollbar-thumb:hover {
-  background: var(--accent);
-  opacity: 0.3;
-}
+/* ─── Scrollbars ────────────────────────────────────
+   An installed app has no visible scrollbars: everything still scrolls (wheel, touch, keys),
+   the bar is just not drawn. */
+* { scrollbar-width: none; -ms-overflow-style: none; }
+*::-webkit-scrollbar { width: 0; height: 0; display: none; }
 
 /* ─── Utility Classes ───────────────────────────────── */
 .glass-card {
@@ -609,8 +603,10 @@ input[type="range"]::-moz-range-thumb {
    selection or long-press menus on controls, no double-tap zoom, no input zoom,
    no rubber-banding, and buttons that visibly press. Text you might copy (inputs,
    notes) stays selectable; opt in elsewhere with data-selectable. */
-html { overscroll-behavior: none; -webkit-text-size-adjust: 100%; text-size-adjust: 100%; }
-body { overscroll-behavior: none; -webkit-touch-callout: none; }
+html { overscroll-behavior: none; -webkit-text-size-adjust: 100%; text-size-adjust: 100%; touch-action: pan-x pan-y; }
+/* pan-x pan-y: no pinch zoom (iOS Safari ignores user-scalable=no, but honours this). Nothing on screen
+   is selectable text unless it is an input or opted in with data-selectable. */
+body { overscroll-behavior: none; -webkit-touch-callout: none; -webkit-user-select: none; user-select: none; touch-action: pan-x pan-y; cursor: default; }
 button, [role="button"], [role="tab"], a, summary, label, nav, header,
 .dock-item, .m-screen h1, .m-screen h2 { -webkit-user-select: none; user-select: none; -webkit-touch-callout: none; }
 input, textarea, [contenteditable="true"], [data-selectable], [data-selectable] * { -webkit-user-select: text; user-select: text; -webkit-touch-callout: default; }
