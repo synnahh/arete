@@ -38,6 +38,16 @@ if (import.meta.env.VITE_SENTRY_DSN) {
 // A new version waits for a tap instead of swapping the app under you (PWA builds only).
 if (typeof __BUILD_TARGET__ !== 'undefined' && __BUILD_TARGET__ === 'pwa') startPwaUpdates();
 
+// An app does not zoom: block pinch (Safari gesture events), Ctrl+wheel, Ctrl +/-/0, and the context menu on
+// everything except text fields (where copy and paste live).
+if (typeof window !== 'undefined') {
+  const stop = (e) => e.preventDefault();
+  ['gesturestart', 'gesturechange', 'gestureend'].forEach(t => document.addEventListener(t, stop));
+  window.addEventListener('wheel', (e) => { if (e.ctrlKey) e.preventDefault(); }, { passive: false });
+  window.addEventListener('keydown', (e) => { if ((e.ctrlKey || e.metaKey) && ['+', '=', '-', '_', '0'].includes(e.key)) e.preventDefault(); });
+  document.addEventListener('contextmenu', (e) => { if (!e.target.closest?.('input, textarea, [contenteditable="true"], [data-selectable]')) e.preventDefault(); });
+}
+
 // ── Root error boundary — Sentry-aware ────────────────────────────────────────
 const SentryErrorBoundary = Sentry.ErrorBoundary || (({ children }) => children);
 
