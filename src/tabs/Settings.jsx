@@ -43,6 +43,7 @@ class SectionErrorBoundary extends Component {
 import { storage, STORAGE_KEYS } from '../utils/storage.js';
 import { THEMES, applyTheme }    from '../styles/themes.js';
 import { sendTestSMS }           from '../utils/twilio.js';
+import { sendServerSMS }         from '../utils/serverSms.js';
 import { requestPushPermission, pushPermissionStatus } from '../utils/pushNotifications.js';
 import { spotifyLogin, spotifyDisconnect, isSpotifyConnected } from '../utils/spotify.js';
 import { gmailLogin, gmailDisconnect, isGmailConnected, DEFAULT_EMAIL_RULES } from '../utils/gmail.js';
@@ -631,7 +632,10 @@ export function NotificationsSection({ settings, onSave }) {
 
   const handleTestSMS = async () => {
     setSmsTestStatus('sending');
-    const result = await sendTestSMS({ twilioAccountSid, twilioAuthToken, twilioReminders, phoneNumber });
+    // The send-sms server function first (credentials in Supabase secrets, texts only your own number);
+    // only if it is not deployed does the older browser-to-Twilio path run.
+    let result = await sendServerSMS('Arete test text: if you can read this, text messages work.', 'reminders');
+    if (result.unavailable) result = await sendTestSMS({ twilioAccountSid, twilioAuthToken, twilioReminders, phoneNumber });
     setSmsTestStatus(result.ok ? 'ok' : result.error || 'error');
     setTimeout(() => setSmsTestStatus(null), 4000);
   };
@@ -826,8 +830,8 @@ export function NotificationsSection({ settings, onSave }) {
           <div style={{ marginBottom: 20, display: 'flex', alignItems: 'center', gap: 12 }}>
             <button
               onClick={handleTestSMS}
-              disabled={!twilioAccountSid || !twilioAuthToken || !twilioReminders || !phoneNumber}
-              style={{ padding: '7px 18px', borderRadius: 8, border: '0.5px solid var(--card-border)', background: 'var(--hover-bg)', color: 'var(--text-primary)', fontSize: 12, fontWeight: 500, cursor: 'pointer', opacity: (!twilioAccountSid || !twilioAuthToken || !twilioReminders || !phoneNumber) ? 0.4 : 1 }}
+              disabled={smsTestStatus === 'sending'}
+              style={{ padding: '7px 18px', borderRadius: 8, border: '0.5px solid var(--card-border)', background: 'var(--hover-bg)', color: 'var(--text-primary)', fontSize: 12, fontWeight: 500, cursor: 'pointer', opacity: smsTestStatus === 'sending' ? 0.4 : 1 }}
             >
               {smsTestStatus === 'sending' ? 'Sending…' : 'Send test SMS'}
             </button>

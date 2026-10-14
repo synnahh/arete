@@ -16,7 +16,7 @@ import {
 } from '../domain/training.js';
 import { plateaus, applyReadiness, liftHistory, validRpe, sessionsOf } from '../domain/progression.js';
 import LiftSessions from '../components/LiftSessions.jsx';
-import { isBarbell, platesFor, warmupRamp, parsePlates, barFrom, DEFAULT_PLATES_KG } from '../domain/plates.js';
+import { isBarbell, platesFor, warmupOne, parsePlates, barFrom, DEFAULT_PLATES_KG } from '../domain/plates.js';
 import { exerciseDetail } from '../domain/exerciseDetail.js';
 import { updateSettings } from '../utils/settingsStore.js';
 import { storage, STORAGE_KEYS } from '../utils/storage.js';
@@ -78,7 +78,7 @@ function TrainPrefsPanel({ prefs }) {
           {toggle('autoRest', 'Rest timer on each set')}
           {toggle('restVibrate', 'Buzz at rest end')}
           {toggle('restSound', 'Tone at rest end')}
-          {toggle('warmups', 'Warm-up ramp')}
+          {toggle('warmups', 'Warm-up set')}
           {toggle('plates', 'Plate breakdown')}
         </div>
         <span style={{ fontSize: 12, color: 'var(--text-muted)', lineHeight: 1.45 }}>The buzz works on Android; iPhone web apps cannot vibrate. Cues play only while the app is open, but the timer stays right if you leave and come back.</span>
@@ -178,10 +178,10 @@ function ExerciseCard({ ex, prog, rows, onChange, onTick, onRate, onAddSet, onRe
   const plates = barbell ? platesFor(workKg, { bar: eq.bar, plates: eq.plates }) : null;
   const step0 = Number(ex.increment) || 2.5;
   const workReps = Number(rows[0]?.reps) || ex.repsMin;
-  const ramp = warmupRamp(workKg, { barbell, bar: eq.bar, step: step0, bodyweight: !!ex.bodyweight, workReps });
+  const one = warmupOne(workKg, { barbell, bar: eq.bar, step: step0, bodyweight: !!ex.bodyweight, workReps });
   const detail = exerciseDetail(ex.name);
   const setWarm = (fn) => onWarm?.(fn(warm));
-  const addWarm = () => setWarm(w => [...w, { ...(w[w.length - 1] ?? (ramp.length ? { weight: String(ramp[ramp.length - 1].weight), reps: String(ramp[ramp.length - 1].reps) } : { weight: ex.bodyweight ? '0' : String(Math.round((workKg * 0.5) / step0) * step0), reps: '8' })), done: false }]);
+  const addWarm = () => setWarm(w => [...w, { weight: String(one ? one.weight : (ex.bodyweight ? 0 : Math.round((workKg * 0.5) / step0) * step0)), reps: String(one ? one.reps : 5), done: false }]);
   const nextIdx = rows.findIndex(r => !r.done);
   const step = Number(ex.increment) || 2.5;
   const folded = stage === 'done' && !openDone;
@@ -281,10 +281,10 @@ function ExerciseCard({ ex, prog, rows, onChange, onTick, onRate, onAddSet, onRe
             </div>
           )}
 
-          {/* Warm-ups: one tap adds the suggested ramp as rows to tick off. They are not logged as work. */}
-          {prefs.warmups && warm.length === 0 && ramp.length > 0 && stage !== 'done' && doneSets.length === 0 && (
-            <button type="button" className="ui-btn is-sm is-soft" onClick={() => onWarm?.(ramp.map(w => ({ weight: String(w.weight), reps: String(w.reps), done: false })))} style={{ alignSelf: 'flex-start' }}>
-              Add warm-up · {ramp.map(w => `${ex.bodyweight ? 'BW' : w.weight}×${w.reps}`).join(' · ')}
+          {/* Warm-ups: one tap adds a single warm-up set to tick off. They are not logged as work. */}
+          {prefs.warmups && warm.length === 0 && one && stage !== 'done' && doneSets.length === 0 && (
+            <button type="button" className="ui-btn is-sm is-soft" onClick={addWarm} style={{ alignSelf: 'flex-start' }}>
+              Add warm-up set · {ex.bodyweight ? 'BW' : one.weight}×{one.reps}
             </button>
           )}
 

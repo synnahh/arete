@@ -1,7 +1,7 @@
 import { describe, it, expect } from 'vitest';
 import { EXERCISE_DB } from './exerciseDb.js';
 import { exerciseDetail, missingDetail } from './exerciseDetail.js';
-import { warmupRamp } from './plates.js';
+import { warmupRamp, warmupOne } from './plates.js';
 import { carryForward, loadWarmups, saveWarmups, clearWarmups } from './sessionDraft.js';
 
 const memory = () => { const m = new Map(); return { getItem: k => (m.has(k) ? m.get(k) : null), setItem: (k, v) => m.set(k, String(v)), removeItem: k => m.delete(k) }; };
@@ -98,5 +98,16 @@ describe('barcode lookup in the bundled pack', () => {
     expect(findByBarcode(index, '0812345678901')?.defaultAmount).toBe(170);
     expect(findByBarcode(index, '999')).toBeNull();
     expect(barcodeKey('00123')).toBe('123');
+  });
+});
+
+describe('one warm-up set', () => {
+  it('is a single set at about 60% for 5, never below the bar, never the working weight', () => {
+    expect(warmupOne(62.5, { barbell: true, bar: 20, step: 2.5 })).toEqual({ weight: 37.5, reps: 5 });
+    expect(warmupOne(30, { barbell: true, bar: 20 })).toEqual({ weight: 20, reps: 5 });
+    expect(warmupOne(20, { barbell: true, bar: 20 })).toBeNull();
+    expect(warmupOne(30, { step: 2 })).toEqual({ weight: 18, reps: 5 });
+    expect(warmupOne(0)).toBeNull();
+    expect(warmupOne(0, { bodyweight: true, workReps: 10 })).toEqual({ weight: 0, reps: 5 });
   });
 });

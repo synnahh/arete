@@ -78,3 +78,19 @@ export function warmupRamp(workWeight, { barbell = false, bar = DEFAULT_BAR_KG, 
   const ramp = [{ weight: round(w * 0.5), reps: 8 }, { weight: round(w * 0.75), reps: 4 }];
   return ramp.filter((x, i) => x.weight > 0 && x.weight < w && (i === 0 || x.weight > ramp[i - 1].weight)).map(x => ({ ...x, weight: r2(x.weight) }));
 }
+
+/**
+ * ONE warm-up set for a lift (what the Train card adds): about 60% of the working weight for 5 reps,
+ * rounded to the lift's jump; barbell lifts never go below the empty bar. Bodyweight lifts get half
+ * the working reps. Null when there is nothing sensible to warm up to.
+ */
+export function warmupOne(workWeight, { barbell = false, bar = DEFAULT_BAR_KG, step = 2.5, bodyweight = false, workReps = 8 } = {}) {
+  if (bodyweight) return { weight: 0, reps: Math.max(3, Math.round((Number(workReps) || 8) / 2)) };
+  const w = Number(workWeight);
+  if (!(w > 0)) return null;
+  const s = Number(step) > 0 ? Number(step) : 2.5;
+  let x = Math.round((w * 0.6) / s) * s;
+  if (barbell) x = Math.max(bar, x);
+  if (!(x > 0) || x >= w) return null;
+  return { weight: r2(x), reps: 5 };
+}
