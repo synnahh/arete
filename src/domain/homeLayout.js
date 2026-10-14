@@ -85,3 +85,41 @@ export function weightStatus(tiles, coach, goal) {
     ratePerWeek: rate, target, paceMessage: coach?.pace?.message ?? null,
   };
 }
+
+// ── Page layout ──────────────────────────────────────────────────────────────
+
+/** Sections that take the whole row instead of sharing it. */
+export const FULL_WIDTH = ['metrics'];
+
+// Rough card heights (1 = a short card), used only to even out the columns.
+export const CARD_WEIGHT = { calories: 1, weight: 1.3, streak: 1.7, skin: 1.3, water: 1, sleep: 3.3, workout: 1, moves: 2, steps: 2, updates: 2, recap: 2, overall: 1.5 };
+
+/**
+ * Split the shown sections into rows. A full-width section is a row of its own; the sections around
+ * it go into `columns` columns, tallest cards first, each to the column that is shortest so far (by CARD_WEIGHT), so
+ * the columns end at about the same height and no card leaves a hole below it. Within a column the
+ * cards keep the order you chose.
+ * @returns {Array<{ full: string } | { cols: string[][] }>}
+ */
+export function layoutRows(ids, columns = 2) {
+  const rows = [];
+  let run = [];
+  const flush = () => {
+    if (!run.length) return;
+    const cols = Array.from({ length: Math.max(1, columns) }, () => ({ ids: [], h: 0 }));
+    const w = (id) => CARD_WEIGHT[id] ?? 1.5;
+    // Tallest cards first (stable, so equal heights keep your order), then each column back in your order.
+    const byHeight = [...run].sort((a, b) => w(b) - w(a));
+    for (const id of byHeight) {
+      const c = cols.reduce((best, x) => (x.h < best.h ? x : best), cols[0]);
+      c.ids.push(id); c.h += w(id);
+    }
+    rows.push({ cols: cols.map(c => c.ids.sort((a, b) => run.indexOf(a) - run.indexOf(b))).filter(c => c.length) });
+    run = [];
+  };
+  for (const id of ids) {
+    if (FULL_WIDTH.includes(id)) { flush(); rows.push({ full: id }); } else run.push(id);
+  }
+  flush();
+  return rows;
+}

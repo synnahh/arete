@@ -94,3 +94,31 @@ describe('health export: metrics without a field of their own', () => {
     expect(days['2026-10-02'].steps).toBe(100);
   });
 });
+
+import { cleanMetricChoice, pickTiles, toggleMetric, moveMetric, DEFAULT_METRICS } from './metrics.js';
+
+describe('choosing which metrics to show', () => {
+  const tile = (id) => ({ id });
+  it('uses the default list until you choose, and skips metrics with no reading', () => {
+    const tiles = ['hrv', 'steps', 'weight'].map(tile);
+    expect(pickTiles(tiles, null).map(t => t.id)).toEqual(['steps', 'weight', 'hrv']);
+    expect(DEFAULT_METRICS.length).toBeLessThanOrEqual(6);
+  });
+  it('shows exactly what you chose, in your order, including extras', () => {
+    const tiles = ['steps', 'weight', 'x:vo2_max'].map(tile);
+    expect(pickTiles(tiles, ['x:vo2_max', 'steps']).map(t => t.id)).toEqual(['x:vo2_max', 'steps']);
+    expect(pickTiles(tiles, [])).toEqual([]);
+  });
+  it('cleans a saved list', () => {
+    expect(cleanMetricChoice(undefined)).toBeNull();
+    expect(cleanMetricChoice(['a', 'a', 3, '', 'b'])).toEqual(['a', 'b']);
+    expect(cleanMetricChoice([])).toEqual([]);
+  });
+  it('adds at the end, removes, and moves; the first change starts from the default list', () => {
+    expect(toggleMetric(['steps'], 'hrv', true)).toEqual(['steps', 'hrv']);
+    expect(toggleMetric(['steps', 'hrv'], 'steps', false)).toEqual(['hrv']);
+    expect(toggleMetric(null, 'bodyFat', true)).toEqual([...DEFAULT_METRICS, 'bodyFat']);
+    expect(moveMetric(['a', 'b', 'c'], 'c', -1)).toEqual(['a', 'c', 'b']);
+    expect(moveMetric(['a', 'b'], 'a', -1)).toEqual(['a', 'b']);
+  });
+});

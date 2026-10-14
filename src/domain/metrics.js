@@ -137,3 +137,39 @@ export function freshness(daysAgo) {
   if (daysAgo === 1) return 'yesterday';
   return `${daysAgo} days ago`;
 }
+
+// ── Which metrics to show ────────────────────────────────────────────────────
+// settings.home.metrics is an ordered list of metric ids. Until you choose, Home shows the first
+// few of DEFAULT_METRICS that have a reading, so it is never a wall of tiles.
+
+export const DEFAULT_METRICS = ['steps', 'sleepHours', 'weight', 'restingHeartRate', 'hrv', 'activeEnergy'];
+
+/** The saved list (no repeats, strings only) or null when you have not chosen yet. */
+export function cleanMetricChoice(raw) {
+  if (!Array.isArray(raw)) return null;
+  return [...new Set(raw.filter(id => typeof id === 'string' && id))];
+}
+
+/** Tiles to display, in your order. Ids with no reading yet are skipped, not shown empty. */
+export function pickTiles(tiles, chosen) {
+  const by = new Map(tiles.map(t => [t.id, t]));
+  const ids = chosen ?? DEFAULT_METRICS;
+  return ids.map(id => by.get(id)).filter(Boolean);
+}
+
+/** Add (at the end) or remove one metric. Starting from the default list when nothing was chosen yet. */
+export function toggleMetric(chosen, id, on) {
+  const cur = chosen ?? DEFAULT_METRICS;
+  if (on) return cur.includes(id) ? cur : [...cur, id];
+  return cur.filter(x => x !== id);
+}
+
+/** Move a chosen metric up (-1) or down (+1). */
+export function moveMetric(chosen, id, delta) {
+  const cur = chosen ?? DEFAULT_METRICS;
+  const i = cur.indexOf(id), j = i + delta;
+  if (i < 0 || j < 0 || j >= cur.length) return cur;
+  const out = [...cur];
+  [out[i], out[j]] = [out[j], out[i]];
+  return out;
+}

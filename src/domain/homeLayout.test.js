@@ -47,3 +47,17 @@ describe('Home card sums', () => {
     expect(weightStatus(null, null, null)).toBeNull();
   });
 });
+
+import { layoutRows } from './homeLayout.js';
+describe('Home page layout', () => {
+  it('puts each card in the shortest column so the columns end together', () => {
+    // sleep is tall: it sits alone while the short cards stack in the other column
+    expect(layoutRows(['calories', 'sleep', 'water', 'skin'], 2)).toEqual([{ cols: [['sleep'], ['calories', 'water', 'skin']] }]);
+    expect(layoutRows(['calories', 'weight'], 1)).toEqual([{ cols: [['calories', 'weight']] }]);
+  });
+  it('gives metrics its own full-width row, keeping the order around it', () => {
+    expect(layoutRows(['calories', 'weight', 'metrics', 'water'], 2)).toEqual([{ cols: [['weight'], ['calories']] }, { full: 'metrics' }, { cols: [['water']] }]);
+    expect(layoutRows(['metrics'], 2)).toEqual([{ full: 'metrics' }]);
+    expect(layoutRows([], 2)).toEqual([]);
+  });
+});

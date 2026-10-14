@@ -16,7 +16,7 @@ import { progressTiles } from '../domain/checkin.js';
 import { weightCoach } from '../domain/weight.js';
 import { stepsFor, completion } from '../domain/skin.js';
 import { WEEK, dayKeyFromDate, dayExercises, isRest } from '../domain/splits.js';
-import { HOME_SECTIONS, cleanHome, setSection, moveSection, calorieStatus, waterStatus, weightStatus } from '../domain/homeLayout.js';
+import { HOME_SECTIONS, layoutRows, cleanHome, setSection, moveSection, calorieStatus, waterStatus, weightStatus } from '../domain/homeLayout.js';
 import { label } from './ui.js';
 import ReadinessCard from './ReadinessCard.jsx';
 import NextMoves from './NextMoves.jsx';
@@ -214,7 +214,7 @@ export default function HomeScreen({ settings, onTabChange, compact = false }) {
   const ids = cleanHome(settings?.home);
   const [editing, setEditing] = useState(false);
   const go = (t) => onTabChange?.(t);
-  const save = (next) => updateSettings({ home: { sections: next } });
+  const save = (next) => updateSettings({ home: { ...(settings?.home || {}), sections: next } }); // keep the metrics you chose
 
   const sections = {
     calories: <Calories settings={settings} compact={compact} />,
@@ -250,9 +250,17 @@ export default function HomeScreen({ settings, onTabChange, compact = false }) {
         <div style={{ ...small, padding: 16 }}>Home is empty. Tap Customise to choose what to see here.</div>
       )}
 
-      <div style={{ display: 'grid', gridTemplateColumns: compact ? '1fr' : 'repeat(auto-fit, minmax(320px, 1fr))', gap: 14, alignItems: 'start' }}>
-        {ids.map((id, i) => <div key={id} className="ui-enter" style={{ '--i': i, ...(id === 'metrics' ? { gridColumn: '1 / -1' } : null) }}>{sections[id]}</div>)}
-      </div>
+      {/* Cards are dealt into columns (not a grid), so a short card never leaves a gap below it. A card
+          that renders nothing is hidden with :empty so it adds no gap either. */}
+      {layoutRows(ids, compact ? 1 : 2).map((row, r) => {
+        const slot = (id) => <div key={id} className="ui-enter home-slot" style={{ '--i': ids.indexOf(id) }}>{sections[id]}</div>;
+        if (row.full) return <div key={r} className="home-row">{slot(row.full)}</div>;
+        return (
+          <div key={r} className="home-row" style={{ display: 'flex', gap: 14, alignItems: 'flex-start' }}>
+            {row.cols.map((col, c) => <div key={c} style={{ flex: '1 1 0', minWidth: 0, display: 'flex', flexDirection: 'column', gap: 14 }}>{col.map(slot)}</div>)}
+          </div>
+        );
+      })}
     </div>
     </div>
   );

@@ -298,3 +298,6 @@ html[data-motion="reduced"] { --dur-1: 90ms; --dur-2: 140ms; --dur-3: 180ms; --d
   background: var(--surface-2); border: 0.5px solid var(--hairline); box-shadow: var(--shadow-2); color: var(--text-secondary); }
 .m-tab.is-home[aria-current="page"] .m-tab-icon { background: var(--tab-accent); color: var(--on-tab-accent); border-color: transparent; box-shadow: 0 8px 22px color-mix(in srgb, var(--tab-accent) 35%, transparent); transform: translateY(-2px); }
 .m-tab.is-home .m-tab-label { margin-top: -1px; }
+
+/* Home: a card that rendered nothing leaves an empty slot; hide it so it adds no gap. */
+.home-slot:empty, .home-row:empty { display: none; }
