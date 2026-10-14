@@ -73,8 +73,11 @@ export function localFoods({ favourites = [], recents = [], customFoods = [], sa
 
 /** A database result ({ name, per100 }) as a food. */
 export function remoteFood(r) {
+  const name = r.brand && !norm(r.name).startsWith(norm(r.brand)) ? `${r.brand} ${r.name}` : r.name;
+  const sg = num(r.servingGrams);
+  const portions = sg > 0 ? [{ label: `1 serving${r.serving ? ` (${r.serving})` : ''}`, grams: sg }] : [];
   return {
-    key: `db:${norm(r.name)}`, kind: 'db', name: r.name, amountKind: 'grams', unit: 'g', defaultAmount: 100,
+    key: `db:${norm(name)}`, kind: 'db', name, amountKind: 'grams', unit: 'g', defaultAmount: sg > 0 ? sg : 100, portions,
     per100: { calories: num(r.per100?.calories), protein: num(r.per100?.protein), carbs: num(r.per100?.carbs), fat: num(r.per100?.fat), micros: r.per100?.micros || {} },
     sub: `${Math.round(num(r.per100?.calories))} kcal / 100 g`, source: r, ingredients: [],
   };
@@ -138,6 +141,45 @@ export function amountChips(food, remembered = null) {
   const steps = food.amountKind === 'grams' ? [50, 100, 150, 200, 250] : [0.5, 1, 1.5, 2, 3];
   const first = num(remembered) > 0 ? num(remembered) : food.defaultAmount;
   return [...new Set([first, ...steps])].slice(0, 6);
+}
+
+const fmtG = (n) => (Number.isInteger(n) ? String(n) : String(Math.round(n * 10) / 10));
+
+/**
+ * Serving sizes to choose from, MyFitnessPal style: { label, mult } where the amount logged is
+ * mult x number of servings (grams for a weighed food, servings otherwise). A weighed food offers
+ * its own portions (the pack's serving, a cup, a slice ...), then 100 g and 1 g.
+ */
+export function servingOptions(food) {
+  if (!food) return [];
+  if (food.amountKind !== 'grams') return [{ label: food.unit && food.unit !== 'serving' ? `1 ${food.unit}` : '1 serving', mult: 1 }];
+  const out = [];
+  for (const p of food.portions || []) {
+    const g = num(p.grams);
+    if (!(g > 0) || out.some(o => o.mult === g)) continue;
+    // "1 serving (1 bar (60 g))" reads as "1 bar (60 g)"; a label without its grams gets them added.
+    const inner = /^1 serving \((.+)\)$/.exec(p.label)?.[1];
+    const base = inner || p.label;
+    out.push({ label: /\d\s*g\b/.test(base) ? base : `${base} (${fmtG(g)} g)`, mult: g });
+  }
+  if (!out.some(o => o.mult === 100)) out.push({ label: '100 g', mult: 100 });
+  out.push({ label: '1 g', mult: 1 });
+  return out;
+}
+
+/**
+ * Which serving size and how many, for an amount: the first size that divides it into quarter
+ * servings (up to 20), else grams one by one. { index, servings }.
+ */
+export function pickServing(food, amount) {
+  const a = num(amount);
+  const opts = servingOptions(food);
+  if (food?.amountKind !== 'grams') return { index: 0, servings: a > 0 ? a : 1 };
+  for (let i = 0; i < opts.length - 1; i++) {
+    const r = a / opts[i].mult;
+    if (r >= 0.25 && r <= 20 && Math.abs(r * 4 - Math.round(r * 4)) < 1e-9) return { index: i, servings: r };
+  }
+  return { index: opts.length - 1, servings: a > 0 ? Math.round(a * 10) / 10 : 100 };
 }
 
 /** The amount to start from: what you used last time, else the food's own default. */

@@ -9,13 +9,12 @@ import { useDocument } from '../supabase/useDocument.js';
 import { useFoodLibrary } from '../hooks/useFoodLibrary.js';
 import { STORAGE_KEYS } from '../utils/storage.js';
 import { toLocalDateKey } from '../utils/localDate.js';
-import { useFoodDb } from '../hooks/useFoodDb.js';
-import { portionChips } from '../domain/foodDb.js';
+import { useFoodDb, barcodeFood } from '../hooks/useFoodDb.js';
 import { searchFoods, lookupBarcode, canScanBarcodes } from '../utils/openFoodFacts.js';
 import BarcodeScanner from './BarcodeScanner.jsx';
 import { recentFoods, SECTIONS } from '../domain/foods.js';
 import {
-  localFoods, remoteFood, searchLocal, mergeResults, macrosFor, amountChips, startAmount, entryFor, quickFoodEntry, remember, defaultSection,
+  localFoods, remoteFood, searchLocal, mergeResults, macrosFor, startAmount, servingOptions, pickServing, entryFor, quickFoodEntry, remember, defaultSection,
 } from '../domain/foodLogger.js';
 import StarButton from './StarButton.jsx';
 
@@ -41,6 +40,8 @@ export default function FoodLogger({ onLog, onClose }) {
   const [offline, setOffline] = useState(false);
   const [food, setFood] = useState(null);
   const [amount, setAmount] = useState('');
+  const [optIdx, setOptIdx] = useState(0);       // which serving size
+  const [servings, setServings] = useState('1'); // how many of it
   const [section, setSection] = useState(() => defaultSection());
   const [quick, setQuick] = useState({ name: '', calories: '', protein: '', carbs: '', fat: '' });
   const [busy, setBusy] = useState(false);
@@ -80,7 +81,11 @@ export default function FoodLogger({ onLog, onClose }) {
 
   useEffect(() => { if (step === 'search') inputRef.current?.focus(); }, [step]);
 
-  const pick = (f) => { setFood(f); setAmount(String(startAmount(f, memory))); setStep('amount'); };
+  const pick = (f) => {
+    const start = startAmount(f, memory);
+    const { index, servings: n } = pickServing(f, start);
+    setFood(f); setAmount(String(start)); setOptIdx(index); setServings(String(n)); setStep('amount');
+  };
 
   const save = async (entry, f, amt, again) => {
     if (!entry || busy) return;
@@ -98,59 +103,75 @@ export default function FoodLogger({ onLog, onClose }) {
   const quickLog = (f) => save(entryFor(f, startAmount(f, memory), { section }), f, startAmount(f, memory), true);
 
   // The scanner is its own full-screen view; a found product goes straight to the amount step.
+  // The bundled Australian pack is checked first (instant, works offline), then Open Food Facts online.
   const scanCode = async (code) => {
-    try { pick(remoteFood(await lookupBarcode(code))); }
-    catch { return `No product found for ${code}. Try another angle, type the number, or search by name.`; }
+    try {
+      const local = await barcodeFood(code);
+      pick(local || remoteFood(await lookupBarcode(code)));
+    } catch { return `No product found for ${code}. Try another angle, type the number, or search by name.`; }
     return undefined;
   };
 
-  const amt = parseFloat(amount);
+  const options = food ? servingOptions(food) : [];
+  const opt = options[Math.min(optIdx, Math.max(0, options.length - 1))];
+  const n = parseFloat(servings);
+  const amt = opt && n > 0 ? Math.round(opt.mult * n * 100) / 100 : parseFloat(amount);
   const macros = food && amt > 0 ? macrosFor(food, amt) : null;
-  const unitLabel = food ? (food.amountKind === 'grams' ? 'g' : food.unit === 'serving' ? (amt === 1 ? 'serving' : 'servings') : `× ${food.unit}`) : '';
+  const sectionLabel = SECTIONS.find(x => x.id === section)?.label ?? 'diary';
 
-  // ── Amount step ──
+  // ── Amount step (MyFitnessPal style: serving size, number of servings, meal, then Add) ──
   if (step === 'amount' && food) {
+    const kc = macros ? (macros.protein * 4 + macros.carbs * 4 + macros.fat * 9) || 1 : 1;
+    const pct = (g, k) => (macros ? Math.round((g * k * 100) / kc) : 0);
+    const row = { display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 12, minHeight: 54, borderTop: '0.5px solid var(--card-border)' };
+    const ctl = { ...input, width: 'auto', minWidth: 0, maxWidth: '62%', minHeight: 40, textAlign: 'right', fontWeight: 600, color: 'var(--accent)', background: 'transparent', border: 'none', padding: '0 4px' };
+    const add = (again) => save(entryFor(food, amt, { section }), food, amt, again);
     return (
-      <div style={{ display: 'flex', flexDirection: 'column', gap: 14 }}>
+      <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
         <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
           <button type="button" onClick={() => setStep('search')} aria-label="Back to search" style={{ ...ghost, minHeight: 44, minWidth: 44, padding: 0 }}>‹</button>
-          <div style={{ flex: 1, minWidth: 0, fontSize: 17, fontWeight: 700, color: 'var(--text-primary)', lineHeight: 1.25 }}>{food.name}</div>
+          <div style={{ flex: 1, fontSize: 16, fontWeight: 700, color: 'var(--text-secondary)' }}>Add food</div>
+          <button type="button" disabled={!macros || busy} onClick={() => add(false)} aria-label={`Add to ${sectionLabel}`} style={{ ...primary, minHeight: 44, padding: '0 18px', opacity: macros ? 1 : 0.5 }}>✓ Add</button>
+        </div>
+
+        <div style={{ display: 'flex', alignItems: 'flex-start', gap: 8 }}>
+          <div style={{ flex: 1, minWidth: 0 }}>
+            <div style={{ fontSize: 18, fontWeight: 700, color: 'var(--text-primary)', lineHeight: 1.3 }}>{food.name}</div>
+            {food.sub && <div style={{ fontSize: 12.5, color: 'var(--text-muted)', marginTop: 2 }}>{food.sub}</div>}
+          </div>
           {macros && <StarButton on={lib.isFav(food.name)} name={food.name} size={44} onClick={() => lib.toggleFav({ ...entryFor(food, amt, { section }) })} />}
         </div>
 
-        <div style={{ textAlign: 'center', padding: '4px 0' }}>
-          <div className="val-num" style={{ fontSize: 44, fontWeight: 800, lineHeight: 1, color: 'var(--text-primary)' }}>{macros ? macros.calories : '–'}<span style={{ fontSize: 15, fontWeight: 600, color: 'var(--text-secondary)' }}> kcal</span></div>
-          <div style={{ display: 'flex', justifyContent: 'center', gap: 16, marginTop: 8, fontSize: 14 }}>
-            <span style={{ color: '#e879a0' }}>P {macros ? fmt(macros.protein) : '–'}g</span>
-            <span style={{ color: '#a78bfa' }}>C {macros ? fmt(macros.carbs) : '–'}g</span>
-            <span style={{ color: '#4caf7d' }}>F {macros ? fmt(macros.fat) : '–'}g</span>
-          </div>
+        <div style={{ display: 'flex', flexDirection: 'column' }}>
+          <label style={row}>
+            <span style={{ fontSize: 15, color: 'var(--text-primary)' }}>Serving size</span>
+            <select value={optIdx} onChange={e => setOptIdx(Number(e.target.value))} aria-label="Serving size" style={ctl}>
+              {options.map((o, i) => <option key={o.label} value={i}>{o.label}</option>)}
+            </select>
+          </label>
+          <label style={row}>
+            <span style={{ fontSize: 15, color: 'var(--text-primary)' }}>Number of servings</span>
+            <input type="text" inputMode="decimal" value={servings} onFocus={e => e.target.select()} onChange={e => setServings(e.target.value.replace(/[^0-9.]/g, '').slice(0, 6))} aria-label="Number of servings" style={{ ...ctl, width: 90 }} />
+          </label>
+          <label style={{ ...row, borderBottom: '0.5px solid var(--card-border)' }}>
+            <span style={{ fontSize: 15, color: 'var(--text-primary)' }}>Meal</span>
+            <select value={section} onChange={e => setSection(e.target.value)} aria-label="Meal" style={ctl}>
+              {SECTIONS.map(x => <option key={x.id} value={x.id}>{x.label}</option>)}
+            </select>
+          </label>
         </div>
 
-        <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
-          <input type="number" inputMode="decimal" min="0" value={amount} onChange={e => setAmount(e.target.value)} aria-label="Amount" style={{ ...input, flex: 1, fontSize: 20, fontWeight: 700, textAlign: 'center' }} />
-          <span style={{ minWidth: 70, fontSize: 15, color: 'var(--text-secondary)' }}>{unitLabel}</span>
-        </div>
-        {portionChips(food).length > 0 && (
-          <div role="group" aria-label="Portions" style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>
-            {portionChips(food).map(p => (
-              <button key={p.label} type="button" aria-pressed={amt === p.grams} onClick={() => setAmount(String(p.grams))} style={chip(amt === p.grams)}>{p.label} · {fmt(p.grams)} g</button>
-            ))}
-          </div>
-        )}
-        <div role="group" aria-label="Quick amounts" style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>
-          {amountChips(food, memory[food.name.toLowerCase().replace(/[^a-z0-9 ]+/g, ' ').replace(/\s+/g, ' ').trim()]).map(c => (
-            <button key={c} type="button" aria-pressed={amt === c} onClick={() => setAmount(String(c))} style={chip(amt === c)}>{fmt(c)}{food.amountKind === 'grams' ? ' g' : ''}</button>
+        {/* Nutrition for what you are adding: calories, then where they come from */}
+        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, minmax(0, 1fr))', gap: 8, textAlign: 'center', padding: '6px 0' }}>
+          <div><div className="val-num" style={{ fontSize: 26, fontWeight: 800, color: 'var(--text-primary)', lineHeight: 1.1 }}>{macros ? macros.calories : '–'}</div><div style={{ fontSize: 11.5, color: 'var(--text-muted)' }}>kcal{food.amountKind === 'grams' && amt > 0 ? ` · ${fmt(amt)} g` : ''}</div></div>
+          {[['Carbs', 'carbs', 4, '#a78bfa'], ['Fat', 'fat', 9, '#4caf7d'], ['Protein', 'protein', 4, '#e879a0']].map(([l, k, f, c]) => (
+            <div key={k}><div style={{ fontSize: 12, fontWeight: 700, color: c }}>{pct(macros?.[k] ?? 0, f)}%</div><div className="val-num" style={{ fontSize: 16, fontWeight: 700, color: 'var(--text-primary)' }}>{macros ? fmt(macros[k]) : '–'} g</div><div style={{ fontSize: 11.5, color: 'var(--text-muted)' }}>{l}</div></div>
           ))}
         </div>
 
-        <div role="group" aria-label="Meal" style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>
-          {SECTIONS.map(s => <button key={s.id} type="button" aria-pressed={section === s.id} onClick={() => setSection(s.id)} style={chip(section === s.id)}>{s.label}</button>)}
-        </div>
-
-        <div style={{ display: 'flex', gap: 10 }}>
-          <button type="button" disabled={!macros || busy} onClick={() => save(entryFor(food, amt, { section }), food, amt, true)} style={{ ...ghost, flex: 1, opacity: macros ? 1 : 0.5 }}>Log + add another</button>
-          <button type="button" disabled={!macros || busy} onClick={() => save(entryFor(food, amt, { section }), food, amt, false)} style={{ ...primary, flex: 1, opacity: macros ? 1 : 0.5 }}>Log</button>
+        <div style={{ position: 'sticky', bottom: 0, display: 'flex', gap: 10, paddingTop: 8, background: 'var(--bg-panel, var(--surface-1))' }}>
+          <button type="button" disabled={!macros || busy} onClick={() => add(true)} style={{ ...ghost, flex: 1, opacity: macros ? 1 : 0.5 }}>Add + another</button>
+          <button type="button" disabled={!macros || busy} onClick={() => add(false)} style={{ ...primary, flex: 1.4, opacity: macros ? 1 : 0.5 }}>Add to {sectionLabel}</button>
         </div>
       </div>
     );
@@ -186,8 +207,9 @@ export default function FoodLogger({ onLog, onClose }) {
     <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
       <div style={{ display: 'flex', gap: 8 }}>
         <input ref={inputRef} type="search" value={query} onChange={e => setQuery(e.target.value)} placeholder="Search foods, or type what you ate" aria-label="Search foods" style={{ ...input, flex: 1 }} />
-        {canScanBarcodes() && <button type="button" onClick={() => setStep('scan')} aria-label="Scan a barcode" style={{ ...ghost, minWidth: 52, padding: 0 }}>
-          <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" aria-hidden="true"><path d="M4 7V5a1 1 0 0 1 1-1h2M17 4h2a1 1 0 0 1 1 1v2M20 17v2a1 1 0 0 1-1 1h-2M7 20H5a1 1 0 0 1-1-1v-2M8 8v8M11 8v8M14 8v8M17 8v8" /></svg>
+        {canScanBarcodes() && <button type="button" onClick={() => setStep('scan')} aria-label="Scan a barcode" style={{ ...ghost, display: 'flex', alignItems: 'center', gap: 6, padding: '0 14px', color: 'var(--accent)', borderColor: 'var(--accent)' }}>
+          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" aria-hidden="true"><path d="M4 7V5a1 1 0 0 1 1-1h2M17 4h2a1 1 0 0 1 1 1v2M20 17v2a1 1 0 0 1-1 1h-2M7 20H5a1 1 0 0 1-1-1v-2M8 8v8M11 8v8M14 8v8M17 8v8" /></svg>
+          <span style={{ fontSize: 14 }}>Scan</span>
         </button>}
       </div>
 

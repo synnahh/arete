@@ -162,6 +162,17 @@ export function dbFood(e) {
   };
 }
 
+/** A barcode without leading zeros, so a 12-digit UPC and its 13-digit EAN form match. */
+export const barcodeKey = (code) => String(code || '').replace(/\D/g, '').replace(/^0+/, '');
+
+/** The bundled product with this barcode, as a loggable food, or null. */
+export function findByBarcode(index, code) {
+  const k = barcodeKey(code);
+  if (!k) return null;
+  const e = (index || []).find(x => x.barcode && barcodeKey(x.barcode) === k);
+  return e ? dbFood(e) : null;
+}
+
 /** The tap-to-pick portions for a food, each with its grams. Empty when the food has none. */
 export function portionChips(food) {
   return (food?.portions || []).filter(p => p.grams > 0).slice(0, 5);

@@ -2,7 +2,7 @@
 // them in memory. Packs live in src/data/foods/: generic.json (USDA) and any branded*.json.
 // They are separate lazy chunks, so the app starts without them.
 import { useEffect, useMemo, useRef, useState } from 'react';
-import { buildIndex, searchIndex, dbFood } from '../domain/foodDb.js';
+import { buildIndex, searchIndex, dbFood, findByBarcode } from '../domain/foodDb.js';
 
 const loaders = import.meta.glob('../data/foods/*.json');
 let cache = null;          // the built index, shared by every screen
@@ -17,6 +17,11 @@ async function loadAll() {
     })).then(parts => { cache = parts.flat(); return cache; }).catch(() => { loading = null; return []; });
   }
   return loading;
+}
+
+/** The bundled product with this barcode (works offline), loading the packs first if needed. */
+export async function barcodeFood(code) {
+  return findByBarcode(await loadAll(), code);
 }
 
 /** { ready, search(query, limit) -> foods, count, branded } */

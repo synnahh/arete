@@ -9,6 +9,10 @@ import { supabase } from '../supabase/supabase.js';
 function mapProduct(p) {
   return {
     name: p.product_name ?? 'Unknown product',
+    brand: (p.brands || '').split(',')[0].trim() || null,
+    servingGrams: Number(p.serving_quantity) > 0 && Number(p.serving_quantity) < 2000 ? Number(p.serving_quantity) : 0,
+    serving: p.serving_size || '',
+    barcode: p.code || p._id || null,
     per100: {
       calories: Math.round(p.nutriments?.['energy-kcal_100g'] ?? 0),
       protein:  Math.round((p.nutriments?.proteins_100g ?? 0) * 10) / 10,
