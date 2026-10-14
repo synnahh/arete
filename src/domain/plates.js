@@ -61,3 +61,20 @@ export function barFrom(value) {
   const n = Number(value);
   return n >= 5 && n <= 30 ? n : DEFAULT_BAR_KG;
 }
+
+/**
+ * Warm-up sets for any lift: the barbell ramp above for barbell lifts; for dumbbells, machines and
+ * cables about 50% for 8 and 75% for 4, rounded to the lift's own jump. Bodyweight lifts (no
+ * weight) get one easy set of half the working reps. Never reaches the working weight.
+ * @returns {Array<{ weight: number, reps: number }>}
+ */
+export function warmupRamp(workWeight, { barbell = false, bar = DEFAULT_BAR_KG, step = 2.5, bodyweight = false, workReps = 8 } = {}) {
+  if (bodyweight) return [{ weight: 0, reps: Math.max(3, Math.round((Number(workReps) || 8) / 2)) }];
+  const w = Number(workWeight);
+  if (!(w > 0)) return [];
+  if (barbell) return warmupSets(w, { bar, step: Math.min(step, 2.5) || 2.5 });
+  const s = Number(step) > 0 ? Number(step) : 2.5;
+  const round = (x) => Math.round(x / s) * s;
+  const ramp = [{ weight: round(w * 0.5), reps: 8 }, { weight: round(w * 0.75), reps: 4 }];
+  return ramp.filter((x, i) => x.weight > 0 && x.weight < w && (i === 0 || x.weight > ramp[i - 1].weight)).map(x => ({ ...x, weight: r2(x.weight) }));
+}

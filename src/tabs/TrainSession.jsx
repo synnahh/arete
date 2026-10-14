@@ -16,7 +16,8 @@ import {
 } from '../domain/training.js';
 import { plateaus, applyReadiness, liftHistory, validRpe, sessionsOf } from '../domain/progression.js';
 import LiftSessions from '../components/LiftSessions.jsx';
-import { isBarbell, platesFor, warmupSets, parsePlates, barFrom, DEFAULT_PLATES_KG } from '../domain/plates.js';
+import { isBarbell, platesFor, warmupRamp, parsePlates, barFrom, DEFAULT_PLATES_KG } from '../domain/plates.js';
+import { exerciseDetail } from '../domain/exerciseDetail.js';
 import { updateSettings } from '../utils/settingsStore.js';
 import { storage, STORAGE_KEYS } from '../utils/storage.js';
 import LiftChart from '../components/LiftChart.jsx';
@@ -28,7 +29,7 @@ import ExerciseDemo from '../components/ExerciseDemo.jsx';
 import { WEEK, dayExercises, withDayTargets, materialize, sessionChoices, sessionDayKey, dayKeyFromDate } from '../domain/splits.js';
 import { startRest, stopRest } from '../components/RestTimer.jsx';   // the timer itself is mounted once by each app shell
 import { AnimatedNumber, Collapse, ProgressBar, ProgressRing, Sheet, SlidingTabs, haptic as softHaptic } from '../components/Motion.jsx';
-import { loadDraft, saveDraft, markStarted, clearDraft, applyDraft } from '../domain/sessionDraft.js';
+import { loadDraft, saveDraft, markStarted, clearDraft, applyDraft, loadWarmups, saveWarmups, clearWarmups, carryForward } from '../domain/sessionDraft.js';
 import { haptics } from '../mobile/utils/haptics.js';
 
 const today = () => toLocalDateKey(new Date());
@@ -167,7 +168,7 @@ function SetCheck({ done, justDone, onClick, label: aria }) {
 }
 
 //  One exercise card. stage: 'current' (the one you are on), 'done' (all sets logged) or 'next'.
-function ExerciseCard({ ex, prog, rows, onChange, onTick, onRate, onAddSet, onRemoveSet, prs, compact, history, sessions = [], rec = null, eq, alternatives = [], onReplace, prefs, onEdit = null, stage = 'next', index = 0 }) {
+function ExerciseCard({ ex, prog, rows, onChange, onTick, onRate, onAddSet, onRemoveSet, prs, compact, history, sessions = [], rec = null, eq, alternatives = [], onReplace, prefs, onEdit = null, stage = 'next', index = 0, warm = [], onWarm }) {
   const doneSets = rows.filter(r => r.done);
   const [panel, setPanel] = useState(null);          // 'demo' | 'swap' | 'history' | 'tweak'
   const [openDone, setOpenDone] = useState(false);
@@ -175,7 +176,12 @@ function ExerciseCard({ ex, prog, rows, onChange, onTick, onRate, onAddSet, onRe
   const barbell = !ex.bodyweight && isBarbell(ex.name);
   const workKg = Number(rows[0]?.weight) || prog.nextWeight;
   const plates = barbell ? platesFor(workKg, { bar: eq.bar, plates: eq.plates }) : null;
-  const warmups = barbell ? warmupSets(workKg, { bar: eq.bar }) : [];
+  const step0 = Number(ex.increment) || 2.5;
+  const workReps = Number(rows[0]?.reps) || ex.repsMin;
+  const ramp = warmupRamp(workKg, { barbell, bar: eq.bar, step: step0, bodyweight: !!ex.bodyweight, workReps });
+  const detail = exerciseDetail(ex.name);
+  const setWarm = (fn) => onWarm?.(fn(warm));
+  const addWarm = () => setWarm(w => [...w, { ...(w[w.length - 1] ?? (ramp.length ? { weight: String(ramp[ramp.length - 1].weight), reps: String(ramp[ramp.length - 1].reps) } : { weight: ex.bodyweight ? '0' : String(Math.round((workKg * 0.5) / step0) * step0), reps: '8' })), done: false }]);
   const nextIdx = rows.findIndex(r => !r.done);
   const step = Number(ex.increment) || 2.5;
   const folded = stage === 'done' && !openDone;
@@ -260,13 +266,26 @@ function ExerciseCard({ ex, prog, rows, onChange, onTick, onRate, onAddSet, onRe
             <div style={{ fontSize: 12.5, lineHeight: 1.45, color: 'var(--text-secondary)' }}>{prog.hint}</div>
           )}
 
-          {barbell && ((prefs.plates && plates) || (prefs.warmups && warmups.length > 0)) && stage !== 'done' && (
-            <div className="t-num" style={{ fontSize: 12, lineHeight: 1.6, color: 'var(--text-secondary)', padding: '8px 10px', borderRadius: 10, background: 'var(--hover-bg)' }}>
-              {prefs.plates && plates && workKg > eq.bar && (
-                <div>Per side for {plates.total} kg: <span style={{ color: 'var(--text-primary)' }}>{plates.perSide.length ? plates.perSide.join(' + ') : 'bar only'}</span>{plates.short > 0 ? ` (${plates.short} kg short)` : ''}</div>
-              )}
-              {prefs.warmups && warmups.length > 0 && <div>Warm-up: {warmups.map(w => `${w.weight}×${w.reps}`).join(' · ')}</div>}
+          {/* How to do it: grip, set-up and the form cue. Full on the lift you are on, grip only on the rest. */}
+          {detail && (detail.grip || detail.setup || detail.cue) && stage !== 'done' && (
+            <div style={{ display: 'grid', gridTemplateColumns: 'auto 1fr', columnGap: 10, rowGap: 4, fontSize: 12.5, lineHeight: 1.45, padding: '9px 11px', borderRadius: 10, background: 'var(--hover-bg)' }}>
+              {detail.grip && <><span style={{ ...label, fontSize: 9.5, paddingTop: 2 }}>Grip</span><span style={{ color: 'var(--text-primary)' }}>{detail.grip}</span></>}
+              {stage === 'current' && detail.setup && <><span style={{ ...label, fontSize: 9.5, paddingTop: 2 }}>Set-up</span><span style={{ color: 'var(--text-secondary)' }}>{detail.setup}</span></>}
+              {stage === 'current' && detail.cue && <><span style={{ ...label, fontSize: 9.5, paddingTop: 2 }}>Form</span><span style={{ color: 'var(--text-secondary)' }}>{detail.cue}</span></>}
             </div>
+          )}
+
+          {barbell && prefs.plates && plates && workKg > eq.bar && stage !== 'done' && (
+            <div className="t-num" style={{ fontSize: 12, lineHeight: 1.6, color: 'var(--text-secondary)' }}>
+              Per side for {plates.total} kg: <span style={{ color: 'var(--text-primary)' }}>{plates.perSide.length ? plates.perSide.join(' + ') : 'bar only'}</span>{plates.short > 0 ? ` (${plates.short} kg short)` : ''}
+            </div>
+          )}
+
+          {/* Warm-ups: one tap adds the suggested ramp as rows to tick off. They are not logged as work. */}
+          {prefs.warmups && warm.length === 0 && ramp.length > 0 && stage !== 'done' && doneSets.length === 0 && (
+            <button type="button" className="ui-btn is-sm is-soft" onClick={() => onWarm?.(ramp.map(w => ({ weight: String(w.weight), reps: String(w.reps), done: false })))} style={{ alignSelf: 'flex-start' }}>
+              Add warm-up · {ramp.map(w => `${ex.bodyweight ? 'BW' : w.weight}×${w.reps}`).join(' · ')}
+            </button>
           )}
 
           {/* Sets */}
@@ -276,6 +295,17 @@ function ExerciseCard({ ex, prog, rows, onChange, onTick, onRate, onAddSet, onRe
               <span role="columnheader" style={{ textAlign: 'center' }}>kg</span><span role="columnheader" style={{ textAlign: 'center' }}>Reps</span>
               <span role="columnheader" aria-label="Done" />
             </div>
+            {warm.map((w, k) => (
+              <div key={`w${k}`} role="row" aria-label={`Warm-up set ${k + 1}`} className="ui-row-in" style={{ display: 'grid', gridTemplateColumns: GRID, gap: 8, alignItems: 'center', padding: '3px 6px', margin: '0 -6px', borderRadius: 12, opacity: w.done ? 0.6 : 0.92 }}>
+                <span className="t-num" style={{ fontSize: 12, fontWeight: 700, color: 'var(--warn)', textAlign: 'center' }} title="Warm-up">W</span>
+                <span style={{ fontSize: 12, color: 'var(--text-muted)' }}>warm-up</span>
+                <input aria-label={`Warm-up ${k + 1} weight`} inputMode="decimal" disabled={ex.bodyweight || w.done} value={ex.bodyweight ? 'BW' : w.weight}
+                  onFocus={e => e.target.select()} onChange={e => setWarm(ws => ws.map((x, n) => (n === k ? { ...x, weight: e.target.value } : x)))} className="ui-input" style={numInput} />
+                <input aria-label={`Warm-up ${k + 1} reps`} inputMode="numeric" disabled={w.done} value={w.reps}
+                  onFocus={e => e.target.select()} onChange={e => setWarm(ws => ws.map((x, n) => (n === k ? { ...x, reps: e.target.value } : x)))} className="ui-input" style={numInput} />
+                <SetCheck done={w.done} onClick={() => setWarm(ws => ws.map((x, n) => (n === k ? { ...x, done: !x.done } : x)))} label={w.done ? `Undo warm-up ${k + 1}` : `Done warm-up ${k + 1}`} />
+              </div>
+            ))}
             {rows.map((r, i) => {
               const pr = prs[i];
               const isNext = i === nextIdx && stage !== 'done';
@@ -330,6 +360,8 @@ function ExerciseCard({ ex, prog, rows, onChange, onTick, onRate, onAddSet, onRe
 
           <div style={{ display: 'flex', gap: 8 }}>
             <button type="button" className="ui-btn is-sm" onClick={onAddSet}>+ Add set</button>
+            <button type="button" className="ui-btn is-sm is-quiet" onClick={addWarm}>+ Warm-up</button>
+            {warm.length > 0 && !warm.some(w => w.done) && <button type="button" className="ui-btn is-sm is-quiet" onClick={() => onWarm?.([])}>Clear warm-ups</button>}
             {rows.length > 1 && !rows[rows.length - 1].done && (
               <button type="button" className="ui-btn is-sm is-quiet" onClick={onRemoveSet}>Remove set</button>
             )}
@@ -406,6 +438,8 @@ export default function TrainSession({
   const mutationRevision = useRef({});
   const draft = useRef(loadDraft(date));
   const [startedAt, setStartedAt] = useState(() => draft.current.startedAt);
+  const [warm, setWarmState] = useState(() => loadWarmups(date));   // exId -> warm-up rows (this device, today only)
+  const setWarm = (exId, rows) => setWarmState(w => { const next = { ...w, [exId]: rows }; saveWarmups(date, next); return next; });
   const [settingsOpen, setSettingsOpen] = useState(false);
   const [finishOpen, setFinishOpen] = useState(false);
 
@@ -555,7 +589,9 @@ export default function TrainSession({
     if (!undo && !ex.bodyweight && !(Number(row.weight) >= 0 && row.weight !== '')) return;
     if (!undo && !(Number(row.reps) > 0)) return;
 
-    const nextRows = rows.map((r, j) => j === i ? { ...r, done: !undo, justDone: !undo, isNew: false } : { ...r, justDone: false, isNew: false });
+    const ticked = rows.map((r, j) => j === i ? { ...r, done: !undo, justDone: !undo, isNew: false } : { ...r, justDone: false, isNew: false });
+    // The sets still to do take the weight and reps you just did (unless you typed into them).
+    const nextRows = undo ? ticked : carryForward(ticked, i);
     const revision = (mutationRevision.current[ex.id] ?? 0) + 1;
     mutationRevision.current[ex.id] = revision;
     setRows(ex.id, () => nextRows);   // the tap itself buzzes (installTapHaptics); a PR adds a stronger one below
@@ -646,6 +682,7 @@ export default function TrainSession({
     setFinishOpen(false);
     stopRest();
     clearDraft();
+    clearWarmups(); setWarmState({});
     setStartedAt(null);
     softHaptic([10, 40, 10]);
     toast(`Workout saved · ${allDone.length} sets · ${vol.toLocaleString()} kg`);
@@ -722,11 +759,12 @@ export default function TrainSession({
         {todays.map((ex, idx) => plan[ex.id] && (
           <ExerciseCard key={ex.id} index={idx} ex={ex} prog={progFor(ex)} rows={plan[ex.id]} prs={prsFor(ex.id)} compact={compact}
             stage={ex.id === currentId ? 'current' : (plan[ex.id].length && plan[ex.id].every(r => r.done)) ? 'done' : 'next'}
-            onChange={(i, patch) => setRows(ex.id, rs => rs.map((r, j) => j === i ? { ...r, ...patch } : r))}
+            onChange={(i, patch) => setRows(ex.id, rs => rs.map((r, j) => j === i ? { ...r, ...patch, touched: true } : r))}
             onTick={(i) => tick(ex, i)} onRate={(i, v) => rate(ex, i, v)}
-            onAddSet={() => setRows(ex.id, rs => [...rs.map(r => ({ ...r, isNew: false })), { ...(rs[rs.length - 1] ?? { weight: 0, reps: ex.repsMin }), prev: null, done: false, justDone: false, rpe: '', isNew: true }])}
+            onAddSet={() => setRows(ex.id, rs => [...rs.map(r => ({ ...r, isNew: false })), { ...(rs[rs.length - 1] ?? { weight: 0, reps: ex.repsMin }), prev: null, done: false, justDone: false, rpe: '', isNew: true, touched: false }])}
             onRemoveSet={() => setRows(ex.id, rs => rs.slice(0, -1))} history={liftHistory(workoutLogs, ex.name)} sessions={sessionsOf(workoutLogs.filter(l => l.date < date), ex.name)} rec={recommendedSets(ex, recPrefs)} eq={equipment}
-            alternatives={alternativesFor(ex)} onReplace={(n) => replaceExercise(ex, n)} prefs={prefs} onEdit={editExercise ? (patch) => editExercise(ex.id, patch) : null} />
+            alternatives={alternativesFor(ex)} onReplace={(n) => replaceExercise(ex, n)} prefs={prefs} onEdit={editExercise ? (patch) => editExercise(ex.id, patch) : null}
+            warm={warm[ex.id] ?? []} onWarm={(rows) => setWarm(ex.id, rows)} />
         ))}
 
         {others.length > 0 && (

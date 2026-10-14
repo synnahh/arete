@@ -50,3 +50,37 @@ export function applyDraft(rows, draftRows) {
   });
   return out;
 }
+
+// ── Warm-up sets ─────────────────────────────────────────────────────────────
+// Warm-ups are kept apart from working sets: they are never written to workout_logs, so they do
+// not count towards volume, PRs or progression. They live on the device for today only.
+export const WARM_KEY = 'arete_session_warmups';
+
+/** Today's warm-up rows per exercise: { exId: [{ weight, reps, done }] }. */
+export function loadWarmups(date, storage = ls()) {
+  try {
+    const v = JSON.parse(storage?.getItem(WARM_KEY) || 'null');
+    return v && v.date === date && v.rows && typeof v.rows === 'object' ? v.rows : {};
+  } catch { return {}; }
+}
+
+export function saveWarmups(date, rows, storage = ls()) {
+  const clean = {};
+  for (const [id, rs] of Object.entries(rows || {})) {
+    if (!Array.isArray(rs) || !rs.length) continue;
+    clean[id] = rs.map(r => ({ weight: r.weight ?? '', reps: r.reps ?? '', done: !!r.done }));
+  }
+  try { storage?.setItem(WARM_KEY, JSON.stringify({ date, rows: clean })); } catch { /* blocked */ }
+}
+
+export function clearWarmups(storage = ls()) { try { storage?.removeItem(WARM_KEY); } catch { /* blocked */ } }
+
+/**
+ * After a working set is logged, the sets still to do take its weight and reps, unless you already
+ * typed something into them. `touched` marks a row you edited. Returns new rows.
+ */
+export function carryForward(rows, i) {
+  const src = rows[i];
+  if (!src) return rows;
+  return rows.map((r, j) => (j > i && !r.done && !r.touched ? { ...r, weight: src.weight, reps: src.reps } : r));
+}
