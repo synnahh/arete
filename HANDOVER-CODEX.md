@@ -1,6 +1,24 @@
 # Arete (was VALERIE) — Handover for the next agent
 
-# LATEST (2026-10-14): desktop fixes, split inputs, Home Metrics
+# LATEST (2026-10-15): Train, Fuel, Home polish, health sync setup (IN PROGRESS)
+
+**Where the health sync stands (the one open item):** table `health_sync` is created in the Arete Supabase project (RLS on, realtime on, 0 rows). Function `health-ingest` is DEPLOYED (no JWT, token-gated) and passes the script's live test (wrong token 401, right token 200). **Nothing has arrived yet: every call from the iPhone's Health Auto Export is refused with 401**, i.e. the token in the phone is not the one deployed. Cause found in the function logs (Supabase > Edge Functions > health-ingest > Invocations): `scripts/setup-health-sync.ps1` makes a NEW token on every run and the old one stops working; it was run 3 times and the phone holds an older one. Next steps for whoever continues: (1) Rob runs `.\scripts\setup-health-sync.ps1 -Check`, pastes the phone's header value, reports length and ACCEPTED/REFUSED; (2) if refused, ONE final `-SkipTable` run, paste the token into the phone BEFORE pressing Enter, never re-run; (3) look for a POST 200 from the phone in Invocations, then Profile > Sync check should say health data arrived, Home > Metrics fills. Then C1-C6 in `docs/health-ingest-checklist.md` (EufyLife to Apple Health, Google Health 5.05+ > Partner apps > Apple Health, Health Auto Export REST API automation: POST, JSON, header `x-health-token`). Fitbit Air goes through Google Health to Apple Health (not Bevel: Bevel only reads). The token is never stored anywhere in the repo or in chat; do not ask for it. Not deployed: `send-sms` (Twilio) and `food-search` (404 when probed). `ai-chat` is deployed. Costs and services: `docs/services-and-costs.md`. The Supabase CLI choked on a BOM in `.env` (removed); `supabase/.temp/` is gitignored.
+
+**Built this session (all committed, 807 tests, builds pass, checked in the browser at 375 and 1280 px; NOT on a real phone):**
+- **Home:** wordmark + small greeting; cards dealt into balanced columns (`layoutRows` in `homeLayout.js`, no gaps; empty cards hidden by `.home-slot:empty`); desktop scrolls; Metrics card (`MetricsCard.jsx`, `domain/metrics.js`, `useHealthHistory.js`) with tile design, Edit to choose and order metrics (`settings.home.metrics`), unknown Health Auto Export metrics shown automatically (`healthMap.js` keeps them under `days[day].more`).
+- **App feel:** no zoom (viewport, `touch-action`, gesture/ctrl+wheel/keys blocked in `main.jsx`), no scrollbars, no text selection except inputs, context menu blocked outside inputs.
+- **Train:** each exercise shows grip, set-up and form (`domain/exerciseDetail.js`, every database exercise has an entry; a test enforces it); later sets take the weight/reps of the set just logged unless typed into (`carryForward`); ONE warm-up set button (`warmupOne`, about 60% for 5) plus "+ Warm-up", warm-ups kept on the device only and never logged as work; split planner min/max boxes commit on blur (typing 10 in Max no longer resets Min).
+- **Fuel:** MyFitnessPal-style add screen (serving size, number of servings, meal, macro split, Add always visible); barcodes are matched in the bundled 10,877-product Australian pack first (offline), then Open Food Facts. Desktop New food / Build recipe now open in a dialog.
+- **Settings:** the SMS test button uses the `send-sms` function first.
+
+**Not reproduced / open:** Rob's note "adding a set adds one to all following exercises" could not be reproduced (adding a set changed only that exercise); ask what he taps and where. Real-phone checks outstanding: barcode camera, carry-forward in a real workout, saving a food/recipe signed in.
+
+**Temporary, uncommitted, dev-only demo data:** `src/dev/demoData.js` plus `TEMP-DEMO` lines in `src/main.jsx` and `src/hooks/useHealthHistory.js`; `?demo=1` on the dev server, `?demo=0` removes it. Delete before anyone commits those two files. Never in builds (`import.meta.env.DEV`).
+
+**Not pushed:** `main` is 182+ commits ahead of `origin/main` (GitHub `synnahh/Valerie-desktop`, visibility unknown; history contains Rob's personal details). Do not push until Rob confirms the repo is private. Deploy = rebuild `npm run build:pwa` and drag `dist` onto the existing Netlify site `arete-dash.netlify.app`.
+
+
+# (earlier) 2026-10-14: desktop fixes, split inputs, Home Metrics
 
 - **Desktop New food / Build recipe:** the forms rendered as cards far down the Nutrition page, so the buttons looked dead. They now open in a centred dialog (`Motion.jsx` `Sheet`, new `wide` prop, `.ui-sheet.is-wide` in `system.css`) in `tabs/Health.jsx`. Phone already used a bottom sheet (checked: opens, buttons not covered). Saving was NOT verified: dev view has no session, so `useCollection.add` reports "Not signed in".
 - **Home scroll on desktop:** `main` is `overflow:hidden`, so `HomeScreen` now owns a scroll container when not `compact`.
