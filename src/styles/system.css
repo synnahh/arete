@@ -72,7 +72,7 @@ html[data-motion="reduced"] { --dur-1: 90ms; --dur-2: 140ms; --dur-3: 180ms; --d
 .t-display { font-family: var(--font-display); font-weight: 600; letter-spacing: 0.02em; line-height: 1.1; color: var(--text-primary); }
 .t-title   { font-size: 17px; font-weight: 600; line-height: 1.25; color: var(--text-primary); }
 .t-body    { font-size: 14px; line-height: 1.5; color: var(--text-secondary); }
-.t-caption { font-family: var(--font-mono); font-size: 10.5px; letter-spacing: 0.14em; text-transform: uppercase; color: var(--text-secondary); }
+.t-caption { font-family: var(--font-mono); font-size: 11.5px; letter-spacing: 0.14em; text-transform: uppercase; color: var(--text-secondary); }
 .t-num     { font-family: var(--font-mono); font-variant-numeric: tabular-nums; letter-spacing: -0.01em; }
 
 /* ── Cards ───────────────────────────────────────────────────────────────── */
@@ -105,6 +105,8 @@ html[data-motion="reduced"] { --dur-1: 90ms; --dur-2: 140ms; --dur-3: 180ms; --d
 .ui-btn.is-quiet { border-color: transparent; color: var(--text-secondary); }
 .ui-btn.is-danger { color: var(--bad); border-color: color-mix(in srgb, var(--bad) 40%, transparent); }
 .ui-btn.is-sm { min-height: 36px; padding: 0 14px; font-size: 13px; font-weight: 500; }
+/* Fingers, not cursors: small buttons keep a 44 px target on touch screens. */
+@media (pointer: coarse) { .ui-btn.is-sm { min-height: 44px; } }
 .ui-btn.is-icon { width: 44px; padding: 0; }
 .ui-btn.is-block { width: 100%; }
 @media (hover: hover) and (pointer: fine) {
@@ -121,6 +123,7 @@ html[data-motion="reduced"] { --dur-1: 90ms; --dur-2: 140ms; --dur-3: 180ms; --d
   cursor: pointer; white-space: nowrap; transition: color var(--dur-2) var(--ease-out); -webkit-tap-highlight-color: transparent;
 }
 .ui-tab[aria-selected="true"], .ui-tab[aria-current="page"], .ui-tab[aria-pressed="true"] { color: var(--tab-accent); font-weight: 600; }
+@media (pointer: coarse) { .ui-tab { min-height: 44px; } }
 .ui-tab:focus-visible { outline: none; box-shadow: var(--focus-ring); }
 .ui-tabs.is-boxed .ui-tab { flex: 1; }
 .ui-tabs-thumb {
@@ -287,7 +290,7 @@ html[data-motion="reduced"] { --dur-1: 90ms; --dur-2: 140ms; --dur-3: 180ms; --d
 .m-tab[aria-current="page"] { color: var(--tab-accent); }
 .m-tab .m-tab-icon { display: flex; transition: transform var(--dur-3) var(--spring); }
 .m-tab[aria-current="page"] .m-tab-icon { transform: translateY(-1px) scale(1.08); }
-.m-tab-label { font-size: 10.5px; font-weight: 500; letter-spacing: 0.02em; }
+.m-tab-label { font-size: 11.5px; font-weight: 500; letter-spacing: 0.02em; }
 .m-tab[aria-current="page"] .m-tab-label { font-weight: 650; }
 .m-tab:focus-visible { outline: none; box-shadow: inset 0 0 0 2px var(--tab-accent); border-radius: 14px; }
 .m-tab-slot { position: absolute; z-index: 0; left: 6px; top: 0; height: 64px; pointer-events: none;

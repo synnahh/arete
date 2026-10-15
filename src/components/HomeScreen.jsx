@@ -193,8 +193,10 @@ function Customise({ ids, onChange }) {
         const s = HOME_SECTIONS.find(x => x.id === id);
         return (
           <div key={id} style={{ display: 'flex', alignItems: 'center', gap: 8, minHeight: 44 }}>
-            <input type="checkbox" checked aria-label={`Show ${s.label}`} onChange={() => onChange(setSection(ids, id, false))} style={{ width: 20, height: 20 }} />
-            <span style={{ flex: 1, fontSize: 14.5, color: 'var(--text-primary)' }}>{s.label}</span>
+            <label style={{ flex: 1, display: 'flex', alignItems: 'center', gap: 10, minHeight: 44, cursor: 'pointer' }}>
+              <input type="checkbox" checked aria-label={`Show ${s.label}`} onChange={() => onChange(setSection(ids, id, false))} style={{ width: 24, height: 24, accentColor: 'var(--accent)' }} />
+              <span style={{ flex: 1, fontSize: 14.5, color: 'var(--text-primary)' }}>{s.label}</span>
+            </label>
             <button type="button" aria-label={`Move ${s.label} up`} disabled={i === 0} onClick={() => onChange(moveSection(ids, id, -1))} className="ui-btn is-sm is-icon">↑</button>
             <button type="button" aria-label={`Move ${s.label} down`} disabled={i === ids.length - 1} onClick={() => onChange(moveSection(ids, id, 1))} className="ui-btn is-sm is-icon">↓</button>
           </div>
@@ -203,7 +205,7 @@ function Customise({ ids, onChange }) {
       <div style={{ ...label, marginTop: 6 }}>Not shown</div>
       {HOME_SECTIONS.filter(s => !ids.includes(s.id)).map(s => (
         <label key={s.id} style={{ display: 'flex', alignItems: 'center', gap: 8, minHeight: 44 }}>
-          <input type="checkbox" checked={false} onChange={() => onChange(setSection(ids, s.id, true))} style={{ width: 20, height: 20 }} />
+          <input type="checkbox" checked={false} onChange={() => onChange(setSection(ids, s.id, true))} style={{ width: 24, height: 24, accentColor: 'var(--accent)' }} />
           <span style={{ flex: 1 }}><span style={{ fontSize: 14.5, color: 'var(--text-primary)' }}>{s.label}</span><span style={{ ...small, display: 'block', fontSize: 12.5 }}>{s.hint}</span></span>
         </label>
       ))}

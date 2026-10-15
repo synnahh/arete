@@ -269,9 +269,9 @@ function ExerciseCard({ ex, prog, rows, onChange, onTick, onRate, onAddSet, onRe
           {/* How to do it: grip, set-up and the form cue. Full on the lift you are on, grip only on the rest. */}
           {detail && (detail.grip || detail.setup || detail.cue) && stage !== 'done' && (
             <div style={{ display: 'grid', gridTemplateColumns: 'auto 1fr', columnGap: 10, rowGap: 4, fontSize: 12.5, lineHeight: 1.45, padding: '9px 11px', borderRadius: 10, background: 'var(--hover-bg)' }}>
-              {detail.grip && <><span style={{ ...label, fontSize: 9.5, paddingTop: 2 }}>Grip</span><span style={{ color: 'var(--text-primary)' }}>{detail.grip}</span></>}
-              {stage === 'current' && detail.setup && <><span style={{ ...label, fontSize: 9.5, paddingTop: 2 }}>Set-up</span><span style={{ color: 'var(--text-secondary)' }}>{detail.setup}</span></>}
-              {stage === 'current' && detail.cue && <><span style={{ ...label, fontSize: 9.5, paddingTop: 2 }}>Form</span><span style={{ color: 'var(--text-secondary)' }}>{detail.cue}</span></>}
+              {detail.grip && <><span style={{ ...label, fontSize: 11, paddingTop: 2 }}>Grip</span><span style={{ color: 'var(--text-primary)' }}>{detail.grip}</span></>}
+              {stage === 'current' && detail.setup && <><span style={{ ...label, fontSize: 11, paddingTop: 2 }}>Set-up</span><span style={{ color: 'var(--text-secondary)' }}>{detail.setup}</span></>}
+              {stage === 'current' && detail.cue && <><span style={{ ...label, fontSize: 11, paddingTop: 2 }}>Form</span><span style={{ color: 'var(--text-secondary)' }}>{detail.cue}</span></>}
             </div>
           )}
 
@@ -394,7 +394,7 @@ function Stat({ value, unit, label: text, format, size = 19 }) {
       <span className="t-num" style={{ fontSize: size, fontWeight: 600, color: 'var(--text-primary)', lineHeight: 1.1, whiteSpace: 'nowrap' }}>
         <AnimatedNumber value={value} duration={500} format={format} />{unit && <span style={{ fontSize: 12, color: 'var(--text-muted)', marginLeft: 2 }}>{unit}</span>}
       </span>
-      <span className="t-caption" style={{ fontSize: 9.5 }}>{text}</span>
+      <span className="t-caption" style={{ fontSize: 11 }}>{text}</span>
     </div>
   );
 }
@@ -696,7 +696,7 @@ export default function TrainSession({
           <h1 key={title} className="ui-enter" style={{ margin: 0, fontSize: compact ? 26 : 30, fontWeight: 700, color: 'var(--text-primary)', minWidth: 0 }}>{title}</h1>
           <div style={{ display: 'flex', gap: 6, flexShrink: 0 }}>
             <button type="button" className="ui-btn is-sm" onClick={() => setGym(gym === 'home' ? 'commercial' : 'home')} aria-label={`Gym: ${gym === 'home' ? 'Home' : 'Commercial'}. Switch`}>{gym === 'home' ? 'Home gym' : 'Commercial'}</button>
-            <button type="button" className="ui-btn is-sm is-icon" onClick={() => setSettingsOpen(true)} aria-label="Session settings" style={{ width: 36 }}><Glyph d={GEAR} size={17} w={1.6} /></button>
+            <button type="button" className="ui-btn is-sm is-icon" onClick={() => setSettingsOpen(true)} aria-label="Session settings" style={{ width: 44 }}><Glyph d={GEAR} size={17} w={1.6} /></button>
           </div>
         </div>
         {dayChoices.length > 1 && (
@@ -752,7 +752,7 @@ export default function TrainSession({
             <div style={{ fontSize: 14, color: 'var(--text-secondary)', lineHeight: 1.5 }}>
               {program ? 'No exercises on this day for this gym. Edit the day in Split, or add one below.' : 'No exercises for this day and gym. Add some in Exercises, or add one below.'}
             </div>
-            {onEditProgram && <button type="button" className="ui-btn is-sm is-soft" onClick={onEditProgram}>{program ? 'Edit this program' : 'Create a program'}</button>}
+            {onEditProgram && <button type="button" className="ui-btn is-sm is-soft" onClick={onEditProgram}>{program ? 'Edit this program' : 'Create or import a program'}</button>}
           </div>
         )}
 

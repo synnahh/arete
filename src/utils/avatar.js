@@ -31,3 +31,17 @@ export async function avatarFromFile(file, px = AVATAR_PX) {
   ctx.drawImage(src, sx, sy, side, side, 0, 0, px, px);
   return canvas.toDataURL('image/jpeg', 0.85);
 }
+
+/** A small JPEG data URL of a photo (longest side `max`, aspect kept; about 6-12 KB) for attaching to a log entry. */
+export async function thumbFromFile(file, max = 200, quality = 0.7) {
+  if (!file || !/^image\//.test(file.type || '')) throw new Error('Pick a photo.');
+  if (file.size > MAX_FILE_BYTES) throw new Error('That photo is too large. Pick one under 25 MB.');
+  const src = await decode(file);
+  const w = src.width || src.naturalWidth, h = src.height || src.naturalHeight;
+  if (!w || !h) throw new Error('That file isn’t a readable image.');
+  const k = Math.min(1, max / Math.max(w, h));
+  const canvas = document.createElement('canvas');
+  canvas.width = Math.max(1, Math.round(w * k)); canvas.height = Math.max(1, Math.round(h * k));
+  canvas.getContext('2d').drawImage(src, 0, 0, canvas.width, canvas.height);
+  return canvas.toDataURL('image/jpeg', quality);
+}

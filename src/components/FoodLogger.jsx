@@ -17,6 +17,7 @@ import {
   localFoods, remoteFood, searchLocal, mergeResults, macrosFor, startAmount, servingOptions, pickServing, entryFor, quickFoodEntry, remember, defaultSection,
 } from '../domain/foodLogger.js';
 import StarButton from './StarButton.jsx';
+import { thumbFromFile } from '../utils/avatar.js';
 
 const KIND_TAG = { favourite: '★', custom: 'Mine', meal: 'Meal', recent: '', db: '' };
 const input = { width: '100%', boxSizing: 'border-box', minHeight: 46, borderRadius: 12, padding: '0 14px', border: '0.5px solid var(--card-border)', background: 'var(--bg-base)', color: 'var(--text-primary)', fontFamily: 'inherit', fontSize: 16 };
@@ -47,6 +48,9 @@ export default function FoodLogger({ onLog, onClose }) {
   const [busy, setBusy] = useState(false);
   const [loggedCount, setLoggedCount] = useState(0);
   const inputRef = useRef(null);
+  const photoRef = useRef(null);
+  const [photo, setPhoto] = useState(null); // small JPEG of the plate, kept on the entry
+  const [photoError, setPhotoError] = useState('');
 
   const owned = useMemo(() => localFoods({
     favourites: lib.favourites,
@@ -84,6 +88,7 @@ export default function FoodLogger({ onLog, onClose }) {
   const pick = (f) => {
     const start = startAmount(f, memory);
     const { index, servings: n } = pickServing(f, start);
+    setPhoto(null); setPhotoError('');
     setFood(f); setAmount(String(start)); setOptIdx(index); setServings(String(n)); setStep('amount');
   };
 
@@ -91,10 +96,11 @@ export default function FoodLogger({ onLog, onClose }) {
     if (!entry || busy) return;
     setBusy(true);
     try {
-      const ok = await onLog(entry);
+      const ok = await onLog(photo ? { ...entry, photo } : entry);
       if (ok === false) return;
       if (f) memoryDoc.save({ map: remember(memory, f, amt) });
       setLoggedCount(n => n + 1);
+      setPhoto(null);
       if (again) { setFood(null); setQuery(''); setRemote([]); setStep('search'); }
       else onClose();
     } finally { setBusy(false); }
@@ -111,6 +117,22 @@ export default function FoodLogger({ onLog, onClose }) {
     } catch { return `No product found for ${code}. Try another angle, type the number, or search by name.`; }
     return undefined;
   };
+
+  const pickPhoto = async (e) => {
+    const file = e.target.files?.[0];
+    e.target.value = '';
+    if (!file) return;
+    try { setPhoto(await thumbFromFile(file)); setPhotoError(''); } catch (err) { setPhotoError(err?.message || 'Could not use that photo.'); }
+  };
+  const photoRow = (
+    <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
+      <input ref={photoRef} type="file" accept="image/*" onChange={pickPhoto} hidden />
+      {photo ? <img src={photo} alt="Photo of this meal" style={{ width: 52, height: 52, objectFit: 'cover', borderRadius: 10, border: '0.5px solid var(--card-border)' }} /> : null}
+      <button type="button" onClick={() => photoRef.current?.click()} style={{ ...ghost, minHeight: 44, padding: '0 14px', fontSize: 14 }}>{photo ? 'Change photo' : 'Add a photo'}</button>
+      {photo && <button type="button" onClick={() => setPhoto(null)} style={{ ...ghost, minHeight: 44, padding: '0 14px', fontSize: 14 }}>Remove</button>}
+      {photoError && <span role="alert" style={{ fontSize: 12.5, color: '#e25d7a' }}>{photoError}</span>}
+    </div>
+  );
 
   const options = food ? servingOptions(food) : [];
   const opt = options[Math.min(optIdx, Math.max(0, options.length - 1))];
@@ -169,6 +191,8 @@ export default function FoodLogger({ onLog, onClose }) {
           ))}
         </div>
 
+        {photoRow}
+
         <div style={{ position: 'sticky', bottom: 0, display: 'flex', gap: 10, paddingTop: 8, background: 'var(--bg-panel, var(--surface-1))' }}>
           <button type="button" disabled={!macros || busy} onClick={() => add(true)} style={{ ...ghost, flex: 1, opacity: macros ? 1 : 0.5 }}>Add + another</button>
           <button type="button" disabled={!macros || busy} onClick={() => add(false)} style={{ ...primary, flex: 1.4, opacity: macros ? 1 : 0.5 }}>Add to {sectionLabel}</button>
@@ -193,6 +217,7 @@ export default function FoodLogger({ onLog, onClose }) {
         <div role="group" aria-label="Meal" style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>
           {SECTIONS.map(s => <button key={s.id} type="button" aria-pressed={section === s.id} onClick={() => setSection(s.id)} style={chip(section === s.id)}>{s.label}</button>)}
         </div>
+        {photoRow}
         <button type="button" disabled={!e || busy} onClick={() => save(e, null, 0, false)} style={{ ...primary, opacity: e ? 1 : 0.5 }}>Log</button>
       </div>
     );

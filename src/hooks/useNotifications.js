@@ -69,6 +69,8 @@ async function maybeAlertSMS(settings, message) {
 
 async function maybePush(title, body) {
   if (isTauri()) return;
+  // Scheduled push from the server (Profile > Reminders) replaces these in-app copies, so nothing arrives twice.
+  if (storage.get(STORAGE_KEYS.SETTINGS, {})?.push?.enabled === true) return;
   if (!('serviceWorker' in navigator)) return;
   if (typeof Notification === 'undefined' || Notification.permission !== 'granted') return;
 
