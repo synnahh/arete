@@ -8,6 +8,10 @@ Eufy scale  -> EufyLife app  --\
 Fitbit Air  -> Google Health app -/
 ```
 
+**Fastest way to do section A and B:** run `.\scripts\setup-health-sync.ps1` in PowerShell from the repo folder. It walks you through the table, login, token, secrets, deploy and the live test, and puts the token on your clipboard for the phone. Then jump to section C. (The boxes below are the same steps by hand.)
+
+**Fitbit Air: Google Health or Bevel?** Use **Google Health -> Apple Health** (version 5.05 or later; two-way sync, official). Bevel only *reads* Apple Health and Google Health to show you its own scores; it is not a way into Arete. Bevel can sit alongside, but it adds nothing to this chain, and it can double-count energy if two sources write the same thing (pick one source for energy in Bevel > Data Sources).
+
 Every box below is a step only you can do (accounts, the phone, secrets). Each has the exact command or setting. Do them in order. Do not paste the token into chat.
 
 Project: `jwzgxcqapxaomuenleyt` (the Arete Supabase project). Windows commands are PowerShell, run from `D:\Work\Projects\Projects\VALERIE-MAKEOVER`.
