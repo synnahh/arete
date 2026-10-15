@@ -2,6 +2,7 @@
 // Sub-sections: Overload Coach · Exercises · Split Planner
 // All data via Firebase — workout_logs collection + meta docs for library/program
 
+import PasteApply from '../components/PasteApply.jsx';
 import { Icon } from '../components/icons.jsx';
 import { useState, useEffect, useMemo, useCallback } from 'react';
 import { useCollection } from '../supabase/useCollection.js';
@@ -752,7 +753,7 @@ export default function WorkoutTab({ settings, compact = false }) {
       <div style={{ flex: 1, overflow: compact ? 'visible' : 'hidden' }}>
         {sub === 'session'   && <TrainSession exercises={exercises} workoutLogs={workoutLogs} addWorkoutLog={addWorkoutLog} updateWorkoutLog={updateWorkoutLog} removeWorkoutLog={removeWorkoutLog} splitNames={splitNames} todaySplitType={todaySplitType} program={activeProgram} updateProgram={updateProgram} saveExercises={saveExercisesDoc} progression={computeProgression} musclesFor={musclesFor} compact={compact} onEditProgram={() => setSub('splits')} />}
         {sub === 'overload'  && <OverloadCoach workoutLogs={workoutLogs} addWorkoutLog={addWorkoutLog} exercises={exercises} saveExercises={saveExercisesDoc} splitNames={splitNames} saveSplitNames={saveSplitNamesDoc} todaySplitType={todaySplitType} />}
-        {sub === 'splits'    && <SplitBuilder programs={programs} addProgram={addProgram} updateProgram={updateProgram} removeProgram={removeProgram} exercises={exercises} workoutLogs={workoutLogs} saveExercises={saveExercisesDoc} />}
+        {sub === 'splits'    && <div style={{ display: 'flex', flexDirection: 'column', gap: 14 }}><PasteApply kind="workout" title="Import a training plan" /><SplitBuilder programs={programs} addProgram={addProgram} updateProgram={updateProgram} removeProgram={removeProgram} exercises={exercises} workoutLogs={workoutLogs} saveExercises={saveExercisesDoc} /></div>}
         {sub === 'exercises' && <ExercisesLibrary exercises={exercises} saveExercises={saveExercisesDoc} />}
         {sub === 'muscles'   && <MuscleRanking workoutLogs={workoutLogs} settings={settings} />}
         {sub === 'calendar'  && <WorkoutCalendar workoutLogs={workoutLogs} />}

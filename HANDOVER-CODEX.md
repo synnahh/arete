@@ -1,3 +1,12 @@
+# BRANCH `overhaul-test` (2026-10-15, NOT merged to main; Rob said "as a test, not permanent")
+
+Merge with `git merge overhaul-test` if kept; drop with `git switch main` then `git branch -D overhaul-test`.
+- **Paste and apply** (`components/PasteApply.jsx`, `domain/workoutImport.js`): paste a meal plan OR a training plan from Claude/ChatGPT/notes; fixed rules (no AI) detect which, show what was understood, then save. Training plans become a `programs` row with per-day sets/reps, lifts matched to the exercise database (close wording allowed; unknown lifts added as own exercises and flagged). On Profile, and as "Import a training plan" above the Split planner. "Copy a training-plan prompt" gives the AI the exact JSON shape.
+- **Fitbit-driven coach** (`domain/fitbitCoach.js`, wired in `hooks/useCoachEngine.js`, card `components/FitbitRead.jsx` on Progress > Insights): reads `health_sync` + `sleep_data` and proposes, via the existing Coach updates card: lighter day (resting HR up / HRV down / short sleep, 2 of 3), short-sleep advice, calories rebuilt from real active energy (only while maintenance is an estimate, never over the measured adaptive one), one fewer training day if resting HR climbs 3+ bpm over two weeks on a 5+ day plan. All ask first; advice type `advice` logs only. Needs the health sync to actually be delivering (the open item above). Tests use synthetic data only.
+- **Food photos:** "Add a photo" in the food logger stores a ~10 KB thumbnail on the entry (`entry.photo`), shown in the day's log. Workout/body photos not done (progress photos already exist).
+- **Display pass:** 44 px touch targets for small buttons, section tabs and Look chips on touch; text under 11.5 px raised; Home customise checkboxes enlarged. Empty Train says "Create or import a program".
+- **Verified:** 847 tests, both builds, browser at 375/1280 (import read, FitbitRead with demo data, audit before/after). NOT verified: applying imports signed in, a real photo from a phone, the coach proposals on real Fitbit data (none has arrived).
+
 # LATEST (2026-10-15, later): profile picture, no-AI meal plan with import, health setup guide
 
 - **Profile picture:** tap the avatar on Profile; `utils/avatar.js` centre-crops to 256 px JPEG, stored as `settings.profile.avatar` (syncs with settings), shown by `components/Avatar.jsx` on Profile and the Home greeting. Also fixed Profile crashing when settings were still null.

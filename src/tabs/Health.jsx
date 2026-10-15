@@ -1009,6 +1009,7 @@ function Nutrition({ nutritionLogs, addNutritionLog, updateNutritionLog, setting
                   display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: 8,
                   padding: '7px 0', borderBottom: i < sec.meals.length - 1 ? '0.5px solid var(--sidebar-divider)' : 'none',
                 }}>
+                  {m.photo && <img src={m.photo} alt="" style={{ width: 44, height: 44, objectFit: 'cover', borderRadius: 8, flexShrink: 0 }} />}
                   <div style={{ minWidth: 0, flex: 1 }}>
                     <div style={{ fontSize: 12.5, color: 'var(--text-primary)' }}>{m.name}</div>
                     <div style={{ fontSize: 10.5, color: 'var(--text-muted)', marginTop: 2 }}>

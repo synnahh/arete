@@ -13,7 +13,9 @@ import { toLocalDateKey } from '../utils/localDate.js';
 import { updateSettings } from '../utils/settingsStore.js';
 import { settingsForGoal } from '../domain/goals.js';
 import { suggestWeek } from '../domain/split.js';
-import { coachUpdates, logEntry, pushLog, canUndo } from '../domain/coachEngine.js';
+import { coachUpdates, logEntry, pushLog, canUndo, coolingDown } from '../domain/coachEngine.js';
+import { fitbitUpdates } from '../domain/fitbitCoach.js';
+import { useHealthHistory } from './useHealthHistory.js';
 
 const WARMUP_MS = 4000;
 let applying = false; // one writer at a time across every mounted copy
@@ -31,6 +33,8 @@ export function useCoachEngine({ run = false } = {}) {
   const nutrition = useCollection('nutrition_logs', STORAGE_KEYS.MACROS);
   const workouts = useCollection('workout_logs', STORAGE_KEYS.WORKOUT_LOGS);
   const programs = useCollection('programs', STORAGE_KEYS.PROGRAMS);
+  const sleep = useCollection('sleep_data', STORAGE_KEYS.SLEEP);
+  const health = useHealthHistory(35); // Fitbit / phone / scale readings, one row per day
   // The water profile is only touched if you saved one (the default is never written).
   const water = useDocument('water_profile', STORAGE_KEYS.WATER_PROFILE, null);
   const synced = body.synced && nutrition.synced && workouts.synced && programs.synced && water.synced;
@@ -46,16 +50,25 @@ export function useCoachEngine({ run = false } = {}) {
   const activeProgram = useMemo(() => (programs.items || []).find(p => p?.isActive) || null, [programs.items]);
   const log = useMemo(() => (Array.isArray(settings.coachLog) ? settings.coachLog : []), [settings.coachLog]);
 
-  const updates = useMemo(() => coachUpdates({
-    goal: settings.coachGoal,
-    weights: (body.items || []).map(b => ({ date: b.date, weight: b.weight })),
-    nutrition: (nutrition.items || []).map(n => ({ date: n.date, calories: n.calories })),
-    workouts: workouts.items || [],
-    program: activeProgram,
-    waterProfile: water.data,
-    log,
-    today,
-  }), [settings.coachGoal, body.items, nutrition.items, workouts.items, activeProgram, water.data, log, today]);
+  const updates = useMemo(() => {
+    const weights = (body.items || []).map(b => ({ date: b.date, weight: b.weight }));
+    const base = coachUpdates({
+      goal: settings.coachGoal,
+      weights,
+      nutrition: (nutrition.items || []).map(n => ({ date: n.date, calories: n.calories })),
+      workouts: workouts.items || [],
+      program: activeProgram,
+      waterProfile: water.data,
+      log,
+      today,
+    });
+    // Fitbit-driven proposals never override one the data-only rules already made for the same thing.
+    const fitbit = fitbitUpdates({
+      goal: settings.coachGoal, profile: settings.profile, health: health.rows, sleep: sleep.items || [], weights,
+      program: activeProgram, log, today, cooling: coolingDown,
+    }).filter(u => !base.some(b => b.key === u.key || (b.apply.type === u.apply.type && u.apply.type !== 'advice')));
+    return [...base, ...fitbit];
+  }, [settings.coachGoal, settings.profile, body.items, nutrition.items, workouts.items, activeProgram, water.data, log, today, health.rows, sleep.items]);
 
   // Write one update and its log entry. Returns the log entry, or null if nothing changed.
   const commit = useCallback(async (update) => {
@@ -74,6 +87,12 @@ export function useCoachEngine({ run = false } = {}) {
       if (!newId) return null;
       if (prev) await programs.update(prev.id, { isActive: false });
       const entry = logEntry(update, 'applied', { before: { programId: prev?.id ?? null }, after: { programId: newId } });
+      updateSettings({ coachLog: pushLog(readSettings().coachLog, entry) });
+      return entry;
+    }
+    if (update.apply.type === 'advice') {
+      // Advice changes no data: it is logged (so it is not repeated for a few days) and shown in the recent list.
+      const entry = logEntry(update, 'applied');
       updateSettings({ coachLog: pushLog(readSettings().coachLog, entry) });
       return entry;
     }

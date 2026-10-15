@@ -26,7 +26,7 @@ import { weightCoach } from './weight.js';
 import { calcWaterGoal, profileKg } from './water.js';
 import { dayIndex } from '../utils/dayIndex.js';
 
-export const COOLDOWN_DAYS = { maintenance: 14, macros: 14, 'goal-reached': 30, split: 28, water: 21 };
+export const COOLDOWN_DAYS = { maintenance: 14, macros: 14, 'goal-reached': 30, split: 28, water: 21, recovery: 3, 'sleep-debt': 7, 'fitbit-maintenance': 14, 'hr-trend': 28 };
 export const LOG_LIMIT = 30;
 const DAYS = ['mon', 'tue', 'wed', 'thu', 'fri', 'sat', 'sun'];
 
@@ -38,7 +38,7 @@ function daysSinceLast(log = [], key, today) {
   const last = log.filter(e => e?.key === key && e.at).map(e => dayIndex(String(e.at).slice(0, 10))).filter(x => x != null).sort((a, b) => b - a)[0];
   return last == null || t == null ? null : t - last;
 }
-const coolingDown = (log, key, today) => { const d = daysSinceLast(log, key, today); return d != null && d < COOLDOWN_DAYS[key]; };
+export const coolingDown = (log, key, today) => { const d = daysSinceLast(log, key, today); return d != null && d < COOLDOWN_DAYS[key]; };
 
 /** Keep what the user set by hand when rebuilding a goal. */
 function rebuilt(goal, { weightKg, maintenanceKcal, maintenanceSource }) {

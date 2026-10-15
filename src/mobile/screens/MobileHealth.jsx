@@ -577,12 +577,15 @@ function NutritionTab({ settings, today }) {
                 display: 'flex', justifyContent: 'space-between', alignItems: 'center',
                 padding: '8px 4px 8px 16px',
               }}>
+                <div style={{ display: 'flex', alignItems: 'center', gap: 10, minWidth: 0 }}>
+                  {m.photo && <img src={m.photo} alt="" style={{ width: 44, height: 44, objectFit: 'cover', borderRadius: 8, flexShrink: 0 }} />}
                 <div style={{ minWidth: 0 }}>
                   {m.time && <div style={{ fontSize: 11, color: 'var(--text-muted)', marginBottom: 2 }}>{m.time}</div>}
                   <div style={{ fontSize: 13, color: 'var(--text-primary)',
                     overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
                     {m.name}
                   </div>
+                </div>
                 </div>
                 <div style={{ display: 'flex', gap: 8, alignItems: 'center', flexShrink: 0, fontSize: 11 }}>
                   <span style={{ color: '#f59e0b' }}>{m.calories}kcal</span>

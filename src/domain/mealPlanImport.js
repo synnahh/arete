@@ -135,7 +135,7 @@ function stripFences(text) {
   return String(text || '').replace(/```[a-z]*\s*/gi, '').replace(/```/g, '').trim();
 }
 
-function firstJson(text) {
+export function firstJson(text) {
   const t = stripFences(text);
   const start = t.search(/[\[{]/);
   if (start < 0) return null;

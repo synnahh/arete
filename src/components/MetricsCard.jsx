@@ -74,7 +74,7 @@ function Editor({ all, chosen, onChange }) {
     <div style={{ display: 'flex', flexDirection: 'column', gap: 2, paddingTop: 4 }}>
       <div style={small}>Tick what you want on Home and use the arrows to order it. New readings from your phone, watch and scale appear in this list on their own.</div>
       {shownIds.map((id, i) => row(id, true, i))}
-      {hidden.length > 0 && <div style={{ ...label, fontSize: 10, marginTop: 8 }}>Also available</div>}
+      {hidden.length > 0 && <div style={{ ...label, fontSize: 11.5, marginTop: 8 }}>Also available</div>}
       {hidden.map(t => row(t.id, false, 0))}
     </div>
   );

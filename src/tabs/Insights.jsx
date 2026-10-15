@@ -8,6 +8,7 @@ import RecapCard from '../components/RecapCard.jsx';
 import StreakCard from '../components/StreakCard.jsx';
 import LogCalendar from '../components/LogCalendar.jsx';
 import { label } from '../components/ui.js';
+import FitbitRead from '../components/FitbitRead.jsx';
 
 const CARD = { padding: 18, borderRadius: 16, background: 'var(--bg-panel)', border: '0.5px solid var(--card-border)', display: 'flex', flexDirection: 'column', gap: 10 };
 const RANGE_IDS = Object.keys(RANGES);
@@ -56,6 +57,8 @@ export default function Insights() {
         <RecapCard recap={recap} />
         <StreakCard streak={streak} />
       </div>
+
+      <FitbitRead />
 
       <LogCalendar data={data} />
 

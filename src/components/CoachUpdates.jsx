@@ -35,7 +35,7 @@ export default function CoachUpdates({ compact = false, always = false }) {
           <div style={{ fontSize: 14.5, fontWeight: 600, color: 'var(--text-primary)' }}>{u.title}</div>
           <div style={{ fontSize: 12.5, lineHeight: 1.5, color: 'var(--text-secondary)' }}>{u.why}</div>
           <div style={{ display: 'flex', gap: 8 }}>
-            <button type="button" disabled={busy === u.key} onClick={() => run(u.key, () => applyAsk(u))} style={btn(true)}>Apply</button>
+            <button type="button" disabled={busy === u.key} onClick={() => run(u.key, () => applyAsk(u))} style={btn(true)}>{u.applyLabel || 'Apply'}</button>
             <button type="button" disabled={busy === u.key} onClick={() => dismiss(u)} style={btn(false)}>Not now</button>
           </div>
         </div>

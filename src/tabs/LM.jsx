@@ -248,7 +248,7 @@ function Dashboard({ profile, saveProfile, metrics, daily, data, goTo, health })
           <div style={{ display: 'flex', flexWrap: 'wrap', gap: 6 }}>
             {PHASES.map(p => (
               <button key={p} onClick={() => saveProfile({ ...profile, phase: p })} style={{
-                padding: '7px 14px', borderRadius: 20, border: 'none', cursor: 'pointer', fontSize: 12, fontWeight: 600,
+                padding: '11px 14px', minHeight: 44, borderRadius: 22, border: 'none', cursor: 'pointer', fontSize: 12, fontWeight: 600,
                 background: profile?.phase === p ? 'var(--accent)' : 'rgba(255,255,255,0.06)',
                 color: profile?.phase === p ? '#fff' : 'rgba(255,255,255,0.45)' }}>{p}</button>
             ))}
@@ -749,7 +749,7 @@ function Grooming({ profile, saveProfile, fragrances }) {
         <div style={{ display: 'flex', flexWrap: 'wrap', gap: 6, marginBottom: 12 }}>
           {FACIAL_STYLES.map(s => (
             <button key={s} onClick={() => saveProfile({ ...profile, facialHair: { ...facialHair, current: s } })} style={{
-              padding: '7px 14px', borderRadius: 20, border: 'none', cursor: 'pointer', fontSize: 12,
+              padding: '11px 14px', minHeight: 44, borderRadius: 22, border: 'none', cursor: 'pointer', fontSize: 12,
               background: facialHair.current === s ? 'var(--accent)' : 'rgba(255,255,255,0.06)',
               color: facialHair.current === s ? '#fff' : 'rgba(255,255,255,0.45)' }}>{s}</button>
           ))}
@@ -791,7 +791,7 @@ function StyleMaxxing({ profile, saveProfile, wardrobe, outfits }) {
         <div style={{ display: 'flex', flexWrap: 'wrap', gap: 6 }}>
           {STYLE_IDENTITIES.map(s => (
             <button key={s} onClick={() => saveProfile({ ...profile, styleIdentity: s })} style={{
-              padding: '7px 14px', borderRadius: 20, border: 'none', cursor: 'pointer', fontSize: 12, fontWeight: 600,
+              padding: '11px 14px', minHeight: 44, borderRadius: 22, border: 'none', cursor: 'pointer', fontSize: 12, fontWeight: 600,
               background: profile?.styleIdentity === s ? 'var(--accent)' : 'rgba(255,255,255,0.06)',
               color: profile?.styleIdentity === s ? '#fff' : 'rgba(255,255,255,0.45)' }}>{s}</button>
           ))}
@@ -1341,9 +1341,9 @@ export default function LM() {
         <div style={{ display: 'flex', gap: 0, borderBottom: '0.5px solid rgba(255,255,255,0.07)', overflowX: 'auto' }}>
           {LM_TABS.map(t => (
             <button key={t.id} onClick={() => setSection(t.id)} style={{
-              padding: '7px 14px 9px', border: 'none', cursor: 'pointer', background: 'transparent', whiteSpace: 'nowrap',
-              color: section === t.id ? 'rgba(255,255,255,0.9)' : 'rgba(255,255,255,0.3)',
-              fontSize: 11, fontWeight: 700, letterSpacing: '0.1em', fontFamily: 'ui-monospace,monospace',
+              padding: '14px 14px 12px', minHeight: 44, border: 'none', cursor: 'pointer', background: 'transparent', whiteSpace: 'nowrap',
+              color: section === t.id ? 'rgba(255,255,255,0.9)' : 'rgba(255,255,255,0.5)',
+              fontSize: 11.5, fontWeight: 700, letterSpacing: '0.1em', fontFamily: 'ui-monospace,monospace',
               borderBottom: section === t.id ? '1.5px solid var(--accent)' : '1.5px solid transparent',
               marginBottom: -0.5, transition: 'all 0.15s ease' }}>{t.label}</button>
           ))}
