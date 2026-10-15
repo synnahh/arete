@@ -10,6 +10,7 @@
 #   5. Copies the token to your clipboard so you can paste it into Health Auto Export. It is never printed,
 #      never written to the repo, and the temporary file used to hand it to Supabase is deleted.
 # Nothing here touches your data. Re-running makes a NEW token (the old phone token then stops working).
+param([switch]$SkipTable)   # use -SkipTable when the health_sync table already exists
 $ErrorActionPreference = 'Stop'
 $ref = 'jwzgxcqapxaomuenleyt'
 $base = "https://$ref.supabase.co/functions/v1/health-ingest"
@@ -18,10 +19,13 @@ Set-Location (Split-Path $PSScriptRoot -Parent)
 function Step($n, $text) { Write-Host ""; Write-Host "== Step $n. $text" -ForegroundColor Cyan }
 
 Step 1 'Create the table'
+if ($SkipTable) { Write-Host 'Skipped (-SkipTable).' }
+else {
 Get-Content -Raw 'supabase/health_sync.sql' | Set-Clipboard
 Write-Host 'The SQL is on your clipboard. In the page that opens: New query, paste (Ctrl+V), Run. It is safe to run twice.'
 Start-Process "https://supabase.com/dashboard/project/$ref/sql/new"
 Read-Host 'Press Enter when it says Success'
+}
 
 Step 2 'Log in to Supabase'
 npx supabase login
