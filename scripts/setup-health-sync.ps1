@@ -10,11 +10,28 @@
 #   5. Copies the token to your clipboard so you can paste it into Health Auto Export. It is never printed,
 #      never written to the repo, and the temporary file used to hand it to Supabase is deleted.
 # Nothing here touches your data. Re-running makes a NEW token (the old phone token then stops working).
-param([switch]$SkipTable)   # use -SkipTable when the health_sync table already exists
+param([switch]$SkipTable,   # use -SkipTable when the health_sync table already exists
+      [switch]$Check)       # use -Check to test a token you paste against the live function (nothing is changed)
 $ErrorActionPreference = 'Stop'
 $ref = 'jwzgxcqapxaomuenleyt'
 $base = "https://$ref.supabase.co/functions/v1/health-ingest"
 Set-Location (Split-Path $PSScriptRoot -Parent)
+
+if ($Check) {
+  # Paste exactly what is in Health Auto Export's x-health-token box. It is not shown and not saved.
+  $sec = Read-Host 'Paste the token (hidden)' -AsSecureString
+  $plain = [Runtime.InteropServices.Marshal]::PtrToStringAuto([Runtime.InteropServices.Marshal]::SecureStringToBSTR($sec))
+  Write-Host ("Length: {0} characters (a correct token is 64)" -f $plain.Length)
+  if ($plain -ne $plain.Trim()) { Write-Host 'It has a space or line break at the start or end: that alone makes the server refuse it.' -ForegroundColor Yellow }
+  try {
+    $r = Invoke-WebRequest -Uri $base -Method Post -Headers @{ 'x-health-token' = $plain } -Body '{}' -ContentType 'application/json' -UseBasicParsing
+    Write-Host ("Server answered {0}: ACCEPTED. This token works." -f [int]$r.StatusCode) -ForegroundColor Green
+  } catch {
+    $code = if ($_.Exception.Response) { [int]$_.Exception.Response.StatusCode } else { 0 }
+    Write-Host ("Server answered {0}: {1}" -f $code, $(if ($code -eq 401) { 'REFUSED. This is not the current token. Run the script without -Check to make a new one.' } else { 'unexpected, see docs/health-ingest-checklist.md' })) -ForegroundColor Red
+  }
+  return
+}
 
 function Step($n, $text) { Write-Host ""; Write-Host "== Step $n. $text" -ForegroundColor Cyan }
 
@@ -83,6 +100,7 @@ Write-Host '1. Save it in your password manager NOW (you cannot read it back fro
 Write-Host '2. In Health Auto Export on the iPhone: Automations > REST API > Headers > x-health-token = paste it.'
 Write-Host "3. URL for that automation: $base"
 Write-Host 'Then continue at section C in docs/health-ingest-checklist.md (the iPhone apps).'
-Read-Host 'Press Enter once the token is saved (this clears your clipboard)'
+Write-Host 'Do NOT copy anything else until you have pasted it into the phone and your password manager.'
+Read-Host 'Press Enter once the token is saved in both places (this then clears your clipboard)'
 Set-Clipboard -Value ' '
-Write-Host 'Done. Clipboard cleared.' -ForegroundColor Green
+Write-Host 'Done. Clipboard cleared. To test what is on the phone later: .\scripts\setup-health-sync.ps1 -Check' -ForegroundColor Green
