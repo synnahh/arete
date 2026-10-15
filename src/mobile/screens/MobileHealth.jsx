@@ -2,6 +2,7 @@
 import { useState, useMemo, useRef } from 'react';
 import SwipeRow from '../SwipeRow.jsx';
 import { useCollection } from '../../supabase/useCollection.js';
+import { useDocument } from '../../supabase/useDocument.js';
 import { STORAGE_KEYS }  from '../../utils/storage.js';
 import { searchFoods, lookupBarcode, startBarcodeScan } from '../../utils/openFoodFacts.js';
 import { scaleMicros } from '../../utils/micronutrients.js';
@@ -731,6 +732,46 @@ function WaterTab({ settings, today }) {
 }
 
 // ── Body tab ───────────────────────────────────────────────────────────────────
+// Tape-measure readings (the same `measurements` document as the desktop Body screen). Each box saves when you leave it.
+const MEASURE_FIELDS = [
+  { key: 'waist', label: 'Waist' }, { key: 'chest', label: 'Chest' }, { key: 'hips', label: 'Hips' },
+  { key: 'arms', label: 'Arms' }, { key: 'thighs', label: 'Thighs' }, { key: 'neck', label: 'Neck' },
+];
+function MeasurementsPanel({ boxStyle }) {
+  const { data, save } = useDocument('measurements', STORAGE_KEYS.MEASUREMENTS, {});
+  const [draft, setDraft] = useState({});
+  const [saved, setSaved] = useState('');
+  const stored = data && typeof data === 'object' ? data : {};
+  const value = (k) => (k in draft ? draft[k] : (stored[k] ?? ''));
+  const clearDraft = (k) => setDraft(d => { const rest = { ...d }; delete rest[k]; return rest; });
+
+  async function commit(k) {
+    if (!(k in draft)) return;
+    const clean = String(draft[k]).trim();
+    if (clean === String(stored[k] ?? '')) { clearDraft(k); return; }
+    const ok = await save({ ...stored, [k]: clean });
+    clearDraft(k);
+    if (ok !== false) { setSaved(MEASURE_FIELDS.find(f => f.key === k).label); setTimeout(() => setSaved(''), 1800); }
+  }
+
+  return (
+    <MCard style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
+      <div style={{ fontSize: 13, fontWeight: 600, color: 'var(--text-primary)' }}>Measurements (cm)</div>
+      <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 8 }}>
+        {MEASURE_FIELDS.map(f => (
+          <label key={f.key} style={{ display: 'flex', flexDirection: 'column', gap: 4 }}>
+            <span style={{ fontSize: 11.5, color: 'var(--text-muted)' }}>{f.label}</span>
+            <input type="text" inputMode="decimal" value={value(f.key)} placeholder="cm" aria-label={`${f.label} in centimetres`} style={boxStyle}
+              onChange={e => setDraft(d => ({ ...d, [f.key]: e.target.value.replace(/[^0-9.]/g, '').slice(0, 6) }))}
+              onBlur={() => commit(f.key)} onKeyDown={e => { if (e.key === 'Enter') e.currentTarget.blur(); }} />
+          </label>
+        ))}
+      </div>
+      <div role="status" style={{ fontSize: 12, color: saved ? 'var(--accent)' : 'var(--text-muted)' }}>{saved ? `${saved} saved` : 'Measure in the same spot each time. Each box saves when you leave it.'}</div>
+    </MCard>
+  );
+}
+
 function BodyTab({ today, settings }) {
   const { items: bodyMetrics = [], add: addBodyMetric } = useCollection('body_metrics', STORAGE_KEYS.BODY);
   const sorted = useMemo(() =>
@@ -739,7 +780,7 @@ function BodyTab({ today, settings }) {
   const latest = sorted[0];
   // Weight coach: smoothed trend, weekly rate, pace vs the Coach goal
   const coach = useMemo(() => weightCoach(bodyMetrics, settings?.coachGoal?.targets?.weeklyRateKg ?? null, settings?.coachGoal?.targetWeightKg ?? null, today), [bodyMetrics, settings?.coachGoal]);
-  const [showAdd, setShowAdd] = useState(false);
+  const [seg, setSeg] = useState('weight'); // weight | measurements | photos: the same three as the desktop Body screen
   const [form, setForm] = useState({ weight: '', bodyFat: '', muscle: '' });
 
   async function save() {
@@ -751,38 +792,46 @@ function BodyTab({ today, settings }) {
       muscle:  form.muscle  ? parseFloat(form.muscle)  : undefined,
     });
     setForm({ weight: '', bodyFat: '', muscle: '' });
-    setShowAdd(false);
   }
+
+  const boxStyle = { width: '100%', minHeight: 48, padding: '0 12px', borderRadius: 10, border: '0.5px solid var(--card-border)', background: 'var(--bg-base)', color: 'var(--text-primary)', fontSize: 16, outline: 'none', boxSizing: 'border-box', fontFamily: 'inherit' };
 
   return (
     <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
-      <button onClick={() => setShowAdd(v => !v)} style={{
-        padding: '12px 0', borderRadius: 12, border: 'none', background: 'var(--accent)',
-        color: 'var(--bg-base)', fontSize: 14, fontWeight: 600, cursor: 'pointer',
-        WebkitTapHighlightColor: 'transparent',
-      }}>{showAdd ? 'Cancel' : '+ Log today’s metrics'}</button>
+      <div role="tablist" aria-label="Body" style={{ display: 'flex', gap: 4, padding: 4, borderRadius: 14, background: 'var(--hover-bg)', border: '0.5px solid var(--card-border)' }}>
+        {[['weight', 'Weight'], ['measurements', 'Measurements'], ['photos', 'Photos']].map(([id, text]) => (
+          <button key={id} role="tab" aria-selected={seg === id} onClick={() => setSeg(id)} style={{
+            flex: 1, minHeight: 44, borderRadius: 10, border: 'none', cursor: 'pointer', fontFamily: 'inherit', fontSize: 13.5,
+            fontWeight: seg === id ? 700 : 500, background: seg === id ? 'var(--active-bg)' : 'transparent',
+            color: seg === id ? 'var(--accent)' : 'var(--text-secondary)', WebkitTapHighlightColor: 'transparent',
+          }}>{text}</button>
+        ))}
+      </div>
 
-      {showAdd && (
+      {seg === 'weight' && (
         <MCard style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
-          {[['weight', 'Weight', 'kg'], ['bodyFat', 'Body Fat', '%'], ['muscle', 'Muscle', '%']].map(([k, label, unit]) => (
-            <div key={k}>
-              <div style={{ fontSize: 11, color: 'var(--text-muted)', marginBottom: 4 }}>{label} ({unit})</div>
-              <input type="number" value={form[k]} onChange={e => setForm(p => ({ ...p, [k]: e.target.value }))}
-                placeholder={k === 'weight' ? 'e.g. 80' : k === 'bodyFat' ? 'e.g. 15' : 'e.g. 40'} style={{
-                width: '100%', padding: '9px 12px', borderRadius: 10, border: '0.5px solid var(--card-border)',
-                background: 'var(--bg-base)', color: 'var(--text-primary)', fontSize: 14, outline: 'none',
-                boxSizing: 'border-box',
-              }} />
-            </div>
-          ))}
-          <button onClick={save} disabled={!form.weight} style={{
-            padding: '11px 0', borderRadius: 10, border: 'none', background: 'var(--accent)',
-            color: 'var(--bg-base)', fontWeight: 600, cursor: 'pointer', opacity: form.weight ? 1 : 0.4,
-          }}>Save</button>
+          <div style={{ fontSize: 13, fontWeight: 600, color: 'var(--text-primary)' }}>Log today</div>
+          <div style={{ display: 'grid', gridTemplateColumns: '1.4fr 1fr 1fr', gap: 8 }}>
+            {[['weight', 'Weight kg', 'e.g. 71.2'], ['bodyFat', 'Body fat %', 'optional'], ['muscle', 'Muscle %', 'optional']].map(([k, text, ph]) => (
+              <label key={k} style={{ display: 'flex', flexDirection: 'column', gap: 4, minWidth: 0 }}>
+                <span style={{ fontSize: 11.5, color: 'var(--text-muted)' }}>{text}</span>
+                <input type="text" inputMode="decimal" value={form[k]} placeholder={ph} aria-label={text} style={boxStyle}
+                  onChange={e => setForm(p => ({ ...p, [k]: e.target.value.replace(/[^0-9.]/g, '').slice(0, 6) }))} />
+              </label>
+            ))}
+          </div>
+          <button onClick={save} disabled={!form.weight} style={{ minHeight: 48, borderRadius: 12, border: 'none', background: 'var(--accent)', color: 'var(--bg-base)', fontSize: 15, fontWeight: 700, cursor: 'pointer', fontFamily: 'inherit', opacity: form.weight ? 1 : 0.4 }}>Save weigh-in</button>
         </MCard>
       )}
 
-      {!latest ? (
+      {seg === 'measurements' && <MeasurementsPanel boxStyle={boxStyle} />}
+      {seg === 'photos' && (
+        <MCard style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
+          <ProgressPhotos bodyMetrics={bodyMetrics} />
+        </MCard>
+      )}
+
+      {seg !== 'weight' ? null : !latest ? (
         <MCard>
           <div style={{ fontSize: 13, color: 'var(--text-muted)' }}>
             No body metrics logged yet.
@@ -837,10 +886,6 @@ function BodyTab({ today, settings }) {
         </>
       )}
 
-      <MCard style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
-        <span style={{ fontSize: 13, fontWeight: 600, color: 'var(--text-primary)' }}>Progress photos</span>
-        <ProgressPhotos bodyMetrics={bodyMetrics} />
-      </MCard>
     </div>
   );
 }

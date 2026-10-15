@@ -199,6 +199,16 @@ export default function App() {
   // The coach engine: keeps targets and plans in step with the logs (hooks/useCoachEngine.js).
   useCoachEngine({ run: true });
 
+  // Opened from a push notification: /?go=fuel jumps to that screen (cold start), and a tap while the
+  // app is already open arrives as a message from the service worker (src/public/sw-push.js).
+  useEffect(() => {
+    const go = new URLSearchParams(window.location.search).get('go');
+    if (go) { goTo(go); window.history.replaceState({}, '', window.location.pathname); }
+    const onMessage = (e) => { if (e.data?.type === 'arete-go' && typeof e.data.tab === 'string') goTo(e.data.tab); };
+    navigator.serviceWorker?.addEventListener('message', onMessage);
+    return () => navigator.serviceWorker?.removeEventListener('message', onMessage);
+  }, [goTo]);
+
   //  Spotify OAuth callback 
   useEffect(() => {
     const params = new URLSearchParams(window.location.search);

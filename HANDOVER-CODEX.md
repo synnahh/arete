@@ -1,3 +1,9 @@
+# BRANCH `overhaul-test`, later (2026-10-16): phone Body fix, push reminders instead of SMS
+
+- **Phone Progress > Body** (`mobile/screens/MobileHealth.jsx`): was a hidden "+ Log" button plus photos only. Now three segments like desktop: Weight (always-open log form, trend, history), Measurements (waist, chest, hips, arms, thighs, neck; the same `measurements` document as desktop; each box saves on blur), Photos.
+- **Push reminders replace SMS** (no phone number): `components/PushReminders.jsx` on Profile, schedule in `settings.push` (per reminder: time, days, wording, opens-which-screen, on/off; quiet hours; add/delete/reset; Send a test). Rules shared by app and server in `supabase/functions/_shared/pushSchedule.js` (app imports via `domain/pushPrefs.js`; tests in `domain/pushPrefs.test.js`). Server: `supabase/functions/push-send` (web-push, VAPID) called every 5 min by pg_cron (`supabase/push.sql`), sends each due reminder once a day to the devices in `user_meta 'push_subs'`. Device side: `utils/pushNotifications.js` (rewritten; env `VITE_VAPID_PUBLIC_KEY`, old `VITE_FIREBASE_VAPID_KEY` still read), `public/sw-push.js` + `App.jsx` open the right screen on tap (`/?go=<screen>`). The old in-app time-based push is skipped while this is on. Setup walk-through: `docs/push-setup.md`.
+- **Verified:** 858 tests, both builds, browser at 375 (Body segments and measurement entry, Reminders card in on and off states). **NOT verified (needs Rob's accounts and an iPhone):** the function has never run (no Deno here), the cron job, a real push arriving, iOS permission flow. SMS code and the `send-sms` function are untouched and stay off by default.
+
 # BRANCH `overhaul-test` (2026-10-15, NOT merged to main; Rob said "as a test, not permanent")
 
 Merge with `git merge overhaul-test` if kept; drop with `git switch main` then `git branch -D overhaul-test`.

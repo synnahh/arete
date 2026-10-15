@@ -15,6 +15,7 @@ import SyncCheck from '../components/SyncCheck.jsx';
 import Avatar from '../components/Avatar.jsx';
 import HealthSetupGuide from '../components/HealthSetupGuide.jsx';
 import PasteApply from '../components/PasteApply.jsx';
+import PushReminders from '../components/PushReminders.jsx';
 import { avatarFromFile } from '../utils/avatar.js';
 
 const card = { padding: 18, borderRadius: 16, background: 'var(--bg-panel)', border: '0.5px solid var(--card-border)', display: 'flex', flexDirection: 'column', gap: 14 };
@@ -121,6 +122,7 @@ export default function Profile({ settings: settingsProp }) {
           <button type="button" onClick={save} style={{ minHeight: 48, borderRadius: 12, border: 'none', background: 'var(--accent)', color: 'var(--bg-base)', fontSize: 15, fontWeight: 700, fontFamily: 'inherit', cursor: 'pointer' }}>{saved ? 'Saved' : 'Save'}</button>
           <div style={{ fontSize: 12.5, color: 'var(--text-secondary)' }}>Birth date, sex and height are used to work out your calorie needs. Your weight comes from your weigh-ins.</div>
         </section>
+        <PushReminders settings={settings} />
         <PasteApply />
         <HealthSetupGuide />
         <SyncCheck />
