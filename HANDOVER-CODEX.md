@@ -1,3 +1,11 @@
+# LATEST (2026-10-15, later): profile picture, no-AI meal plan with import, health setup guide
+
+- **Profile picture:** tap the avatar on Profile; `utils/avatar.js` centre-crops to 256 px JPEG, stored as `settings.profile.avatar` (syncs with settings), shown by `components/Avatar.jsx` on Profile and the Home greeting. Also fixed Profile crashing when settings were still null.
+- **Meal Plan tab (Fuel) rewritten, no AI:** `components/MealPlanTab.jsx` (Plan / Recipes / Import). Build a week by hand, add from saved recipes, log a meal now with Undo, save a meal as a recipe, shopping list. **Import:** copy a prompt (`buildPlanPrompt`) into Claude or ChatGPT, paste the reply back; `domain/mealPlanImport.js` reads the JSON, or plain text such as "Monday / Breakfast: Oats, 450 kcal, 35P 55C 9F". Same `meal_plan` document shape, so Supplies' shopping list still works. The old AI generator was deleted from `tabs/Health.jsx`.
+- **Health setup guide:** `components/HealthSetupGuide.jsx` on Profile (ticks stay on the device). Same facts as `docs/health-ingest-checklist.md`. The sync itself is still the open item above (token on the phone).
+- **Not done:** Rob's "overhaul of ease of use, display and logging (images)" note is vague; ask what he means (photo logging? which screens?) before starting.
+- **Verified:** 826 tests, `build` and `build:pwa` pass; checked in the browser at 1280 and 375 (import to plan, add meal with ingredients, avatar upload, guide). NOT checked: signed-in saving, a real phone photo picker (HEIC), real recipe saving.
+
 # Arete (was VALERIE) — Handover for the next agent
 
 # LATEST (2026-10-15): Train, Fuel, Home polish, health sync setup (IN PROGRESS)

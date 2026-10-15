@@ -3,6 +3,7 @@
 // Everything else (today's workout, next moves, steps, coach updates, recap, overall rating) is
 // off until you turn it on under Customise. One component serves the phone and the desktop.
 // Rules: domain/homeLayout.js.
+import Avatar from './Avatar.jsx';
 import { useMemo, useState } from 'react';
 import { useCollection } from '../supabase/useCollection.js';
 import { useDocument } from '../supabase/useDocument.js';
@@ -241,7 +242,10 @@ export default function HomeScreen({ settings, onTabChange, compact = false }) {
     <div style={{ maxWidth: 1040, margin: '0 auto', padding: compact ? '8px 16px 24px' : '24px 28px 100px', display: 'flex', flexDirection: 'column', gap: 14, boxSizing: 'border-box' }}>
       <div aria-hidden="true" style={{ textAlign: 'center', fontFamily: 'var(--font-display)', fontWeight: 600, fontSize: compact ? 17 : 19, letterSpacing: '0.42em', paddingLeft: '0.42em', color: 'var(--tab-accent, var(--accent))', textTransform: 'uppercase' }}>Arete</div>
       <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 12 }}>
-        <h1 style={{ margin: 0, fontSize: compact ? 17 : 19, fontWeight: 500, color: 'var(--text-secondary)' }}>{getGreeting()}{settings?.userName ? `, ${settings.userName}` : ''}</h1>
+        <div style={{ display: 'flex', alignItems: 'center', gap: 10, minWidth: 0 }}>
+          {settings?.profile?.avatar && <Avatar settings={settings} size={compact ? 32 : 36} />}
+          <h1 style={{ margin: 0, fontSize: compact ? 17 : 19, fontWeight: 500, color: 'var(--text-secondary)' }}>{getGreeting()}{settings?.userName ? `, ${settings.userName}` : ''}</h1>
+        </div>
         <button type="button" onClick={() => setEditing(e => !e)} aria-expanded={editing} className={`ui-btn is-sm${editing ? ' is-soft' : ''}`}>{editing ? 'Done' : 'Customise'}</button>
       </div>
 
