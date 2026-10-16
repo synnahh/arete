@@ -20,7 +20,7 @@ import { withTodaysTargets } from '../../utils/todaysTargets.js';
 import MicroCoachCard from '../../components/MicroCoachCard.jsx';
 import FoodShortcuts from '../../components/FoodShortcuts.jsx';
 import FoodLogger from '../../components/FoodLogger.jsx';
-import { yesterdayKey, copyMeals, appendMeals, groupBySection, recentFoods } from '../../domain/foods.js';
+import { roundTotals, yesterdayKey, copyMeals, appendMeals, groupBySection, recentFoods } from '../../domain/foods.js';
 import RecipeBuilder from '../../components/RecipeBuilder.jsx';
 import CustomFoodForm from '../../components/CustomFoodForm.jsx';
 import StarButton from '../../components/StarButton.jsx';
@@ -181,10 +181,10 @@ function OverviewTab({ settings, today }) {
   const fatGoal    = todays?.macros?.fat ?? 80;
   const todayLog   = useMemo(() => nutritionLogs.find(l => l.date === today), [nutritionLogs, today]);
   const todayMeals = todayLog?.meals ?? [];
-  const totCal  = todayMeals.reduce((s, m) => s + (m.calories || 0), 0);
-  const totProt = todayMeals.reduce((s, m) => s + (m.protein  || 0), 0);
-  const totCarb = todayMeals.reduce((s, m) => s + (m.carbs    || 0), 0);
-  const totFat  = todayMeals.reduce((s, m) => s + (m.fat      || 0), 0);
+  const totCal  = Math.round(todayMeals.reduce((s, m) => s + (m.calories || 0), 0) * 10) / 10;
+  const totProt = Math.round(todayMeals.reduce((s, m) => s + (m.protein || 0), 0) * 10) / 10;
+  const totCarb = Math.round(todayMeals.reduce((s, m) => s + (m.carbs || 0), 0) * 10) / 10;
+  const totFat  = Math.round(todayMeals.reduce((s, m) => s + (m.fat || 0), 0) * 10) / 10;
 
   // ── Supplements ────────────────────────────────────────────────────────────
   const suppTaken    = supplements.filter(s => s.takenDates?.includes(today)).length;
@@ -404,17 +404,17 @@ function NutritionTab({ settings, today }) {
   const todayLog = useMemo(() => nutritionLogs.find(l => l.date === today), [nutritionLogs, today]);
   const meals    = todayLog?.meals ?? [];
 
-  const totCal  = meals.reduce((s, m) => s + (m.calories || 0), 0);
-  const totProt = meals.reduce((s, m) => s + (m.protein  || 0), 0);
-  const totCarb = meals.reduce((s, m) => s + (m.carbs    || 0), 0);
-  const totFat  = meals.reduce((s, m) => s + (m.fat      || 0), 0);
+  const totCal  = Math.round(meals.reduce((s, m) => s + (m.calories || 0), 0) * 10) / 10;
+  const totProt = Math.round(meals.reduce((s, m) => s + (m.protein || 0), 0) * 10) / 10;
+  const totCarb = Math.round(meals.reduce((s, m) => s + (m.carbs || 0), 0) * 10) / 10;
+  const totFat  = Math.round(meals.reduce((s, m) => s + (m.fat || 0), 0) * 10) / 10;
 
   async function addMealEntry(entry) {
     const newMeals = [...meals, entry];
-    const newTotals = newMeals.reduce((s, m) => ({
+    const newTotals = roundTotals(newMeals.reduce((s, m) => ({
       calories: s.calories + (m.calories || 0), protein: s.protein + (m.protein || 0),
       carbs: s.carbs + (m.carbs || 0), fat: s.fat + (m.fat || 0),
-    }), { calories: 0, protein: 0, carbs: 0, fat: 0 });
+    }), { calories: 0, protein: 0, carbs: 0, fat: 0 }));
     if (todayLog?.id) await updateNutritionLog(todayLog.id, { meals: newMeals, ...newTotals });
     else await addNutritionLog({ date: today, meals: newMeals, ...newTotals });
     setShowAdd(false);
@@ -449,10 +449,10 @@ function NutritionTab({ settings, today }) {
 
   async function removeMealEntry(id) {
     if (!todayLog?.id) return;
-    const totalsOf = (list) => list.reduce((s, m) => ({
+    const totalsOf = (list) => roundTotals(list.reduce((s, m) => ({
       calories: s.calories + (m.calories || 0), protein: s.protein + (m.protein || 0),
       carbs: s.carbs + (m.carbs || 0), fat: s.fat + (m.fat || 0),
-    }), { calories: 0, protein: 0, carbs: 0, fat: 0 });
+    }), { calories: 0, protein: 0, carbs: 0, fat: 0 }));
     const before = meals;
     const removed = before.find(m => m.id === id);
     const newMeals = before.filter(m => m.id !== id);

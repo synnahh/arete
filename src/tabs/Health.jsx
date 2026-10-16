@@ -20,7 +20,7 @@ import { Sheet as MotionSheet } from '../components/Motion.jsx';
 import { useFoodLibrary } from '../hooks/useFoodLibrary.js';
 import { customFoodEntry, favouriteEntry, servingText } from '../domain/customFoods.js';
 import { mealEntry, draftFromSaved, PORTIONS } from '../domain/recipes.js';
-import { recentFoods, yesterdayKey, copyMeals, appendMeals, mealFromPlan, cleanIngredients, groupBySection } from '../domain/foods.js';
+import { roundTotals, recentFoods, yesterdayKey, copyMeals, appendMeals, mealFromPlan, cleanIngredients, groupBySection } from '../domain/foods.js';
 import FoodShortcuts from '../components/FoodShortcuts.jsx';
 import FoodLogger from '../components/FoodLogger.jsx';
 import { weightCoach } from '../domain/weight.js';
@@ -164,8 +164,8 @@ function Overview({ habits, waterLogs, nutritionLogs, sleepData, settings, suppl
 
   const rawWater    = useMemo(() => (waterLogs||[]).filter(l=>l.date===today).reduce((s,l)=>s+(l.amount||0),0),[waterLogs,today]);
   const todayNut    = useMemo(() => (nutritionLogs||[]).find(l=>l.date===today),[nutritionLogs,today]);
-  const todayCal    = todayNut?.calories ?? todayNut?.totalCalories ?? 0;
-  const todayProtein = todayNut?.protein ?? 0;
+  const todayCal    = Math.round(todayNut?.calories ?? todayNut?.totalCalories ?? 0);
+  const todayProtein = Math.round((todayNut?.protein ?? 0) * 10) / 10;
   const rawCarbs    = todayNut?.carbs ?? 0;
   const rawFat      = todayNut?.fat ?? 0;
   const rawLastSleep = useMemo(() => [...(sleepData||[])].sort((a,b)=>(b.date??'').localeCompare(a.date??''))[0],[sleepData]);
@@ -184,8 +184,8 @@ function Overview({ habits, waterLogs, nutritionLogs, sleepData, settings, suppl
   const todayWater = rawWater;
   const todayCal2  = todayCal;
   const todayProt  = todayProtein;
-  const todayCarbs = rawCarbs;
-  const todayFat   = rawFat;
+  const todayCarbs = Math.round(rawCarbs * 10) / 10;
+  const todayFat   = Math.round(rawFat * 10) / 10;
   const todayMeals = todayNut?.meals?.length ? todayNut.meals : [];
   const todayHabits = todayHabitsRaw;
   const todaySupps  = todaySuppsRaw;
@@ -628,12 +628,12 @@ function Nutrition({ nutritionLogs, addNutritionLog, updateNutritionLog, setting
     (nutritionLogs || []).find(l => l.date === today),
     [nutritionLogs, today]);
   const meals     = todayLog?.meals ?? [];
-  const totals    = useMemo(() => meals.reduce((s, m) => ({
+  const totals    = useMemo(() => roundTotals(meals.reduce((s, m) => ({
     calories: s.calories + (m.calories || 0),
     protein:  s.protein  + (m.protein  || 0),
     carbs:    s.carbs    + (m.carbs    || 0),
     fat:      s.fat      + (m.fat      || 0),
-  }), { calories: 0, protein: 0, carbs: 0, fat: 0 }), [meals]);
+  }), { calories: 0, protein: 0, carbs: 0, fat: 0 })), [meals]);
 
   // Unified daily micronutrients: food-derived + taken supplements.
   const dailyMicros = useMemo(() => {
@@ -672,10 +672,10 @@ function Nutrition({ nutritionLogs, addNutritionLog, updateNutritionLog, setting
     const entry = mealEntry(meal, portions);
     entry.time = nowStr();
     const newMeals = [...meals, entry];
-    const newTotals = newMeals.reduce((s, m) => ({
+    const newTotals = roundTotals(newMeals.reduce((s, m) => ({
       calories: s.calories + (m.calories||0), protein: s.protein + (m.protein||0),
       carbs: s.carbs + (m.carbs||0), fat: s.fat + (m.fat||0),
-    }), { calories:0, protein:0, carbs:0, fat:0 });
+    }), { calories:0, protein:0, carbs:0, fat:0 }));
     if (todayLog?.id) await updateNutritionLog(todayLog.id, { meals: newMeals, ...newTotals });
     else await addNutritionLog({ date: today, meals: newMeals, ...newTotals });
   };
@@ -764,10 +764,10 @@ function Nutrition({ nutritionLogs, addNutritionLog, updateNutritionLog, setting
       time: nowStr(),
     };
     const newMeals = [...meals, entry];
-    const newTotals = newMeals.reduce((s, m) => ({
+    const newTotals = roundTotals(newMeals.reduce((s, m) => ({
       calories: s.calories + m.calories, protein: s.protein + m.protein,
       carbs: s.carbs + m.carbs, fat: s.fat + m.fat,
-    }), { calories: 0, protein: 0, carbs: 0, fat: 0 });
+    }), { calories: 0, protein: 0, carbs: 0, fat: 0 }));
 
     if (todayLog?.id) {
       await updateNutritionLog(todayLog.id, { meals: newMeals, ...newTotals });

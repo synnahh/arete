@@ -165,3 +165,9 @@ export function groupBySection(meals = []) {
       kcal: Math.round(list.reduce((s, m) => s + (Number(m.calories) || 0), 0)),
     }));
 }
+
+/** Day totals tidied for display and saving: whole kcal, grams to one decimal (sums of decimals otherwise give 60.400000000000006). */
+export function roundTotals(t = {}) {
+  const r1 = (n) => Math.round((Number(n) || 0) * 10) / 10;
+  return { ...t, calories: Math.round(Number(t.calories) || 0), protein: r1(t.protein), carbs: r1(t.carbs), fat: r1(t.fat) };
+}
