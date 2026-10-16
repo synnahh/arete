@@ -24,11 +24,25 @@ export const HOME_SECTIONS = [
 export const DEFAULT_HOME = HOME_SECTIONS.filter(s => s.on).map(s => s.id);
 const VALID = new Set(HOME_SECTIONS.map(s => s.id));
 
-/** The ordered list of section ids to show: yours if saved (unknown ids dropped, no repeats), else the default. */
+// Sections that existed before `metrics` was added. A layout saved back then has not been offered it,
+// so it is shown once (at the end) instead of staying hidden forever.
+const LEGACY_SEEN = HOME_SECTIONS.map(s => s.id).filter(id => id !== 'metrics');
+
+/** Every section id, for recording what a saved layout has already been offered. */
+export const ALL_SECTION_IDS = HOME_SECTIONS.map(s => s.id);
+
+/**
+ * The ordered list of section ids to show: yours if saved (unknown ids dropped, no repeats), else the default.
+ * A saved layout also gets any on-by-default section it has never been offered (`raw.seen`), so new cards such
+ * as Metrics appear by themselves; turning one off is remembered because saving records everything as seen.
+ */
 export function cleanHome(raw) {
   const list = Array.isArray(raw?.sections) ? raw.sections : null;
   if (!list) return [...DEFAULT_HOME];
-  return [...new Set(list.filter(id => VALID.has(id)))];
+  const shown = [...new Set(list.filter(id => VALID.has(id)))];
+  const seen = new Set(Array.isArray(raw?.seen) ? raw.seen : LEGACY_SEEN);
+  const fresh = DEFAULT_HOME.filter(id => !seen.has(id) && !shown.includes(id));
+  return [...shown, ...fresh];
 }
 
 /** Turn a section on (added at the end) or off. */

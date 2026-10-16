@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest';
-import { HOME_SECTIONS, DEFAULT_HOME, cleanHome, setSection, moveSection, calorieStatus, waterStatus, weightStatus } from './homeLayout.js';
+import { HOME_SECTIONS, DEFAULT_HOME, ALL_SECTION_IDS, cleanHome, setSection, moveSection, calorieStatus, waterStatus, weightStatus } from './homeLayout.js';
 
 describe('Home layout', () => {
   it('shows the six things Rob picked by default, in order, then the metrics area', () => {
@@ -12,11 +12,11 @@ describe('Home layout', () => {
   it('uses the default until you save a layout, then your layout', () => {
     expect(cleanHome(undefined)).toEqual(DEFAULT_HOME);
     expect(cleanHome({})).toEqual(DEFAULT_HOME);
-    expect(cleanHome({ sections: ['water', 'calories'] })).toEqual(['water', 'calories']);
+    expect(cleanHome({ sections: ['water', 'calories'], seen: ALL_SECTION_IDS })).toEqual(['water', 'calories']);
   });
   it('drops unknown ids and repeats, and allows an empty Home', () => {
-    expect(cleanHome({ sections: ['water', 'bogus', 'water', 'sleep'] })).toEqual(['water', 'sleep']);
-    expect(cleanHome({ sections: [] })).toEqual([]);
+    expect(cleanHome({ sections: ['water', 'bogus', 'water', 'sleep'], seen: ALL_SECTION_IDS })).toEqual(['water', 'sleep']);
+    expect(cleanHome({ sections: [], seen: ALL_SECTION_IDS })).toEqual([]);
   });
   it('turns sections on (at the end) and off, and moves them', () => {
     expect(setSection(['calories'], 'workout', true)).toEqual(['calories', 'workout']);
@@ -59,5 +59,20 @@ describe('Home page layout', () => {
     expect(layoutRows(['calories', 'weight', 'metrics', 'water'], 2)).toEqual([{ cols: [['weight'], ['calories']] }, { full: 'metrics' }, { cols: [['water']] }]);
     expect(layoutRows(['metrics'], 2)).toEqual([{ full: 'metrics' }]);
     expect(layoutRows([], 2)).toEqual([]);
+  });
+});
+
+describe('cleanHome offers new default sections once', () => {
+  it('adds Metrics to a layout saved before it existed', async () => {
+    const { cleanHome } = await import('./homeLayout.js');
+    expect(cleanHome({ sections: ['calories', 'water'] })).toEqual(['calories', 'water', 'metrics']);
+  });
+  it('respects a layout that has seen it and turned it off', async () => {
+    const { cleanHome, ALL_SECTION_IDS } = await import('./homeLayout.js');
+    expect(cleanHome({ sections: ['calories', 'water'], seen: ALL_SECTION_IDS })).toEqual(['calories', 'water']);
+  });
+  it('does not repeat it when already shown', async () => {
+    const { cleanHome } = await import('./homeLayout.js');
+    expect(cleanHome({ sections: ['metrics', 'water'] })).toEqual(['metrics', 'water']);
   });
 });

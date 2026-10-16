@@ -17,7 +17,7 @@ import { progressTiles } from '../domain/checkin.js';
 import { weightCoach } from '../domain/weight.js';
 import { stepsFor, completion } from '../domain/skin.js';
 import { WEEK, dayKeyFromDate, dayExercises, isRest } from '../domain/splits.js';
-import { HOME_SECTIONS, layoutRows, cleanHome, setSection, moveSection, calorieStatus, waterStatus, weightStatus } from '../domain/homeLayout.js';
+import { HOME_SECTIONS, ALL_SECTION_IDS, layoutRows, cleanHome, setSection, moveSection, calorieStatus, waterStatus, weightStatus } from '../domain/homeLayout.js';
 import { label } from './ui.js';
 import ReadinessCard from './ReadinessCard.jsx';
 import NextMoves from './NextMoves.jsx';
@@ -217,7 +217,7 @@ export default function HomeScreen({ settings, onTabChange, compact = false }) {
   const ids = cleanHome(settings?.home);
   const [editing, setEditing] = useState(false);
   const go = (t) => onTabChange?.(t);
-  const save = (next) => updateSettings({ home: { ...(settings?.home || {}), sections: next } }); // keep the metrics you chose
+  const save = (next) => updateSettings({ home: { ...(settings?.home || {}), sections: next, seen: ALL_SECTION_IDS } }); // keep the metrics you chose
 
   const sections = {
     calories: <Calories settings={settings} compact={compact} />,

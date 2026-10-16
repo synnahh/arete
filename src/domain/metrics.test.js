@@ -122,3 +122,17 @@ describe('choosing which metrics to show', () => {
     expect(moveMetric(['a', 'b'], 'a', -1)).toEqual(['a', 'b']);
   });
 });
+
+describe('rows as the live health-ingest function writes them', () => {
+  it('makes tiles from steps, heart rate, resting HR, breathing and the walking extras', () => {
+    const health = [
+      { date: '2026-10-16', data: { steps: 882, restingHeartRate: 53, respiratoryRate: 14, heartRate: { avg: 57.9, min: 45, max: 121 }, more: { walking_speed: { v: 5.1, u: 'km/hr' }, flights_climbed: { v: 3, u: 'count' } } } },
+      { date: '2026-10-15', data: { steps: 4437, heartRate: { avg: 83.6, min: 53, max: 186 }, more: { walking_speed: { v: 5.3, u: 'km/hr' } } } },
+    ];
+    const tiles = buildMetrics({ health, body: [{ date: '2026-10-15', weight: 73 }], sleep: [], today: '2026-10-16' });
+    const ids = tiles.map(t => t.id);
+    expect(ids).toEqual(expect.arrayContaining(['steps', 'restingHeartRate', 'heartRate', 'respiratoryRate', 'weight']));
+    expect(tiles.find(t => t.id === 'steps').value).toBe(882);
+    expect(tiles.some(t => /walking speed/i.test(t.label))).toBe(true);
+  });
+});
