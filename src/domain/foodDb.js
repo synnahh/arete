@@ -143,6 +143,37 @@ export function prettyName(name) {
   return s.replace(/\s+/g, ' ').replace(/^./, c => c.toUpperCase());
 }
 
+/**
+ * What the bundled data knows beyond calories and macros, per 100 g, in the micronutrient tracker's keys and units:
+ * fibre and sugars (g) and sodium (mg) from the pack itself, plus the vitamins and minerals from the micros pack
+ * when it has this food (attached by useFoodDb as `e.micros`). Missing is left out, never zero.
+ */
+export function microsOf(e) {
+  const out = {};
+  if (e.fibre > 0) out.fiber = e.fibre;
+  if (e.sugar > 0) out.sugars = e.sugar;
+  if (e.sodium > 0) out.sodium = e.sodium;
+  return { ...out, ...(e.micros || {}) };
+}
+
+/**
+ * Attach the vitamins and minerals from the micros pack ({ order: [keys], rows: { name: [values|null] } }) to the
+ * everyday foods, matched by exact USDA name. Returns how many foods got some. Packaged products are left alone.
+ */
+export function attachMicros(index, pack) {
+  const order = Array.isArray(pack?.order) ? pack.order : [], rows = pack?.rows || {};
+  let n = 0;
+  for (const e of index || []) {
+    if (e.kind !== 'generic') continue;
+    const r = rows[e.name];
+    if (!Array.isArray(r)) continue;
+    const m = {};
+    order.forEach((k, i) => { if (r[i] != null && r[i] > 0) m[k] = r[i]; });
+    if (Object.keys(m).length) { e.micros = m; n++; }
+  }
+  return n;
+}
+
 /** An index entry as a loggable food (the shape src/domain/foodLogger.js expects). */
 export function dbFood(e) {
   // Packaged products read "Brand Product", unless the product name already starts with the brand.
@@ -157,7 +188,7 @@ export function dbFood(e) {
     // The barcode keeps two products with the same brand and name apart (they get different list keys).
     key: `${e.kind === 'branded' ? 'brand' : 'usda'}:${norm(e.brand + ' ' + e.name)}:${e.barcode || Math.round(e.per100.calories)}`, kind: 'db', name: display,
     amountKind: 'grams', unit: 'g', defaultAmount: portions[0]?.grams ?? 100,
-    per100: { ...e.per100, micros: {} }, sub, source: { name: display, per100: e.per100, brand: e.brand || null, barcode: e.barcode || null },
+    per100: { ...e.per100, micros: microsOf(e) }, sub, source: { name: display, per100: e.per100, brand: e.brand || null, barcode: e.barcode || null },
     portions, ingredients: [], brand: e.brand || null,
   };
 }

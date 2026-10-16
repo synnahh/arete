@@ -31,9 +31,24 @@ export function customFoodProblems(f) {
   return out;
 }
 
-/** The row to store from a form ({ name, brand, servingQty, servingUnit, calories, protein, carbs, fat }). */
+// Optional extra nutrients on a custom food, per serving, in the units the micronutrient tracker uses.
+export const EXTRA_NUTRIENTS = ['fiber', 'sugars', 'sodium', 'satFat', 'calcium', 'iron', 'magnesium', 'potassium', 'zinc', 'vitaminC', 'vitaminD', 'vitaminA', 'b12'];
+
+/** The numbers typed into the optional nutrient boxes, as { key: number } (blank, zero and junk dropped). */
+export function cleanExtra(raw) {
+  const out = {};
+  for (const k of EXTRA_NUTRIENTS) {
+    const v = Number(raw?.[k]);
+    if (raw?.[k] !== '' && raw?.[k] != null && Number.isFinite(v) && v > 0 && v < 100000) out[k] = Math.round(v * 100) / 100;
+  }
+  return out;
+}
+
+/** The row to store from a form ({ name, brand, servingQty, servingUnit, calories, protein, carbs, fat, micros? }). */
 export function makeCustomFood(f) {
+  const micros = cleanExtra(f.micros);
   return {
+    ...(Object.keys(micros).length ? { micros } : {}),
     name: String(f.name).trim().slice(0, 80),
     brand: String(f.brand || '').trim().slice(0, 60),
     serving: { qty: r1(num(f.servingQty) || 1), unit: SERVING_UNITS.includes(f.servingUnit) ? f.servingUnit : 'serving' },
@@ -46,6 +61,7 @@ export const formFromCustomFood = (food) => ({
   id: food?.id, name: food?.name || '', brand: food?.brand || '',
   servingQty: food?.serving?.qty ?? 100, servingUnit: food?.serving?.unit || 'g',
   calories: food?.calories ?? '', protein: food?.protein ?? '', carbs: food?.carbs ?? '', fat: food?.fat ?? '',
+  micros: Object.fromEntries(Object.entries(food?.micros || {}).map(([k, v]) => [k, String(v)])),
 });
 
 /** "30 g", "1 serving", "2 each" */
@@ -59,7 +75,7 @@ export function customFoodEntry(food, servings = 1, now = new Date()) {
     id: `m_${now.getTime()}`,
     name: food.brand ? `${food.name} (${food.brand})` : food.name,
     calories: Math.round(num(food.calories) * n), protein: r1(num(food.protein) * n), carbs: r1(num(food.carbs) * n), fat: r1(num(food.fat) * n),
-    micros: {}, qty: r1((food?.serving?.qty || 1) * n), unit, time: clock(now), customFoodId: food?.id,
+    micros: scaleMicros(food?.micros, n), qty: r1((food?.serving?.qty || 1) * n), unit, time: clock(now), customFoodId: food?.id,
   };
 }
 
@@ -70,7 +86,7 @@ export function itemFromCustom(food, servings = 1) {
   return {
     name: food.brand ? `${food.name} (${food.brand})` : food.name,
     qty: r1((food?.serving?.qty || 1) * n), unit,
-    calories: Math.round(num(food.calories) * n), protein: r1(num(food.protein) * n), carbs: r1(num(food.carbs) * n), fat: r1(num(food.fat) * n), micros: {},
+    calories: Math.round(num(food.calories) * n), protein: r1(num(food.protein) * n), carbs: r1(num(food.carbs) * n), fat: r1(num(food.fat) * n), micros: scaleMicros(food?.micros, n),
   };
 }
 

@@ -2,9 +2,10 @@
 // them in memory. Packs live in src/data/foods/: generic.json (USDA) and any branded*.json.
 // They are separate lazy chunks, so the app starts without them.
 import { useEffect, useMemo, useRef, useState } from 'react';
-import { buildIndex, searchIndex, dbFood, findByBarcode } from '../domain/foodDb.js';
+import { buildIndex, searchIndex, dbFood, findByBarcode, attachMicros } from '../domain/foodDb.js';
 
 const loaders = import.meta.glob('../data/foods/*.json');
+const microLoaders = import.meta.glob('../data/micros/*.json'); // vitamins and minerals per 100 g (scripts/build-food-micros.mjs); empty until built
 let cache = null;          // the built index, shared by every screen
 let loading = null;
 
@@ -14,7 +15,12 @@ async function loadAll() {
     loading = Promise.all(Object.entries(loaders).map(async ([path, load]) => {
       const mod = await load();
       return buildIndex(/branded/i.test(path) ? 'branded' : 'generic', mod.default || mod);
-    })).then(parts => { cache = parts.flat(); return cache; }).catch(() => { loading = null; return []; });
+    })).then(async parts => {
+      const index = parts.flat();
+      try { for (const load of Object.values(microLoaders)) attachMicros(index, (await load()).default); } catch { /* macros still work without the micros pack */ }
+      cache = index;
+      return cache;
+    }).catch(() => { loading = null; return []; });
   }
   return loading;
 }

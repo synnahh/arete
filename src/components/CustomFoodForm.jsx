@@ -1,7 +1,8 @@
 // CustomFoodForm — add or edit one of your own foods, with the numbers for one serving
 // as written on the label. Rules: src/domain/customFoods.js. Desktop card and phone sheet.
 import { useState } from 'react';
-import { SERVING_UNITS, customFoodProblems, makeCustomFood, formFromCustomFood } from '../domain/customFoods.js';
+import { SERVING_UNITS, EXTRA_NUTRIENTS, customFoodProblems, makeCustomFood, formFromCustomFood } from '../domain/customFoods.js';
+import { MICRO_BY_KEY } from '../utils/micronutrients.js';
 
 const field = { height: 44, padding: '0 10px', borderRadius: 8, border: '0.5px solid var(--card-border)', background: 'var(--hover-bg)', color: 'var(--text-primary)', fontSize: 14, fontFamily: 'inherit', minWidth: 0, boxSizing: 'border-box', width: '100%' };
 const mono = { ...field, fontFamily: 'var(--font-mono)', textAlign: 'right' };
@@ -18,7 +19,7 @@ function Cell({ title, children }) {
 }
 
 export default function CustomFoodForm({ initial, onSave, onCancel, onDelete, canLog = false }) {
-  const [f, setF] = useState(() => (initial ? formFromCustomFood(initial) : { name: '', brand: '', servingQty: 100, servingUnit: 'g', calories: '', protein: '', carbs: '', fat: '' }));
+  const [f, setF] = useState(() => (initial ? formFromCustomFood(initial) : { name: '', brand: '', servingQty: 100, servingUnit: 'g', calories: '', protein: '', carbs: '', fat: '', micros: {} }));
   const [problems, setProblems] = useState([]);
   const [saving, setSaving] = useState(false);
   const [confirm, setConfirm] = useState(false);
@@ -53,6 +54,17 @@ export default function CustomFoodForm({ initial, onSave, onCancel, onDelete, ca
         ))}
       </div>
       <div style={{ fontSize: 12.5, color: 'var(--text-secondary)', lineHeight: 1.45 }}>Enter the numbers for one serving, as on the label. When you log it you pick how many servings.</div>
+      <details open={Object.keys(f.micros || {}).length > 0}>
+        <summary style={{ cursor: 'pointer', minHeight: 44, display: 'flex', alignItems: 'center', fontSize: 14, fontWeight: 600, color: 'var(--text-primary)' }}>More nutrients (optional, for the micronutrient tracker)</summary>
+        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(120px, 1fr))', gap: 10, paddingTop: 6 }}>
+          {EXTRA_NUTRIENTS.map(k => (
+            <Cell key={k} title={`${MICRO_BY_KEY[k].label} ${MICRO_BY_KEY[k].unit}`}>
+              <input aria-label={`${MICRO_BY_KEY[k].label} per serving`} inputMode="decimal" value={f.micros?.[k] ?? ''} placeholder="–"
+                onChange={e => setF(p => ({ ...p, micros: { ...(p.micros || {}), [k]: digits(e.target.value) } }))} style={mono} />
+            </Cell>
+          ))}
+        </div>
+      </details>
       {problems.length > 0 && <ul role="alert" style={{ margin: 0, paddingLeft: 18, fontSize: 13, color: '#e55a5a', lineHeight: 1.5 }}>{problems.map(p => <li key={p}>{p}</li>)}</ul>}
       {/* Always visible: the bar sticks to the bottom of the sheet, so Save never sits below the keyboard or the fold. */}
       <div style={{ position: 'sticky', bottom: 0, zIndex: 1, display: 'flex', flexWrap: 'wrap', gap: 8, padding: '10px 0 2px', background: 'var(--bg-panel, var(--surface-1))', borderTop: '0.5px solid var(--card-border)' }}>
