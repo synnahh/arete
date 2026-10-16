@@ -63,7 +63,7 @@ describe('mapHealthExport', () => {
     ]), metric('step_count', 'count', [{ date: 'garbage', qty: 5 }, { date: '2026-10-02 08:00:00 +1000', qty: 'x' }])));
     expect(r.days['2026-10-02'].heartRate).toEqual({ avg: 75, min: 55, max: 150 });
     expect(r.days['2026-10-02'].steps).toBeUndefined();
-    expect(mapHealthExport(null)).toEqual({ days: {}, weights: [], sleep: [] });
+    expect(mapHealthExport(null)).toEqual({ days: {}, weights: [], sleep: [], metricNames: [] });
   });
 });
 
@@ -73,5 +73,24 @@ describe('safeEqual', () => {
     expect(safeEqual('abc', 'abd')).toBe(false);
     expect(safeEqual('abc', 'abcd')).toBe(false);
     expect(safeEqual(undefined, '')).toBe(true);
+  });
+});
+
+describe('sleep sent as stage segments (Summarize data off)', () => {
+  const seg = (value, start, end, qty) => ({ value, startDate: start, endDate: end, qty, date: end });
+  const payload = { data: { metrics: [{ name: 'sleep_analysis', units: 'hr', data: [
+    seg('Core', '2026-10-15 23:10:00 +1100', '2026-10-16 01:10:00 +1100', 2),
+    seg('Deep', '2026-10-16 01:10:00 +1100', '2026-10-16 02:10:00 +1100', 1),
+    seg('REM', '2026-10-16 02:10:00 +1100', '2026-10-16 03:10:00 +1100', 1),
+    seg('Awake', '2026-10-16 03:10:00 +1100', '2026-10-16 03:25:00 +1100', 0.25),
+    seg('Core', '2026-10-16 03:25:00 +1100', '2026-10-16 06:25:00 +1100', 3),
+  ] }] } };
+  it('adds the stages into one night dated the morning you woke', () => {
+    const { sleep, metricNames } = mapHealthExport(payload);
+    expect(metricNames).toEqual(['sleep_analysis']);
+    expect(sleep).toHaveLength(1);
+    expect(sleep[0]).toMatchObject({ date: '2026-10-16', duration: 420, bedTime: '23:10', wakeTime: '06:25' });
+    expect(sleep[0].stages).toEqual({ deep: 60, rem: 60, core: 300, awake: 15 });
+    expect(sleep[0].efficiency).toBe(97);
   });
 });

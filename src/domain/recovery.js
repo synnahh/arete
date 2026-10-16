@@ -11,6 +11,7 @@
 
 import { setsOf, volume } from './training.js';
 import { dayIndex } from '../utils/dayIndex.js';
+import { compare, healthSeries, picks } from './fitbitCoach.js';
 
 export const DEFAULT_SLEEP_NEED_H = 8;
 export const DEBT_WINDOW_DAYS = 14;
@@ -94,11 +95,32 @@ const BANDS = [
 ];
 
 /**
- * Readiness 0–100 from up to three parts, renormalised over the ones we have:
- *   last night's sleep (40%), sleep debt (30%), training load (30%).
- * Returns { status: 'no-data' } unless there is at least a night or a debt.
+ * How your body is reading from the watch: resting heart rate and HRV over the last 3 days against the
+ * 14 before. Null until there are about a week of readings. { pct 0-1, note }.
+ * Resting HR within 1 bpm of usual (or HRV within 5%) is full marks; 7 bpm up (or HRV 30% down) is 20%.
  */
-export function readiness({ sleepRows = [], workoutLogs = [], today, need = DEFAULT_SLEEP_NEED_H }) {
+export function heartSignal(health = [], today) {
+  const rhr = compare(healthSeries(health, picks.rhr), today);
+  const hrv = compare(healthSeries(health, picks.hrv), today);
+  const scores = [], notes = [];
+  if (rhr) {
+    scores.push(clamp01(1 - (Math.max(0, rhr.delta - 1) / 6) * 0.8));
+    notes.push(`resting HR ${Math.round(rhr.recent)} (usual ${Math.round(rhr.base)})`);
+  }
+  if (hrv) {
+    scores.push(clamp01(1 - (Math.max(0, 0.95 - hrv.ratio) / 0.25) * 0.8));
+    notes.push(`HRV ${Math.round(hrv.recent)} (usual ${Math.round(hrv.base)})`);
+  }
+  if (!scores.length) return null;
+  return { pct: scores.reduce((s, x) => s + x, 0) / scores.length, note: notes.join(', ') };
+}
+
+/**
+ * Readiness 0–100 from up to four parts, renormalised over the ones we have:
+ *   last night's sleep (40%), sleep debt (30%), training load (30%), heart signals from the watch (25%).
+ * Returns { status: 'no-data' } unless there is at least a night, a debt or heart signals.
+ */
+export function readiness({ sleepRows = [], workoutLogs = [], health = [], today, need = DEFAULT_SLEEP_NEED_H }) {
   const night = lastNight(sleepRows, today);
   const debt = sleepDebt(sleepRows, today, { need });
   const load = trainingLoad(workoutLogs, today);
@@ -111,6 +133,8 @@ export function readiness({ sleepRows = [], workoutLogs = [], today, need = DEFA
   if (debt.status !== 'insufficient') {
     parts.push({ key: 'debt', label: 'Sleep debt', weight: 0.3, pct: clamp01(1 - debt.debtHours / 10), note: `${debt.debtHours} h behind over ${debt.nights} logged nights` });
   }
+  const heart = heartSignal(health, today);
+  if (heart) parts.push({ key: 'heart', label: 'Heart signals', weight: 0.25, pct: heart.pct, note: heart.note });
   if (!parts.length) return { status: 'no-data', night, debt, load };
   if (load) {
     const pct = load.ratio <= 1.2 ? 1 : load.ratio >= 2 ? 0.4 : 1 - ((load.ratio - 1.2) / 0.8) * 0.6;

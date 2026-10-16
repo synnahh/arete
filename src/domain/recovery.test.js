@@ -106,3 +106,29 @@ describe('sleepHoursBetween', () => {
     expect(sleepHoursBetween(undefined, undefined)).toBeNull();
   });
 });
+
+import { heartSignal, readiness as readinessWithHeart } from './recovery.js';
+
+describe('heart signals from the watch', () => {
+  const day = (n) => new Date(Date.UTC(2026, 9, 15 - n, 12)).toISOString().slice(0, 10);
+  const rows = (f) => Array.from({ length: 17 }, (_, i) => ({ date: day(i), data: f(i) }));
+  it('is null without a baseline', () => {
+    expect(heartSignal([{ date: day(0), data: { restingHeartRate: 60 } }], '2026-10-15')).toBeNull();
+  });
+  it('scores a raised resting HR and low HRV poorly, a usual one fully', () => {
+    const calm = heartSignal(rows(() => ({ restingHeartRate: 58, hrv: 60 })), '2026-10-15');
+    const bad = heartSignal(rows((i) => ({ restingHeartRate: i < 3 ? 66 : 58, hrv: i < 3 ? 40 : 60 })), '2026-10-15');
+    expect(calm.pct).toBe(1);
+    expect(bad.pct).toBeLessThan(0.35);
+  });
+  it('gives a readiness from the watch alone, and lowers one built on sleep', () => {
+    const bad = rows((i) => ({ restingHeartRate: i < 3 ? 66 : 58 }));
+    const alone = readinessWithHeart({ health: bad, today: '2026-10-15' });
+    expect(alone.status).toBe('ok');
+    expect(alone.factors.map(f => f.key)).toEqual(['heart']);
+    const sleepRows = [{ date: '2026-10-15', duration: 480 }];
+    const without = readinessWithHeart({ sleepRows, today: '2026-10-15' });
+    const withBad = readinessWithHeart({ sleepRows, health: bad, today: '2026-10-15' });
+    expect(withBad.score).toBeLessThan(without.score);
+  });
+});

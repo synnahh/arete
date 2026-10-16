@@ -32,7 +32,7 @@ export default function ReadinessCard({ compact = false }) {
       <section aria-label="Readiness" style={card}>
         <div style={label}>Readiness</div>
         <div style={{ fontSize: 13.5, lineHeight: 1.5, color: 'var(--text-secondary)' }}>
-          Log last night’s sleep (and 4+ nights for sleep debt) and Arete will score how ready you are to train.
+          Log last night’s sleep (and 4+ nights for sleep debt) and Arete will score how ready you are to train. If your Fitbit is syncing, make sure Sleep Analysis is ticked in Health Auto Export; resting heart rate and HRV will also count once a week of readings is in.
         </div>
         <NeedStepper need={r.need} />
       </section>

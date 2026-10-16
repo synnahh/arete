@@ -6,6 +6,7 @@ import { useCollection } from '../supabase/useCollection.js';
 import { storage, STORAGE_KEYS } from '../utils/storage.js';
 import { toLocalDateKey } from '../utils/localDate.js';
 import { readiness, DEFAULT_SLEEP_NEED_H } from '../domain/recovery.js';
+import { useHealthHistory } from './useHealthHistory.js';
 
 const needFrom = (settings) => {
   const n = Number(settings?.sleepNeedHours);
@@ -15,6 +16,7 @@ const needFrom = (settings) => {
 export function useRecovery() {
   const { items: sleepRows = [] } = useCollection('sleep_data', STORAGE_KEYS.SLEEP);
   const { items: workoutLogs = [] } = useCollection('workout_logs', STORAGE_KEYS.WORKOUT_LOGS);
+  const health = useHealthHistory(35); // resting heart rate and HRV from the Fitbit / phone
   const [need, setNeed] = useState(() => needFrom(storage.get(STORAGE_KEYS.SETTINGS, {})));
 
   useEffect(() => {
@@ -25,8 +27,8 @@ export function useRecovery() {
 
   const today = toLocalDateKey(new Date());
   const result = useMemo(
-    () => readiness({ sleepRows, workoutLogs, today, need }),
-    [sleepRows, workoutLogs, today, need]
+    () => readiness({ sleepRows, workoutLogs, health: health.rows, today, need }),
+    [sleepRows, workoutLogs, health.rows, today, need]
   );
   return { ...result, need };
 }

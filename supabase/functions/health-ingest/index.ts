@@ -35,11 +35,13 @@ Deno.serve(async (req) => {
   let payload: unknown;
   try { payload = JSON.parse(text); } catch { return reply({ error: 'Invalid JSON' }, 400); }
 
-  const { days, weights, sleep } = mapHealthExport(payload);
+  const { days, weights, sleep, metricNames } = mapHealthExport(payload);
   const db = createClient(Deno.env.get('SUPABASE_URL')!, Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!, {
     auth: { persistSession: false },
   });
   const result = { days: 0, weighIns: 0, sleepNights: 0 };
+  // What the phone actually sent, so a missing metric is visible in the reply and the function logs.
+  console.log('health-ingest received metrics:', metricNames.join(', ') || '(none)');
 
   // 1. Daily summary (steps, heart rate ...) -> health_sync, one row per day.
   const dayKeys = Object.keys(days);
@@ -98,5 +100,5 @@ Deno.serve(async (req) => {
     result.sleepNights += 1;
   }
 
-  return reply({ ok: true, ...result });
+  return reply({ ok: true, ...result, metrics: metricNames });
 });

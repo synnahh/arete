@@ -49,7 +49,7 @@ function perDay(samples, pick) {
 }
 
 /**
- * @returns {{ days: Record<string, object>, weights: object[], sleep: object[] }}
+ * @returns {{ days: Record<string, object>, weights: object[], sleep: object[], metricNames: string[] }}
  *   days     per local day: steps, activeEnergy, heartRate{avg,min,max}, restingHeartRate,
  *            hrv, respiratoryRate, bloodOxygen (only the keys present)
  *   weights  one entry per weigh-in: { key, date, time, weight(kg), bodyFat? }
@@ -148,7 +148,44 @@ export function mapHealthExport(payload) {
 
   const sleep = [];
   const sm = byName.sleep_analysis;
-  for (const s of sm?.data || []) {
+
+  // Health Auto Export with "Summarize data" OFF sends one entry per sleep stage segment
+  // ({ startDate, endDate, qty (hours), value: 'Core' | 'Deep' | 'REM' | 'Awake' | 'Asleep' | 'In Bed' }) instead of one per night.
+  // Those are added up per night, dated by the day the segment ended (the morning you woke).
+  const segments = (sm?.data || []).filter((s) => typeof s?.value === 'string' && (s.endDate || s.date));
+  if (segments.length) {
+    const nights = {};
+    for (const s of segments) {
+      const end = s.endDate || s.date;
+      const day = dayOf(end);
+      const h = num(s.qty);
+      if (!day || !(h > 0)) continue;
+      const n = (nights[day] ||= { deep: 0, rem: 0, core: 0, awake: 0, inBed: 0, asleep: 0, start: null, end: null });
+      const kind = s.value.toLowerCase();
+      if (kind.includes('deep')) n.deep += h;
+      else if (kind.includes('rem')) n.rem += h;
+      else if (kind.includes('core') || kind === 'asleep' || kind.includes('unspecified')) n.core += h;
+      else if (kind.includes('awake')) n.awake += h;
+      else if (kind.includes('bed')) n.inBed += h;
+      const st = String(s.startDate || ''), en = String(s.endDate || '');
+      if (st && (!n.start || st < n.start)) n.start = st;
+      if (en && (!n.end || en > n.end)) n.end = en;
+    }
+    for (const [day, n] of Object.entries(nights)) {
+      const asleepH = n.deep + n.rem + n.core;
+      if (!(asleepH > 0)) continue;
+      const inBedH = n.inBed || asleepH + n.awake;
+      const toMin = (h) => Math.round(h * 60);
+      sleep.push({
+        date: day, duration: toMin(asleepH),
+        efficiency: inBedH > 0 ? Math.min(100, Math.round((asleepH / inBedH) * 100)) : null,
+        bedTime: timeOf(n.start), wakeTime: timeOf(n.end),
+        stages: { deep: toMin(n.deep), rem: toMin(n.rem), core: toMin(n.core), awake: toMin(n.awake) },
+      });
+    }
+  }
+
+  for (const s of (sm?.data || []).filter((x) => typeof x?.value !== 'string')) {
     const day = dayOf(s.date) || dayOf(s.sleepEnd);
     if (!day) continue;
     const stagesH = {
@@ -169,7 +206,7 @@ export function mapHealthExport(payload) {
     });
   }
 
-  return { days, weights, sleep };
+  return { days, weights, sleep, metricNames: Object.keys(byName) };
 }
 
 // Constant-time string compare, so the shared secret cannot be guessed byte by byte.
