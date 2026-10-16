@@ -616,11 +616,13 @@ function NutritionTab({ settings, today }) {
       )}
       {foodDraft && (
         <Sheet title={foodDraft.initial?.id ? 'Edit food' : 'New food'} onClose={() => setFoodDraft(null)}>
-          <CustomFoodForm key={foodDraft.initial?.id || 'new'} initial={foodDraft.initial}
+          <CustomFoodForm key={foodDraft.initial?.id || 'new'} initial={foodDraft.initial} canLog
             onCancel={() => setFoodDraft(null)}
             onDelete={async (id) => { await lib.removeCustomFood(id); setFoodDraft(null); }}
-            onSave={async (row, id) => {
-              const ok = id ? await lib.updateCustomFood(id, row) : await lib.addCustomFood(row);
+            onSave={async (row, id, opts) => {
+              const saved = id ? await lib.updateCustomFood(id, row) : await lib.addCustomFood(row);
+              const ok = !!saved;
+              if (ok && !id && opts?.log) { setFoodDraft(null); await appendEntries([customFoodEntry({ ...row, id: saved }, 1)], `Saved and logged ${row.name}`); return; }
               if (ok) { setFoodDraft(null); window.dispatchEvent(new CustomEvent('valerie:toast', { detail: { message: id ? 'Food updated' : 'Food saved to My foods', type: 'success' } })); }
             }} />
         </Sheet>
