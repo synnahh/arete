@@ -1,3 +1,5 @@
+> **Archived (June 2026).** Describes the original VALERIE desktop-only design (OS keychain, no backend). Arete now uses Supabase and server-side secrets; see the README and docs/deploy-runbook.md for the current model.
+
 # VALERIE-VAULT — Security Architecture
 
 *Last updated: 2026-06-02*
