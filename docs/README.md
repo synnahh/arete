@@ -4,7 +4,7 @@
 |---|---|
 | [`../HANDOVER-CODEX.md`](../HANDOVER-CODEX.md) | **Read first.** Current state, open items, gotchas, what is verified |
 | [`deploy-runbook.md`](deploy-runbook.md) | Go-live steps that need your accounts (Supabase, Netlify, secrets) |
-| [`health-ingest-checklist.md`](health-ingest-checklist.md) | Eufy scale and Fitbit Air to Arete, step by step, with troubleshooting |
+| [`health-ingest-checklist.md`](health-ingest-checklist.md) | Smart scale and wearable to Arete via Apple Health, step by step, with troubleshooting |
 | [`health-ingest-sample.json`](health-ingest-sample.json) | A made-up Health Auto Export payload for testing the function |
 | [`push-setup.md`](push-setup.md) | Scheduled push reminders (replaces SMS) |
 | [`services-and-costs.md`](services-and-costs.md) | Every service, what is deployed, what it costs |
